@@ -1,18 +1,18 @@
 # Gradle
 /.gradle
 /build
-/src/*/build
+/modules/*/build
 
 # Eclipse
 /bin
 /.project
 /.classpath
 /.settings
-/src/*/bin
-/src/*/.project
-/src/*/.classpath
-/src/*/.settings
+/modules/*/bin
+/modules/*/.project
+/modules/*/.classpath
+/modules/*/.settings
 
 # IDEA
 /.idea
-/src/*/out
+/modules/*/out
