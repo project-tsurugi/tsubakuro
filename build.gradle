@@ -2,17 +2,19 @@ subprojects {
   apply plugin: 'java'
 
   plugins.withId('java') {
+    project.sourceCompatibility = JavaVersion.toVersion('11')
+    project.targetCompatibility = project.sourceCompatibility
 
     repositories {
       mavenCentral()
     }
 
 //    toolchain {
-//      languageVersion = JavaLanguageVersion.of(11)
+//        languageVersion = JavaLanguageVersion.of(11)
 //    }
 
     tasks.withType(JavaCompile) { task ->
-      task.options.encoding = 'UTF-8'
+        task.options.encoding = 'UTF-8'
     }
 
     dependencies {
