@@ -1,7 +1,7 @@
 package com.nautilus.technologies.tsubakuro;
 
 /**
- * Provides parameter set
+ * ParameterSet type.
  */
 public interface ParameterSet {
     /**

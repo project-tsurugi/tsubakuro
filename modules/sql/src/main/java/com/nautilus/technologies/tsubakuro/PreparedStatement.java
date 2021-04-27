@@ -1,7 +1,7 @@
 package com.nautilus.technologies.tsubakuro;
 
 /**
- * Provides prepared statement
+ * PreparedStatement type.
  */
 public interface PreparedStatement {
     // no special members

@@ -1,7 +1,7 @@
 package com.nautilus.technologies.tsubakuro;
 
 /**
- * Provides result set
+ * ResultSet type.
  */
 public interface ResultSet {
     /**
