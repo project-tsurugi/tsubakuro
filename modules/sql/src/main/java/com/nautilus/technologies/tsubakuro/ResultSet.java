@@ -1,5 +1,7 @@
 package com.nautilus.technologies.tsubakuro;
 
+import java.util.concurrent.Future;
+
 /**
  * ResultSet type.
  */
@@ -68,11 +70,11 @@ public interface ResultSet {
 	 * @param index indicate the field offset originated at 0. This must be smaller than the field count.
 	 * @return the value of given type
 	 */
-	public int setInt4(long index);
-	public long setInt8(long index);
-	public float setFloat4(long index);
-	public double setFloat8(long index);
-	public String setCharacter(long index);
+	public int getInt4(long index);
+	public long getInt8(long index);
+	public float getFloat4(long index);
+	public double getFloat8(long index);
+	public String getCharacter(long index);
     }
 
     /**
@@ -87,7 +89,7 @@ public interface ResultSet {
 	/**
 	 * Move the iterator to the next record and return accessor to it
 	 */
-	public Record next();
+	public Future<Record> next();
     }
 
     /**
