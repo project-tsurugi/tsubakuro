@@ -30,21 +30,21 @@ public interface Transport {
      * @param sql sql text for the command
      * @return Future<PreparedStatement> processing result of the SQL service, which will be given to executeQuery and/or executeStatement
      */
-    public Future<PreparedStatement> prepare(String sql);
+    Future<PreparedStatement> prepare(String sql);
 
     /**
      * Request executeStatement to the SQL service
      * @param sql sql text for the command
      * @return Future<ErrorCode> indicate whether the command is processed successfully or not
      */
-    public Future<ErrorCode> executeStatement(String sql);
+    Future<ErrorCode> executeStatement(String sql);
 
     /**
      * Request executeQuery to the SQL service
      * @param sql sql text for the command
      * @return Future<ResultSet> processing result of the SQL service
      */
-    public Future<ResultSet> executeQuery(String sql);
+    Future<ResultSet> executeQuery(String sql);
 
     /**
      * Request executeStatement to the SQL service
@@ -52,7 +52,7 @@ public interface Transport {
      * @param parameterSet parameter set for the prepared statement
      * @return Future<ErrorCode> indicate whether the command is processed successfully or not
      */
-    public Future<ErrorCode> executeStatement(PreparedStatement preparedStatement, ParameterSet parameterSet);
+    Future<ErrorCode> executeStatement(PreparedStatement preparedStatement, ParameterSet parameterSet);
 
     /**
      * Request executeQuery to the SQL service
@@ -60,5 +60,5 @@ public interface Transport {
      * @param parameterSet parameter set for the prepared statement
      * @return Future<ResultSet> processing result of the SQL service
      */
-    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, ParameterSet parameterSet);
+    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, ParameterSet parameterSet);
 }

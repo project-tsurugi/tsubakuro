@@ -12,7 +12,7 @@ public interface Link {
 	 * Receive data encoded as a byte array from the SQL server.
 	 @return data byte array received from the SQL server
 	 */
-	public byte[] recv();
+	byte[] recv();
     }
     /**
      * OutWire type.
@@ -22,6 +22,6 @@ public interface Link {
 	 * Send data encoded as a byte array to the SQL server.
 	 @param data byte array to be sent to the SQL server
 	 */
-	public void send(byte[] data);
+	void send(byte[] data);
     }
 }

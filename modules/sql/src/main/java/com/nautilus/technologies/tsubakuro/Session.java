@@ -12,18 +12,18 @@ public interface Session {
      * @param readOnly specify whether the new transaction is read-only or not
      * @return the transaction
      */
-    public Transaction createTransaction(boolean readOnly);
+    Transaction createTransaction(boolean readOnly);
 
     /**
      * Begin the new transaction
      * @return the transaction
      */
-    public Transaction createTransaction();
+    Transaction createTransaction();
 
     /**
      * Begin prepare sql statement and create prepared statement
      * @param sql the sql text string to prepare
      * @return the prepared statement
      */
-    public PreparedStatement prepare(String sql);
+    PreparedStatement prepare(String sql);
 }
