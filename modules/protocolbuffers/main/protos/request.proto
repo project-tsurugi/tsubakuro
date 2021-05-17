@@ -5,7 +5,7 @@ package common;
 option java_package = "com.nautilus_technologies.tsubakuro";
 option java_outer_classname = "RequestProtos";
 
-message Request {
+message ProtoBufRequest {
   enum CommandType {
     NOP = 0;
     PREPARE = 1;
@@ -15,15 +15,15 @@ message Request {
     PREPARED_QUERY = 5;
   }
 
-  CommandType Type = 1;
+  CommandType Operation = 1;
 
-  oneof Command {
+  oneof Operand {
     string Sql = 2;
     int32 PreparedStatement = 3;
   }
 }
 
-message RegisterVariables {
+message ProtoBufHostVariables {
   enum DataType {
     NULL = 0;
     INT4 = 1;
@@ -38,10 +38,10 @@ message RegisterVariables {
     DataType Type = 2;
   }
 
-  repeated Variable HostVariables = 1;
+  repeated Variable Variables = 1;
 }
 
-message ParameterSet {
+message ProtoBufParameterSet {
   message Parameter {
     string Name = 1;
     oneof Value {
