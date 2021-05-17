@@ -16,3 +16,6 @@
 # IDEA
 /.idea
 /modules/*/out
+
+# protocol buffer
+/modules/protocolbuffers/main/java

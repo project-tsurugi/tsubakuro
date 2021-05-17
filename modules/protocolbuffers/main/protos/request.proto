@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package common;
+
+option java_package = "com.nautilus_technologies.tsubakuro";
+option java_outer_classname = "RequestProtos";
+
+message Request {
+  enum CommandType {
+    NOP = 0;
+    PREPARE = 1;
+    STATEMENT = 2;
+    QUERY = 3;
+    PREPARED_STATEMENT = 4;
+    PREPARED_QUERY = 5;
+  }
+
+  CommandType Type = 1;
+
+  oneof Command {
+    string Sql = 2;
+    int32 PreparedStatement = 3;
+  }
+}
+
+message RegisterVariables {
+  enum DataType {
+    NULL = 0;
+    INT4 = 1;
+    INT8 = 2;
+    FLOAT4 = 3;
+    FLOAT8 = 4;
+    STRING = 5;
+  }
+
+  message Variable {
+    string Name = 1;
+    DataType Type = 2;
+  }
+
+  repeated Variable HostVariables = 1;
+}
+
+message ParameterSet {
+  message Parameter {
+    string Name = 1;
+    oneof Value {
+      int32 Ivalue = 2;
+      int64 Lvalue = 3;
+      float Fvalue = 4;
+      double Dvalue = 5;
+      string Svalue = 6;
+    }
+  }
+
+  repeated Parameter Parameters = 1;
+}
