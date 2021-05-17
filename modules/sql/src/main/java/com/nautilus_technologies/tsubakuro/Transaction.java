@@ -1,37 +1,15 @@
-package com.nautilus.technologies.tsubakuro;
+package com.nautilus_technologies.tsubakuro;
 
 import java.util.concurrent.Future;
-import com.nautilus.technologies.tsubakuro.PreparedStatement;
-import com.nautilus.technologies.tsubakuro.ParameterSet;
-import com.nautilus.technologies.tsubakuro.ResultSet;
+import com.nautilus_technologies.tsubakuro.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.ParameterSet;
+import com.nautilus_technologies.tsubakuro.ResultSet;
+import com.nautilus_technologies.tsubakuro.ErrorCode;
 
 /**
- * Transport type.
+ * Transaction type.
  */
-public interface Transport {
-    /**
-     * Describes error code
-     */
-    public enum ErrorCode {
-        /**
-         * @brief no error
-         */
-        OK,
-
-        /**
-         * @brief some error
-         * @note Detailed error codes will be determined in the future
-         */
-        SOME_ERROR;
-    }
-
-    /**
-     * Request prepare to the SQL service
-     * @param sql sql text for the command
-     * @return Future<PreparedStatement> processing result of the SQL service, which will be given to executeQuery and/or executeStatement
-     */
-    Future<PreparedStatement> prepare(String sql);
-
+public interface Transaction {
     /**
      * Request executeStatement to the SQL service
      * @param sql sql text for the command

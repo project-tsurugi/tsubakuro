@@ -1,4 +1,4 @@
-package com.nautilus.technologies.tsubakuro;
+package com.nautilus_technologies.tsubakuro;
 
 /**
  * PreparedStatement type.

@@ -1,6 +1,4 @@
-package com.nautilus.technologies.tsubakuro;
-
-import java.util.concurrent.Future;
+package com.nautilus_technologies.tsubakuro;
 
 /**
  * ResultSet type.
@@ -89,7 +87,7 @@ public interface ResultSet {
 	/**
 	 * Move the iterator to the next record and return accessor to it
 	 */
-	Future<Record> next();
+	Record next();
     }
 
     /**
