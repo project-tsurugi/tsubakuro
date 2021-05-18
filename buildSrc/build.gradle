@@ -1,0 +1,11 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.7.1'
+}

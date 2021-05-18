@@ -1,5 +1,7 @@
-apply plugin: 'java-library'
+plugins {
+    id 'tsubakuro.java-conventions'
+}
 
 dependencies {
-  implementation project(':protocolbuffers')
+   implementation project(':protocolbuffers')
 }

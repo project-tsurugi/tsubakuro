@@ -1,0 +1,69 @@
+plugins {
+    id 'java'
+    id 'checkstyle'
+
+    id 'com.github.spotbugs'
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+dependencies {
+    testImplementation(platform('org.junit:junit-bom:5.7.1'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+}
+
+checkstyle {
+    configFile = rootProject.file('buildSrc/src/main/resources/checkstyle.xml')
+}
+
+spotbugsMain {
+    reports {
+        xml {
+            enabled = true
+        }
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+            stylesheet = 'fancy-hist.xsl'
+        }
+    }
+}
+
+spotbugsTest.enabled = false
+
+tasks.withType(JavaCompile) { task ->
+    task.options.encoding = 'UTF-8'
+}
+
+task sourcesJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+}
+
+task testsJar(type: Jar) {
+    classifier 'tests'
+    from sourceSets.test.output
+}
+
+artifacts {
+    archives tasks.sourcesJar
+    archives tasks.testsJar
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+
+    testLogging {
+        showStandardStreams true
+        events 'started', 'skipped', 'passed', 'failed'
+        exceptionFormat 'full'
+    }
+}
