@@ -1,0 +1,43 @@
+plugins {
+    id 'tsubakuro.java-conventions'
+}
+
+def nativeRootDir = "$project.projectDir/src/main/native"
+def nativeBuildDir = "${nativeRootDir}/build"
+def nativeIncludeDir = "${nativeRootDir}/include"
+
+task cmakeConfigure {
+    doLast {
+        exec {
+            mkdir "$nativeBuildDir"
+            workingDir "$nativeBuildDir"
+            commandLine "cmake", ".."
+        }
+    }
+}
+
+task cmakeBuild {
+    doLast {
+        exec {
+            mkdir "$nativeBuildDir"
+            workingDir "$nativeBuildDir"
+            commandLine "cmake", "--build", ".", "--", "-j"
+        }
+    }
+}
+
+test.dependsOn cmakeBuild
+assemble.dependsOn cmakeBuild
+cmakeBuild.dependsOn cmakeConfigure
+
+tasks.named('test') {
+    systemProperty 'java.library.path', "${nativeBuildDir}/src"
+}
+
+clean {
+    delete += "$nativeBuildDir"
+}
+
+compileJava {
+    options.headerOutputDirectory = file("${nativeIncludeDir}")
+}
