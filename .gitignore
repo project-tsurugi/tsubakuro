@@ -1,7 +1,8 @@
 # Gradle
-/.gradle
+.gradle/
 /build
 /modules/*/build
+/buildSrc/build
 
 # Eclipse
 /bin
@@ -17,5 +18,9 @@
 /.idea
 /modules/*/out
 
+# VSCode
+/.vscode
+
 # protocol buffer
 /modules/protocolbuffers/main/java
+
