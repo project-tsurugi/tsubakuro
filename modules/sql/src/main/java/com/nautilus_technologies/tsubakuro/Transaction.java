@@ -1,10 +1,6 @@
 package com.nautilus_technologies.tsubakuro;
 
 import java.util.concurrent.Future;
-import com.nautilus_technologies.tsubakuro.PreparedStatement;
-import com.nautilus_technologies.tsubakuro.ParameterSet;
-import com.nautilus_technologies.tsubakuro.ResultSet;
-import com.nautilus_technologies.tsubakuro.ErrorCode;
 
 /**
  * Transaction type.

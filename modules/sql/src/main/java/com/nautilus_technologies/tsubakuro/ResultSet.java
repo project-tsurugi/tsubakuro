@@ -7,96 +7,90 @@ public interface ResultSet {
     /**
      * Describes field type
      */
-    public enum FieldType {
-	NULL("NULL", 0),
-	INT4("INT4", 1),
-	INT8("INT8", 2),
-	FLOAT4("FLOAT4", 3),
-	FLOAT8("FLOAT8", 4),
-	STRING("STRING", 5);
+    enum FieldType {
+        INT4("INT4", 1),
+        INT8("INT8", 2),
+        FLOAT4("FLOAT4", 3),
+        FLOAT8("FLOAT8", 4),
+        STRING("STRING", 5);
 
-	private String label;
-	private int type;
+        private String label;
+        private int type;
 
-	private FieldType(String label, int type) {
-	    this.label = label;
-	    this.type = type;
-	}
+        FieldType(String label, int type) {
+            this.label = label;
+            this.type = type;
+        }
 
+        String getLabel() {
+            return label;
+        }
 
-	public String getLabel() {
-	    return label;
-	}
-
-	public int getType() {
-	    return type;
-	}
-
+        int getType() {
+            return type;
+        }
     }
-
     /**
      * Provides record metadata holding information about field type and nullability
      */
     public interface RecordMeta {
-	/**
-	 * Get the field type
-	 * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
-	 * @return field type
-	 */
-	FieldType at(int index);
+        /**
+         * Get the field type
+         * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
+         * @return field type
+         */
+        FieldType at(int index);
 
-	/**
-	 * Get the nullability for the field
-	 * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
-	 * @return true if the field is nullable
-	 */
-	boolean nullable(int index);
-	
-	/**
-	 * Get the number of fields in the record
-	 * @return the number of the fields
-	 */
-	long fieldCount();
+        /**
+         * Get the nullability for the field
+         * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
+         * @return true if the field is nullable
+         */
+        boolean nullable(int index);
+
+        /**
+         * Get the number of fields in the record
+         * @return the number of the fields
+         */
+        long fieldCount();
     }
 
     /**
      * Provides record object in the result set
      */
-    public interface Record {
+    public interface Cursor {
 	/**
-	 * Get the field values of the record
-	 * @param index indicate the field offset originated at 0. This must be smaller than the field count.
-	 * @return the value of given type
+	 * Move the current pointer to the next record
+	 * @return true if the next record exists
 	 */
-	int getInt4(long index);
-	long getInt8(long index);
-	float getFloat4(long index);
-	double getFloat8(long index);
-	String getCharacter(long index);
+	boolean next();
+
+	/**
+	 * Check whether the current column is null or not
+	 * @return true if the current column is null
+	 */
+        boolean isNull();
+
+	/**
+	 * Get the current column value and proceed the currnet column position
+	 * @return the value of the current column
+	 */
+	int getInt4();
+	long getInt8();
+	float getFloat4();
+	double getFloat8();
+	String getCharacter();
     }
 
     /**
-     * Provides result set iterator
+     * Get the record mata data of the ResultSet
+     * @return RecordMeta subclass belonging to this class
      */
-    public interface ResultSetIterator {
-	/**
-	 * Provides whether the next record exists
-	 */
-	boolean hasNext();
-
-	/**
-	 * Move the iterator to the next record and return accessor to it
-	 */
-	Record next();
-    }
+    RecordMeta getRecordMeta();
 
     /**
-     * Get the metadata of the result records
+     * Get the cursor of the ReaultSet
+     * @return Cursor subclass belonging to this class
      */
-    RecordMeta meta();
-
-    /**
-     * Get the iterator at the beginning of the result records
-     */
-    ResultSetIterator iterator();
+    Cursor getCursor();
 }

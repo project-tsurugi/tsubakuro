@@ -1,9 +1,6 @@
 package com.nautilus_technologies.tsubakuro;
 
 import java.util.concurrent.Future;
-import com.nautilus_technologies.tsubakuro.Transaction;
-import com.nautilus_technologies.tsubakuro.PreparedStatement;
-import com.nautilus_technologies.tsubakuro.ParameterSet;
 
 /**
  * Session type.

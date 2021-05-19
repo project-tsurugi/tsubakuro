@@ -1,57 +1,175 @@
 syntax = "proto3";
 
-package common;
+package protocol;
 
 option java_package = "com.nautilus_technologies.tsubakuro";
 option java_outer_classname = "RequestProtos";
 
-message ProtoBufRequest {
-  enum CommandType {
-    NOP = 0;
-    PREPARE = 1;
-    STATEMENT = 2;
-    QUERY = 3;
-    PREPARED_STATEMENT = 4;
-    PREPARED_QUERY = 5;
-  }
+/*
+ * Definition of sub fields for Request.
+ */
 
-  CommandType Operation = 1;
-
-  oneof Operand {
-    string Sql = 2;
-    int32 PreparedStatement = 3;
-  }
+/* For data types that the 'tsurugi' supports. */
+enum DataType {
+  NULL = 0;  /* The first enum value must be zero in proto3. */
+  INT4 = 1;
+  INT8 = 2;
+  FLOAT4 = 3;
+  FLOAT8 = 4;
+  STRING = 5;
 }
 
-message ProtoBufHostVariables {
-  enum DataType {
-    NULL = 0;
-    INT4 = 1;
-    INT8 = 2;
-    FLOAT4 = 3;
-    FLOAT8 = 4;
-    STRING = 5;
-  }
-
+/* For host variable consisting of name and type. */
+message ProtoHostVariables {
   message Variable {
-    string Name = 1;
-    DataType Type = 2;
+    string name = 1;
+    DataType type = 2;
   }
 
   repeated Variable Variables = 1;
 }
 
-message ProtoBufParameterSet {
+/* For set of parameters passed when executing prepared statements. */
+message ProtoParameterSet {
   message Parameter {
-    string Name = 1;
-    oneof Value {
-      int32 Ivalue = 2;
-      int64 Lvalue = 3;
-      float Fvalue = 4;
-      double Dvalue = 5;
-      string Svalue = 6;
+    string name = 1;
+    oneof value {
+      int32 i_value = 2;
+      int64 l_value = 3;
+      float f_value = 4;
+      double d_value = 5;
+      string s_value = 6;
     }
   }
 
   repeated Parameter Parameters = 1;
+}
+
+/*
+ * Each request message
+ */
+
+/* For prepare request. */
+message ProtoRequestPrepare {
+  string sql = 1;
+  ProtoRecordMeta meta = 2;
+}
+
+/* For execute statement request. */
+message ProtoRequestExecuteStatement {
+  string sql = 1;
+}
+
+/* For execute query request. */
+message ProtoRequestExecuteQuery {
+  string sql = 1;
+}
+
+/* For execute prepared statement request. */
+message ProtoRequestExecutePreparedStatement {
+  int32 prepared_statement_id = 1;
+  ProtoParameterSet parameters = 2;
+}
+
+/* For execute prepared query request. */
+message ProtoRequestExecutePreparedQuery {
+  int32 prepared_statement_id = 1;
+  ProtoParameterSet parameters = 2;
+}
+
+/* For begin request. */
+message ProtoRequestBegin {
+  bool read_only = 1;
+}
+
+/* For commit request. */
+message ProtoRequestCommit {
+}
+
+/* For rollback request. */
+message ProtoRequestRollback {
+}
+
+/* For request message to the SQL service. */
+message ProtoRequest {
+  oneof request {
+    ProtoRequestPrepare prepare = 1;
+    ProtoRequestExecuteStatement execute_statement = 2;
+    ProtoRequestExecuteQuery execute_query = 3;
+    ProtoRequestExecutePreparedStatement execute_prepared_statement = 4;
+    ProtoRequestExecutePreparedQuery execute_prepared_query = 5;
+    ProtoRequestBegin begin = 6;
+    ProtoRequestCommit commit = 7;
+    ProtoRequestRollback rollback = 8;
+  }
+}
+
+
+
+/*
+ * Definition of sub fields for Response.
+ */
+
+/* For response of success when there is no data to return. */
+message ProtoSuccess {
+}
+
+/* For response of error containing a error message. */
+message ProtoError {
+  string detail = 1;
+}
+
+
+/*
+ * Each response message
+ */
+
+/* For response to ExecuteStatement, ExecutePreparedStatement, Begin, Commit, and/or Rollback. */
+message ProtoResponseResultOnly {
+  oneof result {
+    ProtoSuccess success = 1;
+    ProtoError error = 2;
+  }
+}
+
+/* For response to Prepare. */
+message ProtoResponsePrepare {
+  oneof result {
+    int32 prepared_statement_id = 1;
+    ProtoError error = 2;
+  }
+}
+
+/* For response to ExecuteQuery and/or ExecutePreparedQuery. */
+message ProtoResponseExecuteQuery {
+  oneof result {
+    string name = 1;  /* The name of the channel to which the ResultSet set will be sent. */
+    ProtoError error = 2;
+  }
+}
+
+/* For response message from the SQL service. */
+message ProtoResponse {
+  oneof response {
+    ProtoResponseResultOnly result_only = 1;
+    ProtoResponsePrepare prepare = 2;
+    ProtoResponseExecuteQuery execute_query = 3;
+  }
+}
+
+
+
+/*
+ * Used in ResultSet connections.
+ */
+
+/* For record meta message sent back at the beginning of the result set. */
+message ProtoRecordMeta {
+  message Column {
+    string name = 1;
+    DataType type = 2;
+    bool nullable = 3;
+  }
+
+  repeated Column Columns = 1;
 }
