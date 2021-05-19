@@ -3,9 +3,9 @@ package com.nautilus_technologies.tsubakuro;
 import java.util.concurrent.Future;
 
 /**
- * Request type.
+ * LowLevelRequest type.
  */
-public interface Request {
+public interface LowLevelRequest {
     /**
      * Prepare request type.
      */
