@@ -20,7 +20,7 @@ enum DataType {
 }
 
 /* For host variable consisting of name and type. */
-message ProtoHostVariables {
+message ProtoPlaceHolder {
   message Variable {
     string name = 1;
     DataType type = 2;
@@ -52,7 +52,7 @@ message ProtoParameterSet {
 /* For prepare request. */
 message ProtoRequestPrepare {
   string sql = 1;
-  ProtoRecordMeta meta = 2;
+  ProtoPlaceHolder host_valiables = 2;
 }
 
 /* For execute statement request. */
@@ -102,74 +102,4 @@ message ProtoRequest {
     ProtoRequestCommit commit = 7;
     ProtoRequestRollback rollback = 8;
   }
-}
-
-
-
-/*
- * Definition of sub fields for Response.
- */
-
-/* For response of success when there is no data to return. */
-message ProtoSuccess {
-}
-
-/* For response of error containing a error message. */
-message ProtoError {
-  string detail = 1;
-}
-
-
-/*
- * Each response message
- */
-
-/* For response to ExecuteStatement, ExecutePreparedStatement, Begin, Commit, and/or Rollback. */
-message ProtoResponseResultOnly {
-  oneof result {
-    ProtoSuccess success = 1;
-    ProtoError error = 2;
-  }
-}
-
-/* For response to Prepare. */
-message ProtoResponsePrepare {
-  oneof result {
-    int32 prepared_statement_id = 1;
-    ProtoError error = 2;
-  }
-}
-
-/* For response to ExecuteQuery and/or ExecutePreparedQuery. */
-message ProtoResponseExecuteQuery {
-  oneof result {
-    string name = 1;  /* The name of the channel to which the ResultSet set will be sent. */
-    ProtoError error = 2;
-  }
-}
-
-/* For response message from the SQL service. */
-message ProtoResponse {
-  oneof response {
-    ProtoResponseResultOnly result_only = 1;
-    ProtoResponsePrepare prepare = 2;
-    ProtoResponseExecuteQuery execute_query = 3;
-  }
-}
-
-
-
-/*
- * Used in ResultSet connections.
- */
-
-/* For record meta message sent back at the beginning of the result set. */
-message ProtoRecordMeta {
-  message Column {
-    string name = 1;
-    DataType type = 2;
-    bool nullable = 3;
-  }
-
-  repeated Column Columns = 1;
 }

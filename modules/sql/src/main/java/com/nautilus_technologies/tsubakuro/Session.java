@@ -21,8 +21,8 @@ public interface Session {
 
     /**
      * Request prepare to the SQL service
-     * @param sql sql text for the command
-     * @return Future<PreparedStatement> processing result of the SQL service, which will be given to executeQuery and/or executeStatement
+     * @param prepareRequest the PrepareRequest class consisging of sql and the set of place holder definition
+     * @return Future<PreparedStatement> holds the result of the SQL service
      */
-    Future<PreparedStatement> prepare(String sql, ParameterSet parameterSet);
+    Future<PreparedStatement> prepare(PrepareRequest prepareRequest);
 }

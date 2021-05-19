@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package protocol;
+
+import "request.proto"; // to use DataType
+
+option java_package = "com.nautilus_technologies.tsubakuro";
+option java_outer_classname = "SchemaProtos";
+
+/*
+ * Used in ResultSet connections.
+ */
+
+/* For record meta message sent back at the beginning of the result set. */
+message ProtoRecordMeta {
+  message Column {
+    string name = 1;
+    DataType type = 2;
+    bool nullable = 3;
+  }
+
+  repeated Column Columns = 1;
+}
