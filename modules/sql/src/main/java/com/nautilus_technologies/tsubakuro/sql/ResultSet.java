@@ -30,41 +30,30 @@ public interface ResultSet {
     }
 
     /**
-     * Provides record object in the result set
-     */
-    public interface Cursor {
-	/**
-	 * Move the current pointer to the next record
-	 * @return true if the next record exists
-	 */
-	boolean next();
-
-	/**
-	 * Check whether the current column is null or not
-	 * @return true if the current column is null
-	 */
-        boolean isNull();
-
-	/**
-	 * Get the current column value and proceed the currnet column position
-	 * @return the value of the current column
-	 */
-	int getInt4();
-	long getInt8();
-	float getFloat4();
-	double getFloat8();
-	String getCharacter();
-    }
-
-    /**
      * Get the record mata data of the ResultSet
      * @return RecordMeta subclass belonging to this class
      */
     RecordMeta getRecordMeta();
 
     /**
-     * Get the cursor of the ReaultSet
-     * @return Cursor subclass belonging to this class
+     * Move the current pointer to the next record
+     * @return true if the next record exists
      */
-    Cursor getCursor();
+    boolean next();
+
+    /**
+     * Check whether the current column is null or not
+     * @return true if the current column is null
+     */
+    boolean isNull();
+
+    /**
+     * Get the current column value and proceed the currnet column position
+     * @return the value of the current column
+     */
+    int getInt4();
+    long getInt8();
+    float getFloat4();
+    double getFloat8();
+    String getCharacter();
 }

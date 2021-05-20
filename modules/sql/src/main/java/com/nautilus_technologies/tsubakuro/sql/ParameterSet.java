@@ -1,10 +1,9 @@
 package com.nautilus_technologies.tsubakuro;
 
 /**
- * ExecutablePreparedStatementRequest type,
- *  consisting of LowLevelPreparedStatement and ParameterSet given by the application
+ * ParameterSet type.
  */
-public interface ExecutablePreparedStatementRequest {
+public interface ParameterSet {
     /**
      * Set a value for the placeholder
      * @param name the name of the placeholder without colon

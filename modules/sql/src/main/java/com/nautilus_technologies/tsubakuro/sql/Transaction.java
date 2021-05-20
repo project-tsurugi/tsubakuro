@@ -22,15 +22,17 @@ public interface Transaction {
 
     /**
      * Request executeStatement to the SQL service
-     * @param request the set of prepared statement and parameter set for the command
+     * @param preparedStatement prepared statement for the command
+     * @param parameterSet parameter set for the prepared statement
      * @return Future<ErrorCode> indicate whether the command is processed successfully or not
      */
-    Future<ErrorCode> executeStatement(ExecutablePreparedStatementRequest request);
+    Future<ErrorCode> executeStatement(PreparedStatement preparedStatement, ParameterSet parameterSet);
 
     /**
      * Request executeQuery to the SQL service
-     * @param request the set of prepared statement and parameter set for the command
+     * @param preparedStatement prepared statement for the command
+     * @param parameterSet parameter set for the prepared statement
      * @return Future<ResultSet> processing result of the SQL service
      */
-    Future<ResultSet> executeQuery(ExecutablePreparedStatementRequest request);
+    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, ParameterSet parameterSet);
 }

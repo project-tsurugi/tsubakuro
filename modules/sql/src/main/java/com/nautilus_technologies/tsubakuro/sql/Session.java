@@ -11,18 +11,19 @@ public interface Session {
      * @param readOnly specify whether the new transaction is read-only or not
      * @return the transaction
      */
-    Transaction createTransaction(boolean readOnly);
+    Future<Transaction> createTransaction(boolean readOnly);
 
     /**
      * Begin the new transaction
      * @return the transaction
      */
-    Transaction createTransaction();
+    Future<Transaction> createTransaction();
 
     /**
      * Request prepare to the SQL service
-     * @param prepareRequest the PrepareRequest class consisging of sql and the set of place holder definition
+     * @param sql sql text for the command
+     * @param praceHolderInfo the set of place holder name and type of its variable
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
-    Future<PreparedStatement> prepare(PrepareRequest prepareRequest);
+    Future<PreparedStatement> prepare(String sql, PlaceHolderInfo praceHolderInfo);
 }
