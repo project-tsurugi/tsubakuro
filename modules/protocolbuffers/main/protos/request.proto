@@ -41,10 +41,6 @@ message ParameterSet {
  * Each request message
  */
 
-/* For connect request sent on the common wire of sql service. */
-message Connect {
-}
-
 /* For begin request. */
 message Begin {
   bool read_only = 1;
@@ -92,6 +88,16 @@ message Rollback {
   common.Transaction transaction_handle = 1;
 }
 
+/* For dispose prepared sql. */
+message DisposePreparedStatement {
+  common.PreparedStatement prepared_statement_handle = 1;
+}
+
+/* For disconnect current session. */
+message Disconnect {
+}
+
+
 /* For request message to the SQL service. */
 message Request {
   common.Session session_handle = 1;
@@ -104,5 +110,7 @@ message Request {
     Begin begin = 7;
     Commit commit = 8;
     Rollback rollback = 9;
+    DisposePreparedStatement dispose_prepared_statement = 10;
+    Disconnect disconnect = 11;
   }
 }

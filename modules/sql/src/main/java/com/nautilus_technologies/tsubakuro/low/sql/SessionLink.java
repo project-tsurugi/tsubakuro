@@ -61,4 +61,18 @@ public interface SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback request);
+
+    /**
+     * Send disposePreparedStatement request to the SQL server.
+     @param request the request message encoded with protocol buffer
+     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+    */
+    Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement request);
+
+    /**
+     * Send Disconnect request to the SQL server.
+     @param request the request message encoded with protocol buffer
+     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+    */
+    Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request);
 }

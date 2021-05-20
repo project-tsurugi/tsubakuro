@@ -25,14 +25,6 @@ message Error {
  * Each response message
  */
 
-/* For response to Connect sent back on the common wire of sql service. */
-message Connect {
-  oneof result {
-    common.Session session_handle = 1;
-    Error error = 2;
-  }
-}
-
 /* For response to ExecuteStatement, ExecutePreparedStatement, Commit, and/or Rollback. */
 message ResultOnly {
   oneof result {
