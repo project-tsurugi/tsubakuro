@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.connectivity;
+package com.nautilus_technologies.tsubakuro.sql;
 
 /**
  * Describes error code
