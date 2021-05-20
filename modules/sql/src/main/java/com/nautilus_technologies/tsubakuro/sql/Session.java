@@ -25,5 +25,5 @@ public interface Session {
      * @param praceHolder the set of place holder name and type of its variable encoded with protocol buffer
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
-    Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder praceHolder);
+    Future<ResponseProtos.Prepare> prepare(String sql, RequestProtos.PlaceHolder praceHolder);
 }

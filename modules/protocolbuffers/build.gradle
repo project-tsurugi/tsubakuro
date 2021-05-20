@@ -30,4 +30,12 @@ protobuf {
     }
 
     generatedFilesBaseDir = "$projectDir"
+
+    generateProtoTasks {
+        ofSourceSet("main").forEach {
+            it.doFirst {
+                delete("$generatedFilesBaseDir/main/java")
+            }
+        }
+    }
 }
