@@ -9,9 +9,9 @@ public interface Transaction {
     /**
      * Request executeStatement to the SQL service
      * @param sql sql text for the command
-     * @return Future<ErrorCode> indicate whether the command is processed successfully or not
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    Future<ErrorCode> executeStatement(String sql);
+    Future<ResponseProtos.ResultOnly> executeStatement(String sql);
 
     /**
      * Request executeQuery to the SQL service
@@ -23,16 +23,16 @@ public interface Transaction {
     /**
      * Request executeStatement to the SQL service
      * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement
-     * @return Future<ErrorCode> indicate whether the command is processed successfully or not
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    Future<ErrorCode> executeStatement(PreparedStatement preparedStatement, ParameterSet parameterSet);
+    Future<ResponseProtos.ResultOnly> executeStatement(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet);
 
     /**
      * Request executeQuery to the SQL service
      * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResultSet> processing result of the SQL service
      */
-    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, ParameterSet parameterSet);
+    Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet);
 }

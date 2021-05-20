@@ -1,7 +1,6 @@
 rootProject.name = 'tsubakuro'
 
 include 'sql'
-include 'connectivity'
 include 'protocolbuffers'
 
 include 'template-with-native'

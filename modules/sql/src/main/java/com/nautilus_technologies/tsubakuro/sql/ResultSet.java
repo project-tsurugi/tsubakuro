@@ -13,7 +13,7 @@ public interface ResultSet {
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field type
          */
-        FieldType at(int index);
+        CommonProtos.DataType at(int index);
 
         /**
          * Get the nullability for the field
@@ -48,7 +48,7 @@ public interface ResultSet {
     boolean isNull();
 
     /**
-     * Get the current column value and proceed the currnet column position
+     * Get the current column value
      * @return the value of the current column
      */
     int getInt4();
@@ -56,4 +56,9 @@ public interface ResultSet {
     float getFloat4();
     double getFloat8();
     String getCharacter();
+
+    /**
+     * Proceed the currnet column position
+     */
+    void nextColumn();
 }

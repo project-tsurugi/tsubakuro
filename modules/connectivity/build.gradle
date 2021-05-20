@@ -1,7 +1,0 @@
-plugins {
-    id 'tsubakuro.java-conventions'
-}
-
-dependencies {
-   implementation project(':protocolbuffers')
-}
