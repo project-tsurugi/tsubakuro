@@ -73,6 +73,11 @@ message ParameterSet {
 message RequestConnect {
 }
 
+/* For begin request. */
+message RequestBegin {
+  bool read_only = 1;
+}
+
 /* For prepare request. */
 message RequestPrepare {
   string sql = 1;
@@ -81,50 +86,52 @@ message RequestPrepare {
 
 /* For execute statement request. */
 message RequestExecuteStatement {
-  string sql = 1;
+  Transaction transaction_handle = 1;
+  string sql = 2;
 }
 
 /* For execute query request. */
 message RequestExecuteQuery {
-  string sql = 1;
+  Transaction transaction_handle = 1;
+  string sql = 2;
 }
 
 /* For execute prepared statement request. */
 message RequestExecutePreparedStatement {
-  int32 prepared_statement_id = 1;
-  ParameterSet parameters = 2;
+  Transaction transaction_handle = 1;
+  PreparedStatement prepared_statement_handle = 2;
+  ParameterSet parameters = 3;
 }
 
 /* For execute prepared query request. */
 message RequestExecutePreparedQuery {
-  int32 prepared_statement_id = 1;
-  ParameterSet parameters = 2;
-}
-
-/* For begin request. */
-message RequestBegin {
-  bool read_only = 1;
+  Transaction transaction_handle = 1;
+  PreparedStatement prepared_statement_handle = 2;
+  ParameterSet parameters = 3;
 }
 
 /* For commit request. */
 message RequestCommit {
+  Transaction transaction_handle = 1;
 }
 
 /* For rollback request. */
 message RequestRollback {
+  Transaction transaction_handle = 1;
 }
 
 /* For request message to the SQL service. */
 message Request {
+  Session session_handle = 1;
   oneof request {
-    RequestPrepare prepare = 1;
-    RequestExecuteStatement execute_statement = 2;
-    RequestExecuteQuery execute_query = 3;
-    RequestExecutePreparedStatement execute_prepared_statement = 4;
-    RequestExecutePreparedQuery execute_prepared_query = 5;
-    RequestBegin begin = 6;
-    RequestCommit commit = 7;
-    RequestRollback rollback = 8;
+    RequestPrepare prepare = 2;
+    RequestExecuteStatement execute_statement = 3;
+    RequestExecuteQuery execute_query = 4;
+    RequestExecutePreparedStatement execute_prepared_statement = 5;
+    RequestExecutePreparedQuery execute_prepared_query = 6;
+    RequestBegin begin = 7;
+    RequestCommit commit = 8;
+    RequestRollback rollback = 9;
   }
 }
 
@@ -193,8 +200,9 @@ message ResponseExecuteQuery {
 message Response {
   oneof response {
     ResponseResultOnly result_only = 1;
-    ResponsePrepare prepare = 2;
-    ResponseExecuteQuery execute_query = 3;
+    ResponseBegin begin = 2;
+    ResponsePrepare prepare = 3;
+    ResponseExecuteQuery execute_query = 4;
   }
 }
 

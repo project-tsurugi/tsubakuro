@@ -1,22 +1,22 @@
-package com.nautilus_technologies.tsubakuro;
+package com.nautilus_technologies.tsubakuro.connectivity;
 
 import java.util.concurrent.Future;
 
-import com.nautilus_technologies.tsubakuro.Protos.RequestConnect;
-import com.nautilus_technologies.tsubakuro.Protos.RequestPrepare;
-import com.nautilus_technologies.tsubakuro.Protos.RequestExecuteStatement;
-import com.nautilus_technologies.tsubakuro.Protos.RequestExecuteQuery;
-import com.nautilus_technologies.tsubakuro.Protos.RequestExecutePreparedStatement;
-import com.nautilus_technologies.tsubakuro.Protos.RequestExecutePreparedQuery;
-import com.nautilus_technologies.tsubakuro.Protos.RequestBegin;
-import com.nautilus_technologies.tsubakuro.Protos.RequestCommit;
-import com.nautilus_technologies.tsubakuro.Protos.RequestRollback;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestConnect;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestPrepare;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestExecuteStatement;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestExecuteQuery;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestExecutePreparedStatement;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestExecutePreparedQuery;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestBegin;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestCommit;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.RequestRollback;
 
-import com.nautilus_technologies.tsubakuro.Protos.ResponseConnect;
-import com.nautilus_technologies.tsubakuro.Protos.ResponseBegin;
-import com.nautilus_technologies.tsubakuro.Protos.ResponseResultOnly;
-import com.nautilus_technologies.tsubakuro.Protos.ResponsePrepare;
-import com.nautilus_technologies.tsubakuro.Protos.ResponseExecuteQuery;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.ResponseConnect;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.ResponseBegin;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.ResponseResultOnly;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.ResponsePrepare;
+import com.nautilus_technologies.tsubakuro.connectivity.Protos.ResponseExecuteQuery;
 
 
 /**
@@ -27,56 +27,56 @@ public interface Link {
 	/**
 	 * Send prepare request to the SQL server.
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponsePrepare>
+	 @return Future<ResponsePrepare> contains prepared statement handle
 	*/
 	Future<ResponsePrepare> send(RequestPrepare request);
 
 	/**
 	 * Send execute sql statement request to the SQL server
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseExecuteQuery> indicate whether the command is processed successfully or not
+	 @return Future<ResponseResultOnly> indicate whether the command is processed successfully or not
 	*/
 	Future<ResponseResultOnly> send(RequestExecuteStatement request);
 
 	/**
 	 * Send execute prepared statement request to the SQL server
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseExecuteQuery> indicate whether the command is processed successfully or not
+	 @return Future<ResponseResultOnly> indicate whether the command is processed successfully or not
 	*/
 	Future<ResponseResultOnly> send(RequestExecutePreparedStatement request);
 
 	/**
 	 * Send execute sql query request to the SQL server
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseExecuteQuery>
+	 @return Future<ResponseExecuteQuery> contains the name of result set link
 	*/
 	Future<ResponseExecuteQuery> send(RequestExecuteQuery request);
 
 	/**
 	 * Send execute prepared query request to the SQL server
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseExecuteQuery>
+	 @return Future<ResponseExecuteQuery> contains the name of result set link
 	*/
 	Future<ResponseExecuteQuery> send(RequestExecutePreparedQuery request);
 
 	/**
 	 * Send begin request to the SQL server.
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseBegin>
+	 @return Future<ResponseBegin> contains transaction handle
 	*/
 	Future<ResponseBegin> send(RequestBegin request);
 
 	/**
 	 * Send commit request to the SQL server.
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseCommit>
+	 @return Future<ResponseResultOnly> indicate whether the command is processed successfully or not
 	*/
 	Future<ResponseResultOnly> send(RequestCommit request);
 
 	/**
 	 * Send rollback request to the SQL server.
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseRollback>
+	 @return Future<ResponseResultOnly> indicate whether the command is processed successfully or not
 	*/
 	Future<ResponseResultOnly> send(RequestRollback request);
     }
@@ -85,7 +85,7 @@ public interface Link {
 	/**
 	 * Send connect request to the SQL server via common link.
 	 @param request the request message encoded with protocol buffer
-	 @return Future<ResponseConnect>
+	 @return Future<ResponseConnect> contains session handle
 	*/
 	Future<ResponseConnect> send(RequestConnect request);
     }
