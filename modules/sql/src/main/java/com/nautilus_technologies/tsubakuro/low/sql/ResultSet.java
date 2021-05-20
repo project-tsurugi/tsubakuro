@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.sql;
+package com.nautilus_technologies.tsubakuro.low.sql;
 
 /**
  * ResultSet type.
@@ -39,7 +39,7 @@ public interface ResultSet {
      * Move the current pointer to the next record
      * @return true if the next record exists
      */
-    boolean next();
+    boolean nextRecord();
 
     /**
      * Check whether the current column is null or not
@@ -59,6 +59,7 @@ public interface ResultSet {
 
     /**
      * Proceed the currnet column position
+     * @return true if the next column exists
      */
-    void nextColumn();
+    boolean nextColumn();
 }

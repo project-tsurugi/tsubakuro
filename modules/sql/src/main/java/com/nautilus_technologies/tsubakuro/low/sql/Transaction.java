@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.sql;
+package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
 
