@@ -1,7 +1,31 @@
 plugins {
     id 'tsubakuro.java-conventions'
+
+    id 'com.google.protobuf' version '0.8.16'
 }
 
 dependencies {
-   implementation project(':protocolbuffers')
+    implementation 'io.grpc:grpc-netty-shaded:1.23.0'
+    implementation 'io.grpc:grpc-protobuf:1.23.0'
+    implementation 'io.grpc:grpc-stub:1.23.0'
+    implementation 'com.google.protobuf:protobuf-java:3.0.0'
+}
+
+sourceSets {
+    main {
+        proto {
+            srcDir("src/main/protos")
+        }
+    }
+}
+
+spotbugsMain.enabled = false
+checkstyleMain.enabled = false
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        // Download from repositories
+        artifact = "com.google.protobuf:protoc:3.8.0"
+    }
 }
