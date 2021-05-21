@@ -2,8 +2,6 @@ rootProject.name = 'tsubakuro'
 
 include 'sql'
 
-include 'template-with-native'
-
 rootProject.children.each { project ->
     project.projectDir = new File(settingsDir, "modules/${project.name}")
     assert project.projectDir.isDirectory()

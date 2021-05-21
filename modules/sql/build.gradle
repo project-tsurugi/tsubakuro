@@ -1,5 +1,5 @@
 plugins {
-    id 'tsubakuro.java-conventions'
+    id 'tsubakuro.jni-library-conventions'
 
     id 'com.google.protobuf' version '0.8.16'
 }

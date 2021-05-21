@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(template-native
+project(sql
     VERSION 0.1.0
     DESCRIPTION "Template project for Java Native Interface"
     LANGUAGES C CXX)
@@ -17,8 +17,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
 
-set(export_name "template-native")
-set(package_name "template-native")
+set(export_name "sql")
+set(package_name "sql")
 
 include(CMakePackageConfigHelpers)
 
@@ -26,9 +26,9 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_library(template-native-api INTERFACE)
+add_library(sql-api INTERFACE)
 
-target_include_directories(template-native-api
+target_include_directories(sql-api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${export_name}>
