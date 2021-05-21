@@ -5,7 +5,7 @@ import java.util.concurrent.Future;
 /**
  * Session type.
  */
-public interface Session {
+public interface Session extends AutoCloseable {
     /**
      * Begin the new transaction
      * @param readOnly specify whether the new transaction is read-only or not

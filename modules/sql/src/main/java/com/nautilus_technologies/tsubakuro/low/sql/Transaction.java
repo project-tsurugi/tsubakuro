@@ -5,7 +5,7 @@ import java.util.concurrent.Future;
 /**
  * Transaction type.
  */
-public interface Transaction {
+public interface Transaction extends AutoCloseable {
     /**
      * Request executeStatement to the SQL service
      * @param sql sql text for the command

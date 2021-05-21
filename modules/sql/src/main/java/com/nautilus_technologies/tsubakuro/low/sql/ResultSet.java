@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 /**
  * ResultSet type.
  */
-public interface ResultSet {
+public interface ResultSet extends AutoCloseable {
     /**
      * Provides record metadata holding information about field type and nullability
      */
