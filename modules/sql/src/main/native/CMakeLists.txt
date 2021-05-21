@@ -9,6 +9,7 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 
 include(GNUInstallDirs)
 
+find_package(Java REQUIRED)
 find_package(JNI REQUIRED)
 include_directories(${JNI_INCLUDE_DIRS})
 
