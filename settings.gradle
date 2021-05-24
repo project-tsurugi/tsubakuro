@@ -1,9 +1,6 @@
 rootProject.name = 'tsubakuro'
 
 include 'sql'
-include 'protocolbuffers'
-
-include 'template-with-native'
 
 rootProject.children.each { project ->
     project.projectDir = new File(settingsDir, "modules/${project.name}")

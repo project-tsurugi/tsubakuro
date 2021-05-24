@@ -19,3 +19,6 @@
 cmake-build-*
 .idea
 *.tokens
+
+# create by javac -h include
+/include/com_nautilus_technologies_tsubakuro_*.h
