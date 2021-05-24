@@ -7,5 +7,5 @@ import java.nio.ByteBuffer;
  */
 public class LinkImpl {
     static native void send(ByteBuffer buffer);
-    static native void recv(ByteBuffer buffer);
+    static native ByteBuffer recv();
 }
