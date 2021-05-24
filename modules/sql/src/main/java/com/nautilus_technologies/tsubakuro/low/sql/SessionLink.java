@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 import java.util.concurrent.Future;
 
 /**
- * Link type.
+ * SessionLink type.
  */
 public interface SessionLink {
     /**
