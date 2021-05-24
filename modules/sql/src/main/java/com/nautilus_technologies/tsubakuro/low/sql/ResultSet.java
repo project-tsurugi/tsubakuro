@@ -1,9 +1,11 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
+import java.io.Closeable;
+
 /**
  * ResultSet type.
  */
-public interface ResultSet extends AutoCloseable {
+public interface ResultSet extends Closeable {
     /**
      * Provides record metadata holding information about field type and nullability
      */

@@ -1,11 +1,12 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
+import java.io.Closeable;
 
 /**
  * Transaction type.
  */
-public interface Transaction extends AutoCloseable {
+public interface Transaction extends Closeable {
     /**
      * Request executeStatement to the SQL service
      * @param sql sql text for the command

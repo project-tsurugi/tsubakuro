@@ -1,11 +1,12 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
+import java.io.Closeable;
 
 /**
  * Session type.
  */
-public interface Session extends AutoCloseable {
+public interface Session extends Closeable {
     /**
      * Begin the new transaction
      * @param readOnly specify whether the new transaction is read-only or not
