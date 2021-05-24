@@ -3,8 +3,6 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.Callable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
