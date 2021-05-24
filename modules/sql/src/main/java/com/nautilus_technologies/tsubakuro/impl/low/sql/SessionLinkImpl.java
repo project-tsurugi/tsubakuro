@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.Callable;
 import java.io.IOException;
@@ -15,47 +16,64 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 public class SessionLinkImpl implements SessionLink {
     private LinkImpl link;
     
-    private class PrepareReceiver implements Callable<ResponseProtos.Prepare> {
-	public ResponseProtos.Prepare call() throws IOException {
+    abstract private class FutureReceiver<V> implements Future<V> {
+	private boolean _isCancelled = false;
+	private boolean _isDone = false;
+
+	public boolean cancel(boolean mayInterruptIfRunning) { _isCancelled = true; return true; }
+	abstract public V get();
+	public V get(long timeout, TimeUnit unit) { return get(); }
+	public boolean isCancelled() { return _isCancelled; }
+	public boolean isDone() { return _isDone; }
+    }
+
+    public class PrepareReceiver extends FutureReceiver<ResponseProtos.Prepare> {
+	public ResponseProtos.Prepare get() {
 	    try {
 		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
 		return response.getPrepare();
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-		throw new IOException();
+		System.out.println("IOException");
 	    }
+	    return null;
 	}
     }
-    private class ResultOnlyReceiver implements Callable<ResponseProtos.ResultOnly>  {
-	public ResponseProtos.ResultOnly call() throws IOException {
+
+    public class ResultOnlyReceiver extends FutureReceiver<ResponseProtos.ResultOnly> {
+	public ResponseProtos.ResultOnly get() {
 	    try {
 		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
 		return response.getResultOnly();
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-		throw new IOException();
+		System.out.println("IOException");
 	    }
+	    return null;
 	}
     }
-    private class ExecuteQueryReceiver implements Callable<ResponseProtos.ExecuteQuery>  {
-	public ResponseProtos.ExecuteQuery call() throws IOException {
+
+    public class ExecuteQueryReceiver extends FutureReceiver<ResponseProtos.ExecuteQuery> {
+	public ResponseProtos.ExecuteQuery get() {
 	    try {
 		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
 		return response.getExecuteQuery();
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-		throw new IOException();
+		System.out.println("IOException");
 	    }
+	    return null;
 	}
     }
-    private class BeginReceiver implements Callable<ResponseProtos.Begin>  {
-	public ResponseProtos.Begin call() throws IOException {
+
+    public class BeginReceiver extends FutureReceiver<ResponseProtos.Begin> {
+	public ResponseProtos.Begin get() {
 	    try {
 		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
 		return response.getBegin();
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-		throw new IOException();
+		System.out.println("IOException");
 	    }
+	    return null;
 	}
     }
-
 
     /**
      * SendRequest RequestProtos.Request request to the SQL server via the link.
@@ -72,7 +90,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.Prepare> send(RequestProtos.Prepare request) {
 	sendRequest(RequestProtos.Request.newBuilder().setPrepare(request).build());
-	return new FutureTask<ResponseProtos.Prepare>(new PrepareReceiver());
+	return new PrepareReceiver();
     };
 
     /**
@@ -82,7 +100,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement request) {
 	sendRequest(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 
     /**
@@ -92,7 +110,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement request) {
 	sendRequest(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 
     /**
@@ -102,7 +120,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery request) {
 	sendRequest(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
-	return new FutureTask<ResponseProtos.ExecuteQuery>(new ExecuteQueryReceiver());
+	return new ExecuteQueryReceiver();
     };
 
     /**
@@ -112,7 +130,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery request) {
 	sendRequest(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
-	return new FutureTask<ResponseProtos.ExecuteQuery>(new ExecuteQueryReceiver());
+	return new ExecuteQueryReceiver();
     };
 
     /**
@@ -122,7 +140,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin request) {
 	sendRequest(RequestProtos.Request.newBuilder().setBegin(request).build());
-	return new FutureTask<ResponseProtos.Begin>(new BeginReceiver());
+	return new BeginReceiver();
     };
 
     /**
@@ -132,7 +150,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit request) {
 	sendRequest(RequestProtos.Request.newBuilder().setCommit(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 
     /**
@@ -142,7 +160,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback request) {
 	sendRequest(RequestProtos.Request.newBuilder().setRollback(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 
     /**
@@ -152,7 +170,7 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement request) {
 	sendRequest(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 
     /**
@@ -162,6 +180,6 @@ public class SessionLinkImpl implements SessionLink {
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request) {
 	sendRequest(RequestProtos.Request.newBuilder().setDisconnect(request).build());
-	return new FutureTask<ResponseProtos.ResultOnly>(new ResultOnlyReceiver());
+	return new ResultOnlyReceiver();
     };
 }
