@@ -8,44 +8,44 @@ import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 
 /**
- * SessionLinkImpl type.
+ * WireImpl type.
  */
-public class LinkImpl implements Closeable {
-    private long linkHandle;  // for c++
+public class WireImpl implements Closeable {
+    private long wireHandle = 0;  // for c++
 
     static native long openNative(String name);
     static native void sendNative(long handle, ByteBuffer buffer);
     static native ByteBuffer recvNative(long handle);
     static native boolean closeNative(long handle);
 
-    LinkImpl(String name) throws IOException {
-	linkHandle = openNative(name);
-	if (linkHandle == 0) { throw new IOException(); }	    
+    WireImpl(String name) throws IOException {
+	wireHandle = openNative(name);
+	if (wireHandle == 0) { throw new IOException(); }	    
     }
     public void close() throws IOException {
-	if(linkHandle != 0) {
-	    if(!closeNative(linkHandle)) { throw new IOException(); }
-	    linkHandle = 0;
+	if(wireHandle != 0) {
+	    if(!closeNative(wireHandle)) { throw new IOException(); }
+	    wireHandle = 0;
 	}
     }
     /**
-     * Send RequestProtos.Request to the SQL server via the native link.
+     * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
     public void send(RequestProtos.Request request) throws IOException {
-	if(linkHandle != 0) {
-	    sendNative(linkHandle, ByteBuffer.wrap(request.toByteArray()));
+	if(wireHandle != 0) {
+	    sendNative(wireHandle, ByteBuffer.wrap(request.toByteArray()));
 	} else {
 	    throw new IOException();
 	}
     }
     /**
-     * Receive ResponseProtos.Request from the SQL server via the native link.
+     * Receive ResponseProtos.Request from the SQL server via the native wire.
      @returns the ResposeProtos.Response message
     */
     public ResponseProtos.Response recv() throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(recvNative(linkHandle));
+	    return ResponseProtos.Response.parseFrom(recvNative(wireHandle));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException();
 	}

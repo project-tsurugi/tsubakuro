@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <jni.h>
-#include "com_nautilus_technologies_tsubakuro_impl_low_sql_LinkImpl.h"
+#include "com_nautilus_technologies_tsubakuro_impl_low_sql_WireImpl.h"
 
 class server {
 public:
@@ -19,7 +19,7 @@ public:
     }
 };
 
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_LinkImpl_openNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_openNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
@@ -30,7 +30,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_L
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(server_));
 }
 
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_LinkImpl_sendNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jobject buffer)
 {
     server* server_ = reinterpret_cast<server*>(static_cast<std::uintptr_t>(handle));
@@ -42,7 +42,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Li
 }
 
 
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_LinkImpl_recvNative
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_recvNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     server* server_ = reinterpret_cast<server*>(static_cast<std::uintptr_t>(handle));
@@ -51,7 +51,7 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
     return env->NewDirectByteBuffer(data.data(), data.length());
 }
 
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_LinkImpl_closeNative
+JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_closeNative
 ([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     server* server_ = reinterpret_cast<server*>(static_cast<std::uintptr_t>(handle));

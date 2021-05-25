@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
  * SessionLinkImpl type.
  */
 public class SessionLinkImpl implements SessionLink {
-    private LinkImpl link;
+    private WireImpl wire;
     
     abstract private class FutureReceiver<V> implements Future<V> {
 	private boolean _isCancelled = false;
@@ -28,7 +28,7 @@ public class SessionLinkImpl implements SessionLink {
     public class PrepareReceiver extends FutureReceiver<ResponseProtos.Prepare> {
 	public ResponseProtos.Prepare get() {
 	    try {
-		return link.recv().getPrepare();
+		return wire.recv().getPrepare();
 	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
@@ -39,7 +39,7 @@ public class SessionLinkImpl implements SessionLink {
     public class ResultOnlyReceiver extends FutureReceiver<ResponseProtos.ResultOnly> {
 	public ResponseProtos.ResultOnly get() {
 	    try {
-		return link.recv().getResultOnly();
+		return wire.recv().getResultOnly();
 	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
@@ -50,7 +50,7 @@ public class SessionLinkImpl implements SessionLink {
     public class ExecuteQueryReceiver extends FutureReceiver<ResponseProtos.ExecuteQuery> {
 	public ResponseProtos.ExecuteQuery get() {
 	    try {
-		return link.recv().getExecuteQuery();
+		return wire.recv().getExecuteQuery();
 	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
@@ -61,7 +61,7 @@ public class SessionLinkImpl implements SessionLink {
     public class BeginReceiver extends FutureReceiver<ResponseProtos.Begin> {
 	public ResponseProtos.Begin get() {
 	    try {
-		return link.recv().getBegin();
+		return wire.recv().getBegin();
 	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
@@ -70,13 +70,13 @@ public class SessionLinkImpl implements SessionLink {
     }
 
     /**
-     * Send prepare request to the SQL server via link.send().
+     * Send prepare request to the SQL server via wire.send().
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.Prepare> contains prepared statement handle
     */
     public Future<ResponseProtos.Prepare> send(RequestProtos.Prepare request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setPrepare(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setPrepare(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -84,13 +84,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send execute sql statement request to via link.send()
+     * Send execute sql statement request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -98,13 +98,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send execute prepared statement request to via link.send()
+     * Send execute prepared statement request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -112,13 +112,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send execute sql query request to via link.send()
+     * Send execute sql query request to via wire.send()
      @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set link
+     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -126,13 +126,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send execute prepared query request to via link.send()
+     * Send execute prepared query request to via wire.send()
      @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set link
+     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -140,13 +140,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send begin request to via link.send()
+     * Send begin request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.Begin> contains transaction handle
     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setBegin(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setBegin(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -154,13 +154,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send commit request to via link.send()
+     * Send commit request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setCommit(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setCommit(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -168,13 +168,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send rollback request to via link.send()
+     * Send rollback request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setRollback(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setRollback(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -182,13 +182,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send disposePreparedStatement request to via link.send()
+     * Send disposePreparedStatement request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
@@ -196,13 +196,13 @@ public class SessionLinkImpl implements SessionLink {
     };
 
     /**
-     * Send Disconnect request to via link.send()
+     * Send Disconnect request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request) {
 	try {
-	    link.send(RequestProtos.Request.newBuilder().setDisconnect(request).build());
+	    wire.send(RequestProtos.Request.newBuilder().setDisconnect(request).build());
 	} catch (IOException e) {
 	    System.out.println("IOException");
 	}
