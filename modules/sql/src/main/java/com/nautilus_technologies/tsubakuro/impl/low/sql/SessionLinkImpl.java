@@ -28,9 +28,8 @@ public class SessionLinkImpl implements SessionLink {
     public class PrepareReceiver extends FutureReceiver<ResponseProtos.Prepare> {
 	public ResponseProtos.Prepare get() {
 	    try {
-		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
-		return response.getPrepare();
-	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		return link.recv().getPrepare();
+	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
 	    return null;
@@ -40,9 +39,8 @@ public class SessionLinkImpl implements SessionLink {
     public class ResultOnlyReceiver extends FutureReceiver<ResponseProtos.ResultOnly> {
 	public ResponseProtos.ResultOnly get() {
 	    try {
-		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
-		return response.getResultOnly();
-	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		return link.recv().getResultOnly();
+	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
 	    return null;
@@ -52,9 +50,8 @@ public class SessionLinkImpl implements SessionLink {
     public class ExecuteQueryReceiver extends FutureReceiver<ResponseProtos.ExecuteQuery> {
 	public ResponseProtos.ExecuteQuery get() {
 	    try {
-		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
-		return response.getExecuteQuery();
-	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		return link.recv().getExecuteQuery();
+	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
 	    return null;
@@ -64,9 +61,8 @@ public class SessionLinkImpl implements SessionLink {
     public class BeginReceiver extends FutureReceiver<ResponseProtos.Begin> {
 	public ResponseProtos.Begin get() {
 	    try {
-		ResponseProtos.Response response = ResponseProtos.Response.parseFrom(link.recv());
-		return response.getBegin();
-	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		return link.recv().getBegin();
+	    } catch (IOException e) {
 		System.out.println("IOException");
 	    }
 	    return null;
@@ -74,110 +70,142 @@ public class SessionLinkImpl implements SessionLink {
     }
 
     /**
-     * SendRequest RequestProtos.Request request to the SQL server via the link.
-     @param request the RequestProtos.Request message
-    */
-    private void sendRequest(RequestProtos.Request request) {
-	link.send(ByteBuffer.wrap(request.toByteArray()));
-    }
-    
-    /**
-     * Send prepare request to the SQL server via sendRequest().
+     * Send prepare request to the SQL server via link.send().
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.Prepare> contains prepared statement handle
     */
     public Future<ResponseProtos.Prepare> send(RequestProtos.Prepare request) {
-	sendRequest(RequestProtos.Request.newBuilder().setPrepare(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setPrepare(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new PrepareReceiver();
     };
 
     /**
-     * Send execute sql statement request to via sendRequest()
+     * Send execute sql statement request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement request) {
-	sendRequest(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 
     /**
-     * Send execute prepared statement request to via sendRequest()
+     * Send execute prepared statement request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement request) {
-	sendRequest(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 
     /**
-     * Send execute sql query request to via sendRequest()
+     * Send execute sql query request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set link
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery request) {
-	sendRequest(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ExecuteQueryReceiver();
     };
 
     /**
-     * Send execute prepared query request to via sendRequest()
+     * Send execute prepared query request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set link
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery request) {
-	sendRequest(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ExecuteQueryReceiver();
     };
 
     /**
-     * Send begin request to via sendRequest()
+     * Send begin request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.Begin> contains transaction handle
     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin request) {
-	sendRequest(RequestProtos.Request.newBuilder().setBegin(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setBegin(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new BeginReceiver();
     };
 
     /**
-     * Send commit request to via sendRequest()
+     * Send commit request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit request) {
-	sendRequest(RequestProtos.Request.newBuilder().setCommit(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setCommit(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 
     /**
-     * Send rollback request to via sendRequest()
+     * Send rollback request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback request) {
-	sendRequest(RequestProtos.Request.newBuilder().setRollback(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setRollback(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 
     /**
-     * Send disposePreparedStatement request to via sendRequest()
+     * Send disposePreparedStatement request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement request) {
-	sendRequest(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 
     /**
-     * Send Disconnect request to via sendRequest()
+     * Send Disconnect request to via link.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request) {
-	sendRequest(RequestProtos.Request.newBuilder().setDisconnect(request).build());
+	try {
+	    link.send(RequestProtos.Request.newBuilder().setDisconnect(request).build());
+	} catch (IOException e) {
+	    System.out.println("IOException");
+	}
 	return new ResultOnlyReceiver();
     };
 }
