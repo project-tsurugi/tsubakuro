@@ -25,7 +25,6 @@ include(CMakePackageConfigHelpers)
 
 enable_testing()
 
-add_subdirectory(include)
 add_subdirectory(src)
 
 add_library(sql-api INTERFACE)
