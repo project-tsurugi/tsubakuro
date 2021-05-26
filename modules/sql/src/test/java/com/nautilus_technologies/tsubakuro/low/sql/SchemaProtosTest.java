@@ -12,9 +12,9 @@ class SchemaProtosTest {
     @Test
     void recordMetaWithName() {
 	SchemaProtos.RecordMeta src = SchemaProtos.RecordMeta.newBuilder()
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8).build())
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8).build())
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.STRING).setNullable(true).build())
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.STRING).setNullable(true))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -42,11 +42,12 @@ class SchemaProtosTest {
 	}
     }
 
+    @Test
     void recordMetaWithoutName() {
 	SchemaProtos.RecordMeta src = SchemaProtos.RecordMeta.newBuilder()
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.INT8).build())
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8).build())
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.STRING).setNullable(true).build())
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.INT8))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.STRING).setNullable(true))
 	    .build();
 
 	byte[] data = src.toByteArray();
