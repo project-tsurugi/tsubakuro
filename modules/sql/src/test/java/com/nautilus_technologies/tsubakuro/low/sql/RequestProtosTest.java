@@ -12,8 +12,8 @@ class RequestProtosTest {
     @Test
     void placeHolder() {
 	RequestProtos.PlaceHolder src = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8).build())
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8).build())
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -38,8 +38,8 @@ class RequestProtosTest {
     @Test
     void parameterSet() {
 	RequestProtos.ParameterSet src = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setIValue(11))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setDValue(123.45))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setIValue(11).build())
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setDValue(123.45).build())
 	    .build();
 
 	byte[] data = src.toByteArray();
