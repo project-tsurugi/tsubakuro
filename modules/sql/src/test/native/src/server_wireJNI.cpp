@@ -13,6 +13,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
+    std::cout << __func__ << ":" << std::string_view(name_, len_) << std::endl;
     session_wire_container* container = new session_wire_container(std::string_view(name_, len_), true);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }

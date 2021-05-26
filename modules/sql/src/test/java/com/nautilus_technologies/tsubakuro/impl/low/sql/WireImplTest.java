@@ -12,11 +12,21 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import org.junit.jupiter.api.Test;
 
 class WireImplTest {
+    WireImpl client;
+    ServerWireImpl server;
 
     @Test
     void simple() {
-        assertAll(
+	try {
+	    server = new ServerWireImpl("tsubakuro-session1");
+	    client = new WireImpl("tsubakuro-session1");
+	} catch (IOException e) {
+	    fail("cought IOException");
+	}
+
+	assertAll(
 		  () -> assertEquals(1, 1),
 		  () -> assertEquals(2.0, 2.0));
     }
+
 }

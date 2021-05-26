@@ -4,22 +4,6 @@
 #include "com_nautilus_technologies_tsubakuro_impl_low_sql_WireImpl.h"
 #include "wire.h"
 
-class server {
-public:
-    server([[maybe_unused]] std::string_view name) {
-        std::cout << __func__ << ":" << __LINE__ << ": name : " << name << std::endl;
-    }
-    void send(std::string_view data) {
-        std::cout << __func__ << ":" << __LINE__ << ": Buffer : " <<
-            static_cast<const void*>(data.data()) << " : " << data.length()<< std::endl;
-    }
-    std::string recv() {
-        std::string data;
-        data.resize(128);
-        return data;
-    }
-};
-
 using namespace tsubakuro::common;
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_openNative

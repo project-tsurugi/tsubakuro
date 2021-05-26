@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(sql
+project(wire-test
     VERSION 0.1.0
     DESCRIPTION "Template project for Java Native Interface"
     LANGUAGES C CXX)
@@ -22,8 +22,8 @@ find_package(Boost
     REQUIRED
 )
 
-set(export_name "sql-test")
-set(package_name "sql-test")
+set(export_name "wire-test")
+set(package_name "wire-test")
 
 include(CMakePackageConfigHelpers)
 
@@ -31,9 +31,9 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_library(sql-test-api INTERFACE)
+add_library(wire-test-api INTERFACE)
 
-target_include_directories(sql-test-api
+target_include_directories(wire-test-api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${export_name}>

@@ -19,6 +19,7 @@ public class ServerWireImpl implements Closeable {
     static native boolean closeNative(long handle);
 
     ServerWireImpl(String name) throws IOException {
+	System.loadLibrary("wire-test");
 	wireHandle = createNative(name);
 	if (wireHandle == 0) {
 	    throw new IOException();

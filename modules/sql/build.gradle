@@ -34,3 +34,7 @@ protobuf {
 compileTestJava {
     options.headerOutputDirectory = file("$project.projectDir/src/test/native/include")
 }
+
+tasks.named('test') {
+    systemProperty 'java.library.path', "$project.projectDir/src/main/native/build/src:$project.projectDir/src/test/native/build/src"
+}

@@ -1,12 +1,13 @@
 file(GLOB SOURCES "*.cpp")
 
-add_library(sql-test ${SOURCES})
+add_library(wire-test ${SOURCES})
 
-target_include_directories(sql-test
+target_include_directories(wire-test
   PRIVATE ../../../main/native/include
 )
 
-target_link_libraries(sql-test
-    PUBLIC sql-test-api
+target_link_libraries(wire-test
+    PUBLIC wire-test-api
     PRIVATE Boost::system
+    PRIVATE rt
 )
