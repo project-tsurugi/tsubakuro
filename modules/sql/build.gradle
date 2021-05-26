@@ -29,3 +29,8 @@ protobuf {
         artifact = "com.google.protobuf:protoc:3.8.0"
     }
 }
+
+
+compileTestJava {
+    options.headerOutputDirectory = file("$project.projectDir/src/test/native/include")
+}

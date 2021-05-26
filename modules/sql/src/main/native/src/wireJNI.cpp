@@ -65,29 +65,3 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
     delete container;
     return static_cast<jboolean>(true);
 }
-
-/*
- * for test purpose
- */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_getNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
-{
-    session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-
-    std::size_t length = container->get_request_wire().length();
-    char buffer[length];
-
-    container->get_response_wire().read(buffer, length);
-    return env->NewDirectByteBuffer(buffer, length);
-}
-
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_putNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jobject buffer)
-{
-    session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-
-    char *buf = (char*)env->GetDirectBufferAddress(buffer);
-    jlong capacity = env->GetDirectBufferCapacity(buffer);
-
-    container->get_response_wire().write(buf, capacity);
-}

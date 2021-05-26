@@ -22,8 +22,8 @@ find_package(Boost
     REQUIRED
 )
 
-set(export_name "sql")
-set(package_name "sql")
+set(export_name "sql-test")
+set(package_name "sql-test")
 
 include(CMakePackageConfigHelpers)
 
@@ -31,9 +31,9 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_library(sql-api INTERFACE)
+add_library(sql-test-api INTERFACE)
 
-target_include_directories(sql-api
+target_include_directories(sql-test-api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${export_name}>
