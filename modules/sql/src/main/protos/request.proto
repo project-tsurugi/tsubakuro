@@ -34,7 +34,7 @@ message ParameterSet {
     }
   }
 
-  repeated Parameter Parameters = 1;
+  repeated Parameter parameters = 1;
 }
 
 /*

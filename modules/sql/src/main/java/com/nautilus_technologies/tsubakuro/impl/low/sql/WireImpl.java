@@ -22,26 +22,30 @@ public class WireImpl implements Closeable {
 	wireHandle = openNative(name);
 	if (wireHandle == 0) { throw new IOException(); }	    
     }
+
     public void close() throws IOException {
-	if(wireHandle != 0) {
-	    if(!closeNative(wireHandle)) { throw new IOException(); }
+	if (wireHandle != 0) {
+	    if (!closeNative(wireHandle)) {
+		throw new IOException();
+	    }
 	    wireHandle = 0;
 	}
     }
+
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
     public void send(RequestProtos.Request request) throws IOException {
-	if(wireHandle != 0) {
+	if (wireHandle != 0) {
 	    sendNative(wireHandle, ByteBuffer.wrap(request.toByteArray()));
 	} else {
 	    throw new IOException();
 	}
     }
     /**
-     * Receive ResponseProtos.Request from the SQL server via the native wire.
-     @returns the ResposeProtos.Response message
+     * Receive ResponseProtos.Response from the SQL server via the native wire.
+     @returns ResposeProtos.Response message
     */
     public ResponseProtos.Response recv() throws IOException {
 	try {

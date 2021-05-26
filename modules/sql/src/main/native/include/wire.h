@@ -179,7 +179,7 @@ static std::size_t shm_size = 2^20;
 class session_wire_container
 {
 public:
-    session_wire_container(std::string_view name, bool owner) : owner_(owner), name_(name) {
+    session_wire_container(std::string_view name, bool owner = false) : owner_(owner), name_(name) {
         if (owner_) {
             boost::interprocess::shared_memory_object::remove(name_.c_str());
             try {
