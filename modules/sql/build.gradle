@@ -55,6 +55,8 @@ task cmakeTestBuild {
     }
 }
 
+cmakeBuild.dependsOn compileJava
+
 test.dependsOn cmakeTestBuild
 cmakeTestBuild.dependsOn cmakeTestConfigure
 cmakeTestConfigure.dependsOn compileTestJava

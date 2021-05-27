@@ -1,6 +1,5 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.nio.ByteBuffer;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
@@ -14,8 +13,8 @@ public class ServerWireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
 
     static native long createNative(String name);
-    static native ByteBuffer getNative(long handle);
-    static native void putNative(long handle, ByteBuffer buffer);
+    static native byte[] getNative(long handle);
+    static native void putNative(long handle, byte[] buffer);
     static native boolean closeNative(long handle);
 
     ServerWireImpl(String name) throws IOException {
@@ -51,9 +50,9 @@ public class ServerWireImpl implements Closeable {
      * Put ResponseProtos.Response to the client via the native wire.
      @param request the ResponseProtos.Response message
     */
-    public void put(ResponseProtos.Response request) throws IOException {
+    public void put(ResponseProtos.Response response) throws IOException {
 	if (wireHandle != 0) {
-	    putNative(wireHandle, ByteBuffer.wrap(request.toByteArray()));
+	    putNative(wireHandle, response.toByteArray());
 	} else {
 	    throw new IOException();
 	}

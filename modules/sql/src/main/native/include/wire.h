@@ -21,6 +21,8 @@
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 namespace tsubakuro::common {
+static constexpr std::size_t shm_size = (1<<20);  // 1M bytes (tentative)
+
 /**
  * @brief One-to-one unidirectional communication of charactor stream
  */
@@ -32,7 +34,7 @@ public:
      */
     simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : managed_shm_ptr_(managed_shm_ptr), capacity_(capacity) {
         const std::size_t Alignment = 64;
-        buffer_ = static_cast<char *>(managed_shm_ptr_->allocate_aligned(capacity_, Alignment));
+        buffer_ = static_cast<signed char*>(managed_shm_ptr_->allocate_aligned(capacity_, Alignment));
     }
 
     /**
@@ -46,14 +48,14 @@ public:
     /**
      * @brief push the writing row into the queue.
      */
-    void write(char *buf, std::size_t len) {
-        while(len < room()) {
+    void write(signed char* buf, std::size_t len) {
+        while(len > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_full_.wait(lock, [this, len](){ return !(len < room()); } );
         }
         bool was_empty = is_empty();
         std::atomic_thread_fence(std::memory_order_acquire);
-        memcpy(write_point(), buf, len);
+        memcpy(write_point(), buf, len);  // FIXME should care of buffer round up
         pushed_ += len;
         if (was_empty) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -64,7 +66,7 @@ public:
     /**
      * @brief pop the current row.
      */
-    std::size_t read(char *buf, std::size_t len) {
+    std::size_t read(signed char* buf, std::size_t len) {
         while(is_empty()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_empty_.wait(lock, [this](){ return !is_empty(); } );
@@ -72,7 +74,7 @@ public:
         bool was_full = is_full();
         std::atomic_thread_fence(std::memory_order_acquire);
         std::size_t l = (len < length()) ? len : length();
-        memcpy(buf, write_point(), l);
+        memcpy(buf, read_point(), l);  // FIXME should care of buffer round up
         if (was_full) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_full_.notify_one();
@@ -86,11 +88,11 @@ private:
     bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
-    char *read_point() { return buffer_ + index(poped_); }
-    char *write_point() { return buffer_ + index(pushed_); }
+    signed char* read_point() { return buffer_ + index(poped_); }
+    signed char* write_point() { return buffer_ + index(pushed_); }
     
     boost::interprocess::managed_shared_memory* managed_shm_ptr_;
-    char *buffer_;
+    signed char* buffer_;
 
     std::size_t capacity_;
     std::size_t pushed_{0};
@@ -148,11 +150,11 @@ private:
 };
 
 
-static constexpr std::size_t request_buffer_size = 2^10;
-static constexpr std::size_t response_buffer_size = 2^16;
-
 class session_wire
 {
+    static constexpr std::size_t request_buffer_size = (1<<10);
+    static constexpr std::size_t response_buffer_size = (1<<16);
+
 public:
     session_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
         request_wire_(managed_shm_ptr, request_buffer_size), response_wire_(managed_shm_ptr, response_buffer_size) {
@@ -174,10 +176,10 @@ private:
     simple_wire response_wire_;
 };
 
-static std::size_t shm_size = 2^20;
-
 class session_wire_container
 {
+    static constexpr const char* wire_name = "request_response";
+
 public:
     session_wire_container(std::string_view name, bool owner = false) : owner_(owner), name_(name) {
         if (owner_) {
@@ -185,8 +187,8 @@ public:
             try {
                 managed_shared_memory_ =
                     std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
-                managed_shared_memory_->destroy<session_wire>(name_.c_str());
-                session_wire_ = managed_shared_memory_->construct<session_wire>(name_.c_str())(managed_shared_memory_.get());
+                managed_shared_memory_->destroy<session_wire>(wire_name);
+                session_wire_ = managed_shared_memory_->construct<session_wire>(wire_name)(managed_shared_memory_.get());
             }
             catch(const boost::interprocess::interprocess_exception& ex) {
                 std::abort();  // FIXME
@@ -194,7 +196,7 @@ public:
         } else {
             try {
                 managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, name_.c_str());
-                session_wire_ = managed_shared_memory_->find<session_wire>(name_.c_str()).first;
+                session_wire_ = managed_shared_memory_->find<session_wire>(wire_name).first;
                 if (session_wire_ == nullptr) {
                     std::abort();  // FIXME
                 }
@@ -226,8 +228,6 @@ private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     session_wire* session_wire_{};
-
-    session_wire* get_session_wire() { return session_wire_; };
 };
 
 

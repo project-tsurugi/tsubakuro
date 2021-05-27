@@ -1,6 +1,5 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.nio.ByteBuffer;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
@@ -14,8 +13,8 @@ public class WireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
 
     static native long openNative(String name);
-    static native void sendNative(long handle, ByteBuffer buffer);
-    static native ByteBuffer recvNative(long handle);
+    static native void sendNative(long handle, byte[] buffer);
+    static native byte[] recvNative(long handle);
     static native boolean closeNative(long handle);
 
     WireImpl(String name) throws IOException {
@@ -39,7 +38,7 @@ public class WireImpl implements Closeable {
     */
     public void send(RequestProtos.Request request) throws IOException {
 	if (wireHandle != 0) {
-	    sendNative(wireHandle, ByteBuffer.wrap(request.toByteArray()));
+	    sendNative(wireHandle, request.toByteArray());
 	} else {
 	    throw new IOException();
 	}
@@ -49,6 +48,7 @@ public class WireImpl implements Closeable {
      @returns ResposeProtos.Response message
     */
     public ResponseProtos.Response recv() throws IOException {
+	System.out.println("recv called");
 	try {
 	    return ResponseProtos.Response.parseFrom(recvNative(wireHandle));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {

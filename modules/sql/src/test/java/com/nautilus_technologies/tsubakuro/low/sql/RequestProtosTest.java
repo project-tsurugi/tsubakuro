@@ -60,4 +60,25 @@ class RequestProtosTest {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	}
     }
+
+
+    @Test
+    void begin() {
+	RequestProtos.Request src = RequestProtos.Request.newBuilder()
+	    .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(123))
+	    .setBegin(RequestProtos.Begin.newBuilder().setReadOnly(true))
+	    .build();
+
+	byte[] data = src.toByteArray();
+
+	try {
+	    RequestProtos.Request dst = RequestProtos.Request.parseFrom(data);
+
+	    assertAll(
+		      () -> assertEquals(dst.getSessionHandle().getHandle(), 123),
+		      () -> assertTrue(RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())));
+	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
+	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	}
+    }
 }
