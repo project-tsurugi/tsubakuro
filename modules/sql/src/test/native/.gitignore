@@ -1,0 +1,24 @@
+# CMake
+/build
+/build-*
+
+# ANTLR build
+/dist
+.antlr
+
+# MS Office
+~*
+
+# Mac
+.DS_Store
+
+# VSCode
+/.vscode
+
+# CLion
+cmake-build-*
+.idea
+*.tokens
+
+# create by javac -h include
+/include/com_nautilus_technologies_tsubakuro_*.h

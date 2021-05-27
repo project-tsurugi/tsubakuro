@@ -34,7 +34,7 @@ message ParameterSet {
     }
   }
 
-  repeated Parameter Parameters = 1;
+  repeated Parameter parameters = 1;
 }
 
 /*
@@ -49,7 +49,7 @@ message Begin {
 /* For prepare request. */
 message Prepare {
   string sql = 1;
-  PlaceHolder host_valiables = 2;
+  PlaceHolder host_variables = 2;
 }
 
 /* For execute statement request. */
@@ -102,12 +102,12 @@ message Disconnect {
 message Request {
   common.Session session_handle = 1;
   oneof request {
-    Prepare prepare = 2;
-    ExecuteStatement execute_statement = 3;
-    ExecuteQuery execute_query = 4;
-    ExecutePreparedStatement execute_prepared_statement = 5;
-    ExecutePreparedQuery execute_prepared_query = 6;
-    Begin begin = 7;
+    Begin begin = 2;
+    Prepare prepare = 3;
+    ExecuteStatement execute_statement = 4;
+    ExecuteQuery execute_query = 5;
+    ExecutePreparedStatement execute_prepared_statement = 6;
+    ExecutePreparedQuery execute_prepared_query = 7;
     Commit commit = 8;
     Rollback rollback = 9;
     DisposePreparedStatement dispose_prepared_statement = 10;

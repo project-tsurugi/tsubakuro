@@ -19,5 +19,5 @@ message RecordMeta {
     bool nullable = 3;
   }
 
-  repeated Column Columns = 1;
+  repeated Column columns = 1;
 }
