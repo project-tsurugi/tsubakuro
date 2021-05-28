@@ -132,13 +132,13 @@ public class ProtosForTest {
     /**
      * Check of each Request
      */
-    static class BeginChecker {
-	static RequestProtos.Begin.Builder builder() {
+    public static class BeginChecker {
+	public static RequestProtos.Begin.Builder builder() {
 	    return
 		RequestProtos.Begin.newBuilder()
 		.setReadOnly(true);
 	}
-	static boolean check(RequestProtos.Begin dst) {
+	public static boolean check(RequestProtos.Begin dst) {
 	    return
 		(dst.getReadOnly() == true);
 	}
@@ -356,11 +356,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setBegin(BeginChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
 		&& BeginChecker.check(dst.getBegin());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -379,11 +382,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setPrepare(PrepareChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.PREPARE.equals(dst.getRequestCase())
 		&& PrepareChecker.check(dst.getPrepare());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -402,11 +408,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setExecuteStatement(ExecuteStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
 		&& ExecuteStatementChecker.check(dst.getExecuteStatement());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -425,11 +434,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setExecuteQuery(ExecuteQueryChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
 		&& ExecuteQueryChecker.check(dst.getExecuteQuery());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -448,11 +460,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setExecutePreparedStatement(ExecutePreparedStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.EXECUTE_PREPARED_STATEMENT.equals(dst.getRequestCase())
 		&& ExecutePreparedStatementChecker.check(dst.getExecutePreparedStatement());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -471,11 +486,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setExecutePreparedQuery(ExecutePreparedQueryChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.EXECUTE_PREPARED_QUERY.equals(dst.getRequestCase())
 		&& ExecutePreparedQueryChecker.check(dst.getExecutePreparedQuery());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -494,11 +512,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setCommit(CommitChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.COMMIT.equals(dst.getRequestCase())
 		&& CommitChecker.check(dst.getCommit());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -517,11 +538,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setRollback(RollbackChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.ROLLBACK.equals(dst.getRequestCase())
 		&& RollbackChecker.check(dst.getRollback());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -540,11 +564,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setDisposePreparedStatement(DisposePreparedStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.DISPOSE_PREPARED_STATEMENT.equals(dst.getRequestCase())
 		&& DisposePreparedStatementChecker.check(dst.getDisposePreparedStatement());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -563,11 +590,14 @@ public class ProtosForTest {
 		.setSessionHandle(SessionChecker.builder())
 		.setDisconnect(DisconnectChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst) {
+	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
 	    return
-		SessionChecker.check(dst.getSessionHandle())
+		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
 		&& RequestProtos.Request.RequestCase.DISCONNECT.equals(dst.getRequestCase())
 		&& DisconnectChecker.check(dst.getDisconnect());
+	}
+	public static boolean check(RequestProtos.Request dst) {
+	    return check(dst, false);
 	}
 	@Test
 	void test() {
@@ -624,13 +654,13 @@ public class ProtosForTest {
     /**
      * Check of each Response
      */
-    static class ResultOnlyChecker {
+    public static class ResultOnlyChecker {
 	static ResponseProtos.ResultOnly.Builder builder() {
 	    return
 		ResponseProtos.ResultOnly.newBuilder()
 		.setSuccess(SuccessChecker.builder());
 	}
-	static boolean check(ResponseProtos.ResultOnly dst) {
+	public static boolean check(ResponseProtos.ResultOnly dst) {
 	    return
 		ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(dst.getResultCase())
 		&& SuccessChecker.check(dst.getSuccess());
@@ -645,13 +675,13 @@ public class ProtosForTest {
 	}
     }
 
-    static class ResMessageBeginChecker {
+    public static class ResMessageBeginChecker {
 	static ResponseProtos.Begin.Builder builder() {
 	    return
 		ResponseProtos.Begin.newBuilder()
 		.setTransactionHandle(TransactionChecker.builder());
 	}
-	static boolean check(ResponseProtos.Begin dst) {
+	public static boolean check(ResponseProtos.Begin dst) {
 	    return
 		ResponseProtos.Begin.ResultCase.TRANSACTION_HANDLE.equals(dst.getResultCase())
 		&& TransactionChecker.check(dst.getTransactionHandle());
@@ -666,13 +696,13 @@ public class ProtosForTest {
 	}
     }
 
-    static class ResMessagePrepareChecker {
+    public static class ResMessagePrepareChecker {
 	static ResponseProtos.Prepare.Builder builder() {
 	    return
 		ResponseProtos.Prepare.newBuilder()
 		.setPreparedStatementHandle(PreparedStatementChecker.builder());
 	}
-	static boolean check(ResponseProtos.Prepare dst) {
+	public static boolean check(ResponseProtos.Prepare dst) {
 	    return
 		ResponseProtos.Prepare.ResultCase.PREPARED_STATEMENT_HANDLE.equals(dst.getResultCase())
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle());
@@ -687,13 +717,13 @@ public class ProtosForTest {
 	}
     }
 
-    static class ResMessageExecuteQueryChecker {
+    public static class ResMessageExecuteQueryChecker {
 	static ResponseProtos.ExecuteQuery.Builder builder() {
 	    return
 		ResponseProtos.ExecuteQuery.newBuilder()
 		.setName("ResultSetName");
 	}
-	static boolean check(ResponseProtos.ExecuteQuery dst) {
+	public static boolean check(ResponseProtos.ExecuteQuery dst) {
 	    return
 		ResponseProtos.ExecuteQuery.ResultCase.NAME.equals(dst.getResultCase())
 		&& dst.getName().equals("ResultSetName");

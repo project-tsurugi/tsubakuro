@@ -12,23 +12,26 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 public class ServerWireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
 
-    static native long createNative(String name);
-    static native byte[] getNative(long handle);
-    static native void putNative(long handle, byte[] buffer);
-    static native boolean closeNative(long handle);
+    private static native long createNative(String name);
+    private static native byte[] getNative(long handle);
+    private static native void putNative(long handle, byte[] buffer);
+    private static native boolean closeNative(long handle);
+
+    static {
+	System.loadLibrary("wire-test");
+    }
 
     ServerWireImpl(String name) throws IOException {
-	System.loadLibrary("wire-test");
 	wireHandle = createNative(name);
 	if (wireHandle == 0) {
-	    throw new IOException();
+	    throw new IOException("error: ServerWireImpl.ServerWireImpl()");
 	}
     }
 
     public void close() throws IOException {
 	if (wireHandle != 0) {
 	    if (!closeNative(wireHandle)) {
-		throw new IOException();
+		throw new IOException("error: ServerWireImpl.close()");
 	    }
 	    wireHandle = 0;
 	}
@@ -42,7 +45,7 @@ public class ServerWireImpl implements Closeable {
 	try {
 	    return RequestProtos.Request.parseFrom(getNative(wireHandle));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    throw new IOException();
+	    throw new IOException("error: ServerWireImpl.get()");
 	}
     }
 
@@ -54,7 +57,7 @@ public class ServerWireImpl implements Closeable {
 	if (wireHandle != 0) {
 	    putNative(wireHandle, response.toByteArray());
 	} else {
-	    throw new IOException();
+	    throw new IOException("error: ServerWireImpl.put()");
 	}
     }
 }
