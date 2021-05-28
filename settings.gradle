@@ -1,6 +1,8 @@
 rootProject.name = 'tsubakuro'
 
+include 'common'
 include 'sql'
+include 'ipc'
 
 rootProject.children.each { project ->
     project.projectDir = new File(settingsDir, "modules/${project.name}")
