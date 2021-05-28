@@ -15,6 +15,10 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 public class SessionLinkImpl implements SessionLink {
     private WireImpl wire;
     
+    public SessionLinkImpl(WireImpl w) {
+	wire = w;
+    }
+
     abstract private class FutureReceiver<V> implements Future<V> {
 	private boolean isCancelled = false;
 	private boolean isDone = false;
