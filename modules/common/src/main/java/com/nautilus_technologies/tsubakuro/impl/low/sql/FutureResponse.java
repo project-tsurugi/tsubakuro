@@ -9,31 +9,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * FutureResponse type.
  */
-public class FutureResponse<V> implements Future<V> {
-    private boolean isCancelled = false;
-    private boolean isDone = false;
-
-    private WireImpl wire;
-    private Distiller<V> distiller;
-
-    FutureResponse(WireImpl w, Distiller<V> d) {
-	wire = w;
-	distiller = d;
-    }
-	
-    public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; return true; }
-    public V get() throws ExecutionException
-    {
-	try {
-	    return distiller.distill(wire.recv());
-	} catch (IOException e) {
-	    throw new ExecutionException(e);
-	}
-    }
-    public V get(long timeout, TimeUnit unit) throws ExecutionException { return get(); }
-    public boolean isCancelled() { return isCancelled; }
-    public boolean isDone() { return isDone; }
-
+public abstract class FutureResponse<V> implements Future<V> {
     public interface Distiller<V> {
 	public abstract V distill(ResponseProtos.Response response);
     }

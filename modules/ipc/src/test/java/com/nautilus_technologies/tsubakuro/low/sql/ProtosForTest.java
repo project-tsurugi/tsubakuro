@@ -18,7 +18,6 @@ public class ProtosForTest {
 	    return
 		(dst.getHandle() == 123);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(CommonProtos.Session.parseFrom(builder().build().toByteArray())));
@@ -38,7 +37,6 @@ public class ProtosForTest {
 	    return
 		(dst.getHandle() == 456);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(CommonProtos.Transaction.parseFrom(builder().build().toByteArray())));
@@ -58,7 +56,6 @@ public class ProtosForTest {
 	    return
 		(dst.getHandle() == 789);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(CommonProtos.PreparedStatement.parseFrom(builder().build().toByteArray())));
@@ -90,7 +87,6 @@ public class ProtosForTest {
 		&& v2.getType().equals(CommonProtos.DataType.FLOAT8)
 		&& (dst.getVariablesList().size() == 2);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.PlaceHolder.parseFrom(builder().build().toByteArray())));
@@ -118,7 +114,6 @@ public class ProtosForTest {
 		&& RequestProtos.ParameterSet.Parameter.ValueCase.D_VALUE.equals(v2.getValueCase())
 		&& (dst.getParametersList().size() == 2);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ParameterSet.parseFrom(builder().build().toByteArray())));
@@ -142,7 +137,6 @@ public class ProtosForTest {
 	    return
 		(dst.getReadOnly() == true);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Begin.parseFrom(builder().build().toByteArray())));
@@ -164,7 +158,6 @@ public class ProtosForTest {
 		dst.getSql().equals("SELECT a, b, c FROM t WHERE d = 321")
 		&& PlaceHolderChecker.check(dst.getHostVariables());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Prepare.parseFrom(builder().build().toByteArray())));
@@ -186,7 +179,6 @@ public class ProtosForTest {
 		TransactionChecker.check(dst.getTransactionHandle())
 		&& dst.getSql().equals("UPDATE t SET a = a + 1 WHERE d = 654");
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ExecuteStatement.parseFrom(builder().build().toByteArray())));
@@ -208,7 +200,6 @@ public class ProtosForTest {
 		TransactionChecker.check(dst.getTransactionHandle())
 		&& dst.getSql().equals("SELECT x, y, z FROM t WHERE d = 987");
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ExecuteQuery.parseFrom(builder().build().toByteArray())));
@@ -232,7 +223,6 @@ public class ProtosForTest {
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
 		&& ParameterSetChecker.check(dst.getParameters());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ExecutePreparedStatement.parseFrom(builder().build().toByteArray())));
@@ -256,7 +246,6 @@ public class ProtosForTest {
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
 		&& ParameterSetChecker.check(dst.getParameters());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ExecutePreparedQuery.parseFrom(builder().build().toByteArray())));
@@ -276,7 +265,6 @@ public class ProtosForTest {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Commit.parseFrom(builder().build().toByteArray())));
@@ -296,7 +284,6 @@ public class ProtosForTest {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Rollback.parseFrom(builder().build().toByteArray())));
@@ -316,7 +303,6 @@ public class ProtosForTest {
 	    return
 		PreparedStatementChecker.check(dst.getPreparedStatementHandle());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.DisposePreparedStatement.parseFrom(builder().build().toByteArray())));
@@ -335,7 +321,6 @@ public class ProtosForTest {
 	    return
 		true;
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Disconnect.parseFrom(builder().build().toByteArray())));
@@ -365,7 +350,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -391,7 +375,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -417,7 +400,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -443,7 +425,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -469,7 +450,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -495,7 +475,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -521,7 +500,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -547,7 +525,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -573,7 +550,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -599,7 +575,6 @@ public class ProtosForTest {
 	public static boolean check(RequestProtos.Request dst) {
 	    return check(dst, false);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
@@ -622,7 +597,6 @@ public class ProtosForTest {
 	    return
 		true;
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Success.parseFrom(builder().build().toByteArray())));
@@ -641,7 +615,6 @@ public class ProtosForTest {
 	    return
 		dst.getDetail().equals("This is a error for test purpose");
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Error.parseFrom(builder().build().toByteArray())));
@@ -665,7 +638,6 @@ public class ProtosForTest {
 		ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(dst.getResultCase())
 		&& SuccessChecker.check(dst.getSuccess());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.ResultOnly.parseFrom(builder().build().toByteArray())));
@@ -686,7 +658,6 @@ public class ProtosForTest {
 		ResponseProtos.Begin.ResultCase.TRANSACTION_HANDLE.equals(dst.getResultCase())
 		&& TransactionChecker.check(dst.getTransactionHandle());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Begin.parseFrom(builder().build().toByteArray())));
@@ -707,7 +678,6 @@ public class ProtosForTest {
 		ResponseProtos.Prepare.ResultCase.PREPARED_STATEMENT_HANDLE.equals(dst.getResultCase())
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Prepare.parseFrom(builder().build().toByteArray())));
@@ -728,7 +698,6 @@ public class ProtosForTest {
 		ResponseProtos.ExecuteQuery.ResultCase.NAME.equals(dst.getResultCase())
 		&& dst.getName().equals("ResultSetName");
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.ExecuteQuery.parseFrom(builder().build().toByteArray())));
@@ -753,7 +722,6 @@ public class ProtosForTest {
 		ResponseProtos.Response.ResponseCase.RESULT_ONLY.equals(dst.getResponseCase())
 		&& ResultOnlyChecker.check(dst.getResultOnly());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
@@ -774,7 +742,6 @@ public class ProtosForTest {
 		ResponseProtos.Response.ResponseCase.BEGIN.equals(dst.getResponseCase())
 		&& ResMessageBeginChecker.check(dst.getBegin());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
@@ -795,7 +762,6 @@ public class ProtosForTest {
 		ResponseProtos.Response.ResponseCase.PREPARE.equals(dst.getResponseCase())
 		&& ResMessagePrepareChecker.check(dst.getPrepare());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
@@ -816,7 +782,6 @@ public class ProtosForTest {
 		ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())
 		&& ResMessageExecuteQueryChecker.check(dst.getExecuteQuery());
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
@@ -870,7 +835,6 @@ public class ProtosForTest {
 		&& (v6.getNullable() ==  true)
 		&& (dst.getColumnsList().size() == 6);
 	}
-	@Test
 	void test() {
 	    try {
 		assertTrue(check(SchemaProtos.RecordMeta.parseFrom(builder().build().toByteArray())));

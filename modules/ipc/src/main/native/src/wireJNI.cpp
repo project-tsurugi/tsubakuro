@@ -32,7 +32,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_W
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -45,6 +45,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Wi
     }
     container->get_request_wire().write(src, capacity);
     env->ReleaseByteArrayElements(srcj, src, 0);
+    return 0;  // FIXME
 }
 
 

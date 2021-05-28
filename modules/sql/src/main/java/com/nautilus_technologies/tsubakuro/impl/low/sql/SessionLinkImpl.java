@@ -13,9 +13,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
  * SessionLinkImpl type.
  */
 public class SessionLinkImpl implements SessionLink {
-    private WireImpl wire;
+    private Wire wire;
     
-    public SessionLinkImpl(WireImpl w) {
+    public SessionLinkImpl(Wire w) {
 	wire = w;
     }
 
@@ -25,8 +25,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.Prepare> contains prepared statement handle
     */
     public Future<ResponseProtos.Prepare> send(RequestProtos.Prepare request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setPrepare(request).build());
-	return new FutureResponse<ResponseProtos.Prepare>(wire, new FutureResponse.PrepareDistiller());
+	return wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request).build(), new FutureResponse.PrepareDistiller());
     };
 
     /**
@@ -35,8 +34,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setExecuteStatement(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteStatement(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 
     /**
@@ -45,8 +43,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 
     /**
@@ -55,8 +52,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setExecuteQuery(request).build());
-	return new FutureResponse<ResponseProtos.ExecuteQuery>(wire, new FutureResponse.ExecuteQueryDistiller());
+	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecuteQuery(request).build(), new FutureResponse.ExecuteQueryDistiller());
     };
 
     /**
@@ -65,8 +61,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build());
-	return new FutureResponse<ResponseProtos.ExecuteQuery>(wire, new FutureResponse.ExecuteQueryDistiller());
+	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request).build(), new FutureResponse.ExecuteQueryDistiller());
     };
 
     /**
@@ -75,8 +70,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.Begin> contains transaction handle
     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setBegin(request).build());
-	return new FutureResponse<ResponseProtos.Begin>(wire, new FutureResponse.BeginDistiller());
+	return wire.<ResponseProtos.Begin>send(RequestProtos.Request.newBuilder().setBegin(request).build(), new FutureResponse.BeginDistiller());
     };
 
     /**
@@ -85,8 +79,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setCommit(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setCommit(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 
     /**
@@ -95,8 +88,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setRollback(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setRollback(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 
     /**
@@ -105,8 +97,7 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 
     /**
@@ -115,7 +106,6 @@ public class SessionLinkImpl implements SessionLink {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request) throws IOException {
-	wire.send(RequestProtos.Request.newBuilder().setDisconnect(request).build());
-	return new FutureResponse<ResponseProtos.ResultOnly>(wire, new FutureResponse.ResultOnlyDistiller());
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisconnect(request).build(), new FutureResponse.ResultOnlyDistiller());
     };
 }
