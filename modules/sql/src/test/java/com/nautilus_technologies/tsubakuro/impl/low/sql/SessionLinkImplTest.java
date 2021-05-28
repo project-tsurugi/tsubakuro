@@ -22,7 +22,7 @@ class SessionLinkImplTest {
 	    var sessionLink = new SessionLinkImpl(client);
 
 	    var future = sessionLink.send(ProtosForTest.BeginChecker.builder().build());
-	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), false));
+	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), true));
 
 	    server.put(ProtosForTest.BeginResponseChecker.builder().build());
 	    assertTrue(ProtosForTest.ResMessageBeginChecker.check(future.get()));
