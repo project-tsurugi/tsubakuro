@@ -12,21 +12,26 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 public class WireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
 
-    static native long openNative(String name);
-    static native void sendNative(long handle, byte[] buffer);
-    static native byte[] recvNative(long handle);
-    static native boolean closeNative(long handle);
+    private static native long openNative(String name);
+    private static native void sendNative(long handle, byte[] buffer);
+    private static native byte[] recvNative(long handle);
+    private static native boolean closeNative(long handle);
+
+    static {
+	System.loadLibrary("wire");
+    }
 
     WireImpl(String name) throws IOException {
-	System.loadLibrary("wire");
 	wireHandle = openNative(name);
-	if (wireHandle == 0) { throw new IOException(); }	    
+	if (wireHandle == 0) {
+	    throw new IOException("error: WireImpl.WireImpl()");
+	}
     }
 
     public void close() throws IOException {
 	if (wireHandle != 0) {
 	    if (!closeNative(wireHandle)) {
-		throw new IOException();
+		throw new IOException("error: WireImpl.close()");
 	    }
 	    wireHandle = 0;
 	}
@@ -40,7 +45,7 @@ public class WireImpl implements Closeable {
 	if (wireHandle != 0) {
 	    sendNative(wireHandle, request.toByteArray());
 	} else {
-	    throw new IOException();
+	    throw new IOException("error: WireImpl.send()");
 	}
     }
     /**
@@ -48,11 +53,12 @@ public class WireImpl implements Closeable {
      @returns ResposeProtos.Response message
     */
     public ResponseProtos.Response recv() throws IOException {
-	System.out.println("recv called");
 	try {
 	    return ResponseProtos.Response.parseFrom(recvNative(wireHandle));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    throw new IOException();
+	    IOException newEx = new IOException("error: WireImpl.recv()");
+	    newEx.initCause(e);
+	    throw newEx;
 	}
     }
 }
