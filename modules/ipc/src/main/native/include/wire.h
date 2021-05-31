@@ -20,8 +20,35 @@
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
-namespace tsubakuro::common {
-static constexpr std::size_t shm_size = (1<<20);  // 1M bytes (tentative)
+namespace tsubakuro::common::wire {
+
+/**
+ * @brief header information used in request/response message,
+ * it assumes that machines with the same endianness communicate with each other
+ */
+class message_header {
+public:
+    static constexpr std::size_t size = 2 * sizeof(std::size_t);
+    
+    message_header(std::size_t idx, std::size_t length) : idx_(idx), length_(length) {}
+    message_header(signed char* buffer) {
+        std::memcpy(&idx_, buffer, sizeof(std::size_t));
+        std::memcpy(&length_, buffer + sizeof(std::size_t), sizeof(std::size_t));
+    }
+
+    std::size_t get_length() { return length_; }
+    std::size_t get_idx() { return idx_; }
+    signed char* get_buffer() {
+        std::memcpy(buffer_, &idx_, sizeof(std::size_t));
+        std::memcpy(buffer_ + sizeof(std::size_t), &length_, sizeof(std::size_t));
+        return buffer_;
+    };
+
+private:
+    std::size_t idx_;
+    std::size_t length_;
+    signed char buffer_[size];
+};
 
 /**
  * @brief One-to-one unidirectional communication of charactor stream
@@ -48,15 +75,17 @@ public:
     /**
      * @brief push the writing row into the queue.
      */
-    void write(signed char* buf, std::size_t len) {
-        while(len > room()) {
+    void write(signed char* buf, message_header&& header) {
+        std::size_t length = header.get_length() + message_header::size;
+        while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_full_.wait(lock, [this, len](){ return !(len < room()); } );
+            m_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
         std::atomic_thread_fence(std::memory_order_acquire);
-        memcpy(write_point(), buf, len);  // FIXME should care of buffer round up
-        pushed_ += len;
+        memcpy(write_point(), header.get_buffer(), message_header::size);  // FIXME should care of buffer round up
+        memcpy(write_point() + message_header::size, buf, header.get_length());  // FIXME should care of buffer round up
+        pushed_ += length;
         if (was_empty) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_empty_.notify_one();
@@ -66,20 +95,32 @@ public:
     /**
      * @brief pop the current row.
      */
-    std::size_t read(signed char* buf, std::size_t len) {
-        while(is_empty()) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            m_empty_.wait(lock, [this](){ return !is_empty(); } );
-        }
+    message_header peep(bool wait = false) {
         bool was_full = is_full();
-        std::atomic_thread_fence(std::memory_order_acquire);
-        std::size_t l = (len < length()) ? len : length();
-        memcpy(buf, read_point(), l);  // FIXME should care of buffer round up
+        if (wait) {
+            while(length() < message_header::size) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                m_empty_.wait(lock, [this](){ return length() >= message_header::size; });
+            }
+        } else {
+            if (length() < message_header::size) { return message_header(0, 0); }
+        }
+        message_header header(read_point());  // FIXME should care of buffer round up
+        poped_ += message_header::size;
         if (was_full) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_full_.notify_one();
         }
-        return l;
+        return header;
+    }
+
+    /**
+     * @brief pop the current row.
+     */
+    void read(signed char* buf, std::size_t msg_len) {
+//        std::atomic_thread_fence(std::memory_order_acquire);
+        memcpy(buf, read_point(), msg_len);  // FIXME should care of buffer round up
+        poped_ += msg_len;
     }
     std::size_t length() { return (pushed_ - poped_); }
 
@@ -102,7 +143,35 @@ private:
     boost::interprocess::interprocess_condition m_empty_{};
     boost::interprocess::interprocess_condition m_full_{};
 };
-    
+
+
+class session_wire
+{
+    static constexpr std::size_t request_buffer_size = (1<<10);
+    static constexpr std::size_t response_buffer_size = (1<<16);
+
+public:
+    session_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
+        request_wire_(managed_shm_ptr, request_buffer_size), response_wire_(managed_shm_ptr, response_buffer_size) {
+    }
+
+    /**
+     * @brief Copy and move constructers are deleted.
+     */
+    session_wire(session_wire const&) = delete;
+    session_wire(session_wire&&) = delete;
+    session_wire& operator = (session_wire const&) = delete;
+    session_wire& operator = (session_wire&&) = delete;
+
+    simple_wire& get_request_wire() { return request_wire_; }
+    simple_wire& get_response_wire() { return response_wire_; }
+
+private:
+    simple_wire request_wire_;
+    simple_wire response_wire_;
+};
+
+
 class common_wire : public simple_wire
 {
 public:
@@ -148,87 +217,5 @@ private:
     boost::interprocess::interprocess_condition m_not_locked_{};
     bool locked_{false};
 };
-
-
-class session_wire
-{
-    static constexpr std::size_t request_buffer_size = (1<<10);
-    static constexpr std::size_t response_buffer_size = (1<<16);
-
-public:
-    session_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
-        request_wire_(managed_shm_ptr, request_buffer_size), response_wire_(managed_shm_ptr, response_buffer_size) {
-    }
-
-    /**
-     * @brief Copy and move constructers are deleted.
-     */
-    session_wire(session_wire const&) = delete;
-    session_wire(session_wire&&) = delete;
-    session_wire& operator = (session_wire const&) = delete;
-    session_wire& operator = (session_wire&&) = delete;
-
-    simple_wire& get_request_wire() { return request_wire_; }
-    simple_wire& get_response_wire() { return response_wire_; }
-
-private:
-    simple_wire request_wire_;
-    simple_wire response_wire_;
-};
-
-class session_wire_container
-{
-    static constexpr const char* wire_name = "request_response";
-
-public:
-    session_wire_container(std::string_view name, bool owner = false) : owner_(owner), name_(name) {
-        if (owner_) {
-            boost::interprocess::shared_memory_object::remove(name_.c_str());
-            try {
-                managed_shared_memory_ =
-                    std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
-                managed_shared_memory_->destroy<session_wire>(wire_name);
-                session_wire_ = managed_shared_memory_->construct<session_wire>(wire_name)(managed_shared_memory_.get());
-            }
-            catch(const boost::interprocess::interprocess_exception& ex) {
-                std::abort();  // FIXME
-            }
-        } else {
-            try {
-                managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, name_.c_str());
-                session_wire_ = managed_shared_memory_->find<session_wire>(wire_name).first;
-                if (session_wire_ == nullptr) {
-                    std::abort();  // FIXME
-                }
-            }
-            catch(const boost::interprocess::interprocess_exception& ex) {
-                std::abort();  // FIXME
-            }
-        }
-    }
-
-    /**
-     * @brief Copy and move constructers are deleted.
-     */
-    session_wire_container(session_wire_container const&) = delete;
-    session_wire_container(session_wire_container&&) = delete;
-    session_wire_container& operator = (session_wire_container const&) = delete;
-    session_wire_container& operator = (session_wire_container&&) = delete;
-
-    ~session_wire_container() {
-        if (owner_) {
-            boost::interprocess::shared_memory_object::remove(name_.c_str());
-        }
-    }
-    simple_wire& get_request_wire() { return session_wire_->get_request_wire(); }
-    simple_wire& get_response_wire() { return session_wire_->get_response_wire(); }
-    
-private:
-    bool owner_;
-    std::string name_;
-    std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
-    session_wire* session_wire_{};
-};
-
 
 };  // namespace tsubakuro::common

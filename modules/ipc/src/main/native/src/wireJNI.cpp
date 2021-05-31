@@ -16,9 +16,9 @@
 
 #include <jni.h>
 #include "com_nautilus_technologies_tsubakuro_impl_low_sql_WireImpl.h"
-#include "wire.h"
+#include "udf_wires.h"
 
-using namespace tsubakuro::common;
+using namespace tsubakuro::common::wire;
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_openNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
@@ -32,28 +32,33 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_W
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     jbyte *src = env->GetByteArrayElements(srcj, 0);
-    jsize capacity = env->GetArrayLength(srcj);
+    jsize length = env->GetArrayLength(srcj);
 
     if (src == nullptr) {
         std::abort();
     }
-    container->get_request_wire().write(src, capacity);
+    response *r = container->write(src, length);
     env->ReleaseByteArrayElements(srcj, src, 0);
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
-
 
 JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_recvNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
-    session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-    auto& wire = container->get_response_wire();
-    std::size_t length = wire.length();
+    response *r = reinterpret_cast<response*>(static_cast<std::uintptr_t>(handle));
+    signed char* msg = r->read();
+
+    if (msg == NULL) {
+        return NULL;
+    }
+
+    std::size_t length = r->get_length();
     jbyteArray dstj = env->NewByteArray(length);
     if (dstj == NULL) {
         return NULL;
@@ -63,8 +68,9 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
         return NULL;
     }
 
-    wire.read(dst, length);
+    memcpy(dst, msg, length);
     env->ReleaseByteArrayElements(dstj, dst, 0);
+    r->dispose();
     return dstj;
 }
 
@@ -75,4 +81,13 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
 
     delete container;
     return static_cast<jboolean>(true);
+}
+
+signed char* response::read()
+{
+    container_->read_all();
+    if (length_ > 0) {
+        return buffer_;
+    }
+    return nullptr;
 }

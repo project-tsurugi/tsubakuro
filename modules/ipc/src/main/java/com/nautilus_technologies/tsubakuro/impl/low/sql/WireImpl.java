@@ -9,11 +9,11 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * WireImpl type.
  */
-public class WireImpl implements Closeable {
+public class WireImpl implements Wire {
     private long wireHandle = 0;  // for c++
 
     private static native long openNative(String name);
-    private static native void sendNative(long handle, byte[] buffer);
+    private static native long sendNative(long handle, byte[] buffer);
     private static native byte[] recvNative(long handle);
     private static native boolean closeNative(long handle);
 
@@ -41,9 +41,10 @@ public class WireImpl implements Closeable {
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
-    public void send(RequestProtos.Request request) throws IOException {
+    public <V> FutureResponse<V> send(RequestProtos.Request request, FutureResponse.Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
-	    sendNative(wireHandle, request.toByteArray());
+	    long handle = sendNative(wireHandle, request.toByteArray());
+	    return new FutureResponseImpl(this, distiller, new ResponseHandleImpl(handle));
 	} else {
 	    throw new IOException("error: WireImpl.send()");
 	}
@@ -52,9 +53,9 @@ public class WireImpl implements Closeable {
      * Receive ResponseProtos.Response from the SQL server via the native wire.
      @returns ResposeProtos.Response message
     */
-    public ResponseProtos.Response recv() throws IOException {
+    public ResponseProtos.Response recv(ResponseHandle handle) throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(recvNative(wireHandle));
+	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseHandleImpl) handle).getHandle()));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    IOException newEx = new IOException("error: WireImpl.recv()");
 	    newEx.initCause(e);
