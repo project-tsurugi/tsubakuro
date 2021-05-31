@@ -21,11 +21,11 @@ class WireImplTest {
 	    server = new ServerWireImpl(wireName);
 	    client = new WireImpl(wireName);
 
-	    var response = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new FutureResponseImpl.BeginDistiller());
+	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new FutureResponseImpl.BeginDistiller());
 	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get()));
 
 	    server.put(ProtosForTest.BeginResponseChecker.builder().build());
-	    assertTrue(ProtosForTest.ResMessageBeginChecker.check(response.get()));
+	    assertTrue(ProtosForTest.ResMessageBeginChecker.check(futureResponse.get()));
 
 	    client.close();
 	    server.close();

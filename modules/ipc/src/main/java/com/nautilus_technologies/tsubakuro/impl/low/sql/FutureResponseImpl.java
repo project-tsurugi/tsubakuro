@@ -15,19 +15,19 @@ public class FutureResponseImpl<V> extends FutureResponse<V> {
 
     private WireImpl wire;
     private Distiller<V> distiller;
-    private long responseHandle;
+    private ResponseHandleImpl handle;
 
-    FutureResponseImpl(WireImpl w, Distiller<V> d, long h) {
+    FutureResponseImpl(WireImpl w, Distiller<V> d, ResponseHandleImpl h) {
 	wire = w;
 	distiller = d;
-	responseHandle = h;
+	handle = h;
     }
 	
     public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; return true; }
     public V get() throws ExecutionException
     {
 	try {
-	    return distiller.distill(wire.recv());
+	    return distiller.distill(wire.recv(handle));
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}
