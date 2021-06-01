@@ -21,6 +21,10 @@ public class WireImpl implements Wire {
 	System.loadLibrary("wire");
     }
 
+    /**
+     * Creates a new instance.
+     * @param name the name of the wire, assumed that the connection name returned from the SQL service as a result of the connect operation is given
+     */
     WireImpl(String name) throws IOException {
 	wireHandle = openNative(name);
 	if (wireHandle == 0) {
@@ -28,6 +32,9 @@ public class WireImpl implements Wire {
 	}
     }
 
+    /**
+     * Close the wire
+     */
     public void close() throws IOException {
 	if (wireHandle != 0) {
 	    if (!closeNative(wireHandle)) {
@@ -51,6 +58,7 @@ public class WireImpl implements Wire {
     }
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
+     @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
     public ResponseProtos.Response recv(ResponseHandle handle) throws IOException {

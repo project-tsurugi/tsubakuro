@@ -10,20 +10,28 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
  * FutureResponseImpl type.
  */
 public class FutureResponseImpl<V> extends FutureResponse<V> {
-    private boolean isCancelled = false;
     private boolean isDone = false;
+    private boolean isCancelled = false;
 
     private WireImpl wire;
     private Distiller<V> distiller;
     private ResponseHandleImpl handle;
 
+    /**
+     * Creates a new instance.
+     * @param w the wireImpl class responsible for this communication
+     * @param d the Distiller class that will work for the message to be received
+     * @param h the handle indicating the message to be received in response to the outgoing message
+     */
     FutureResponseImpl(WireImpl w, Distiller<V> d, ResponseHandleImpl h) {
 	wire = w;
 	distiller = d;
 	handle = h;
     }
 	
-    public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; return true; }
+    /**
+     * get the message received from the SQL server.
+     */
     public V get() throws ExecutionException
     {
 	try {
@@ -32,7 +40,9 @@ public class FutureResponseImpl<V> extends FutureResponse<V> {
 	    throw new ExecutionException(e);
 	}
     }
+
     public V get(long timeout, TimeUnit unit) throws ExecutionException { return get(); }
+    public boolean isDone() { return isDone; }  // FIXME need to be implemented properly, same as below
     public boolean isCancelled() { return isCancelled; }
-    public boolean isDone() { return isDone; }
+    public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; isDone = true; return true; }
 }
