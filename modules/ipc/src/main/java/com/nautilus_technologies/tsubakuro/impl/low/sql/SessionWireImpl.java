@@ -7,9 +7,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 
 /**
- * WireImpl type.
+ * SessionWireImpl type.
  */
-public class WireImpl implements Wire {
+public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
 
     private static native long openNative(String name);
@@ -21,14 +21,10 @@ public class WireImpl implements Wire {
 	System.loadLibrary("wire");
     }
 
-    /**
-     * Creates a new instance.
-     * @param name the name of the wire, assumed that the connection name returned from the SQL service as a result of the connect operation is given
-     */
-    WireImpl(String name) throws IOException {
+    public SessionWireImpl(String name) throws IOException {
 	wireHandle = openNative(name);
 	if (wireHandle == 0) {
-	    throw new IOException("error: WireImpl.WireImpl()");
+	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");
 	}
     }
 
@@ -38,7 +34,7 @@ public class WireImpl implements Wire {
     public void close() throws IOException {
 	if (wireHandle != 0) {
 	    if (!closeNative(wireHandle)) {
-		throw new IOException("error: WireImpl.close()");
+		throw new IOException("error: SessionWireImpl.close()");
 	    }
 	    wireHandle = 0;
 	}
@@ -53,7 +49,7 @@ public class WireImpl implements Wire {
 	    long handle = sendNative(wireHandle, request.toByteArray());
 	    return new FutureResponseImpl(this, distiller, new ResponseHandleImpl(handle));
 	} else {
-	    throw new IOException("error: WireImpl.send()");
+	    throw new IOException("error: SessionWireImpl.send()");
 	}
     }
     /**
@@ -65,9 +61,13 @@ public class WireImpl implements Wire {
 	try {
 	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseHandleImpl) handle).getHandle()));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    IOException newEx = new IOException("error: WireImpl.recv()");
+	    IOException newEx = new IOException("error: SessionWireImpl.recv()");
 	    newEx.initCause(e);
 	    throw newEx;
 	}
+    }
+
+    public ResultSetWire createResultSetWire(String name) throws IOException {
+	return new ResultSetWireImpl(name);
     }
 }

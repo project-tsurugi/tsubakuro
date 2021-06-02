@@ -7,9 +7,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 
 /**
- * Wire type.
+ * SessionWire type.
  */
-public interface Wire extends Closeable {
+public interface SessionWire extends Closeable {
     /**
      * Send a request to the SQL server.
      @param request the request message encoded with protocol buffer
@@ -23,4 +23,6 @@ public interface Wire extends Closeable {
      @return ResponseProtos.Response the response message received from the SQL server
     */
     ResponseProtos.Response recv(ResponseHandle handle) throws IOException;
+
+    ResultSetWire createResultSetWire(String name) throws IOException;    
 }

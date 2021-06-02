@@ -9,7 +9,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * An abstract class of FutureResponse type.
  */
-public abstract class FutureResponse<V> implements Future<V> {
+public interface FutureResponse<V> extends Future<V> {
     /**
      * Interface Distiller classes which are innner static classes and intended to be used in FutureResponseImpl class.
      */

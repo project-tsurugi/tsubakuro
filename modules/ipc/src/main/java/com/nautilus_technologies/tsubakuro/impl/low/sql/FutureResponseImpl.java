@@ -9,11 +9,11 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * FutureResponseImpl type.
  */
-public class FutureResponseImpl<V> extends FutureResponse<V> {
+public class FutureResponseImpl<V> implements FutureResponse<V> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private WireImpl wire;
+    private SessionWireImpl wire;
     private Distiller<V> distiller;
     private ResponseHandleImpl handle;
 
@@ -23,7 +23,7 @@ public class FutureResponseImpl<V> extends FutureResponse<V> {
      * @param d the Distiller class that will work for the message to be received
      * @param h the handle indicating the message to be received in response to the outgoing message
      */
-    FutureResponseImpl(WireImpl w, Distiller<V> d, ResponseHandleImpl h) {
+    FutureResponseImpl(SessionWireImpl w, Distiller<V> d, ResponseHandleImpl h) {
 	wire = w;
 	distiller = d;
 	handle = h;

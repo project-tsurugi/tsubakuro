@@ -4,7 +4,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
  * ResponseHandleImpl type, where the type of the handle that this class stores is long.
  */
 public class ResponseHandleImpl extends ResponseHandle {
-    long handle;
+    private long handle;
 
     /**
      * Creates a new instance.

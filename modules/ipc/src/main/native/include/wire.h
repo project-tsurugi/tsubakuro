@@ -28,25 +28,25 @@ namespace tsubakuro::common::wire {
  */
 class message_header {
 public:
-    static constexpr std::size_t size = 2 * sizeof(std::size_t);
+    static constexpr std::size_t size = 2 * sizeof(std::uint16_t);
     
-    message_header(std::size_t idx, std::size_t length) : idx_(idx), length_(length) {}
+    message_header(std::uint16_t idx, std::uint16_t length) : idx_(idx), length_(length) {}
     message_header(signed char* buffer) {
-        std::memcpy(&idx_, buffer, sizeof(std::size_t));
-        std::memcpy(&length_, buffer + sizeof(std::size_t), sizeof(std::size_t));
+        std::memcpy(&idx_, buffer, sizeof(std::uint16_t));
+        std::memcpy(&length_, buffer + sizeof(std::uint16_t), sizeof(std::uint16_t));
     }
 
-    std::size_t get_length() { return length_; }
-    std::size_t get_idx() { return idx_; }
+    std::uint16_t get_length() { return length_; }
+    std::uint16_t get_idx() { return idx_; }
     signed char* get_buffer() {
-        std::memcpy(buffer_, &idx_, sizeof(std::size_t));
-        std::memcpy(buffer_ + sizeof(std::size_t), &length_, sizeof(std::size_t));
+        std::memcpy(buffer_, &idx_, sizeof(std::uint16_t));
+        std::memcpy(buffer_ + sizeof(std::uint16_t), &length_, sizeof(std::uint16_t));
         return buffer_;
     };
 
 private:
-    std::size_t idx_;
-    std::size_t length_;
+    std::uint16_t idx_;
+    std::uint16_t length_;
     signed char buffer_[size];
 };
 
@@ -82,10 +82,10 @@ public:
             m_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        std::atomic_thread_fence(std::memory_order_acquire);
         memcpy(write_point(), header.get_buffer(), message_header::size);  // FIXME should care of buffer round up
         memcpy(write_point() + message_header::size, buf, header.get_length());  // FIXME should care of buffer round up
         pushed_ += length;
+        std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_empty_.notify_one();
@@ -96,7 +96,6 @@ public:
      * @brief pop the current row.
      */
     message_header peep(bool wait = false) {
-        bool was_full = is_full();
         if (wait) {
             while(length() < message_header::size) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -106,11 +105,6 @@ public:
             if (length() < message_header::size) { return message_header(0, 0); }
         }
         message_header header(read_point());  // FIXME should care of buffer round up
-        poped_ += message_header::size;
-        if (was_full) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            m_full_.notify_one();
-        }
         return header;
     }
 
@@ -118,9 +112,14 @@ public:
      * @brief pop the current row.
      */
     void read(signed char* buf, std::size_t msg_len) {
-//        std::atomic_thread_fence(std::memory_order_acquire);
-        memcpy(buf, read_point(), msg_len);  // FIXME should care of buffer round up
-        poped_ += msg_len;
+        bool was_full = is_full();
+        memcpy(buf, read_point() + message_header::size, msg_len);  // FIXME should care of buffer round up
+        poped_ += message_header::size + msg_len;
+        std::atomic_thread_fence(std::memory_order_release);
+        if (was_full) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            m_full_.notify_one();
+        }
     }
     std::size_t length() { return (pushed_ - poped_); }
 

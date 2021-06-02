@@ -15,12 +15,12 @@
  */
 
 #include <jni.h>
-#include "com_nautilus_technologies_tsubakuro_impl_low_sql_WireImpl.h"
+#include "com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl.h"
 #include "udf_wires.h"
 
 using namespace tsubakuro::common::wire;
 
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_openNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_openNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
@@ -32,7 +32,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_W
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_sendNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -48,7 +48,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_W
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_recvNative
+JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_recvNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     response *r = reinterpret_cast<response*>(static_cast<std::uintptr_t>(handle));
@@ -74,7 +74,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
     return dstj;
 }
 
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_WireImpl_closeNative
+JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
 ([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
