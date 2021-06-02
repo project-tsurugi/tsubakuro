@@ -9,5 +9,5 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  * ResultSetWire type.
  */
 public interface ResultSetWire extends Closeable {
-    SchemaProtos.RecordMeta recvMeta();
+    SchemaProtos.RecordMeta recvMeta() throws IOException;
 }

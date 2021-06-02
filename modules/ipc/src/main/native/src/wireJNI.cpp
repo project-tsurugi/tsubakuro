@@ -83,6 +83,52 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
     return static_cast<jboolean>(true);
 }
 
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    createNative
+ * Signature: (JLjava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_createNative
+(JNIEnv *env, jclass, jlong handle, jstring name)
+{
+    session_wire_container* c = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    const char* name_ = env->GetStringUTFChars(name, NULL);
+    if (name_ == NULL) return 0;
+    jsize len_ = env->GetStringUTFLength(name);
+
+    session_wire_container::resultset_wire_container* container = c->create_resultset_wire(std::string_view(name_, len_));
+    env->ReleaseStringUTFChars(name, name_);
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    recvMetaNative
+ * Signature: (J)Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_recvMetaNative
+(JNIEnv *env, jclass, jlong handle)
+{
+    session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    auto b = container->recv_meta();
+    jobject meta = env->NewDirectByteBuffer(b.first, b.second);
+    return meta;
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    closeNative
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
+(JNIEnv *, jclass, jlong)
+{
+    return true;
+}
+
+
 signed char* response::read()
 {
     container_->read_all();

@@ -68,6 +68,6 @@ public class SessionWireImpl implements SessionWire {
     }
 
     public ResultSetWire createResultSetWire(String name) throws IOException {
-	return new ResultSetWireImpl(name);
+	return new ResultSetWireImpl(wireHandle, name);
     }
 }

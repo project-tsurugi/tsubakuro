@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.io.Closeable;
+import java.io.IOException;
 
 /**
  * ResultSet type.
@@ -35,7 +36,7 @@ public interface ResultSet extends Closeable {
      * Get the record mata data of the ResultSet
      * @return RecordMeta subclass belonging to this class
      */
-    RecordMeta getRecordMeta();
+    RecordMeta getRecordMeta() throws IOException;
 
     /**
      * Move the current pointer to the next record

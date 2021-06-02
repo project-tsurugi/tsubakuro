@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 
 /**
@@ -11,24 +12,27 @@ import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 public class ResultSetImpl implements ResultSet {
     class RecordMetaImpl implements RecordMeta {
         public CommonProtos.DataType at(int index) {
-	    return CommonProtos.DataType.INT8;
+	    return recordMeta.getColumnsList().get(index).getType();
 	}
         public boolean nullable(int index) {
-	    return true;
+	    return recordMeta.getColumnsList().get(index).getNullable();
 	}
         public long fieldCount() {
-	    return 3;
+	    return recordMeta.getColumnsList().size();
 	}
     }
 
-    private RecordMetaImpl recordMetaImpl;
     private ResultSetWire resultSetWire;
+    private SchemaProtos.RecordMeta recordMeta;
 
     public ResultSetImpl(ResultSetWire w) {
 	resultSetWire = w;
     }
 	
-    public RecordMeta getRecordMeta() { return recordMetaImpl; }
+    public RecordMeta getRecordMeta() throws IOException {
+	recordMeta = resultSetWire.recvMeta();
+	return new RecordMetaImpl();
+    }
     public boolean nextRecord() { return true; }
     public boolean isNull() { return false; }
     public int getInt4() { return 4; }

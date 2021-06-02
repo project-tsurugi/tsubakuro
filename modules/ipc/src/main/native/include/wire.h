@@ -31,7 +31,8 @@ public:
     static constexpr std::size_t size = 2 * sizeof(std::uint16_t);
     
     message_header(std::uint16_t idx, std::uint16_t length) : idx_(idx), length_(length) {}
-    message_header(signed char* buffer) {
+    message_header() : message_header(0, 0) {}
+    explicit message_header(signed char* buffer) {
         std::memcpy(&idx_, buffer, sizeof(std::uint16_t));
         std::memcpy(&length_, buffer + sizeof(std::uint16_t), sizeof(std::uint16_t));
     }
@@ -51,8 +52,35 @@ private:
 };
 
 /**
- * @brief One-to-one unidirectional communication of charactor stream
+ * @brief header information used in metadata message,
+ * it assumes that machines with the same endianness communicate with each other
  */
+class length_header {
+public:
+    static constexpr std::size_t size = sizeof(std::uint16_t);
+    
+    explicit length_header(std::uint16_t length) : length_(length) {}
+    length_header() : length_header(static_cast<std::uint16_t>(0)) {}
+    explicit length_header(signed char* buffer) {
+        std::memcpy(&length_, buffer, sizeof(std::uint16_t));
+    }
+
+    std::uint16_t get_length() { return length_; }
+    signed char* get_buffer() {
+        std::memcpy(buffer_, &length_, sizeof(std::uint16_t));
+        return buffer_;
+    };
+
+private:
+    std::uint16_t length_;
+    signed char buffer_[size];
+};
+
+
+/**
+ * @brief One-to-one unidirectional communication of charactor stream with header T
+ */
+template <typename T>
 class simple_wire
 {
 public:
@@ -75,15 +103,15 @@ public:
     /**
      * @brief push the writing row into the queue.
      */
-    void write(signed char* buf, message_header&& header) {
-        std::size_t length = header.get_length() + message_header::size;
+    void write(signed char* buf, T&& header) {
+        std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             m_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(), header.get_buffer(), message_header::size);  // FIXME should care of buffer round up
-        memcpy(write_point() + message_header::size, buf, header.get_length());  // FIXME should care of buffer round up
+        memcpy(write_point(), header.get_buffer(), T::size);  // FIXME should care of buffer round up
+        memcpy(write_point() + T::size, buf, header.get_length());  // FIXME should care of buffer round up
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -95,16 +123,16 @@ public:
     /**
      * @brief pop the current row.
      */
-    message_header peep(bool wait = false) {
+    T peep(bool wait = false) {
         if (wait) {
-            while(length() < message_header::size) {
+            while(length() < T::size) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
-                m_empty_.wait(lock, [this](){ return length() >= message_header::size; });
+                m_empty_.wait(lock, [this](){ return length() >= T::size; });
             }
         } else {
-            if (length() < message_header::size) { return message_header(0, 0); }
+            if (length() < T::size) { return T(); }
         }
-        message_header header(read_point());  // FIXME should care of buffer round up
+        T header(read_point());  // FIXME should care of buffer round up
         return header;
     }
 
@@ -113,8 +141,8 @@ public:
      */
     void read(signed char* buf, std::size_t msg_len) {
         bool was_full = is_full();
-        memcpy(buf, read_point() + message_header::size, msg_len);  // FIXME should care of buffer round up
-        poped_ += message_header::size + msg_len;
+        memcpy(buf, read_point() + T::size, msg_len);  // FIXME should care of buffer round up
+        poped_ += T::size + msg_len;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -144,34 +172,45 @@ private:
 };
 
 
-class session_wire
+class unidirectional_message_wire : public simple_wire<message_header> {
+public:
+    unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
+};
+
+class unidirectional_simple_wire : public simple_wire<length_header> {
+public:
+    unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
+};
+
+
+class bidirectional_message_wire
 {
     static constexpr std::size_t request_buffer_size = (1<<10);
     static constexpr std::size_t response_buffer_size = (1<<16);
 
 public:
-    session_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
+    bidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
         request_wire_(managed_shm_ptr, request_buffer_size), response_wire_(managed_shm_ptr, response_buffer_size) {
     }
 
     /**
      * @brief Copy and move constructers are deleted.
      */
-    session_wire(session_wire const&) = delete;
-    session_wire(session_wire&&) = delete;
-    session_wire& operator = (session_wire const&) = delete;
-    session_wire& operator = (session_wire&&) = delete;
+    bidirectional_message_wire(bidirectional_message_wire const&) = delete;
+    bidirectional_message_wire(bidirectional_message_wire&&) = delete;
+    bidirectional_message_wire& operator = (bidirectional_message_wire const&) = delete;
+    bidirectional_message_wire& operator = (bidirectional_message_wire&&) = delete;
 
-    simple_wire& get_request_wire() { return request_wire_; }
-    simple_wire& get_response_wire() { return response_wire_; }
+    unidirectional_message_wire& get_request_wire() { return request_wire_; }
+    unidirectional_message_wire& get_response_wire() { return response_wire_; }
 
 private:
-    simple_wire request_wire_;
-    simple_wire response_wire_;
+    unidirectional_message_wire request_wire_;
+    unidirectional_message_wire response_wire_;
 };
 
 
-class common_wire : public simple_wire
+class common_wire : public simple_wire<length_header>
 {
 public:
     /**
