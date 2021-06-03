@@ -71,16 +71,9 @@ public:
         resultset_wire_container(session_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {
             resultset_wire_ = envelope_->managed_shared_memory_->find<unidirectional_simple_wire>(rsw_name_.c_str()).first;
         }
-        std::pair<signed char*, std::size_t> recv_meta() {
-            std::size_t length = resultset_wire_->peep().get_length();
-            if(length < metadata_size_boundary) {
-                resultset_wire_->read(buffer, length);
-                return std::pair<signed char*, std::size_t>(buffer, length);
-            } else {
-                annex_ = std::make_unique<signed char[]>(length);
-                resultset_wire_->read(annex_.get(), length);                
-                return std::pair<signed char*, std::size_t>(annex_.get(), length);
-            }
+        std::size_t peep() { return resultset_wire_->peep().get_length(); }
+        void recv(signed char* buffer, std::size_t length) {
+            resultset_wire_->read(buffer, length);
         }
     private:
         session_wire_container *envelope_;

@@ -19,6 +19,9 @@
 
 namespace tsubakuro::common::wire {
 
+
+
+
 class wire_container
 {
     static constexpr const char* wire_name = "request_response";

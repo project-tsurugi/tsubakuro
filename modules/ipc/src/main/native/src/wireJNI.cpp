@@ -16,6 +16,7 @@
 
 #include <jni.h>
 #include "com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl.h"
+#include "com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
 
 using namespace tsubakuro::common::wire;
@@ -107,14 +108,23 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
  * Method:    recvMetaNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_recvMetaNative
+JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_recvMetaNative
 (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    auto b = container->recv_meta();
-    jobject meta = env->NewDirectByteBuffer(b.first, b.second);
-    return meta;
+    std::size_t length = container->peep();
+    jbyteArray dstj = env->NewByteArray(length);
+    if (dstj == NULL) {
+        return NULL;
+    }
+    jbyte* dst = env->GetByteArrayElements(dstj, NULL);
+    if (dst == NULL) {
+        return NULL;
+    }
+    container->recv(dst, length);
+    env->ReleaseByteArrayElements(dstj, dst, 0);
+    return dstj;
 }
 
 /*

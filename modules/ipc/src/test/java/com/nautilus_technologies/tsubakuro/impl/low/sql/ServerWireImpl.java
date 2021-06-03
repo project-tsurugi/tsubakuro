@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 
 /**
  * ServerWireImpl type.
@@ -16,6 +17,9 @@ public class ServerWireImpl implements Closeable {
     private static native byte[] getNative(long handle);
     private static native void putNative(long handle, byte[] buffer);
     private static native boolean closeNative(long handle);
+    private static native long createRSLNative(long handle, String name);
+    private static native void putRSLNative(long handle, byte[] buffer);
+    private static native long closeRSLNative(long handle);
 
     static {
 	System.loadLibrary("wire-test");
@@ -58,6 +62,22 @@ public class ServerWireImpl implements Closeable {
 	    putNative(wireHandle, response.toByteArray());
 	} else {
 	    throw new IOException("error: ServerWireImpl.put()");
+	}
+    }
+
+    public long createRSL(String name) throws IOException {
+	if (wireHandle != 0) {
+	    return createRSLNative(wireHandle, name);
+	} else {
+	    throw new IOException("error: ServerWireImpl.createRSL()");
+	}
+    }
+
+    public void putRSL(long handle, SchemaProtos.RecordMeta metadata) throws IOException {
+	if (handle != 0) {
+	    putRSLNative(handle, metadata.toByteArray());
+	} else {
+	    throw new IOException("error: ServerWireImpl.putRSL()");
 	}
     }
 }

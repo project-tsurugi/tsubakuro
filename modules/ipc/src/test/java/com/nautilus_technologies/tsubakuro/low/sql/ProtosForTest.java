@@ -795,8 +795,8 @@ public class ProtosForTest {
     /**
      * Check of Schema meta data
      */
-    static class SchemaProtosChecker {
-	static SchemaProtos.RecordMeta.Builder builder() {
+    public static class SchemaProtosChecker {
+	public static SchemaProtos.RecordMeta.Builder builder() {
 	    return
 		SchemaProtos.RecordMeta.newBuilder()
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
@@ -806,7 +806,7 @@ public class ProtosForTest {
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8).setNullable(false))
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.STRING).setNullable(true));
 	}
-	static boolean check(SchemaProtos.RecordMeta dst) {
+	public static boolean check(SchemaProtos.RecordMeta dst) {
 	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
 	    SchemaProtos.RecordMeta.Column v2 = dst.getColumnsList().get(1);
 	    SchemaProtos.RecordMeta.Column v3 = dst.getColumnsList().get(2);

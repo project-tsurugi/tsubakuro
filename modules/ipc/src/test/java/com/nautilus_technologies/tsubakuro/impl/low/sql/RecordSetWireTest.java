@@ -10,29 +10,41 @@ import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
-class SessionWireImplTest {
+class RecordSetTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
     private String wireName = "tsubakuro-session1";
 
     @Test
-    void requestBegin() {
+    void recordSetWire() {
 	try {
 	    server = new ServerWireImpl(wireName);
 	    client = new SessionWireImpl(wireName);
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new FutureResponseImpl.BeginDistiller());
+	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder().build(), new FutureResponseImpl.ExecuteQueryDistiller());
 	    // server side receive Request
-	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get()));
+	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get()));
 	    // REQUEST test end
 
 	    // RESPONSE test begin
 	    // server side send Response
-	    server.put(ProtosForTest.BeginResponseChecker.builder().build());
+	    var responseToBeSent = ProtosForTest.ExecuteQueryResponseChecker.builder().build();
+	    server.put(responseToBeSent);
+
+	    // server side send SchemaMeta
+	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
+	    server.putRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
+
 	    // client side receive Response
-	    assertTrue(ProtosForTest.ResMessageBeginChecker.check(futureResponse.get()));
+	    var responseReceived = futureResponse.get();
+	    assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
+
+	    // client side receive SchemaMeta
+	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
+	    var schemaMeta = resultSetWire.recvMeta();
+	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 	    // RESPONSE test end
 
 	    client.close();
