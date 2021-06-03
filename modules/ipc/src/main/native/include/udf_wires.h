@@ -31,7 +31,7 @@ public:
         static constexpr std::size_t max_responses_size = 256;
 
     public:
-        response(session_wire_container *container, std::size_t idx) : container_(container), idx_(idx) {}
+        response(session_wire_container *envelope, std::size_t idx) : envelope_(envelope), idx_(idx) {}
 
         /**
          * @brief Copy and move constructers are deleted.
@@ -42,7 +42,7 @@ public:
         response& operator = (response&&) = delete;
 
         signed char* read() {
-            container_->read_all();
+            envelope_->read_all();
             if (length_ > 0) {
                 return buffer_;
             }
@@ -62,7 +62,7 @@ public:
     private:
         bool inuse_{};
         signed char message_{};
-        session_wire_container *container_;
+        session_wire_container *envelope_;
         std::size_t idx_;
         signed char buffer_[ max_responses_size];
         std::size_t length_{};
