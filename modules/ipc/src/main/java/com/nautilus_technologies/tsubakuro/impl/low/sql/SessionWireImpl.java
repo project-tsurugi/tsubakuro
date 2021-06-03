@@ -47,7 +47,7 @@ public class SessionWireImpl implements SessionWire {
     public <V> FutureResponse<V> send(RequestProtos.Request request, FutureResponse.Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
 	    long handle = sendNative(wireHandle, request.toByteArray());
-	    return new FutureResponseImpl(this, distiller, new ResponseHandleImpl(handle));
+	    return new FutureResponseImpl<V>(this, distiller, new ResponseHandleImpl(handle));
 	} else {
 	    throw new IOException("error: SessionWireImpl.send()");
 	}
