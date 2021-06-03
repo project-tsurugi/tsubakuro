@@ -22,7 +22,7 @@
 using namespace tsubakuro::common::wire;
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_openNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
+(JNIEnv *env, jclass, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
@@ -34,7 +34,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 }
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
+(JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
@@ -50,7 +50,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_recvNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
+(JNIEnv *env, jclass, jlong handle)
 {
     response *r = reinterpret_cast<response*>(static_cast<std::uintptr_t>(handle));
     signed char* msg = r->read();
@@ -76,7 +76,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
 }
 
 JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
-([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
+(JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
@@ -133,9 +133,16 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
-(JNIEnv *, jclass, jlong)
+(JNIEnv *, jclass, jlong handle)
 {
-    return true;
+    session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    if (container != nullptr) {
+        session_wire_container* envelope = container->get_envelope();
+        envelope->dispose_resultset_wire(container);
+        return static_cast<jboolean>(true);
+    }
+    return static_cast<jboolean>(false);
 }
 
 
