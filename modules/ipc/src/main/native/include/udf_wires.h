@@ -19,46 +19,6 @@
 
 namespace tsubakuro::common::wire {
 
-class session_wire_container;
-
-class response
-{
-    static constexpr std::size_t max_responses_size = 256;
-
-public:
-    response(session_wire_container *container, std::size_t idx) : container_(container), idx_(idx) {}
-
-    /**
-     * @brief Copy and move constructers are deleted.
-     */
-    response(response const&) = delete;
-    response(response&&) = delete;
-    response& operator = (response const&) = delete;
-    response& operator = (response&&) = delete;
-    
-    signed char* read();
-
-    void set_length(std::size_t length) { length_ = length; }
-    std::size_t get_length() { return length_; }
-    signed char* get_buffer() { return buffer_; }
-
-    void set_inuse() { inuse_ = true; }
-    bool is_inuse() { return inuse_; }
-    void dispose() {
-        inuse_ = false;
-        length_ = 0;
-    }
-
-private:
-    bool inuse_{};
-    signed char message_{};
-    session_wire_container *container_;
-    std::size_t idx_;
-    signed char buffer_[ max_responses_size];
-    std::size_t length_{};
-};
-
-
 class session_wire_container
 {
     static constexpr const char* wire_name = "request_response";
@@ -66,6 +26,48 @@ class session_wire_container
     static constexpr std::size_t metadata_size_boundary = 256;
 
 public:
+    class response
+    {
+        static constexpr std::size_t max_responses_size = 256;
+
+    public:
+        response(session_wire_container *container, std::size_t idx) : container_(container), idx_(idx) {}
+
+        /**
+         * @brief Copy and move constructers are deleted.
+         */
+        response(response const&) = delete;
+        response(response&&) = delete;
+        response& operator = (response const&) = delete;
+        response& operator = (response&&) = delete;
+
+        signed char* read() {
+            container_->read_all();
+            if (length_ > 0) {
+                return buffer_;
+            }
+            return nullptr;
+        }
+        void set_length(std::size_t length) { length_ = length; }
+        std::size_t get_length() { return length_; }
+        signed char* get_buffer() { return buffer_; }
+
+        void set_inuse() { inuse_ = true; }
+        bool is_inuse() { return inuse_; }
+        void dispose() {
+            inuse_ = false;
+            length_ = 0;
+        }
+
+    private:
+        bool inuse_{};
+        signed char message_{};
+        session_wire_container *container_;
+        std::size_t idx_;
+        signed char buffer_[ max_responses_size];
+        std::size_t length_{};
+    };
+
     class resultset_wire_container {
     public:
         resultset_wire_container(session_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {

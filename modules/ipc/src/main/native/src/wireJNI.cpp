@@ -44,7 +44,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     if (src == nullptr) {
         std::abort();
     }
-    response *r = container->write(src, length);
+    session_wire_container::response *r = container->write(src, length);
     env->ReleaseByteArrayElements(srcj, src, 0);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
@@ -52,7 +52,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_recvNative
 (JNIEnv *env, jclass, jlong handle)
 {
-    response *r = reinterpret_cast<response*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container::response *r = reinterpret_cast<session_wire_container::response*>(static_cast<std::uintptr_t>(handle));
     signed char* msg = r->read();
 
     if (msg == NULL) {
@@ -80,8 +80,11 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    delete container;
-    return static_cast<jboolean>(true);
+    if (container != nullptr) {
+        delete container;
+        return static_cast<jboolean>(true);
+    }
+    return static_cast<jboolean>(false);
 }
 
 /*
@@ -143,14 +146,4 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
         return static_cast<jboolean>(true);
     }
     return static_cast<jboolean>(false);
-}
-
-
-signed char* response::read()
-{
-    container_->read_all();
-    if (length_ > 0) {
-        return buffer_;
-    }
-    return nullptr;
 }
