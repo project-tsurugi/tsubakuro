@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
@@ -13,8 +14,8 @@ public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
 
     private static native long openNative(String name);
-    private static native long sendNative(long handle, byte[] buffer);
-    private static native byte[] recvNative(long handle);
+    private static native long sendNative(long handle, ByteBuffer buffer);
+    private static native ByteBuffer recvNative(long handle);
     private static native boolean closeNative(long handle);
 
     static {
@@ -46,7 +47,10 @@ public class SessionWireImpl implements SessionWire {
     */
     public <V> FutureResponse<V> send(RequestProtos.Request request, FutureResponse.Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
-	    long handle = sendNative(wireHandle, request.toByteArray());
+	    var req = request.toByteString();
+	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
+	    req.copyTo(buffer);
+	    long handle = sendNative(wireHandle, buffer);
 	    return new FutureResponseImpl<V>(this, distiller, new ResponseHandleImpl(handle));
 	} else {
 	    throw new IOException("error: SessionWireImpl.send()");

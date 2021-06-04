@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 
 /**
@@ -9,7 +10,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name);
-    private static native byte[] recvMetaNative(long handle);
+    private static native ByteBuffer recvMetaNative(long handle);
     private static native boolean closeNative(long handle);
 
     private long wireHandle = 0;  // for c++
@@ -23,7 +24,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     public SchemaProtos.RecordMeta recvMeta() throws IOException {
 	try {
-	    byte[] buf = recvMetaNative(wireHandle);
+	    ByteBuffer buf = recvMetaNative(wireHandle);
 	    return SchemaProtos.RecordMeta.parseFrom(buf);
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    IOException newEx = new IOException("error: ResultSetWireImpl.recvMeta()");

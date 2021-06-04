@@ -34,45 +34,25 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 }
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendNative
-(JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
+(JNIEnv *env, jclass, jlong handle, jobject buf)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    jbyte *src = env->GetByteArrayElements(srcj, 0);
-    jsize length = env->GetArrayLength(srcj);
-
-    if (src == nullptr) {
-        std::abort();
-    }
-    session_wire_container::response *r = container->write(src, length);
-    env->ReleaseByteArrayElements(srcj, src, 0);
+    session_wire_container::response *r =
+        container->write(static_cast<signed char*>(env->GetDirectBufferAddress(buf)),
+                         env->GetDirectBufferCapacity(buf));
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_recvNative
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_recvNative
 (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container::response *r = reinterpret_cast<session_wire_container::response*>(static_cast<std::uintptr_t>(handle));
+
     signed char* msg = r->read();
 
-    if (msg == NULL) {
-        return NULL;
-    }
-
-    std::size_t length = r->get_length();
-    jbyteArray dstj = env->NewByteArray(length);
-    if (dstj == NULL) {
-        return NULL;
-    }
-    jbyte* dst = env->GetByteArrayElements(dstj, NULL);
-    if (dst == NULL) {
-        return NULL;
-    }
-
-    memcpy(dst, msg, length);
-    env->ReleaseByteArrayElements(dstj, dst, 0);
-    r->dispose();
-    return dstj;
+    if (msg == NULL) { return NULL; }
+    return env->NewDirectByteBuffer(msg, r->get_length());
 }
 
 JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
@@ -111,23 +91,13 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
  * Method:    recvMetaNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_recvMetaNative
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_recvMetaNative
 (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    std::size_t length = container->peep();
-    jbyteArray dstj = env->NewByteArray(length);
-    if (dstj == NULL) {
-        return NULL;
-    }
-    jbyte* dst = env->GetByteArrayElements(dstj, NULL);
-    if (dst == NULL) {
-        return NULL;
-    }
-    container->recv(dst, length);
-    env->ReleaseByteArrayElements(dstj, dst, 0);
-    return dstj;
+    auto b = container->recv_meta();
+    return env->NewDirectByteBuffer(b.first, b.second);
 }
 
 /*
