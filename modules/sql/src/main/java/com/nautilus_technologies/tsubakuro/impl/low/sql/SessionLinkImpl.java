@@ -13,13 +13,13 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
  * SessionLinkImpl type.
  */
 public class SessionLinkImpl implements SessionLink {
-    private Wire wire;
+    private SessionWire wire;
     
     /**
      * Creates a new instance.
      * @param w the wire responsible for the communication conducted by this session
      */
-    public SessionLinkImpl(Wire w) {
+    public SessionLinkImpl(SessionWire w) {
 	wire = w;
     }
 

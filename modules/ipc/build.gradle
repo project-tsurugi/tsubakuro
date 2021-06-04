@@ -40,9 +40,13 @@ task cmakeTestBuild {
 
 cmakeBuild.dependsOn compileJava
 
-test.dependsOn cmakeTestBuild
 cmakeTestBuild.dependsOn cmakeTestConfigure
 cmakeTestConfigure.dependsOn compileTestJava
+
+test.dependsOn compileJava
+test.dependsOn cmakeBuild
+test.dependsOn compileTestJava
+test.dependsOn cmakeTestBuild
 
 tasks.named('test') {
     systemProperty 'java.library.path', "$project.projectDir/src/main/native/build/src:$project.projectDir/src/test/native/build/src"
