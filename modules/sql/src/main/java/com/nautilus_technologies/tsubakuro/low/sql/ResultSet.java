@@ -42,23 +42,23 @@ public interface ResultSet extends Closeable {
      * Move the current pointer to the next record
      * @return true if the next record exists
      */
-    boolean nextRecord();
+    boolean nextRecord() throws IOException;
 
     /**
      * Check whether the current column is null or not
      * @return true if the current column is null
      */
-    boolean isNull();
+    boolean isNull() throws IOException;
 
     /**
      * Get the current column value
      * @return the value of the current column
      */
-    int getInt4();
-    long getInt8();
-    float getFloat4();
-    double getFloat8();
-    String getCharacter();
+    int getInt4() throws IOException;
+    long getInt8() throws IOException;
+    float getFloat4() throws IOException;
+    double getFloat8() throws IOException;
+    String getCharacter() throws IOException;
 
     /**
      * Proceed the currnet column position
