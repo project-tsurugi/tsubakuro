@@ -19,8 +19,11 @@ sourceSets {
     }
 }
 
-spotbugsMain.enabled = false
-checkstyleMain.enabled = false
+spotbugsMain {
+    onlyAnalyze = [
+        'com.nautilus_technologies.tsubakuro.impl.low.sql.*'
+    ]
+}
 
 protobuf {
     // Configure the protoc executable

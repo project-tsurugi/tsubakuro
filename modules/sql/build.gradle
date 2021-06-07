@@ -11,6 +11,3 @@ dependencies {
 
     api project(':common')
 }
-
-spotbugsMain.enabled = false
-checkstyleMain.enabled = false
