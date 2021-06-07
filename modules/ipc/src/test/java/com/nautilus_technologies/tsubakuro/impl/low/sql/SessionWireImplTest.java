@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;

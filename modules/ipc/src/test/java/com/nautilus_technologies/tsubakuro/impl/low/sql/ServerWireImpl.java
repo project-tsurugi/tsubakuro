@@ -2,7 +2,6 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
