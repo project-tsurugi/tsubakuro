@@ -1,0 +1,73 @@
+name: Tsubakuro-CI
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    strategy:
+      fail-fast: false
+      matrix:
+        container-tag: [ubuntu-18.04, ubuntu-20.04]
+    runs-on: [self-hosted, docker]
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/project-tsurugi/oltp-sandbox:${{ matrix.container-tag }}
+      credentials:
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GHCR_PAT }}
+      volumes:
+        - /work/docker-cache/.gradle:/root/.gradle
+    defaults:
+      run:
+        shell: bash
+    env:
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+
+    steps:
+      - id: Checkout
+        name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GHA_PAT }}
+
+      - id: Assemble
+        name: Assemble
+        run: |
+          ./gradlew -i clean assemble
+
+      - id: Test
+        name: Test
+        run: |
+          ./gradlew -i test
+
+      - id: Static_Analysis
+        name: Static_Analysis
+        run: |
+          ./gradlew -i checkstyleMain spotbugsMain
+        if: matrix.container-tag != 'ubuntu-18.04'
+
+      - id: Generate_Annotations
+        name: Generate_Annotations
+        uses: ./.github/actions/tsurugi-annotations-action
+        if: always()
+        with:
+          matrix: ${{ toJson(matrix) }}
+          junit_input: '**/build/test-results/**/TEST-*.xml'
+          junit_test_src_dir: 'src/test/java'
+          spotbugs_input: '**/build/reports/spotbugs/main/*.xml'
+          checkstyle_input: '**/build/reports/checkstyle/main.xml'
+
+      - id: Notify_Slack
+        name: Notify_Slack
+        uses: ./.github/actions/tsurugi-slack-action
+        if: always() && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        with:
+          kind: 'job-result'
+          channel: 'tsurugi-dev'
+          status: ${{ job.status }}
+          step_context: ${{ toJson(steps) }}
+          username: ${{ github.workflow }}
