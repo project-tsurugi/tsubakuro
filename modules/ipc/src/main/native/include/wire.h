@@ -101,7 +101,7 @@ public:
     simple_wire& operator = (simple_wire&&) = delete;
             
     /**
-     * @brief push the writing row into the queue.
+     * @brief push the message into the queue.
      */
     void write(signed char* buf, T&& header) {
         std::size_t length = header.get_length() + T::size;
@@ -121,7 +121,25 @@ public:
     }
 
     /**
-     * @brief pop the current row.
+     * @brief push the writing row into the queue.
+     */
+    void write(signed char* buf, std::size_t length) {
+        while(length > room()) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            m_full_.wait(lock, [this, length](){ return !(length < room()); } );
+        }
+        bool was_empty = is_empty();
+        memcpy(write_point(), buf, length);  // FIXME should care of buffer round up
+        pushed_ += length;
+        std::atomic_thread_fence(std::memory_order_release);
+        if (was_empty) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            m_empty_.notify_one();
+        }
+    }
+
+    /**
+     * @brief poop the current header.
      */
     T peep(bool wait = false) {
         if (wait) {
@@ -137,7 +155,7 @@ public:
     }
 
     /**
-     * @brief pop the current row.
+     * @brief pop the current message.
      */
     void read(signed char* buf, std::size_t msg_len) {
         bool was_full = is_full();
@@ -150,6 +168,21 @@ public:
         }
     }
     std::size_t length() { return (pushed_ - poped_); }
+
+    /**
+     * @brief provide the current chunk to MsgPack.
+     */
+    std::pair<signed char*, std::size_t> get_chunk() {
+        chunk_head_ = ((pushed_ / capacity_) == (poped_ / capacity_)) ? poped_ : ((pushed_ / capacity_) + 1) * capacity_;
+        return std::pair<signed char*, std::size_t>(read_point(), chunk_head_ - poped_);
+    }
+    std::pair<signed char*, std::size_t> get_next_chunk() {
+        poped_ = chunk_head_;
+        return get_chunk();
+    }
+    void dispose(std::size_t length) {
+        poped_ += length;
+    }
 
 private:
     bool is_empty() const { return pushed_ == poped_; }
@@ -165,6 +198,7 @@ private:
     std::size_t capacity_;
     std::size_t pushed_{0};
     std::size_t poped_{0};
+    std::size_t chunk_head_{0};
 
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition m_empty_{};
