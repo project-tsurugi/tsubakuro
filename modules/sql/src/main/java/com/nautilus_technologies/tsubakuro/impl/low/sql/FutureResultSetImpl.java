@@ -16,7 +16,6 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     private boolean isCancelled = false;
 
     private SessionWire sessionWire;
-    private ResultSetWire resultSetWire;
     private FutureResponse<ResponseProtos.ExecuteQuery> future;
     
     FutureResultSetImpl(FutureResponse<ResponseProtos.ExecuteQuery> f, SessionWire w) {
@@ -24,8 +23,7 @@ public class FutureResultSetImpl implements Future<ResultSet> {
 	sessionWire = w;
     }
 
-    public ResultSetImpl get() throws ExecutionException
-    {
+    public ResultSetImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.ExecuteQuery r = future.get();
 	    return new ResultSetImpl(sessionWire.createResultSetWire(r.getName()));
@@ -36,8 +34,16 @@ public class FutureResultSetImpl implements Future<ResultSet> {
         }
     }
 
-    public ResultSetImpl get(long timeout, TimeUnit unit) throws ExecutionException { return get(); }
-    public boolean isDone() { return isDone; }  // FIXME need to be implemented properly, same as below
-    public boolean isCancelled() { return isCancelled; }
-    public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; isDone = true; return true; }
+    public ResultSetImpl get(long timeout, TimeUnit unit) throws ExecutionException {
+	return get();
+    }
+    public boolean isDone() {
+	return isDone;  // FIXME need to be implemented properly, same as below
+    }
+    public boolean isCancelled() {
+	return isCancelled;
+    }
+    public boolean cancel(boolean mayInterruptIfRunning) {
+	isCancelled = true; isDone = true; return true;
+    }
 }

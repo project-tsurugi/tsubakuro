@@ -43,15 +43,13 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResultSet> processing result of the SQL service
      */
     public Future<ResultSet> executeQuery(String sql) throws IOException {
-	return new FutureResultSetImpl
-	    (sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
-							   .setExecuteQuery(RequestProtos.ExecuteQuery.newBuilder()
-									    .setTransactionHandle(transaction)
-									    .setSql(sql))
-							   .build(),
-							   new FutureResponse.ExecuteQueryDistiller()), sessionWire
-	     );
-
+	return new FutureResultSetImpl(sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
+										     .setExecuteQuery(RequestProtos.ExecuteQuery.newBuilder()
+												      .setTransactionHandle(transaction)
+												      .setSql(sql))
+										     .build(),
+										     new FutureResponse.ExecuteQueryDistiller()), sessionWire
+				       );
     };
 
     /**
@@ -77,15 +75,14 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResultSet> processing result of the SQL service
      */
     public Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
-	return new FutureResultSetImpl
-	    (sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
-							   .setExecutePreparedStatement(RequestProtos.ExecutePreparedStatement.newBuilder()
-											.setTransactionHandle(transaction)
-											.setPreparedStatementHandle(preparedStatement)
-											.setParameters(parameterSet))
-							   .build(),
-							   new FutureResponse.ExecuteQueryDistiller()), sessionWire
-	     );
+	return new FutureResultSetImpl(sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
+										     .setExecutePreparedStatement(RequestProtos.ExecutePreparedStatement.newBuilder()
+														  .setTransactionHandle(transaction)
+														  .setPreparedStatementHandle(preparedStatement)
+														  .setParameters(parameterSet))
+										     .build(),
+										     new FutureResponse.ExecuteQueryDistiller()), sessionWire
+				       );
     }
 
     /**

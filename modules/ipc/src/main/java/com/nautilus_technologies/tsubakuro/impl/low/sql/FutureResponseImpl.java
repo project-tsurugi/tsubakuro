@@ -32,8 +32,7 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
     /**
      * get the message received from the SQL server.
      */
-    public V get() throws ExecutionException
-    {
+    public V get() throws ExecutionException {
 	try {
 	    return distiller.distill(wire.recv(handle));
 	} catch (IOException e) {
@@ -41,8 +40,16 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
 	}
     }
 
-    public V get(long timeout, TimeUnit unit) throws ExecutionException { return get(); }
-    public boolean isDone() { return isDone; }  // FIXME need to be implemented properly, same as below
-    public boolean isCancelled() { return isCancelled; }
-    public boolean cancel(boolean mayInterruptIfRunning) { isCancelled = true; isDone = true; return true; }
+    public V get(long timeout, TimeUnit unit) throws ExecutionException {
+	return get();
+    }
+    public boolean isDone() {
+	return isDone;  // FIXME need to be implemented properly, same as below
+    }
+    public boolean isCancelled() {
+	return isCancelled;
+    }
+    public boolean cancel(boolean mayInterruptIfRunning) {
+	isCancelled = true; isDone = true; return true;
+    }
 }

@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
-    class RecordMetaImpl implements RecordMeta {
+    static class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
 	RecordMetaImpl(SchemaProtos.RecordMeta r) {
@@ -72,23 +72,33 @@ public class ResultSetImpl implements ResultSet {
 	return false; 
    }
     public int getInt4() throws IOException {
-	if (detectNull) { throw new IOException("column is Null"); }
+	if (detectNull) {
+	    throw new IOException("column is Null");
+	}
 	return unpacker.unpackInt();
     }
     public long getInt8() throws IOException {
-	if (detectNull) { throw new IOException("column is Null"); }
+	if (detectNull) {
+	    throw new IOException("column is Null");
+	}
 	return unpacker.unpackLong();
     }
     public float getFloat4() throws IOException {
-	if (detectNull) { throw new IOException("column is Null"); }
+	if (detectNull) {
+	    throw new IOException("column is Null");
+	}
 	return unpacker.unpackFloat();
     }
     public double getFloat8() throws IOException {
-	if (detectNull) { throw new IOException("column is Null"); }
+	if (detectNull) {
+	    throw new IOException("column is Null");
+	}
 	return unpacker.unpackDouble();
     }
     public String getCharacter() throws IOException {
-	if (detectNull) { throw new IOException("column is Null"); }
+	if (detectNull) {
+	    throw new IOException("column is Null");
+	}
 	return unpacker.unpackString();
     }
     public boolean nextColumn() {
