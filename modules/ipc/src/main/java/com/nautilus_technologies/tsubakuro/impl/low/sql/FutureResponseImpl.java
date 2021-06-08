@@ -9,7 +9,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * FutureResponseImpl type.
  */
-public class FutureResponseImpl<V> implements FutureResponse<V> {
+public class FutureResponseImpl<V> implements Future<V> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 

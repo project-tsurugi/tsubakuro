@@ -22,7 +22,7 @@ class RecordSetTest {
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder().build(), new FutureResponseImpl.ExecuteQueryDistiller());
+	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder().build(), new ExecuteQueryDistiller());
 	    // server side receive Request
 	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get()));
 	    // REQUEST test end

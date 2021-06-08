@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,7 +45,7 @@ public class SessionWireImpl implements SessionWire {
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
-    public <V> FutureResponse<V> send(RequestProtos.Request request, FutureResponse.Distiller<V> distiller) throws IOException {
+    public <V> Future<V> send(RequestProtos.Request request, Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
 	    var req = request.toByteString();
 	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());

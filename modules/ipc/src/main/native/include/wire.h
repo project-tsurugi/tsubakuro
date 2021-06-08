@@ -183,8 +183,12 @@ public:
         chunk_end_ = (pushed_ / capacity_) * capacity_;
         return std::pair<signed char*, std::size_t>(read_point(), chunk_end_ - poped_);
     }
+    /**
+     * @brief dispose of data that has completed read and is no longer needed
+     */
     void dispose(std::size_t length) {
         poped_ += length;
+        chunk_end_ = 0;
     }
 
 private:

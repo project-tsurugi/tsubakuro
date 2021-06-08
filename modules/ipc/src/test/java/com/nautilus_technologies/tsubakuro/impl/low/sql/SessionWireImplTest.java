@@ -22,7 +22,7 @@ class SessionWireImplTest {
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new FutureResponseImpl.BeginDistiller());
+	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new BeginDistiller());
 	    // server side receive Request
 	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get()));
 	    // REQUEST test end

@@ -16,9 +16,9 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     private boolean isCancelled = false;
 
     private SessionWire sessionWire;
-    private FutureResponse<ResponseProtos.ExecuteQuery> future;
+    private Future<ResponseProtos.ExecuteQuery> future;
     
-    FutureResultSetImpl(FutureResponse<ResponseProtos.ExecuteQuery> f, SessionWire w) {
+    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> f, SessionWire w) {
 	future = f;
 	sessionWire = w;
     }
