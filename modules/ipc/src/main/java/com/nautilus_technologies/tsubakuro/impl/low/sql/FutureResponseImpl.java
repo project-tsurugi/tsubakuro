@@ -15,7 +15,7 @@ public class FutureResponseImpl<V> implements Future<V> {
 
     private SessionWireImpl wire;
     private Distiller<V> distiller;
-    private ResponseHandleImpl handle;
+    private ResponseWireHandleImpl handle;
 
     /**
      * Creates a new instance.
@@ -23,10 +23,10 @@ public class FutureResponseImpl<V> implements Future<V> {
      * @param d the Distiller class that will work for the message to be received
      * @param h the handle indicating the message to be received in response to the outgoing message
      */
-    FutureResponseImpl(SessionWireImpl w, Distiller<V> d, ResponseHandleImpl h) {
-	wire = w;
-	distiller = d;
-	handle = h;
+    FutureResponseImpl(SessionWireImpl wire, Distiller<V> distiller, ResponseWireHandleImpl handle) {
+	this.wire = wire;
+	this.distiller = distiller;
+	this.handle = handle;
     }
 	
     /**

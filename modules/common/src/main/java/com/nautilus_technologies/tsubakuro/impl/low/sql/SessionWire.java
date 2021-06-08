@@ -19,10 +19,10 @@ public interface SessionWire extends Closeable {
 
     /**
      * Receive the message corresponding to the given ResponseHandle from the SQL server
-     @param handle the data that contains information indicating the interface to receive incoming message
+     @param wire the information of communication wire to receive incoming message
      @return ResponseProtos.Response the response message received from the SQL server
     */
-    ResponseProtos.Response recv(ResponseHandle handle) throws IOException;
+    ResponseProtos.Response recv(ResponseWireHandle handle) throws IOException;
 
     ResultSetWire createResultSetWire(String name) throws IOException;    
 }

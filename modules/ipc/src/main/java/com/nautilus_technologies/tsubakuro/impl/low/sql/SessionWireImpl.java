@@ -51,7 +51,7 @@ public class SessionWireImpl implements SessionWire {
 	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
 	    req.copyTo(buffer);
 	    long handle = sendNative(wireHandle, buffer);
-	    return new FutureResponseImpl<V>(this, distiller, new ResponseHandleImpl(handle));
+	    return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
 	} else {
 	    throw new IOException("error: SessionWireImpl.send()");
 	}
@@ -61,13 +61,11 @@ public class SessionWireImpl implements SessionWire {
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
-    public ResponseProtos.Response recv(ResponseHandle handle) throws IOException {
+    public ResponseProtos.Response recv(ResponseWireHandle handle) throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseHandleImpl) handle).getHandle()));
+	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseWireHandleImpl) handle).getHandle()));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    IOException newEx = new IOException("error: SessionWireImpl.recv()");
-	    newEx.initCause(e);
-	    throw newEx;
+	    throw new IOException("error: SessionWireImpl.recv()", e);
 	}
     }
 

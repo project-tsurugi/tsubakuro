@@ -5,22 +5,21 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionLink;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 
 /**
  * SessionLinkImpl type.
  */
-public class SessionLinkImpl implements SessionLink {
+public class SessionLinkImpl {
     private SessionWire wire;
     
     /**
      * Creates a new instance.
      * @param w the wire responsible for the communication conducted by this session
      */
-    public SessionLinkImpl(SessionWire w) {
-	wire = w;
+    public SessionLinkImpl(SessionWire wire) {
+	this.wire = wire;
     }
 
     /**
