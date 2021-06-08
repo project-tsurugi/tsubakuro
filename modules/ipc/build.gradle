@@ -11,9 +11,6 @@ dependencies {
     implementation project(':common')
 }
 
-spotbugsMain.enabled = false
-checkstyleMain.enabled = false
-
 compileTestJava {
     options.headerOutputDirectory = file("$project.projectDir/src/test/native/include")
 }

@@ -25,14 +25,11 @@ checkstyle {
 }
 
 spotbugsMain {
+    ignoreFailures = true
     reports {
         xml {
             enabled = true
-        }
-        html {
-            enabled = true
-            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.xml")
         }
     }
 }
