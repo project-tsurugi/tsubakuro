@@ -9,13 +9,13 @@ import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
-class RecordSetTest {
+class ResultSetTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
     private String wireName = "tsubakuro-session1";
 
     @Test
-    void recordSetWire() {
+    void resultSetWire() {
 	try {
 	    server = new ServerWireImpl(wireName);
 	    client = new SessionWireImpl(wireName);
