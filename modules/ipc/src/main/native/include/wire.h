@@ -173,12 +173,15 @@ public:
      * @brief provide the current chunk to MsgPack.
      */
     std::pair<signed char*, std::size_t> get_chunk() {
-        chunk_head_ = ((pushed_ / capacity_) == (poped_ / capacity_)) ? poped_ : ((pushed_ / capacity_) + 1) * capacity_;
-        return std::pair<signed char*, std::size_t>(read_point(), chunk_head_ - poped_);
-    }
-    std::pair<signed char*, std::size_t> get_next_chunk() {
-        poped_ = chunk_head_;
-        return get_chunk();
+        if (chunk_end_ != 0) {
+            chunk_end_ = 0;            
+            return std::pair<signed char*, std::size_t>(point(chunk_end_), pushed_ - chunk_end_);
+        }
+        if ((pushed_ / capacity_) == (poped_ / capacity_)) {
+            return std::pair<signed char*, std::size_t>(read_point(), pushed_ - poped_);
+        }
+        chunk_end_ = (pushed_ / capacity_) * capacity_;
+        return std::pair<signed char*, std::size_t>(read_point(), chunk_end_ - poped_);
     }
     void dispose(std::size_t length) {
         poped_ += length;
@@ -191,6 +194,7 @@ private:
     std::size_t index(std::size_t n) const { return n %  capacity_; }
     signed char* read_point() { return buffer_ + index(poped_); }
     signed char* write_point() { return buffer_ + index(pushed_); }
+    signed char* point(std::size_t i) { return buffer_ + index(i); }
     
     boost::interprocess::managed_shared_memory* managed_shm_ptr_;
     signed char* buffer_;
@@ -198,7 +202,7 @@ private:
     std::size_t capacity_;
     std::size_t pushed_{0};
     std::size_t poped_{0};
-    std::size_t chunk_head_{0};
+    std::size_t chunk_end_{0};
 
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition m_empty_{};
@@ -214,6 +218,10 @@ public:
 class unidirectional_simple_wire : public simple_wire<length_header> {
 public:
     unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
+    void set_eor() { eor_ = true; }
+    bool is_eor() { return eor_; }
+private:
+    bool eor_{false};
 };
 
 
