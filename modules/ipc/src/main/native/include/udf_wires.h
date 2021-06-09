@@ -85,6 +85,15 @@ public:
                 return std::pair<signed char*, std::size_t>(annex_.get(), length);
             }
         }
+        std::pair<signed char*, std::size_t> get_chunk() {
+            return resultset_wire_->get_chunk();
+        }
+        void dispose(std::size_t length) {
+            resultset_wire_->dispose(length);
+        }
+        bool is_eor() {
+            return resultset_wire_->is_eor();
+        }
         session_wire_container* get_envelope() { return envelope_; }
     private:
         session_wire_container *envelope_;

@@ -1,17 +1,17 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 /**
- * ResponseHandleImpl type, where the type of the handle that this class stores is long.
+ * ResponseWireHandleImpl type, where the type of the handle that this class stores is long.
  */
-public class ResponseHandleImpl extends ResponseHandle {
+public class ResponseWireHandleImpl extends ResponseWireHandle {
     private long handle;
 
     /**
      * Creates a new instance.
      * @param h the handle that this class stores.
      */
-    ResponseHandleImpl(long h) {
-	handle = h;
+    ResponseWireHandleImpl(long handle) {
+	this.handle = handle;
     }
     /**
      * Returns the handle.

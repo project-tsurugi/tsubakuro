@@ -9,13 +9,13 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 /**
  * FutureResponseImpl type.
  */
-public class FutureResponseImpl<V> implements FutureResponse<V> {
+public class FutureResponseImpl<V> implements Future<V> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
     private SessionWireImpl wire;
     private Distiller<V> distiller;
-    private ResponseHandleImpl handle;
+    private ResponseWireHandleImpl handle;
 
     /**
      * Creates a new instance.
@@ -23,10 +23,10 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
      * @param d the Distiller class that will work for the message to be received
      * @param h the handle indicating the message to be received in response to the outgoing message
      */
-    FutureResponseImpl(SessionWireImpl w, Distiller<V> d, ResponseHandleImpl h) {
-	wire = w;
-	distiller = d;
-	handle = h;
+    FutureResponseImpl(SessionWireImpl wire, Distiller<V> distiller, ResponseWireHandleImpl handle) {
+	this.wire = wire;
+	this.distiller = distiller;
+	this.handle = handle;
     }
 	
     /**
@@ -41,15 +41,17 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
     }
 
     public V get(long timeout, TimeUnit unit) throws ExecutionException {
-	return get();
+	return get();  // FIXME need to be implemented properly, same as below
     }
     public boolean isDone() {
-	return isDone;  // FIXME need to be implemented properly, same as below
+	return isDone;
     }
     public boolean isCancelled() {
 	return isCancelled;
     }
     public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true; isDone = true; return true;
+	isCancelled = true;
+	isDone = true;
+	return true;
     }
 }

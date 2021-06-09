@@ -15,10 +15,12 @@ public class ServerWireImpl implements Closeable {
     private static native long createNative(String name);
     private static native byte[] getNative(long handle);
     private static native void putNative(long handle, byte[] buffer);
-    private static native boolean closeNative(long handle);
+    private static native void closeNative(long handle);
     private static native long createRSLNative(long handle, String name);
-    private static native void putRSLNative(long handle, byte[] buffer);
-    private static native long closeRSLNative(long handle);
+    private static native void putSchemaRSLNative(long handle, byte[] buffer);
+    private static native void putRecordsRSLNative(long handle, byte[] buffer);
+    private static native void setEndOfRecordsRSLNative(long handle);
+    private static native void closeRSLNative(long handle);
 
     static {
 	System.loadLibrary("wire-test");
@@ -33,9 +35,7 @@ public class ServerWireImpl implements Closeable {
 
     public void close() throws IOException {
 	if (wireHandle != 0) {
-	    if (!closeNative(wireHandle)) {
-		throw new IOException("error: ServerWireImpl.close()");
-	    }
+	    closeNative(wireHandle);
 	    wireHandle = 0;
 	}
     }
@@ -60,7 +60,7 @@ public class ServerWireImpl implements Closeable {
 	if (wireHandle != 0) {
 	    putNative(wireHandle, response.toByteArray());
 	} else {
-	    throw new IOException("error: ServerWireImpl.put()");
+	    throw new IOException("error: sessionWireHandle is 0");
 	}
     }
 
@@ -72,11 +72,27 @@ public class ServerWireImpl implements Closeable {
 	}
     }
 
-    public void putRSL(long handle, SchemaProtos.RecordMeta metadata) throws IOException {
+    public void putSchemaRSL(long handle, SchemaProtos.RecordMeta metadata) throws IOException {
 	if (handle != 0) {
-	    putRSLNative(handle, metadata.toByteArray());
+	    putSchemaRSLNative(handle, metadata.toByteArray());
 	} else {
-	    throw new IOException("error: ServerWireImpl.putRSL()");
+	    throw new IOException("error: resultSetWireHandle is 0");
+	}
+    }
+
+    public void putRecordsRSL(long handle, byte[] ba) throws IOException {
+	if (handle != 0) {
+	    putRecordsRSLNative(handle, ba);
+	} else {
+	    throw new IOException("error: resultSetWireHandle is 0");
+	}
+    }
+
+    public void setEndOfRecordsRSL(long handle) throws IOException {
+	if (handle != 0) {
+	    setEndOfRecordsRSLNative(handle);
+	} else {
+	    throw new IOException("error: resultSetWireHandle is 0");
 	}
     }
 }

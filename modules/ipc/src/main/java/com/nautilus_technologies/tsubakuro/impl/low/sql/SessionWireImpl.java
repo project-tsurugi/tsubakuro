@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,7 +25,7 @@ public class SessionWireImpl implements SessionWire {
     public SessionWireImpl(String name) throws IOException {
 	wireHandle = openNative(name);
 	if (wireHandle == 0) {
-	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");
+	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");  // FIXME
 	}
     }
 
@@ -44,13 +45,13 @@ public class SessionWireImpl implements SessionWire {
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
-    public <V> FutureResponse<V> send(RequestProtos.Request request, FutureResponse.Distiller<V> distiller) throws IOException {
+    public <V> Future<V> send(RequestProtos.Request request, Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
 	    var req = request.toByteString();
 	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
 	    req.copyTo(buffer);
 	    long handle = sendNative(wireHandle, buffer);
-	    return new FutureResponseImpl<V>(this, distiller, new ResponseHandleImpl(handle));
+	    return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
 	} else {
 	    throw new IOException("error: SessionWireImpl.send()");
 	}
@@ -60,13 +61,11 @@ public class SessionWireImpl implements SessionWire {
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
-    public ResponseProtos.Response recv(ResponseHandle handle) throws IOException {
+    public ResponseProtos.Response recv(ResponseWireHandle handle) throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseHandleImpl) handle).getHandle()));
+	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseWireHandleImpl) handle).getHandle()));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    IOException newEx = new IOException("error: SessionWireImpl.recv()");
-	    newEx.initCause(e);
-	    throw newEx;
+	    throw new IOException("error: SessionWireImpl.recv()", e);
 	}
     }
 

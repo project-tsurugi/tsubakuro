@@ -19,8 +19,8 @@ public class ResultSetImpl implements ResultSet {
     static class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
-	RecordMetaImpl(SchemaProtos.RecordMeta r) {
-	    recordMeta = r;
+	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
+	    this.recordMeta = recordMeta;
 	}
         public CommonProtos.DataType at(int index) {
 	    return recordMeta.getColumnsList().get(index).getType();
@@ -35,28 +35,27 @@ public class ResultSetImpl implements ResultSet {
 
     private ResultSetWire resultSetWire;
     private RecordMetaImpl recordMetaImpl;
-    private ResultSetWire.MsgPackInputStream inputStream;
+    private ResultSetWire.MessagePackInputStream inputStream;
     private MessageUnpacker unpacker;
     private int columnIndex;
     private boolean detectNull;
     
-    public ResultSetImpl(ResultSetWire w) {
-	resultSetWire = w;
+    public ResultSetImpl(ResultSetWire resultSetWire) {
+	this.resultSetWire = resultSetWire;
     }
 	
     public RecordMeta getRecordMeta() throws IOException {
-	recordMetaImpl = new RecordMetaImpl(resultSetWire.recvMeta());
+	recordMetaImpl = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
 	return recordMetaImpl;
     }
 
     public boolean nextRecord() throws IOException {
-	if (unpacker == null) {
-	    inputStream = resultSetWire.getMsgPackInputStream();
-	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
-	} else {
-	    inputStream.dispose(unpacker.getTotalReadBytes());
+	if (unpacker != null) {
+	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 	}
-	columnIndex = 0;
+	inputStream = resultSetWire.getMessagePackInputStream();
+	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	columnIndex = -1;
 	return unpacker.hasNext();
     }
     public boolean isNull() throws IOException {
@@ -65,7 +64,6 @@ public class ResultSetImpl implements ResultSet {
 	    ValueType type = format.getValueType();
 	    if (type == ValueType.NIL) {
 		unpacker.unpackNil();
-		
 		return true;
 	    }
 	}
@@ -102,6 +100,7 @@ public class ResultSetImpl implements ResultSet {
 	return unpacker.unpackString();
     }
     public boolean nextColumn() {
+	columnIndex++;
 	detectNull = false;
 	if (columnIndex < recordMetaImpl.fieldCount()) {
 	    return true;

@@ -34,7 +34,7 @@ public class TransactionImpl implements Transaction {
 									 .setTransactionHandle(transaction)
 									 .setSql(sql)
 									 ).build(),
-						    new FutureResponse.ResultOnlyDistiller());
+						    new ResultOnlyDistiller());
     }
 
     /**
@@ -48,7 +48,7 @@ public class TransactionImpl implements Transaction {
 												      .setTransactionHandle(transaction)
 												      .setSql(sql))
 										     .build(),
-										     new FutureResponse.ExecuteQueryDistiller()), sessionWire
+										     new ExecuteQueryDistiller()), sessionWire
 				       );
     };
 
@@ -65,7 +65,7 @@ public class TransactionImpl implements Transaction {
 										 .setPreparedStatementHandle(preparedStatement)
 										 .setParameters(parameterSet))
 						    .build(),
-						    new FutureResponse.ResultOnlyDistiller());
+						    new ResultOnlyDistiller());
     }
 
     /**
@@ -81,7 +81,7 @@ public class TransactionImpl implements Transaction {
 														  .setPreparedStatementHandle(preparedStatement)
 														  .setParameters(parameterSet))
 										     .build(),
-										     new FutureResponse.ExecuteQueryDistiller()), sessionWire
+										     new ExecuteQueryDistiller()), sessionWire
 				       );
     }
 

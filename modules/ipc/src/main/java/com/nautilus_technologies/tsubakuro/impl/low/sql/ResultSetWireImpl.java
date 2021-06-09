@@ -12,9 +12,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name);
     private static native ByteBuffer recvMetaNative(long handle);
-    private static native ByteBuffer msgNative(long handle);
-    private static native ByteBuffer nextChunkNative(long handle);
+    private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeNative(long handle, long length);
+    private static native boolean isEndOfRecordNative(long handle);
     private static native boolean closeNative(long handle);
 
     private long wireHandle = 0;  // for c++
@@ -26,49 +26,53 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
-    public SchemaProtos.RecordMeta recvMeta() throws IOException {
+    public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	try {
 	    ByteBuffer buf = recvMetaNative(wireHandle);
 	    return SchemaProtos.RecordMeta.parseFrom(buf);
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    IOException newEx = new IOException("error: ResultSetWireImpl.recvMeta()");
-	    newEx.initCause(e);
-	    throw newEx;
+	    throw new IOException("error: ResultSetWireImpl.receiveSchemaMetaData()", e);
 	}
     }
 
-    class ByteBufferBackedInputStream extends MsgPackInputStream {
+    class ByteBufferBackedInputStream extends MessagePackInputStream {
 	ByteBuffer buf;
 
 	ByteBufferBackedInputStream() {
-	    buf = ResultSetWireImpl.msgNative(wireHandle);
+	    buf = ResultSetWireImpl.getChunkNative(wireHandle);
 	}
 	public synchronized int read() throws IOException {
 	    if (!buf.hasRemaining()) {
-		buf = ResultSetWireImpl.nextChunkNative(wireHandle);
+		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
-		    return -1;
+		    if (ResultSetWireImpl.isEndOfRecordNative(wireHandle)) {
+			return -1;
+		    }
+		    throw new IOException("info: Record has not been arrived at ResultSetWireImpl");  //  FIXME Record has not been arrived
 		}
 	    }
 	    return buf.get();
 	}
 	public synchronized int read(byte[] bytes, int off, int len) throws IOException {
 	    if (!buf.hasRemaining()) {
-		buf = ResultSetWireImpl.nextChunkNative(wireHandle);
+		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
-		    return -1;
+		    if (ResultSetWireImpl.isEndOfRecordNative(wireHandle)) {
+			return -1;
+		    }
+		    throw new IOException("info: Record has not been arrived at ResultSetWireImpl");  //  FIXME Record has not been arrived
 		}
 	    }
 	    len = Math.min(len, buf.remaining());
 	    buf.get(bytes, off, len);
 	    return len;
 	}
-	public synchronized void dispose(long length) {
+	public synchronized void disposeUsedData(long length) {
 	    ResultSetWireImpl.disposeNative(wireHandle, length);	    
 	}
     }
 
-    public MsgPackInputStream getMsgPackInputStream() {
+    public MessagePackInputStream getMessagePackInputStream() {
 	return new ByteBufferBackedInputStream();
     }
 

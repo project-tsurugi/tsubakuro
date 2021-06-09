@@ -59,13 +59,12 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeNative
 ([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
 
     delete container;
-    return static_cast<jboolean>(true);
 }
 
 /*
@@ -89,10 +88,10 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
- * Method:    putRSLNative
- * Signature: (J[B)J
+ * Method:    putSchemaRSLNative
+ * Signature: (J[B)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putRSLNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putSchemaRSLNative
 (JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
     wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -107,4 +106,53 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 
     wire.write(src, length_header(capacity));
     env->ReleaseByteArrayElements(srcj, src, 0);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Method:    putRecordsRSLNative
+ * Signature: (J[B)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putRecordsRSLNative
+(JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
+{
+    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    auto& wire = container->get_resultset_wire();
+
+    jbyte *src = env->GetByteArrayElements(srcj, 0);
+    jsize capacity = env->GetArrayLength(srcj);
+
+    if (src == nullptr) {
+        std::abort();  // This is OK, because server_wire is used for test purpose only
+    }
+
+    wire.write(src, capacity);
+    env->ReleaseByteArrayElements(srcj, src, 0);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Method:    setEndOfRecordsRSLNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_setEndOfRecordsRSLNative
+(JNIEnv *, jclass, jlong handle)
+{
+    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    auto& wire = container->get_resultset_wire();
+
+    wire.set_eor();
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Method:    closeRSLNative
+ * Signature: (J)J
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeRSLNative
+(JNIEnv *, jclass, jlong handle)
+{
+    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    delete container;
 }

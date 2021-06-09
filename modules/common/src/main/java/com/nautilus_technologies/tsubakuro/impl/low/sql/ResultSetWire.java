@@ -10,11 +10,11 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  * ResultSetWire type.
  */
 public interface ResultSetWire extends Closeable {
-    SchemaProtos.RecordMeta recvMeta() throws IOException;
+    SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException;
 
-    abstract class MsgPackInputStream extends InputStream {
-	public abstract void dispose(long length);
+    abstract class MessagePackInputStream extends InputStream {
+	public abstract void disposeUsedData(long length);
     }
 
-    MsgPackInputStream getMsgPackInputStream();
+    MessagePackInputStream getMessagePackInputStream();
 }

@@ -102,6 +102,49 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    msgNative
+ * Signature: (J)Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_getChunkNative
+(JNIEnv *env, jclass, jlong handle)
+{
+    session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    auto buf = container->get_chunk();
+    if(buf.second > 0) {
+        return env->NewDirectByteBuffer(buf.first, buf.second);
+    }
+    return nullptr;
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    disposeNative
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_disposeNative
+(JNIEnv *, jclass, jlong handle, jlong length)
+{
+    session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    container->dispose(static_cast<std::size_t>(length));
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    isEndOfRecordNative
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_isEndOfRecordNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    return static_cast<jboolean>(container->is_eor());
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
  * Method:    closeNative
  * Signature: (J)Z
  */
