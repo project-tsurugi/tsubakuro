@@ -9,7 +9,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
-class SessionWireImplTest {
+class SessionWireTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
     private String wireName = "tsubakuro-session1";

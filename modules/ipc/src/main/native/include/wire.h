@@ -121,7 +121,7 @@ public:
     }
 
     /**
-     * @brief push the writing row into the queue.
+     * @brief push record into the queue.
      */
     void write(signed char* buf, std::size_t length) {
         while(length > room()) {

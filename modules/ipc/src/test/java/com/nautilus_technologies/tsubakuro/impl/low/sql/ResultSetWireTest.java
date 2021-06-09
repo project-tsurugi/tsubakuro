@@ -4,15 +4,46 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ExecutionException;
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.value.ValueType;
+
 import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
-class ResultSetTest {
+class ResultSetWireTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
     private String wireName = "tsubakuro-session1";
+
+    byte[] createRecordsForTest() throws IOException {
+	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
+
+	// first column data
+	packer.packLong((long) 987654321);
+	packer.packDouble((double) 12345.6789);
+	packer.packString("This is a string for the test");
+	packer.packLong((long) 123456789);
+	packer.packDouble((double) 98765.4321);
+	packer.packNil();
+
+	// second column data
+	packer.packLong((long) 876543219);
+	packer.packDouble((double) 2345.67891);
+	packer.packNil();
+	packer.packLong((long) 234567891);
+	packer.packDouble((double) 8765.43219);
+	packer.packString("This is second string for the test");
+
+	packer.flush();
+	return outputStream.toByteArray();
+    }
 
     @Test
     void resultSetWire() {
@@ -34,7 +65,11 @@ class ResultSetTest {
 
 	    // server side send SchemaMeta
 	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
-	    server.putRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
+	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
+
+	    // server side send Records
+	    server.putRecordsRSL(rsHandle, createRecordsForTest());
+	    server.setEndOfRecordsRSL(rsHandle);
 
 	    // client side receive Response
 	    var responseReceived = futureResponse.get();
@@ -44,6 +79,59 @@ class ResultSetTest {
 	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
 	    var schemaMeta = resultSetWire.recvMeta();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
+
+	    // client side receive Records
+	    // first column data
+	    var inputStream = resultSetWire.getMsgPackInputStream();
+	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
+	    assertEquals(unpacker.unpackLong(), 987654321L);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.FLOAT);
+	    assertEquals(unpacker.unpackDouble(), (double) 12345.6789);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.STRING);
+	    assertEquals(unpacker.unpackString(), "This is a string for the test");
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
+	    assertEquals(unpacker.unpackLong(), 123456789L);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.FLOAT);
+	    assertEquals(unpacker.unpackDouble(), (double) 98765.4321);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.NIL);
+	    unpacker.unpackNil();
+
+	    inputStream.dispose(unpacker.getTotalReadBytes());
+
+	    // second column data
+	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
+	    assertEquals(unpacker.unpackLong(), 876543219L);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.FLOAT);
+	    assertEquals(unpacker.unpackDouble(), (double) 2345.67891);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.NIL);
+	    unpacker.unpackNil();
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
+	    assertEquals(unpacker.unpackLong(), 234567891L);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.FLOAT);
+	    assertEquals(unpacker.unpackDouble(), (double) 8765.43219);
+
+	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.STRING);
+	    assertEquals(unpacker.unpackString(), "This is second string for the test");
+
+	    inputStream.dispose(unpacker.getTotalReadBytes());
+
+	    // end of record
+	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+
+	    assertFalse(unpacker.hasNext());
 	    // RESPONSE test end
 
 	    client.close();

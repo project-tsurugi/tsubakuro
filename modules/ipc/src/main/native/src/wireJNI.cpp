@@ -111,7 +111,7 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
     session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     auto buf = container->get_chunk();
-    if(buf.first != nullptr) {
+    if(buf.second > 0) {
         return env->NewDirectByteBuffer(buf.first, buf.second);
     }
     return nullptr;
