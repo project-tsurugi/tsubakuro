@@ -4,37 +4,35 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 
 /**
- * FutureResultSetImpl type.
+ * FutureTransactionImpl type.
  */
-public class FutureResultSetImpl implements Future<ResultSet> {
+public class FutureTransactionImpl implements Future<Transaction> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private SessionLinkImpl sessionLink;
-    private Future<ResponseProtos.ExecuteQuery> future;
+    private Future<ResponseProtos.Begin> future;
+    SessionLinkImpl sessionLink;
     
-    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLink) {
+    FutureTransactionImpl(SessionLinkImpl link, Future<ResponseProtos.Begin> future) {
 	this.future = future;
-	this.sessionLink = sessionLink;
+	this.sessionLink = link;
     }
 
-    public ResultSetImpl get() throws ExecutionException {
+    public TransactionImpl get() throws ExecutionException {
 	try {
-	    ResponseProtos.ExecuteQuery response = future.get();
-	    return new ResultSetImpl(sessionLink.createResultSetWire(response.getName()));
-	} catch (IOException e) {
-            throw new ExecutionException(e);
+	    ResponseProtos.Begin response = future.get();
+	    return new TransactionImpl(sessionLink, response.getTransactionHandle());
 	} catch (InterruptedException e) {
             throw new ExecutionException(e);
         }
     }
 
-    public ResultSetImpl get(long timeout, TimeUnit unit) throws ExecutionException {
+    public TransactionImpl get(long timeout, TimeUnit unit) throws ExecutionException {
 	return get();  // FIXME need to be implemented properly, same as below
     }
     public boolean isDone() {

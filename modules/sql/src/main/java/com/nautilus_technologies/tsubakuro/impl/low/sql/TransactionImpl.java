@@ -13,14 +13,12 @@ import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
  * Transaction type.
  */
 public class TransactionImpl implements Transaction {
-    SessionWire sessionWire;
+    SessionLinkImpl sessionLink;
     CommonProtos.Transaction transaction;
-    boolean done;
     
-    public TransactionImpl(SessionWire w, CommonProtos.Transaction t) {
-	sessionWire = w;
-	transaction = t;
-	done = false;
+    public TransactionImpl(SessionLinkImpl sessionLink, CommonProtos.Transaction transaction) {
+	this.sessionLink = sessionLink;
+	this.transaction = transaction;
     }
 
     /**
@@ -29,12 +27,10 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
     public Future<ResponseProtos.ResultOnly> executeStatement(String sql) throws IOException {
-	return sessionWire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder()
-						    .setExecuteStatement(RequestProtos.ExecuteStatement.newBuilder()
-									 .setTransactionHandle(transaction)
-									 .setSql(sql)
-									 ).build(),
-						    new ResultOnlyDistiller());
+	return sessionLink.send(RequestProtos.ExecuteStatement.newBuilder()
+				.setTransactionHandle(transaction)
+				.setSql(sql)
+				.build());
     }
 
     /**
@@ -43,13 +39,11 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResultSet> processing result of the SQL service
      */
     public Future<ResultSet> executeQuery(String sql) throws IOException {
-	return new FutureResultSetImpl(sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
-										     .setExecuteQuery(RequestProtos.ExecuteQuery.newBuilder()
-												      .setTransactionHandle(transaction)
-												      .setSql(sql))
-										     .build(),
-										     new ExecuteQueryDistiller()), sessionWire
-				       );
+	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecuteQuery.newBuilder()
+							.setTransactionHandle(transaction)
+							.setSql(sql)
+							.build()),
+				       sessionLink);
     };
 
     /**
@@ -59,13 +53,11 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
     public Future<ResponseProtos.ResultOnly> executeStatement(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
-    	return sessionWire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder()
-						    .setExecutePreparedStatement(RequestProtos.ExecutePreparedStatement.newBuilder()
-										 .setTransactionHandle(transaction)
-										 .setPreparedStatementHandle(preparedStatement)
-										 .setParameters(parameterSet))
-						    .build(),
-						    new ResultOnlyDistiller());
+    	return sessionLink.send(RequestProtos.ExecutePreparedStatement.newBuilder()
+				.setTransactionHandle(transaction)
+				.setPreparedStatementHandle(preparedStatement)
+				.setParameters(parameterSet)
+				.build());
     }
 
     /**
@@ -75,22 +67,37 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResultSet> processing result of the SQL service
      */
     public Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
-	return new FutureResultSetImpl(sessionWire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder()
-										     .setExecutePreparedStatement(RequestProtos.ExecutePreparedStatement.newBuilder()
-														  .setTransactionHandle(transaction)
-														  .setPreparedStatementHandle(preparedStatement)
-														  .setParameters(parameterSet))
-										     .build(),
-										     new ExecuteQueryDistiller()), sessionWire
-				       );
+	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecutePreparedQuery.newBuilder()
+							.setTransactionHandle(transaction)
+							.setPreparedStatementHandle(preparedStatement)
+							.setParameters(parameterSet)
+							.build()),
+				       sessionLink);
+    }
+
+    /**
+     * Request commit to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    public Future<ResponseProtos.ResultOnly> commit() throws IOException {
+	return sessionLink.send(RequestProtos.Commit.newBuilder()
+				.setTransactionHandle(transaction)
+				.build());
+    }
+
+    /**
+     * Request rollback to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    public Future<ResponseProtos.ResultOnly> rollback() throws IOException {
+	return sessionLink.send(RequestProtos.Rollback.newBuilder()
+				.setTransactionHandle(transaction)
+				.build());
     }
 
     /**
      * Close the Transaction
      */
-    public void close() throws IOException {
-        if (!done) {
-	    throw new IOException("error: TransactionImpl.close()");
-	}
+    public void close() throws IOException {  // FIXME
     }
 }

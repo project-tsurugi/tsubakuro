@@ -37,4 +37,16 @@ public interface Transaction extends Closeable {
      * @return Future<ResultSet> processing result of the SQL service
      */
     Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
+
+    /**
+     * Request commit to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    Future<ResponseProtos.ResultOnly> commit() throws IOException;
+
+    /**
+     * Request rollback to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    Future<ResponseProtos.ResultOnly> rollback() throws IOException;
 }
