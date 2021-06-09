@@ -25,7 +25,7 @@ public class SessionWireImpl implements SessionWire {
     public SessionWireImpl(String name) throws IOException {
 	wireHandle = openNative(name);
 	if (wireHandle == 0) {
-	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");
+	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");  // FIXME
 	}
     }
 
