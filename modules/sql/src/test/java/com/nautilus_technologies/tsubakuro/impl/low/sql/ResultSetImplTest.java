@@ -60,13 +60,13 @@ class ResultSetImplTest {
 		position = 0;
 	    }
 
-	    public synchronized int read() throws IOException {
+	    public int read() throws IOException {
 		if (!buf.hasRemaining()) {
 		    return -1;
 		}
 		return buf.get();
 	    }
-	    public synchronized int read(byte[] bytes, int off, int len) throws IOException {
+	    public int read(byte[] bytes, int off, int len) throws IOException {
 		if (!buf.hasRemaining()) {
 		    return -1;
 		}
