@@ -67,7 +67,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    buf.get(bytes, off, len);
 	    return len;
 	}
-	public synchronized void dispose(long length) {
+	public synchronized void disposeUsedData(long length) {
 	    ResultSetWireImpl.disposeNative(wireHandle, length);	    
 	}
     }

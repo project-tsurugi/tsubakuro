@@ -51,7 +51,7 @@ public class ResultSetImpl implements ResultSet {
 
     public boolean nextRecord() throws IOException {
 	if (unpacker != null) {
-	    inputStream.dispose(unpacker.getTotalReadBytes());
+	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 	}
 	inputStream = resultSetWire.getMessagePackInputStream();
 	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);

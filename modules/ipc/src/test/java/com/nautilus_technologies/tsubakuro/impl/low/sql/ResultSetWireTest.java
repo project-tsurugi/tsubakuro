@@ -103,7 +103,7 @@ class ResultSetWireTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.NIL);
 	    unpacker.unpackNil();
 
-	    inputStream.dispose(unpacker.getTotalReadBytes());
+	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 
 	    // second column data
 	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
@@ -126,7 +126,7 @@ class ResultSetWireTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.STRING);
 	    assertEquals(unpacker.unpackString(), "This is second string for the test");
 
-	    inputStream.dispose(unpacker.getTotalReadBytes());
+	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 
 	    // end of record
 	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);

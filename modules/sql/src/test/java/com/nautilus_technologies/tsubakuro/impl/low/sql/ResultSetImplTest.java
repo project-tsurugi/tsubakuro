@@ -74,7 +74,7 @@ class ResultSetImplTest {
 		buf.get(bytes, off, len);
 		return len;
 	    }
-	    public void dispose(long length) {
+	    public void disposeUsedData(long length) {
 		position += length;
 		buf.position(position);
 	    }

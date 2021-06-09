@@ -13,7 +13,7 @@ public interface ResultSetWire extends Closeable {
     SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException;
 
     abstract class MessagePackInputStream extends InputStream {
-	public abstract void dispose(long length);
+	public abstract void disposeUsedData(long length);
     }
 
     MessagePackInputStream getMessagePackInputStream();
