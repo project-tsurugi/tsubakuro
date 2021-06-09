@@ -15,18 +15,18 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private SessionWire sessionWire;
+    private SessionLinkImpl sessionLink;
     private Future<ResponseProtos.ExecuteQuery> future;
     
-    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionWire sessionWire) {
+    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLink) {
 	this.future = future;
-	this.sessionWire = sessionWire;
+	this.sessionLink = sessionLink;
     }
 
     public ResultSetImpl get() throws ExecutionException {
 	try {
-	    ResponseProtos.ExecuteQuery r = future.get();
-	    return new ResultSetImpl(sessionWire.createResultSetWire(r.getName()));
+	    ResponseProtos.ExecuteQuery response = future.get();
+	    return new ResultSetImpl(sessionLink.createResultSetWire(response.getName()));
 	} catch (IOException e) {
             throw new ExecutionException(e);
 	} catch (InterruptedException e) {

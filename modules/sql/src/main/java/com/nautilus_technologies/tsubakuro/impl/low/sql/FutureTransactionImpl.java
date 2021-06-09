@@ -4,33 +4,35 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 
 /**
- * FuturePreparedStatementImpl type.
+ * FutureTransactionImpl type.
  */
-public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
+public class FutureTransactionImpl implements Future<Transaction> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private Future<ResponseProtos.Prepare> future;
+    private Future<ResponseProtos.Begin> future;
+    SessionLinkImpl sessionLink;
     
-    FuturePreparedStatementImpl(Future<ResponseProtos.Prepare> future) {
+    FutureTransactionImpl(SessionLinkImpl link, Future<ResponseProtos.Begin> future) {
 	this.future = future;
+	this.sessionLink = link;
     }
 
-    public PreparedStatementImpl get() throws ExecutionException {
+    public TransactionImpl get() throws ExecutionException {
 	try {
-	    ResponseProtos.Prepare response = future.get();
-	    return new PreparedStatementImpl(response.getPreparedStatementHandle());
+	    ResponseProtos.Begin response = future.get();
+	    return new TransactionImpl(sessionLink, response.getTransactionHandle());
 	} catch (InterruptedException e) {
             throw new ExecutionException(e);
         }
     }
 
-    public PreparedStatementImpl get(long timeout, TimeUnit unit) throws ExecutionException {
+    public TransactionImpl get(long timeout, TimeUnit unit) throws ExecutionException {
 	return get();  // FIXME need to be implemented properly, same as below
     }
     public boolean isDone() {

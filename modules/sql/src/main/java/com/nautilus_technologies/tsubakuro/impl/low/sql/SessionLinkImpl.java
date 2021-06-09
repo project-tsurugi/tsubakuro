@@ -1,10 +1,10 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
@@ -112,4 +112,8 @@ public class SessionLinkImpl {
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect request) throws IOException {
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisconnect(request).build(), new ResultOnlyDistiller());
     };
+
+    public ResultSetWire createResultSetWire(String name) throws IOException {
+	return wire.createResultSetWire(name);
+    }
 }
