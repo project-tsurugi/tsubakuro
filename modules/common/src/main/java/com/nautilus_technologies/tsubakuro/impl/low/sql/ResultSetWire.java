@@ -12,9 +12,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 public interface ResultSetWire extends Closeable {
     SchemaProtos.RecordMeta recvMeta() throws IOException;
 
-    abstract class MsgPackInputStream extends InputStream {
+    abstract class MessagePackInputStream extends InputStream {
 	public abstract void dispose(long length);
     }
 
-    MsgPackInputStream getMsgPackInputStream();
+    MessagePackInputStream getMessagePackInputStream();
 }

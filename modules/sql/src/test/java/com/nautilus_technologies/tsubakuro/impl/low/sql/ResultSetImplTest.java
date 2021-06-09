@@ -22,11 +22,11 @@ import org.junit.jupiter.api.Test;
 
 class ResultSetImplTest {
     class ResultSetWireMock implements ResultSetWire {
-	class MsgPackInputStreamMock extends MsgPackInputStream {
+	class MessagePackInputStreamMock extends MessagePackInputStream {
 	    private ByteBuffer buf;
 	    private int position;
 	    
-	    MsgPackInputStreamMock() {
+	    MessagePackInputStreamMock() {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
 
@@ -80,17 +80,17 @@ class ResultSetImplTest {
 	    }
 	}
 
-	MsgPackInputStreamMock msgPackInputStreamMock;
+	MessagePackInputStreamMock msgPackInputStreamMock;
 
 	ResultSetWireMock() {
-	    msgPackInputStreamMock = new MsgPackInputStreamMock();
+	    msgPackInputStreamMock = new MessagePackInputStreamMock();
 	}
 
 	public SchemaProtos.RecordMeta recvMeta() throws IOException {
 	    return ProtosForTest.SchemaProtosChecker.builder().build();
 	}
 
-	public MsgPackInputStream getMsgPackInputStream() {
+	public MessagePackInputStream getMessagePackInputStream() {
 	    return msgPackInputStreamMock;
 	}
 

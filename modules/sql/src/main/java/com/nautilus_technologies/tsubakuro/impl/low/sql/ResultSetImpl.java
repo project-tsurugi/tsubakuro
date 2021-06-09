@@ -35,7 +35,7 @@ public class ResultSetImpl implements ResultSet {
 
     private ResultSetWire resultSetWire;
     private RecordMetaImpl recordMetaImpl;
-    private ResultSetWire.MsgPackInputStream inputStream;
+    private ResultSetWire.MessagePackInputStream inputStream;
     private MessageUnpacker unpacker;
     private int columnIndex;
     private boolean detectNull;
@@ -53,7 +53,7 @@ public class ResultSetImpl implements ResultSet {
 	if (unpacker != null) {
 	    inputStream.dispose(unpacker.getTotalReadBytes());
 	}
-	inputStream = resultSetWire.getMsgPackInputStream();
+	inputStream = resultSetWire.getMessagePackInputStream();
 	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 	columnIndex = -1;
 	return unpacker.hasNext();

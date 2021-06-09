@@ -35,7 +35,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
-    class ByteBufferBackedInputStream extends MsgPackInputStream {
+    class ByteBufferBackedInputStream extends MessagePackInputStream {
 	ByteBuffer buf;
 
 	ByteBufferBackedInputStream() {
@@ -72,7 +72,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
-    public MsgPackInputStream getMsgPackInputStream() {
+    public MessagePackInputStream getMessagePackInputStream() {
 	return new ByteBufferBackedInputStream();
     }
 

@@ -82,7 +82,7 @@ class ResultSetWireTest {
 
 	    // client side receive Records
 	    // first column data
-	    var inputStream = resultSetWire.getMsgPackInputStream();
+	    var inputStream = resultSetWire.getMessagePackInputStream();
 	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
