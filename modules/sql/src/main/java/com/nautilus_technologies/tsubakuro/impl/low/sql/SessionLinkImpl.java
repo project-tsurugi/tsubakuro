@@ -5,6 +5,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 
@@ -27,8 +28,8 @@ public class SessionLinkImpl {
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.Prepare> contains prepared statement handle
     */
-    public Future<ResponseProtos.Prepare> send(RequestProtos.Prepare request) throws IOException {
-	return wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request).build(), new PrepareDistiller());
+    public Future<PreparedStatement> send(RequestProtos.Prepare request) throws IOException {
+	return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request).build(), new PrepareDistiller()));
     };
 
     /**
