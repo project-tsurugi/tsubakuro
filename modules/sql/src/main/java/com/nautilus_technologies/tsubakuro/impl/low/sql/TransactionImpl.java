@@ -17,10 +17,10 @@ public class TransactionImpl implements Transaction {
     CommonProtos.Transaction transaction;
     boolean done;
     
-    public TransactionImpl(SessionWire w, CommonProtos.Transaction t) {
-	sessionWire = w;
-	transaction = t;
-	done = false;
+    public TransactionImpl(SessionWire sessionWire, CommonProtos.Transaction transaction) {
+	this.sessionWire = sessionWire;
+	this.transaction = transaction;
+	this.done = false;
     }
 
     /**
@@ -83,6 +83,30 @@ public class TransactionImpl implements Transaction {
 										     .build(),
 										     new ExecuteQueryDistiller()), sessionWire
 				       );
+    }
+
+    /**
+     * Request commit to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    public Future<ResponseProtos.ResultOnly> commit() throws IOException {
+	return sessionWire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder()
+							   .setCommit(RequestProtos.Commit.newBuilder()
+								      .setTransactionHandle(transaction)
+								      ).build(),
+							   new ResultOnlyDistiller());
+    }
+
+    /**
+     * Request rollback to the SQL service
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    public Future<ResponseProtos.ResultOnly> rollback() throws IOException {
+	return sessionWire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder()
+							   .setRollback(RequestProtos.Rollback.newBuilder()
+									.setTransactionHandle(transaction)
+									).build(),
+							   new ResultOnlyDistiller());
     }
 
     /**
