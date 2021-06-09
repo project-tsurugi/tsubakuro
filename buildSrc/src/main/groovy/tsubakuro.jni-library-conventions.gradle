@@ -6,7 +6,20 @@ def nativeRootDir = "$project.projectDir/src/main/native"
 def nativeBuildDir = "${nativeRootDir}/build"
 def nativeIncludeDir = "${nativeRootDir}/include"
 
+def nativeTestRootDir = "$project.projectDir/src/test/native"
+def nativeTestBuildDir = "${nativeTestRootDir}/build"
+def nativeTestIncludeDir = "${nativeTestRootDir}/include"
+
 task cmakeConfigure {
+    inputs.files(fileTree(nativeRootDir) {
+        exclude 'build/**'
+    })
+    .skipWhenEmpty()
+    .withPropertyName('nativeRootDir')
+
+    outputs.dir(nativeBuildDir)
+    .withPropertyName('nativeBuildDir')
+
     doLast {
         exec {
             mkdir "$nativeBuildDir"
@@ -16,7 +29,35 @@ task cmakeConfigure {
     }
 }
 
+task cmakeTestConfigure {
+    inputs.files(fileTree(nativeTestRootDir) {
+        exclude 'build/**'
+    })
+    .skipWhenEmpty()
+    .withPropertyName('nativeTestRootDir')
+
+    outputs.dir(nativeTestBuildDir)
+    .withPropertyName('nativeTestBuildDir')
+
+    doLast {
+        exec {
+            mkdir "$nativeTestBuildDir"
+            workingDir "$nativeTestBuildDir"
+            commandLine "cmake", ".."
+        }
+    }
+}
+
 task cmakeBuild {
+    inputs.files(fileTree(nativeRootDir) {
+        exclude 'build/**'
+    })
+    .skipWhenEmpty()
+    .withPropertyName('nativeRootDir')
+
+    outputs.dir(nativeBuildDir)
+    .withPropertyName('nativeBuildDir')
+
     doLast {
         exec {
             mkdir "$nativeBuildDir"
@@ -26,18 +67,48 @@ task cmakeBuild {
     }
 }
 
-test.dependsOn cmakeBuild
-assemble.dependsOn cmakeBuild
-cmakeBuild.dependsOn cmakeConfigure
+task cmakeTestBuild {
+    inputs.files(fileTree(nativeTestRootDir) {
+        exclude 'build/**'
+    })
+    .skipWhenEmpty()
+    .withPropertyName('nativeTestRootDir')
 
-tasks.named('test') {
-    systemProperty 'java.library.path', "${nativeBuildDir}/src"
+    outputs.dir(nativeTestBuildDir)
+    .withPropertyName('nativeTestBuildDir')
+
+    doLast {
+        exec {
+            mkdir "$nativeTestBuildDir"
+            workingDir "$nativeTestBuildDir"
+            commandLine "cmake", "--build", ".", "--", "-j"
+        }
+    }
 }
+
+assemble.dependsOn cmakeBuild
+test.dependsOn cmakeTestBuild
+
+cmakeConfigure.dependsOn compileJava
+cmakeTestConfigure.dependsOn compileTestJava
+
+cmakeBuild.dependsOn cmakeConfigure
+cmakeTestBuild.dependsOn cmakeTestConfigure
 
 clean {
     delete += "$nativeBuildDir"
 }
+cleanTest {
+    delete += "$nativeTestBuildDir"
+}
 
 compileJava {
     options.headerOutputDirectory = file("${nativeIncludeDir}")
+}
+compileTestJava {
+    options.headerOutputDirectory = file("${nativeTestIncludeDir}")
+}
+
+tasks.named('test') {
+    systemProperty 'java.library.path', "${nativeBuildDir}/src:${nativeTestBuildDir}/src"
 }
