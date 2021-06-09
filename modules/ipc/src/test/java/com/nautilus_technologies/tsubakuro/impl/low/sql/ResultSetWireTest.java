@@ -77,7 +77,7 @@ class ResultSetWireTest {
 
 	    // client side receive SchemaMeta
 	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
-	    var schemaMeta = resultSetWire.recvMeta();
+	    var schemaMeta = resultSetWire.receiveSchemaMetaData();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
 	    // client side receive Records

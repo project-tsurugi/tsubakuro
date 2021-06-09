@@ -26,12 +26,12 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
-    public SchemaProtos.RecordMeta recvMeta() throws IOException {
+    public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	try {
 	    ByteBuffer buf = recvMetaNative(wireHandle);
 	    return SchemaProtos.RecordMeta.parseFrom(buf);
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    throw new IOException("error: ResultSetWireImpl.recvMeta()", e);
+	    throw new IOException("error: ResultSetWireImpl.receiveSchemaMetaData()", e);
 	}
     }
 

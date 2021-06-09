@@ -86,7 +86,7 @@ class ResultSetImplTest {
 	    msgPackInputStreamMock = new MessagePackInputStreamMock();
 	}
 
-	public SchemaProtos.RecordMeta recvMeta() throws IOException {
+	public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	    return ProtosForTest.SchemaProtosChecker.builder().build();
 	}
 

@@ -45,7 +45,7 @@ public class ResultSetImpl implements ResultSet {
     }
 	
     public RecordMeta getRecordMeta() throws IOException {
-	recordMetaImpl = new RecordMetaImpl(resultSetWire.recvMeta());
+	recordMetaImpl = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
 	return recordMetaImpl;
     }
 
