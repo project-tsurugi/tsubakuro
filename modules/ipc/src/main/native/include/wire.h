@@ -107,7 +107,7 @@ public:
         std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_full_.wait(lock, [this, length](){ return !(length < room()); } );
+            c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
         memcpy(write_point(), header.get_buffer(), T::size);  // FIXME should care of buffer round up
@@ -116,7 +116,7 @@ public:
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_empty_.notify_one();
+            c_empty_.notify_one();
         }
     }
 
@@ -126,7 +126,7 @@ public:
     void write(signed char* buf, std::size_t length) {
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_full_.wait(lock, [this, length](){ return !(length < room()); } );
+            c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
         memcpy(write_point(), buf, length);  // FIXME should care of buffer round up
@@ -134,7 +134,7 @@ public:
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_empty_.notify_one();
+            c_empty_.notify_one();
         }
     }
 
@@ -145,7 +145,7 @@ public:
         if (wait) {
             while(length() < T::size) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
-                m_empty_.wait(lock, [this](){ return length() >= T::size; });
+                c_empty_.wait(lock, [this](){ return length() >= T::size; });
             }
         } else {
             if (length() < T::size) { return T(); }
@@ -164,7 +164,7 @@ public:
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            m_full_.notify_one();
+            c_full_.notify_one();
         }
     }
     std::size_t length() { return (pushed_ - poped_); }
@@ -209,8 +209,8 @@ private:
     std::size_t chunk_end_{0};
 
     boost::interprocess::interprocess_mutex m_mutex_{};
-    boost::interprocess::interprocess_condition m_empty_{};
-    boost::interprocess::interprocess_condition m_full_{};
+    boost::interprocess::interprocess_condition c_empty_{};
+    boost::interprocess::interprocess_condition c_full_{};
 };
 
 
@@ -274,19 +274,34 @@ public:
     connection_queue& operator = (connection_queue&&) = delete;
 
     ulong request() {
-        return ++requested_;
-    }
-    ulong check(ulong n) { return accepted_ >= n; }
-    ulong accept() {
-        if (accepted_ < requested_) {
-            return ++accepted_;
+        ulong rv;
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            rv = ++requested_;
+            c_requested_.notify_one();
         }
-        return 0;
+        return rv;
+    }
+    bool check(ulong n) { return accepted_ >= n; }
+    ulong accept(bool wait = false) {
+        do {
+            if (accepted_ < requested_) {
+                return ++accepted_;
+            }
+            if (!wait) {
+                return 0;
+            } else {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_requested_.wait(lock, [this](){ return (accepted_ < requested_); });
+            }
+        } while (true);
     }
 
 private:
-    std::atomic_ulong requested_{0};
+    ulong requested_{0};
     ulong accepted_{0};
+    boost::interprocess::interprocess_mutex m_mutex_{};
+    boost::interprocess::interprocess_condition c_requested_{};
 };
 
 };  // namespace tsubakuro::common
