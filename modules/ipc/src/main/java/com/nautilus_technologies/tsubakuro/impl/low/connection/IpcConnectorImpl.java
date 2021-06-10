@@ -11,7 +11,7 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
  */
 public final class IpcConnectorImpl {
     private static native long requestConnectionNative(String name);
-    private static native boolean checkConnectionNative(long handle);
+    private static native boolean checkConnectionNative(String name, long handle);
 
     static {
 	System.loadLibrary("wire");
@@ -26,11 +26,11 @@ public final class IpcConnectorImpl {
 	return new FutureSessionWireImpl(name, handle);
     }
 
-    public static SessionWire getSessionWire(String name) throws IOException {
-	return new SessionWireImpl(name);
+    public static SessionWire getSessionWire(String name, long handle) throws IOException {
+	return new SessionWireImpl(name + "-" + String.valueOf(handle));
     }
 
-    public static boolean checkConnection(long handle) {
-	return checkConnectionNative(handle);
+    public static boolean checkConnection(String name, long handle) {
+	return checkConnectionNative(name, handle);
     }
 }

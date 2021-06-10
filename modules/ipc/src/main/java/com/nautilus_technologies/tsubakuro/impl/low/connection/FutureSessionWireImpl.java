@@ -24,7 +24,7 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 
     public SessionWire get() throws ExecutionException {
 	try {
-	    return IpcConnectorImpl.getSessionWire(name + "-" + String.valueOf(handle));
+	    return IpcConnectorImpl.getSessionWire(name, handle);
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}
@@ -34,7 +34,7 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	return get();  // FIXME need to be implemented properly, same as below
     }
     public boolean isDone() {
-	return isDone || IpcConnectorImpl.checkConnection(handle);
+	return isDone || IpcConnectorImpl.checkConnection(name, handle);
     }
     public boolean isCancelled() {
 	return isCancelled;

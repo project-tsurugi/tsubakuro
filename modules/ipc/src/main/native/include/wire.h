@@ -256,50 +256,40 @@ private:
 };
 
 
-class common_wire : public simple_wire<length_header>
+class connection_queue
 {
 public:
+    constexpr static const char* name = "connection_queue";
+
     /**
      * @brief Construct a new object.
      */
-    common_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t  capacity) :
-        simple_wire(managed_shm_ptr, capacity) {}
+    connection_queue() = default;
 
     /**
      * @brief Copy and move constructers are deleted.
      */
-    common_wire(common_wire const&) = delete;
-    common_wire(common_wire&&) = delete;
-    common_wire& operator = (common_wire const&) = delete;
-    common_wire& operator = (common_wire&&) = delete;
+    connection_queue(connection_queue const&) = delete;
+    connection_queue(connection_queue&&) = delete;
+    connection_queue& operator = (connection_queue const&) = delete;
+    connection_queue& operator = (connection_queue&&) = delete;
 
-    /**
-     * @brief lock this channel. (for server channel)
-     */
-    void lock() {
-        boost::interprocess::scoped_lock lock(m_lock_mutex_);
-        while (locked_) {
-            m_not_locked_.wait(lock, [this](){ return !locked_; } );
+    ulong request() { return requested.fetch_add(1); }
+    ulong check(ulong n) { return accepted >= n; }
+    ulong acquire_request() { return requested.fetch_add(1); }
+    void acknoledge_request(ulong n) {
+        if ((accepted + 1) == n) {
+            accepted++;
+        } else if(accepted < n) {
+            accepted = n;
+        } else {
+            std::abort();
         }
-        locked_ = true;
-        lock.unlock();
     }
-
-    /**
-     * @brief unlock this channel.
-     */
-    void unlock() {
-        boost::interprocess::scoped_lock lock(m_lock_mutex_);
-        locked_ = false;
-        lock.unlock();
-        m_not_locked_.notify_one();
-    }
-
     
 private:
-    boost::interprocess::interprocess_mutex m_lock_mutex_{};
-    boost::interprocess::interprocess_condition m_not_locked_{};
-    bool locked_{false};
+    std::atomic_ulong requested{1};
+    ulong accepted{1};
 };
 
 };  // namespace tsubakuro::common
