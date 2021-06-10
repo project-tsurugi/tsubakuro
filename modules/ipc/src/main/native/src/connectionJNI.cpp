@@ -16,59 +16,59 @@
 
 #include <jni.h>
 #include "com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl.h"
-#include "wire.h"
+#include "udf_wires.h"
 
 using namespace tsubakuro::common::wire;
 
-static connection_queue* get_connection_queue(std::string_view db_name)
-{
-    boost::interprocess::managed_shared_memory segment(boost::interprocess::open_only, std::string(db_name).c_str());
-    auto connection_queue_ptr = segment.find<connection_queue>(connection_queue::name).first;
-    return connection_queue_ptr;
-}
-
-long connection_request(std::string_view db_name)
-{
-    auto connection_queue_ptr = get_connection_queue(db_name);
-    return connection_queue_ptr->request();
-}
-
-bool connection_check(std::string_view db_name, long n)
-{
-    auto connection_queue_ptr = get_connection_queue(db_name);
-    return connection_queue_ptr->check(n);
-}
-
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
- * Method:    requestConnectionNative
+ * Method:    getConnectorNative
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_requestConnectionNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_getConnectorNative
 (JNIEnv *env, jclass, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    auto rv = connection_request(std::string_view(name_, len_));
+    connection_container* container = new connection_container(std::string_view(name_, len_));
     env->ReleaseStringUTFChars(name, name_);
-    return rv;
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
- * Method:    checkConnectionNative
- * Signature: (J)Z
+ * Method:    requestNative
+ * Signature: (J)J
  */
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_checkConnectionNative
-(JNIEnv *env, jclass, jstring name, jlong handle)
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_requestNative
+(JNIEnv *, jclass, jlong handle)
 {
-    const char* name_ = env->GetStringUTFChars(name, NULL);
-    if (name_ == NULL) return false;
-    jsize len_ = env->GetStringUTFLength(name);
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    return container->get_connection_queue().request();
+}
 
-    auto rv = connection_check(std::string_view(name_, len_), handle);
-    env->ReleaseStringUTFChars(name, name_);
-    return rv;
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
+ * Method:    checkNative
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_checkNative
+(JNIEnv *, jclass, jlong handle, jlong id)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    return container->get_connection_queue().check(id);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
+ * Method:    closeConnectorNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_closeConnectorNative
+(JNIEnv *, jclass, jlong handle)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    delete container;
 }

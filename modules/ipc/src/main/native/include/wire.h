@@ -255,7 +255,6 @@ private:
     unidirectional_message_wire response_wire_;
 };
 
-
 class connection_queue
 {
 public:
@@ -274,22 +273,20 @@ public:
     connection_queue& operator = (connection_queue const&) = delete;
     connection_queue& operator = (connection_queue&&) = delete;
 
-    ulong request() { return requested.fetch_add(1); }
-    ulong check(ulong n) { return accepted >= n; }
-    ulong acquire_request() { return requested.fetch_add(1); }
-    void acknoledge_request(ulong n) {
-        if ((accepted + 1) == n) {
-            accepted++;
-        } else if(accepted < n) {
-            accepted = n;
-        } else {
-            std::abort();
-        }
+    ulong request() {
+        return ++requested_;
     }
-    
+    ulong check(ulong n) { return accepted_ >= n; }
+    ulong accept() {
+        if (accepted_ < requested_) {
+            return ++accepted_;
+        }
+        return 0;
+    }
+
 private:
-    std::atomic_ulong requested{1};
-    ulong accepted{1};
+    std::atomic_ulong requested_{0};
+    ulong accepted_{0};
 };
 
 };  // namespace tsubakuro::common
