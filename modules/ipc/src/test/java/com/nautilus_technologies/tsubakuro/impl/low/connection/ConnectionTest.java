@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.ServerWireImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.CommunicationChecker;
 
 import org.junit.jupiter.api.Test;
 
@@ -29,8 +30,7 @@ class ConnectionTest {
 	    server = new ServerWireImpl(dbName + "-" + String.valueOf(handle));
 	    client = (SessionWireImpl) future.get();
 	    
-
-
+	    CommunicationChecker.check(server, client);
 
 	    client.close();
 	    serverConnection.close();
