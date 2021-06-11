@@ -2,13 +2,15 @@ package com.nautilus_technologies.tsubakuro.impl.low.connection;
 
 import java.io.Closeable;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.ServerWireImpl;
 
 /**
  * ServerConnectionImpl type.
  */
 public class ServerConnectionImpl implements Closeable {
-    private static native long listenNative(String name);
-    private static native long acceptNative(long handle);
+    private static native long createNative(String name);
+    private static native long listenNative(long handle);
+    private static native void acceptNative(long handle, long id);
     private static native void closeNative(long handle);
 
     static {
@@ -16,13 +18,20 @@ public class ServerConnectionImpl implements Closeable {
     }
 
     private long handle;
+    private String name;
 
     ServerConnectionImpl(String name) throws IOException {
-	this.handle = listenNative(name);
+	this.handle = createNative(name);
+	this.name = name;
     }
 
-    public long accept() {
-	return acceptNative(handle);
+    public long listen() {
+	return listenNative(handle);
+    }
+
+    public ServerWireImpl accept(long id) throws IOException {
+	acceptNative(handle, id);
+	return new ServerWireImpl(name + "-" + String.valueOf(id));
     }
 
     public void close() throws IOException {

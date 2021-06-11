@@ -273,20 +273,30 @@ public:
     connection_queue& operator = (connection_queue const&) = delete;
     connection_queue& operator = (connection_queue&&) = delete;
 
-    ulong request() {
-        ulong rv;
-        {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            rv = ++requested_;
-            c_requested_.notify_one();
-        }
+    std::size_t request() {
+        std::size_t rv;
+
+        boost::interprocess::scoped_lock lock(m_mutex_);
+        rv = ++requested_;
+        c_requested_.notify_one();
         return rv;
     }
-    bool check(ulong n) { return accepted_ >= n; }
-    ulong accept(bool wait = false) {
+    bool check(std::size_t n, bool wait = false) {
+        do {
+            if (!wait) {
+                return accepted_ >= n;
+            } else if (accepted_ >= n) {
+                return true;
+            } else {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
+            }
+        } while (true);
+    }
+    std::size_t listen(bool wait = false) {
         do {
             if (accepted_ < requested_) {
-                return ++accepted_;
+                return accepted_ + 1;
             }
             if (!wait) {
                 return 0;
@@ -296,12 +306,26 @@ public:
             }
         } while (true);
     }
+    void accept(std::size_t n) {
+        if (n == (accepted_ + 1)) {
+            if (n <= requested_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                accepted_ = n;
+                c_accepted_.notify_all();
+                return;
+            } else {
+                std::abort();  // not requested
+            }
+        }
+        std::abort();  // sessionID is not continuous
+    }
 
 private:
-    ulong requested_{0};
-    ulong accepted_{0};
+    std::size_t requested_{0};
+    std::size_t accepted_{0};
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_requested_{};
+    boost::interprocess::interprocess_condition c_accepted_{};
 };
 
 };  // namespace tsubakuro::common

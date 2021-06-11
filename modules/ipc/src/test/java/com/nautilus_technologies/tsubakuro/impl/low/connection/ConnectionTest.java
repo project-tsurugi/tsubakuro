@@ -22,14 +22,14 @@ class ConnectionTest {
 
 	try {
 	    serverConnection = new ServerConnectionImpl(dbName);
-	    assertEquals(serverConnection.accept(), 0);
+	    assertEquals(serverConnection.listen(), 0);
 
 	    var future = IpcConnectorImpl.connect(dbName);
-	    var handle = serverConnection.accept();
-	    assertEquals(handle, 1);
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(handle));
+	    var id = serverConnection.listen();
+	    assertEquals(id, 1);
+	    server = serverConnection.accept(id);
 	    client = (SessionWireImpl) future.get();
-	    
+
 	    CommunicationChecker.check(server, client);
 
 	    client.close();

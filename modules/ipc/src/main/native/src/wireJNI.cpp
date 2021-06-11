@@ -34,6 +34,12 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     jsize len_ = env->GetStringUTFLength(name);
 
     session_wire_container* container = new session_wire_container(std::string_view(name_, len_));
+    if (container == nullptr) {
+        jclass classj = env->FindClass("Ljava/io/IOException:");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, "cannot create SessionWire");
+        env->DeleteLocalRef(classj);
+    }
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
