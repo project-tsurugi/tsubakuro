@@ -19,7 +19,8 @@ import org.junit.jupiter.api.Test;
 class ResultSetWireTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
-    private String wireName = "tsubakuro-session1";
+    private String dbName = "tsubakuro";
+    private long sessionID = 1;
 
     byte[] createRecordsForTest() throws IOException {
 	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -48,8 +49,8 @@ class ResultSetWireTest {
     @Test
     void resultSetWire() {
 	try {
-	    server = new ServerWireImpl(wireName);
-	    client = new SessionWireImpl(wireName);
+	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    client = new SessionWireImpl(dbName, sessionID);
 
 	    // REQUEST test begin
 	    // client side send Request

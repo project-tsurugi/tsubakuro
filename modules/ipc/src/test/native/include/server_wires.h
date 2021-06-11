@@ -77,4 +77,43 @@ private:
     bidirectional_message_wire* session_wire_{};  // for debug impl.
 };
 
+class connection_container
+{
+    static constexpr std::size_t request_queue_size = (1<<12);  // 4K bytes (tentative)
+
+public:
+    connection_container(std::string_view name) : name_(name) {
+        boost::interprocess::shared_memory_object::remove(name_.c_str());
+        try {
+            managed_shared_memory_ =
+                std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), request_queue_size);
+            managed_shared_memory_->destroy<connection_queue>(connection_queue::name);
+            connection_queue_ = managed_shared_memory_->construct<connection_queue>(connection_queue::name)();
+        }
+        catch(const boost::interprocess::interprocess_exception& ex) {
+            std::abort();  // FIXME
+        }
+    }
+
+    /**
+     * @brief Copy and move constructers are deleted.
+     */
+    connection_container(connection_container const&) = delete;
+    connection_container(connection_container&&) = delete;
+    connection_container& operator = (connection_container const&) = delete;
+    connection_container& operator = (connection_container&&) = delete;
+
+    ~connection_container() {
+        boost::interprocess::shared_memory_object::remove(name_.c_str());
+    }
+    connection_queue& get_connection_queue() {
+        return *connection_queue_;
+    }
+    
+private:
+    std::string name_;
+    std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
+    connection_queue* connection_queue_;
+};
+
 };  // namespace tsubakuro::common

@@ -26,7 +26,7 @@ public class ServerWireImpl implements Closeable {
 	System.loadLibrary("wire-test");
     }
 
-    ServerWireImpl(String name) throws IOException {
+    public ServerWireImpl(String name) throws IOException {
 	wireHandle = createNative(name);
 	if (wireHandle == 0) {
 	    throw new IOException("error: ServerWireImpl.ServerWireImpl()");
