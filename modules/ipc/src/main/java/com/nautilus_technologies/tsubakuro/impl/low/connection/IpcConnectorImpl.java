@@ -31,7 +31,7 @@ public final class IpcConnectorImpl {
 
     public static SessionWire getSessionWire(String name, long handle, long id) throws IOException {
 	closeConnectorNative(handle);
-	return new SessionWireImpl(name + "-" + String.valueOf(id));
+	return new SessionWireImpl(name, id);
     }
 
     public static boolean checkConnection(long handle, long id) {

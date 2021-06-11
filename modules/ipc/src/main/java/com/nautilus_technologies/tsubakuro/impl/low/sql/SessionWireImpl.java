@@ -12,7 +12,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
  */
 public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
-
+    private String dbName;
+    private long sessionID;
+    
     private static native long openNative(String name);
     private static native long sendNative(long handle, ByteBuffer buffer);
     private static native ByteBuffer recvNative(long handle);
@@ -22,11 +24,13 @@ public class SessionWireImpl implements SessionWire {
 	System.loadLibrary("wire");
     }
 
-    public SessionWireImpl(String name) throws IOException {
-	wireHandle = openNative(name);
+    public SessionWireImpl(String dbName, long sessionID) throws IOException {
+	wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
 	if (wireHandle == 0) {
 	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");  // FIXME
 	}
+	this.dbName = dbName;
+	this.sessionID = sessionID;
     }
 
     /**
@@ -71,5 +75,13 @@ public class SessionWireImpl implements SessionWire {
 
     public ResultSetWire createResultSetWire(String name) throws IOException {
 	return new ResultSetWireImpl(wireHandle, name);
+    }
+
+    public String getDbName() {
+	return dbName;
+    }
+
+    public long getSessionID() {
+	return sessionID;
     }
 }
