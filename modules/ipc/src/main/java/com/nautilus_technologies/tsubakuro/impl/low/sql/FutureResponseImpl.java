@@ -34,7 +34,7 @@ public class FutureResponseImpl<V> implements Future<V> {
      */
     public V get() throws ExecutionException {
 	try {
-	    return distiller.distill(wire.recv(handle));
+	    return distiller.distill(wire.receive(handle));
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}

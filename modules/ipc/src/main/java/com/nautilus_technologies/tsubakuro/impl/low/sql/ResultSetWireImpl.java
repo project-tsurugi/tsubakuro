@@ -11,7 +11,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name);
-    private static native ByteBuffer recvMetaNative(long handle);
+    private static native ByteBuffer receiveMetaNative(long handle);
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
@@ -28,7 +28,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	try {
-	    ByteBuffer buf = recvMetaNative(wireHandle);
+	    ByteBuffer buf = receiveMetaNative(wireHandle);
 	    return SchemaProtos.RecordMeta.parseFrom(buf);
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException("error: ResultSetWireImpl.receiveSchemaMetaData()", e);

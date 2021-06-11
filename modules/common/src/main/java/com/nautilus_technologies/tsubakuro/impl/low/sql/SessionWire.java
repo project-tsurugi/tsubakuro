@@ -22,7 +22,7 @@ public interface SessionWire extends Closeable {
      @param wire the information of communication wire to receive incoming message
      @return ResponseProtos.Response the response message received from the SQL server
     */
-    ResponseProtos.Response recv(ResponseWireHandle handle) throws IOException;
+    ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException;
 
     ResultSetWire createResultSetWire(String name) throws IOException;    
 }

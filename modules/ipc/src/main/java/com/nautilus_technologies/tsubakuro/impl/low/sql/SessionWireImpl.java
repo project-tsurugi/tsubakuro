@@ -17,7 +17,7 @@ public class SessionWireImpl implements SessionWire {
     
     private static native long openNative(String name) throws IOException;
     private static native long sendNative(long handle, ByteBuffer buffer);
-    private static native ByteBuffer recvNative(long handle);
+    private static native ByteBuffer receiveNative(long handle);
     private static native boolean closeNative(long handle);
 
     static {
@@ -62,11 +62,11 @@ public class SessionWireImpl implements SessionWire {
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
-    public ResponseProtos.Response recv(ResponseWireHandle handle) throws IOException {
+    public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(recvNative(((ResponseWireHandleImpl) handle).getHandle()));
+	    return ResponseProtos.Response.parseFrom(receiveNative(((ResponseWireHandleImpl) handle).getHandle()));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    throw new IOException("error: SessionWireImpl.recv()", e);
+	    throw new IOException("error: SessionWireImpl.receive()", e);
 	}
     }
 
