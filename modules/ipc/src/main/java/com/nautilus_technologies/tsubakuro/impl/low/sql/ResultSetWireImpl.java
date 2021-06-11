@@ -13,7 +13,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name);
     private static native ByteBuffer receiveSchemaMetaDataNative(long handle);
     private static native ByteBuffer getChunkNative(long handle);
-    private static native void disposeNative(long handle, long length);
+    private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
     private static native boolean closeNative(long handle);
 
@@ -68,7 +68,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return len;
 	}
 	public synchronized void disposeUsedData(long length) {
-	    ResultSetWireImpl.disposeNative(wireHandle, length);	    
+	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
 	}
     }
 

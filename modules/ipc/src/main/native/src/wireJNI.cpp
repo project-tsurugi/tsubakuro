@@ -139,10 +139,10 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
- * Method:    disposeNative
+ * Method:    disposeUsedDataNative
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_disposeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_disposeUsedDataNative
 (JNIEnv *, jclass, jlong handle, jlong length)
 {
     session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
