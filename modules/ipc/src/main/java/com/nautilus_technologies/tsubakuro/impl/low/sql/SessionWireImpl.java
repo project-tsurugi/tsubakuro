@@ -15,7 +15,7 @@ public class SessionWireImpl implements SessionWire {
     private String dbName;
     private long sessionID;
     
-    private static native long openNative(String name);
+    private static native long openNative(String name) throws IOException;
     private static native long sendNative(long handle, ByteBuffer buffer);
     private static native ByteBuffer recvNative(long handle);
     private static native boolean closeNative(long handle);
@@ -26,9 +26,6 @@ public class SessionWireImpl implements SessionWire {
 
     public SessionWireImpl(String dbName, long sessionID) throws IOException {
 	wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
-	if (wireHandle == 0) {
-	    throw new IOException("error: SessionWireImpl.SessionWireImpl()");  // FIXME
-	}
 	this.dbName = dbName;
 	this.sessionID = sessionID;
     }
