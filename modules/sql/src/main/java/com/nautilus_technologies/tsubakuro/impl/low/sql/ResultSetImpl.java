@@ -96,6 +96,7 @@ public class ResultSetImpl implements ResultSet {
 	    MessageFormat format = unpacker.getNextFormat();
 	    ValueType type = format.getValueType();
 	    if (type == ValueType.NIL) {
+		detectNull = true;
 		columnReady = false;
 		unpacker.unpackNil();
 		return true;
@@ -113,6 +114,9 @@ public class ResultSetImpl implements ResultSet {
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
 	if (type != ValueType.INTEGER) {
+	    if (type == ValueType.NIL) {
+		throw new IOException("the column is Null");
+	    }
 	    throw new IOException("the column type is not what is expected");
 	}
 	columnReady = false;
@@ -128,6 +132,9 @@ public class ResultSetImpl implements ResultSet {
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
 	if (type != ValueType.INTEGER) {
+	    if (type == ValueType.NIL) {
+		throw new IOException("the column is Null");
+	    }
 	    throw new IOException("the column type is not what is expected");
 	}
 	columnReady = false;
@@ -143,6 +150,9 @@ public class ResultSetImpl implements ResultSet {
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
 	if (type != ValueType.FLOAT && format != MessageFormat.FLOAT32) {
+	    if (type == ValueType.NIL) {
+		throw new IOException("the column is Null");
+	    }
 	    throw new IOException("the column type is not what is expected");
 	}
 	columnReady = false;
@@ -158,6 +168,9 @@ public class ResultSetImpl implements ResultSet {
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
 	if (type != ValueType.FLOAT && format != MessageFormat.FLOAT64) {
+	    if (type == ValueType.NIL) {
+		throw new IOException("the column is Null");
+	    }
 	    throw new IOException("the column type is not what is expected");
 	}
 	columnReady = false;
@@ -173,6 +186,9 @@ public class ResultSetImpl implements ResultSet {
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
 	if (type != ValueType.STRING) {
+	    if (type == ValueType.NIL) {
+		throw new IOException("the column is Null");
+	    }
 	    throw new IOException("the column type is not what is expected");
 	}
 	columnReady = false;

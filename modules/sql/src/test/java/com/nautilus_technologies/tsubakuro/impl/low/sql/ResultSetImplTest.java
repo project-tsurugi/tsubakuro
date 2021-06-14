@@ -155,11 +155,11 @@ class ResultSetImplTest {
 
 	    // end of records
 	    assertFalse(resultSetImpl.nextRecord());
-	    
+
 	} catch (IOException e) {
             fail("cought IOException");
         }
-    }
+   }
 
     @Test
     void receiveSchemaMetaAndRecordWithSkip() {
@@ -195,7 +195,158 @@ class ResultSetImplTest {
 
 	    // end of records
 	    assertFalse(resultSetImpl.nextRecord());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void getColumnWithoutNextColumn() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var f = resultSetImpl.getFloat8();
+		});
+	    assertEquals("the column is not ready to be read", exception.getMessage());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void getColumnInDifferntType() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var f = resultSetImpl.getFloat8();
+		});
+	    assertEquals("the column type is not what is expected", exception.getMessage());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void getColumnThatIsNull() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var s = resultSetImpl.getCharacter();
+		});
+	    assertEquals("the column is Null", exception.getMessage());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void getColumnThatIsNullPattern2() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var s = resultSetImpl.getCharacter();
+		});
+	    assertEquals("the column is Null", exception.getMessage());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void getColumnWithoutNextRecord() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
+	    assertFalse(resultSetImpl.nextColumn());
+
+	    // second column data
 	    
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var i = resultSetImpl.getInt8();
+		});
+	    assertEquals("the column is not ready to be read", exception.getMessage());
+
 	} catch (IOException e) {
             fail("cought IOException");
         }
