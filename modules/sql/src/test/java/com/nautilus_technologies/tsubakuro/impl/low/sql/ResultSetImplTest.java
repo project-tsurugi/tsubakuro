@@ -168,19 +168,7 @@ class ResultSetImplTest {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
 	    recordMeta = resultSetImpl.getRecordMeta();
-	    assertEquals(recordMeta.fieldCount(), 6);
-	    assertEquals(recordMeta.at(0), CommonProtos.DataType.INT8);
-	    assertFalse(recordMeta.nullable(0));
-	    assertEquals(recordMeta.at(1), CommonProtos.DataType.FLOAT8);
-	    assertFalse(recordMeta.nullable(1));
-	    assertEquals(recordMeta.at(2), CommonProtos.DataType.STRING);
-	    assertTrue(recordMeta.nullable(2));
-	    assertEquals(recordMeta.at(3), CommonProtos.DataType.INT8);
-	    assertFalse(recordMeta.nullable(3));
-	    assertEquals(recordMeta.at(4), CommonProtos.DataType.FLOAT8);
-	    assertFalse(recordMeta.nullable(4));
-	    assertEquals(recordMeta.at(5), CommonProtos.DataType.STRING);
-	    assertTrue(recordMeta.nullable(5));
+	    // No duplicate checks are carried out
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());

@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
-class ResultSetWireTest {
+class ResultSetTotalTest {
     private SessionWireImpl client;
     private ServerWireImpl server;
     private String dbName = "tsubakuro";
@@ -47,21 +47,37 @@ class ResultSetWireTest {
     }
 
     @Test
-    void schemaMetaAndRecords() {
+    void requestAndResponseLevel() {
 	try {
 	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
 	    client = new SessionWireImpl(dbName, sessionID);
 
+	    // REQUEST test begin
+	    // client side send Request
+	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder().build(), new ExecuteQueryDistiller());
+	    // server side receive Request
+	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get()));
+	    // REQUEST test end
+
+	    // RESPONSE test begin
+	    // server side send Response
+	    var responseToBeSent = ProtosForTest.ExecuteQueryResponseChecker.builder().build();
+	    server.put(responseToBeSent);
+
 	    // server side send SchemaMeta
-	    long rsHandle = server.createRSL("resultset-1");
+	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
 	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest());
 	    server.setEndOfRecordsRSL(rsHandle);
 
+	    // client side receive Response
+	    var responseReceived = futureResponse.get();
+	    assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
+
 	    // client side receive SchemaMeta
-	    var resultSetWire = client.createResultSetWire("resultset-1");
+	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
 	    var schemaMeta = resultSetWire.receiveSchemaMetaData();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
@@ -123,30 +139,10 @@ class ResultSetWireTest {
 	    server.close();
 	} catch (IOException e) {
 	    fail("cought IOException");
-	}
-    }
-
-    @Test
-    void notExist() {
-	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
-	    client = new SessionWireImpl(dbName, sessionID);
-
-	    // server side send SchemaMeta
-	    long rsHandle = server.createRSL("resultset-1");
-	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
-
-	    // server side send Records
-	    server.putRecordsRSL(rsHandle, createRecordsForTest());
-	    server.setEndOfRecordsRSL(rsHandle);
-	} catch (IOException e) {
+	} catch (InterruptedException e) {
+	    fail("cought IOException");
+	} catch (ExecutionException e) {
 	    fail("cought IOException");
 	}
-
-	Throwable exception = assertThrows(IOException.class, () -> {
-		var resultSetWire = client.createResultSetWire("resultset-2");  // not exist
-	    });
-	assertEquals("cannot find a result_set wire with the specified name", exception.getMessage());
     }
 }
-

@@ -28,11 +28,20 @@ using namespace tsubakuro::common::wire;
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_getConnectorNative
 (JNIEnv *env, jclass, jstring name)
 {
+    connection_container* container;
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    connection_container* container = new connection_container(std::string_view(name_, len_));
+    try {
+        container = new connection_container(std::string_view(name_, len_));
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+        return 0;
+    }
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }

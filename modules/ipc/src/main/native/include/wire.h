@@ -16,6 +16,8 @@
 #pragma once
 
 #include <memory>
+#include <exception>
+#include <stdexcept> // std::runtime_error
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -314,10 +316,10 @@ public:
                 c_accepted_.notify_all();
                 return;
             } else {
-                std::abort();  // not requested
+                throw std::runtime_error("Received an session id that was not requested for connection");
             }
         }
-        std::abort();  // sessionID is not continuous
+        throw std::runtime_error("The session id is not sequential");
     }
 
 private:

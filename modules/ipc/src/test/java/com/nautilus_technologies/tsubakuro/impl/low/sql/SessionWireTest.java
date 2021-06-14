@@ -28,4 +28,12 @@ class SessionWireTest {
 	    fail("cought IOException");
 	}
     }
+
+    @Test
+    void notExist() {
+        Throwable exception = assertThrows(IOException.class, () -> {
+		client = new SessionWireImpl(dbName, sessionID); // not exist
+	    });
+	assertEquals("cannot find a session wire with the specified name", exception.getMessage());
+    }
 }

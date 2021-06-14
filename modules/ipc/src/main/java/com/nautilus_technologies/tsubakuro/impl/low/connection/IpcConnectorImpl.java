@@ -10,7 +10,7 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
  * IpcConnectorImpl type.
  */
 public final class IpcConnectorImpl {
-    private static native long getConnectorNative(String name);
+    private static native long getConnectorNative(String name) throws IOException;
     private static native long requestNative(long handle);
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);

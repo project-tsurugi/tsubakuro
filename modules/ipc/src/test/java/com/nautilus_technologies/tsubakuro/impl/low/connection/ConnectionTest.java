@@ -43,4 +43,14 @@ class ConnectionTest {
 	    fail("cought IOException");
 	}
     }
+
+    @Test
+    void notExist() {
+	ServerConnectionImpl serverConnection;
+
+        Throwable exception = assertThrows(IOException.class, () -> {
+		var future = IpcConnectorImpl.connect(dbName);
+	    });
+	assertEquals("cannot find a database with the specified name", exception.getMessage());
+    }
 }

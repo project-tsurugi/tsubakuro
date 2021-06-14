@@ -10,7 +10,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private static native long createNative(long sessionWireHandle, String name);
+    private static native long createNative(long sessionWireHandle, String name) throws IOException;
     private static native ByteBuffer receiveSchemaMetaDataNative(long handle);
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeUsedDataNative(long handle, long length);
@@ -21,9 +21,6 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     public ResultSetWireImpl(long sessionWireHandle, String name) throws IOException {
 	wireHandle = createNative(sessionWireHandle, name);
-	if (wireHandle == 0) {
-	    throw new IOException("error: ResultSetWireImpl.ResultSetWireImpl()");
-	}
     }
 
     public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {

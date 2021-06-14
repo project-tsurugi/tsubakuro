@@ -29,16 +29,20 @@ using namespace tsubakuro::common::wire;
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_openNative
 (JNIEnv *env, jclass, jstring name)
 {
+    session_wire_container* container;
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    session_wire_container* container = new session_wire_container(std::string_view(name_, len_));
-    if (container == nullptr) {
-        jclass classj = env->FindClass("Ljava/io/IOException:");
+    try {
+        container = new session_wire_container(std::string_view(name_, len_));
+    } catch (std::runtime_error &e) {
+        env->ReleaseStringUTFChars(name, name_);
+        jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, "cannot create SessionWire");
+        env->ThrowNew(classj, e.what());
         env->DeleteLocalRef(classj);
+        return 0;
     }
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
@@ -101,13 +105,30 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_createNative
 (JNIEnv *env, jclass, jlong handle, jstring name)
 {
-    session_wire_container* c = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container* c;
+
+    try {
+        c = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+    }
 
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    session_wire_container::resultset_wire_container* container = c->create_resultset_wire(std::string_view(name_, len_));
+    session_wire_container::resultset_wire_container* container;
+    try {
+        container = c->create_resultset_wire(std::string_view(name_, len_));
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+    }
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
