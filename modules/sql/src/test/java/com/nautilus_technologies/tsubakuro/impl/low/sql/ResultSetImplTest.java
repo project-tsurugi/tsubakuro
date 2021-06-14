@@ -160,4 +160,56 @@ class ResultSetImplTest {
             fail("cought IOException");
         }
     }
+
+    @Test
+    void receiveSchemaMetaAndRecordWithSkip() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    assertEquals(recordMeta.fieldCount(), 6);
+	    assertEquals(recordMeta.at(0), CommonProtos.DataType.INT8);
+	    assertFalse(recordMeta.nullable(0));
+	    assertEquals(recordMeta.at(1), CommonProtos.DataType.FLOAT8);
+	    assertFalse(recordMeta.nullable(1));
+	    assertEquals(recordMeta.at(2), CommonProtos.DataType.STRING);
+	    assertTrue(recordMeta.nullable(2));
+	    assertEquals(recordMeta.at(3), CommonProtos.DataType.INT8);
+	    assertFalse(recordMeta.nullable(3));
+	    assertEquals(recordMeta.at(4), CommonProtos.DataType.FLOAT8);
+	    assertFalse(recordMeta.nullable(4));
+	    assertEquals(recordMeta.at(5), CommonProtos.DataType.STRING);
+	    assertTrue(recordMeta.nullable(5));
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    // skip the rest of columns (pattern 1)
+
+	    // second column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 876543219L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 2345.67891);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 234567891L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    // skip the rest of columns (pattern 2)
+
+	    // end of records
+	    assertFalse(resultSetImpl.nextRecord());
+	    
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
 }
