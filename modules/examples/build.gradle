@@ -1,0 +1,9 @@
+plugins {
+    id 'tsubakuro.java-conventions'
+}
+
+dependencies {
+    implementation 'org.msgpack:msgpack-core:0.8.19'
+
+    implementation project(':connection')
+}
