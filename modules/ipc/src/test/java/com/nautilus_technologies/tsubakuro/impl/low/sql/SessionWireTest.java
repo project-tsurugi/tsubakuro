@@ -18,7 +18,7 @@ class SessionWireTest {
     @Test
     void requestBegin() {
 	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
 	    CommunicationChecker.check(server, client);
@@ -33,14 +33,14 @@ class SessionWireTest {
     @Test
     void inconsistentResponse() {
 	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new BeginDistiller());
+	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
 	    // server side receive Request
-	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get()));
+	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
 	    // REQUEST test end
 
 	    // RESPONSE test begin

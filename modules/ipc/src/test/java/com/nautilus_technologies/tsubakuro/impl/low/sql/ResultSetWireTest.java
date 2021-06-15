@@ -49,7 +49,7 @@ class ResultSetWireTest {
     @Test
     void schemaMetaAndRecords() {
 	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
 	    // server side send SchemaMeta
@@ -129,7 +129,7 @@ class ResultSetWireTest {
     @Test
     void notExist() {
 	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
 	    // server side send SchemaMeta

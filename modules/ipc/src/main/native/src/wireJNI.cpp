@@ -85,16 +85,14 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
  * Method:    closeNative
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* container = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     if (container != nullptr) {
         delete container;
-        return static_cast<jboolean>(true);
     }
-    return static_cast<jboolean>(false);
 }
 
 /*
@@ -195,7 +193,7 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
  * Method:    closeNative
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container::resultset_wire_container* container = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -203,7 +201,5 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
     if (container != nullptr) {
         session_wire_container* envelope = container->get_envelope();
         envelope->dispose_resultset_wire(container);
-        return static_cast<jboolean>(true);
     }
-    return static_cast<jboolean>(false);
 }

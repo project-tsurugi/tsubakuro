@@ -49,14 +49,14 @@ class ResultSetTotalTest {
     @Test
     void requestAndResponseLevel() {
 	try {
-	    server = new ServerWireImpl(dbName + "-" + String.valueOf(sessionID));
+	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder().build(), new ExecuteQueryDistiller());
+	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder(), new ExecuteQueryDistiller());
 	    // server side receive Request
-	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get()));
+	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
 	    // REQUEST test end
 
 	    // RESPONSE test begin

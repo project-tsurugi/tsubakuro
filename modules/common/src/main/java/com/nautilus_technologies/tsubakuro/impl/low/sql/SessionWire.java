@@ -15,7 +15,7 @@ public interface SessionWire extends Closeable {
      @param request the request message encoded with protocol buffer
      @return FutureResponse<V> contains prepared statement handle, where V should be assigned in accordance with the type of the response message to be returned
     */
-    <V> Future<V> send(RequestProtos.Request request, Distiller<V> distiller) throws IOException;
+    <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException;
 
     /**
      * Receive the message corresponding to the given ResponseHandle from the SQL server

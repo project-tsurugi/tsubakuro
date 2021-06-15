@@ -11,6 +11,8 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  */
 public class ServerWireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
+    private String dbName;
+    private long sessionID;
 
     private static native long createNative(String name);
     private static native byte[] getNative(long handle);
@@ -26,8 +28,10 @@ public class ServerWireImpl implements Closeable {
 	System.loadLibrary("wire-test");
     }
 
-    public ServerWireImpl(String name) throws IOException {
-	wireHandle = createNative(name);
+    public ServerWireImpl(String dbName, long sessionID) throws IOException {
+	this.dbName = dbName;
+	this.sessionID = sessionID;
+	wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
 	if (wireHandle == 0) {
 	    throw new IOException("error: ServerWireImpl.ServerWireImpl()");
 	}
@@ -38,6 +42,10 @@ public class ServerWireImpl implements Closeable {
 	    closeNative(wireHandle);
 	    wireHandle = 0;
 	}
+    }
+
+    public long getSessionID() {
+	return sessionID;
     }
 
     /**

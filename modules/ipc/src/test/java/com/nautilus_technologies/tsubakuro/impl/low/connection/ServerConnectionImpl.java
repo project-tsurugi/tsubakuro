@@ -30,7 +30,7 @@ public class ServerConnectionImpl implements Closeable {
     }
 
     public ServerWireImpl accept(long id) throws IOException {
-	var rv = new ServerWireImpl(name + "-" + String.valueOf(id));
+	var rv = new ServerWireImpl(name, id);
 	acceptNative(handle, id);
 	return rv;
     }

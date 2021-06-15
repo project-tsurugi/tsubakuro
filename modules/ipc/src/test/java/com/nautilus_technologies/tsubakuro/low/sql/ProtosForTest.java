@@ -4,29 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-public class ProtosForTest {
-    /**
-     * Check of Common
-     */
-    static class SessionChecker {
-	static CommonProtos.Session.Builder builder() {
-	    return
-		CommonProtos.Session.newBuilder()
-		.setHandle(123);
-	}
-	static boolean check(CommonProtos.Session dst) {
-	    return
-		(dst.getHandle() == 123);
-	}
-	void test() {
-	    try {
-		assertTrue(check(CommonProtos.Session.parseFrom(builder().build().toByteArray())));
-	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-		fail("cought com.google.protobuf.InvalidProtocolBufferException");
-	    }
-	}
+public final class ProtosForTest {
+    private ProtosForTest() {
+	// for checkstyle
     }
-
+    
     static class TransactionChecker {
 	static CommonProtos.Transaction.Builder builder() {
 	    return
@@ -330,29 +312,33 @@ public class ProtosForTest {
 	}
     }
 
+    private static long sessionID = 123;
+
     /**
      * Check of Request level message
      * can be used by external packages
      */    
     public static class BeginRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setBegin(BeginChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setBegin(BeginChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
 		&& BeginChecker.check(dst.getBegin());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -360,24 +346,26 @@ public class ProtosForTest {
     }
 
     public static class PrepareRequestChecker {
+	static RequestProtos.Request.Builder builder(long id) {
+	    return
+		RequestProtos.Request.newBuilder()
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+		.setPrepare(PrepareChecker.builder());
+	}
 	public static RequestProtos.Request.Builder builder() {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
 		.setPrepare(PrepareChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static boolean check(RequestProtos.Request dst, long id) {
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.PREPARE.equals(dst.getRequestCase())
 		&& PrepareChecker.check(dst.getPrepare());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -385,24 +373,26 @@ public class ProtosForTest {
     }
 
     public static class ExecuteStatementRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setExecuteStatement(ExecuteStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setExecuteStatement(ExecuteStatementChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
 		&& ExecuteStatementChecker.check(dst.getExecuteStatement());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -410,24 +400,26 @@ public class ProtosForTest {
     }
 
     public static class ExecuteQueryRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setExecuteQuery(ExecuteQueryChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setExecuteQuery(ExecuteQueryChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
 		&& ExecuteQueryChecker.check(dst.getExecuteQuery());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -435,24 +427,26 @@ public class ProtosForTest {
     }
 
     public static class ExecutePreparedStatementRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setExecutePreparedStatement(ExecutePreparedStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setExecutePreparedStatement(ExecutePreparedStatementChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.EXECUTE_PREPARED_STATEMENT.equals(dst.getRequestCase())
 		&& ExecutePreparedStatementChecker.check(dst.getExecutePreparedStatement());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -460,24 +454,26 @@ public class ProtosForTest {
     }
 
     public static class ExecutePreparedQueryRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setExecutePreparedQuery(ExecutePreparedQueryChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setExecutePreparedQuery(ExecutePreparedQueryChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.EXECUTE_PREPARED_QUERY.equals(dst.getRequestCase())
 		&& ExecutePreparedQueryChecker.check(dst.getExecutePreparedQuery());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -485,24 +481,26 @@ public class ProtosForTest {
     }
 
     public static class CommitRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setCommit(CommitChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setCommit(CommitChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.COMMIT.equals(dst.getRequestCase())
 		&& CommitChecker.check(dst.getCommit());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -510,24 +508,26 @@ public class ProtosForTest {
     }
 
     public static class RollbackRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setRollback(RollbackChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setRollback(RollbackChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.ROLLBACK.equals(dst.getRequestCase())
 		&& RollbackChecker.check(dst.getRollback());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -535,24 +535,26 @@ public class ProtosForTest {
     }
 
     public static class DisposePreparedStatementRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setDisposePreparedStatement(DisposePreparedStatementChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setDisposePreparedStatement(DisposePreparedStatementChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.DISPOSE_PREPARED_STATEMENT.equals(dst.getRequestCase())
 		&& DisposePreparedStatementChecker.check(dst.getDisposePreparedStatement());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -560,24 +562,26 @@ public class ProtosForTest {
     }
 
     public static class DisconnectRequestChecker {
-	public static RequestProtos.Request.Builder builder() {
+	static RequestProtos.Request.Builder builder(long id) {
 	    return
 		RequestProtos.Request.newBuilder()
-		.setSessionHandle(SessionChecker.builder())
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
 		.setDisconnect(DisconnectChecker.builder());
 	}
-	public static boolean check(RequestProtos.Request dst, boolean skipSessionHandleCheck) {
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
 	    return
-		(skipSessionHandleCheck || SessionChecker.check(dst.getSessionHandle()))
+		RequestProtos.Request.newBuilder()
+		.setDisconnect(DisconnectChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
 		&& RequestProtos.Request.RequestCase.DISCONNECT.equals(dst.getRequestCase())
 		&& DisconnectChecker.check(dst.getDisconnect());
 	}
-	public static boolean check(RequestProtos.Request dst) {
-	    return check(dst, false);
-	}
 	void test() {
 	    try {
-		assertTrue(check(RequestProtos.Request.parseFrom(builder().build().toByteArray())));
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }

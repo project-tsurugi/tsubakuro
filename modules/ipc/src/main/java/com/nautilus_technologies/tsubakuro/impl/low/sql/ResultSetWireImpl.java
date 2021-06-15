@@ -15,7 +15,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
-    private static native boolean closeNative(long handle);
+    private static native void closeNative(long handle);
 
     private long wireHandle = 0;  // for c++
 
@@ -77,11 +77,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
-	if (wireHandle != 0) {
-	    if (!closeNative(wireHandle)) {
-		throw new IOException("error: ResultSetWireImpl.close()");
-	    }
-	    wireHandle = 0;
-	}
+	closeNative(wireHandle);
+	wireHandle = 0;
     }
 }

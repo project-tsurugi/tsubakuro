@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 
 /**
  * SessionWireImpl type.
@@ -18,7 +19,7 @@ public class SessionWireImpl implements SessionWire {
     private static native long openNative(String name) throws IOException;
     private static native long sendNative(long handle, ByteBuffer buffer);
     private static native ByteBuffer receiveNative(long handle);
-    private static native boolean closeNative(long handle);
+    private static native void closeNative(long handle);
 
     static {
 	System.loadLibrary("wire");
@@ -34,21 +35,17 @@ public class SessionWireImpl implements SessionWire {
      * Close the wire
      */
     public void close() throws IOException {
-	if (wireHandle != 0) {
-	    if (!closeNative(wireHandle)) {
-		throw new IOException("error: SessionWireImpl.close()");
-	    }
-	    wireHandle = 0;
-	}
+	closeNative(wireHandle);
+	wireHandle = 0;
     }
 
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
     */
-    public <V> Future<V> send(RequestProtos.Request request, Distiller<V> distiller) throws IOException {
+    public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
 	if (wireHandle != 0) {
-	    var req = request.toByteString();
+	    var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteString();
 	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
 	    req.copyTo(buffer);
 	    long handle = sendNative(wireHandle, buffer);
@@ -76,9 +73,5 @@ public class SessionWireImpl implements SessionWire {
 
     public String getDbName() {
 	return dbName;
-    }
-
-    public long getSessionID() {
-	return sessionID;
     }
 }
