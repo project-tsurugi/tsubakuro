@@ -4,6 +4,8 @@ import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;

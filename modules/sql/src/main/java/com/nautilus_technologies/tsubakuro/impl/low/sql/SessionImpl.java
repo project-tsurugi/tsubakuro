@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 

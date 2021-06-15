@@ -5,6 +5,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;

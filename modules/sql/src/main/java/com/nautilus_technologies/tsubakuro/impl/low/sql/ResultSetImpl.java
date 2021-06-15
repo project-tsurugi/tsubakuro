@@ -8,6 +8,7 @@ import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 

@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import com.nautilus_technologies.tsubakuro.impl.low.connection.ConnectorImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
 
 public final class Select {
     private Select() {
@@ -12,9 +12,9 @@ public final class Select {
     
     public static void main(String[] args) {
 	try {
-	    var connector = new ConnectorImpl();
-
-	    var session = connector.connect(dbName).get();
+	    var connector = new IpcConnectorImpl(dbName);
+	    
+	    var session = SessionCreator.createSession(connector);
 	    var transaction = session.createTransaction().get();
 	    var resultSet = transaction.executeQuery(args[0]).get();
 	    while (resultSet.nextRecord()) {
