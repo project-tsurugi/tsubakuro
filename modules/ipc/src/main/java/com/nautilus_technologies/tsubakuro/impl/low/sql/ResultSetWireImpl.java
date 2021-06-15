@@ -10,25 +10,22 @@ import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private static native long createNative(long sessionWireHandle, String name);
-    private static native ByteBuffer recvMetaNative(long handle);
+    private static native long createNative(long sessionWireHandle, String name) throws IOException;
+    private static native ByteBuffer receiveSchemaMetaDataNative(long handle);
     private static native ByteBuffer getChunkNative(long handle);
-    private static native void disposeNative(long handle, long length);
+    private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
-    private static native boolean closeNative(long handle);
+    private static native void closeNative(long handle);
 
     private long wireHandle = 0;  // for c++
 
     public ResultSetWireImpl(long sessionWireHandle, String name) throws IOException {
 	wireHandle = createNative(sessionWireHandle, name);
-	if (wireHandle == 0) {
-	    throw new IOException("error: ResultSetWireImpl.ResultSetWireImpl()");
-	}
     }
 
     public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	try {
-	    ByteBuffer buf = recvMetaNative(wireHandle);
+	    ByteBuffer buf = receiveSchemaMetaDataNative(wireHandle);
 	    return SchemaProtos.RecordMeta.parseFrom(buf);
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException("error: ResultSetWireImpl.receiveSchemaMetaData()", e);
@@ -68,7 +65,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return len;
 	}
 	public synchronized void disposeUsedData(long length) {
-	    ResultSetWireImpl.disposeNative(wireHandle, length);	    
+	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
 	}
     }
 
@@ -80,11 +77,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
-	if (wireHandle != 0) {
-	    if (!closeNative(wireHandle)) {
-		throw new IOException("error: ResultSetWireImpl.close()");
-	    }
-	    wireHandle = 0;
-	}
+	closeNative(wireHandle);
+	wireHandle = 0;
     }
 }

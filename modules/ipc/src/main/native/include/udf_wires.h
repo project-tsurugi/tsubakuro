@@ -72,6 +72,9 @@ public:
     public:
         resultset_wire_container(session_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {
             resultset_wire_ = envelope_->managed_shared_memory_->find<unidirectional_simple_wire>(rsw_name_.c_str()).first;
+            if (resultset_wire_ == nullptr) {
+                throw std::runtime_error("cannot find a result_set wire with the specified name");
+            }
         }
         std::size_t peep() { return resultset_wire_->peep().get_length(); }
         std::pair<signed char*, std::size_t> recv_meta() {
@@ -107,15 +110,13 @@ public:
         try {
             managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, db_name_.c_str());
             bidirectional_message_wire_ = managed_shared_memory_->find<bidirectional_message_wire>(wire_name).first;
-            if (bidirectional_message_wire_ == nullptr) {
-                std::abort();  // FIXME
-            }
-            responses.resize(max_responses_size);
-            responses.at(0) = std::make_unique<response>(this, 0);  // prepare one entry that always gets used
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            std::abort();  // FIXME
+            throw std::runtime_error("cannot find a session wire with the specified name");
         }
+
+        responses.resize(max_responses_size);
+        responses.at(0) = std::make_unique<response>(this, 0);  // prepare one entry that always gets used
     }
 
     /**
@@ -178,12 +179,9 @@ public:
         try {
             managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, db_name_.c_str());
             connection_queue_ = managed_shared_memory_->find<connection_queue>(connection_queue::name).first;
-            if (connection_queue_ == nullptr) {
-                std::abort();  // FIXME
-            }
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            std::abort();  // FIXME
+            throw std::runtime_error("cannot find a database with the specified name");
         }
     }
 

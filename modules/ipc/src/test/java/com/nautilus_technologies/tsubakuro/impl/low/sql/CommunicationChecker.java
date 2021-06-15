@@ -16,9 +16,9 @@ public final class CommunicationChecker {
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder().build(), new BeginDistiller());
+	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
 	    // server side receive Request
-	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get()));
+	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), server.getSessionID()));
 	    // REQUEST test end
 
 	    // RESPONSE test begin
