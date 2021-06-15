@@ -18,10 +18,9 @@ public final class Select {
 	    var transaction = session.createTransaction().get();
 	    var resultSet = transaction.executeQuery(args[0]).get();
 	    while (resultSet.nextRecord()) {
-		int columnIndex = 0;
 		while (resultSet.nextColumn()) {
 	            if (!isNull()) {
-			switch (resultSet.recordMeta.at(columnIndex)) {
+			switch (resultSet.recordMeta.at()) {
 			case INT4:
 			    System.out.println(resultSet.getInt4());
 			    break;
@@ -43,7 +42,6 @@ public final class Select {
 		    } else {
 			System.out.println("the column is NULL");
 		    }
-		    columnIndex++;
 		}
 	    }
 	} catch (IOException e) {

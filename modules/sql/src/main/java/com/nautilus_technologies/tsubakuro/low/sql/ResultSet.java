@@ -16,14 +16,26 @@ public interface ResultSet extends Closeable {
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field type
          */
-        CommonProtos.DataType at(int index);
+        CommonProtos.DataType at(int index) throws IOException;
+
+        /**
+         * Get the current field type
+         * @return current field type
+         */
+        CommonProtos.DataType at() throws IOException;
 
         /**
          * Get the nullability for the field
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return true if the field is nullable
          */
-        boolean nullable(int index);
+        boolean nullable(int index) throws IOException;
+
+        /**
+         * Get the nullability for the field
+         * @return true if the current field is nullable
+         */
+        boolean nullable() throws IOException;
 
         /**
          * Get the number of fields in the record

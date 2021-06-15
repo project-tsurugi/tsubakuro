@@ -15,17 +15,35 @@ import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
-    static class RecordMetaImpl implements RecordMeta {
+    private class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
 	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
 	    this.recordMeta = recordMeta;
 	}
-        public CommonProtos.DataType at(int index) {
+        public CommonProtos.DataType at(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
 	    return recordMeta.getColumnsList().get(index).getType();
 	}
-        public boolean nullable(int index) {
+        public CommonProtos.DataType at() throws IOException {
+	    if (!columnReady) {
+		throw new IOException("the column is not ready to be read");
+	    }
+	    return recordMeta.getColumnsList().get(columnIndex).getType();
+	}
+        public boolean nullable(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
 	    return recordMeta.getColumnsList().get(index).getNullable();
+	}
+        public boolean nullable() throws IOException {
+	    if (!columnReady) {
+		throw new IOException("the column is not ready to be read");
+	    }
+	    return recordMeta.getColumnsList().get(columnIndex).getNullable();
 	}
         public long fieldCount() {
 	    return recordMeta.getColumnsList().size();
