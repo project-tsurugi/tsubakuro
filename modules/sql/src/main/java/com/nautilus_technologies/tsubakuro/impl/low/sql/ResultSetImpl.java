@@ -15,7 +15,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
-    static class RecordMetaImpl implements RecordMeta {
+    private class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
 	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
@@ -24,8 +24,14 @@ public class ResultSetImpl implements ResultSet {
         public CommonProtos.DataType at(int index) {
 	    return recordMeta.getColumnsList().get(index).getType();
 	}
+        public CommonProtos.DataType at() {
+	    return recordMeta.getColumnsList().get(columnIndex).getType();
+	}
         public boolean nullable(int index) {
 	    return recordMeta.getColumnsList().get(index).getNullable();
+	}
+        public boolean nullable() {
+	    return recordMeta.getColumnsList().get(columnIndex).getNullable();
 	}
         public long fieldCount() {
 	    return recordMeta.getColumnsList().size();
