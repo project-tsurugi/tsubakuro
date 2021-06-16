@@ -3,7 +3,7 @@ rootProject.name = 'tsubakuro'
 include 'common'
 include 'sql'
 include 'ipc'
-include 'connection'
+include 'examples'
 
 rootProject.children.each { project ->
     project.projectDir = new File(settingsDir, "modules/${project.name}")

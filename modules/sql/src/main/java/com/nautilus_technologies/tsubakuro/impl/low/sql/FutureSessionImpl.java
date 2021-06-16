@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.connection;
+package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
@@ -8,7 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 
 /**
  * FutureSessionImpl type.

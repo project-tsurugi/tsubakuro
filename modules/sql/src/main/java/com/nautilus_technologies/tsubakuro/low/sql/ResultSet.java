@@ -48,7 +48,7 @@ public interface ResultSet extends Closeable {
      * Get the record mata data of the ResultSet
      * @return RecordMeta subclass belonging to this class
      */
-    RecordMeta getRecordMeta() throws IOException;
+    RecordMeta getRecordMeta();
 
     /**
      * Move the current pointer to the next record

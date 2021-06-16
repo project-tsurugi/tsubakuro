@@ -1,8 +1,16 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql;
+package com.nautilus_technologies.tsubakuro.low;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+
+import com.nautilus_technologies.tsubakuro.low.sql.Session;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
+
 import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionCreatorImpl;
 
 public final class Select {
     private Select() {
@@ -12,15 +20,15 @@ public final class Select {
     
     public static void main(String[] args) {
 	try {
-	    var connector = new IpcConnectorImpl(dbName);
-	    
-	    var session = SessionCreator.createSession(connector);
-	    var transaction = session.createTransaction().get();
-	    var resultSet = transaction.executeQuery(args[0]).get();
+	    Connector connector = new IpcConnectorImpl(dbName);
+
+	    Session session = SessionCreatorImpl.createSession(connector).get();
+	    Transaction transaction = session.createTransaction().get();
+	    ResultSet resultSet = transaction.executeQuery(args[0]).get();
 	    while (resultSet.nextRecord()) {
 		while (resultSet.nextColumn()) {
-	            if (!isNull()) {
-			switch (resultSet.recordMeta.at()) {
+	            if (!resultSet.isNull()) {
+			switch (resultSet.getRecordMeta().at()) {
 			case INT4:
 			    System.out.println(resultSet.getInt4());
 			    break;

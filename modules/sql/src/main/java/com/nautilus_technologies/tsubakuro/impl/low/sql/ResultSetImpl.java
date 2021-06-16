@@ -63,9 +63,12 @@ public class ResultSetImpl implements ResultSet {
 	this.resultSetWire = resultSetWire;
     }
 	
-    public RecordMeta getRecordMeta() throws IOException {
-	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
+    public RecordMeta getRecordMeta() {
 	return recordMeta;
+    }
+
+    public void storeSchemaMetaData() throws IOException {
+	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
     }
 
     void skipRestOfColumns() throws IOException {

@@ -1,9 +1,11 @@
 plugins {
-    id 'tsubakuro.java-conventions'
+    id 'tsubakuro.java-library-conventions'
 }
 
 dependencies {
     implementation 'org.msgpack:msgpack-core:0.8.19'
 
-    implementation project(':connection')
+    implementation project(':sql')
+    implementation project(':ipc')
+    implementation project(':common')
 }

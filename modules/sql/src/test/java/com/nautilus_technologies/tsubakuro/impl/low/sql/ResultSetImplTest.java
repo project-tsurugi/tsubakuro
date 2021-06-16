@@ -107,6 +107,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    assertEquals(recordMeta.fieldCount(), 6);
 	    assertEquals(recordMeta.at(0), CommonProtos.DataType.INT8);
@@ -168,6 +169,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
@@ -208,6 +210,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
@@ -232,6 +235,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
@@ -255,6 +259,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
@@ -289,6 +294,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
@@ -322,6 +328,7 @@ class ResultSetImplTest {
         try {
 	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
 
+	    resultSetImpl.storeSchemaMetaData();
 	    recordMeta = resultSetImpl.getRecordMeta();
 	    // No duplicate checks are carried out
 
