@@ -8,8 +8,12 @@ import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
-import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ExecuteQueryDistiller;
+import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 /**
  * SessionLinkImpl type.

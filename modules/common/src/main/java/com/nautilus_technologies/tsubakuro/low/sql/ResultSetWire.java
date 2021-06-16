@@ -4,6 +4,7 @@ import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 
 /**
  * ResultSetWire type.

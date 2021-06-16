@@ -2,9 +2,9 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.RequestProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
+import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 
 /**
  * ServerWireImpl type.

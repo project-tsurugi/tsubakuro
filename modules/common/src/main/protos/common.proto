@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package common;
 
-option java_package = "com.nautilus_technologies.tsubakuro.low.sql";
+option java_package = "com.nautilus_technologies.tsubakuro.protos";
 option java_outer_classname = "CommonProtos";
 
 /*

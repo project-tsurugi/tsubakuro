@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 import java.util.concurrent.Future;
 import java.io.IOException;
 import java.io.Closeable;
+import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 
 /**
  * Session type.

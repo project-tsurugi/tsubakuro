@@ -15,9 +15,9 @@ import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
+import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 

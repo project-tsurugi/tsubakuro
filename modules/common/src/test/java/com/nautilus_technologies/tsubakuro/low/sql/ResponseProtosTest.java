@@ -1,9 +1,6 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql;
+package com.nautilus_technologies.tsubakuro.protos;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
 
 import org.junit.jupiter.api.Test;
 

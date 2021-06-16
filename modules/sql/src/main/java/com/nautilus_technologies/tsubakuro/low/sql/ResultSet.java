@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 /**
  * ResultSet type.

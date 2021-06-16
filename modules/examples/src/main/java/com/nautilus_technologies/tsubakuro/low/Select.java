@@ -7,7 +7,7 @@ import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionCreatorImpl;
