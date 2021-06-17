@@ -3,7 +3,6 @@ package com.nautilus_technologies.tsubakuro.low;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionCreator;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -12,8 +11,9 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class Select {
     Session session;
     
-    public Select(Connector connector, SessionCreator sessionCreator) throws IOException, ExecutionException, InterruptedException {
-	session = sessionCreator.createSession(connector).get();
+    public Select(Connector connector, Session session) throws IOException, ExecutionException, InterruptedException {
+	this.session = session;
+	this.session.connect(connector.connect().get());
     }
     
     public void select(String sql) throws IOException, ExecutionException, InterruptedException {

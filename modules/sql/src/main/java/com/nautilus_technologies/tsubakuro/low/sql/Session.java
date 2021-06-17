@@ -10,6 +10,12 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
  */
 public interface Session extends Closeable {
     /**
+     * Connect this session to the Database
+     * @param sessionWire the wire that connects to the Database
+     */
+    void connect(SessionWire sessionWire);
+
+    /**
      * Begin the new transaction
      * @param readOnly specify whether the new transaction is read-only or not
      * @return the transaction
