@@ -67,6 +67,6 @@ class SessionWireTest {
         Throwable exception = assertThrows(IOException.class, () -> {
 		client = new SessionWireImpl(dbName, sessionID); // not exist
 	    });
-	assertEquals("cannot find a session wire with the specified name", exception.getMessage());
+	assertEquals("cannot find a session with the specified name", exception.getMessage());
     }
 }
