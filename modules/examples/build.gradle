@@ -1,5 +1,6 @@
 plugins {
-    id 'tsubakuro.java-library-conventions'
+    id 'application'
+    id 'tsubakuro.java-conventions'
 }
 
 dependencies {
@@ -8,4 +9,12 @@ dependencies {
     implementation project(':sql')
     implementation project(':ipc')
     implementation project(':common')
+}
+
+application {
+    mainClass.set('com.nautilus_technologies.tsubakuro.low.Main')
+}
+
+run {
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
 }
