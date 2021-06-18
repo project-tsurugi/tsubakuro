@@ -76,8 +76,12 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
     signed char* msg = r->read();
 
-    if (msg == NULL) { return NULL; }
-    return env->NewDirectByteBuffer(msg, r->get_length());
+    do {
+        if (msg != NULL) {
+            return env->NewDirectByteBuffer(msg, r->get_length());
+        }
+        r->wait();
+    } while(true);
 }
 
 /*

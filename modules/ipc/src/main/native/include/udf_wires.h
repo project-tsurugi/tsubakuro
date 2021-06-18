@@ -57,6 +57,9 @@ public:
             inuse_ = false;
             length_ = 0;
         }
+        void wait() {
+            envelope_->response_wire_->peep(envelope_->bip_response_wire_buffer_, true);
+        }
 
     private:
         bool inuse_{};
