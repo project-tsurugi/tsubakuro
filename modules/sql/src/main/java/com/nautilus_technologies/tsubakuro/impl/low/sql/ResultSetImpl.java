@@ -8,24 +8,43 @@ import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 /**
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
-    static class RecordMetaImpl implements RecordMeta {
+    private class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
 	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
 	    this.recordMeta = recordMeta;
 	}
-        public CommonProtos.DataType at(int index) {
+        public CommonProtos.DataType at(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
 	    return recordMeta.getColumnsList().get(index).getType();
 	}
-        public boolean nullable(int index) {
+        public CommonProtos.DataType at() throws IOException {
+	    if (!columnReady) {
+		throw new IOException("the column is not ready to be read");
+	    }
+	    return recordMeta.getColumnsList().get(columnIndex).getType();
+	}
+        public boolean nullable(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
 	    return recordMeta.getColumnsList().get(index).getNullable();
+	}
+        public boolean nullable() throws IOException {
+	    if (!columnReady) {
+		throw new IOException("the column is not ready to be read");
+	    }
+	    return recordMeta.getColumnsList().get(columnIndex).getNullable();
 	}
         public long fieldCount() {
 	    return recordMeta.getColumnsList().size();
@@ -44,9 +63,12 @@ public class ResultSetImpl implements ResultSet {
 	this.resultSetWire = resultSetWire;
     }
 	
-    public RecordMeta getRecordMeta() throws IOException {
-	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
+    public RecordMeta getRecordMeta() {
 	return recordMeta;
+    }
+
+    public void storeSchemaMetaData() throws IOException {
+	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
     }
 
     void skipRestOfColumns() throws IOException {

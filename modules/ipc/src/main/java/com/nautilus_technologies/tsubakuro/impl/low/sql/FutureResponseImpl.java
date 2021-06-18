@@ -4,7 +4,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 /**
  * FutureResponseImpl type.

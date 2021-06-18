@@ -4,7 +4,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
 
 /**
@@ -14,19 +14,15 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    String name;
-    long handle;
-    long id;
+    IpcConnectorImpl connector;
     
-    FutureSessionWireImpl(String name, long handle, long id) {
-	this.name = name;
-	this.handle = handle;
-	this.id = id;
+    FutureSessionWireImpl(IpcConnectorImpl connector) {
+	this.connector = connector;
     }
 
     public SessionWire get() throws ExecutionException {
 	try {
-	    return IpcConnectorImpl.getSessionWire(name, handle, id);
+	    return connector.getSessionWire();
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}
@@ -36,7 +32,7 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	return get();  // FIXME need to be implemented properly, same as below
     }
     public boolean isDone() {
-	return isDone || IpcConnectorImpl.checkConnection(handle, id);
+	return isDone || connector.checkConnection();
     }
     public boolean isCancelled() {
 	return isCancelled;

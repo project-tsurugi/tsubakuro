@@ -24,7 +24,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
     wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
 
     auto& wire = container->get_request_wire();
-    message_header h = wire.peep();
+    message_header h = wire.peep(container->get_request_bip_buffer());
     if (h.get_idx() != 0) {
         std::abort();  // out of the scope of this test program
     }
@@ -38,7 +38,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
         return NULL;
     }
 
-    wire.read(dst, length);
+    wire.read(dst, container->get_request_bip_buffer(), length);
     env->ReleaseByteArrayElements(dstj, dst, 0);
     return dstj;
 }
@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    container->get_response_wire().write(src, message_header(0, capacity));
+    container->get_response_wire().write(container->get_response_bip_buffer(), src, message_header(0, capacity));
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
@@ -104,7 +104,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    wire.write(src, length_header(capacity));
+    wire.write(container->get_bip_buffer(), src, length_header(capacity));
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
@@ -126,7 +126,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    wire.write(src, capacity);
+    wire.write(container->get_bip_buffer(), src, capacity);
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 

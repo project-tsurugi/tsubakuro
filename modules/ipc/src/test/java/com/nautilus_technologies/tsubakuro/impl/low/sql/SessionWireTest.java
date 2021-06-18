@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.concurrent.ExecutionException;
 import java.io.Closeable;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.ProtosForTest;
+import com.nautilus_technologies.tsubakuro.protos.ExecuteQueryDistiller;
+import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
@@ -65,6 +67,6 @@ class SessionWireTest {
         Throwable exception = assertThrows(IOException.class, () -> {
 		client = new SessionWireImpl(dbName, sessionID); // not exist
 	    });
-	assertEquals("cannot find a session wire with the specified name", exception.getMessage());
+	assertEquals("cannot find a session with the specified name", exception.getMessage());
     }
 }

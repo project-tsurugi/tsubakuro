@@ -24,7 +24,8 @@ class ConnectionTest {
 	    serverConnection = new ServerConnectionImpl(dbName);
 	    assertEquals(serverConnection.listen(), 0);
 
-	    var future = IpcConnectorImpl.connect(dbName);
+	    var connector = new IpcConnectorImpl(dbName);
+	    var future = connector.connect();
 	    var id = serverConnection.listen();
 	    assertEquals(id, 1);
 	    server = serverConnection.accept(id);
@@ -46,10 +47,10 @@ class ConnectionTest {
 
     @Test
     void notExist() {
-	ServerConnectionImpl serverConnection;
+	var connector = new IpcConnectorImpl(dbName);
 
         Throwable exception = assertThrows(IOException.class, () -> {
-		var future = IpcConnectorImpl.connect(dbName);
+		var future = connector.connect();
 	    });
 	assertEquals("cannot find a database with the specified name", exception.getMessage());
     }

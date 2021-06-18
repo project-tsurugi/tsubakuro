@@ -4,7 +4,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import com.nautilus_technologies.tsubakuro.low.sql.SchemaProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 
 /**
  * ResultSetWireImpl type.

@@ -21,7 +21,6 @@ namespace tsubakuro::common::wire {
 
 class session_wire_container
 {
-    static constexpr const char* wire_name = "request_response";
     static constexpr std::size_t max_responses_size = 16;
     static constexpr std::size_t metadata_size_boundary = 256;
 
@@ -58,6 +57,9 @@ public:
             inuse_ = false;
             length_ = 0;
         }
+        void wait() {
+            envelope_->response_wire_.peep(true);
+        }
 
     private:
         bool inuse_{};
@@ -75,21 +77,22 @@ public:
             if (resultset_wire_ == nullptr) {
                 throw std::runtime_error("cannot find a result_set wire with the specified name");
             }
+            bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
         }
-        std::size_t peep() { return resultset_wire_->peep().get_length(); }
+        std::size_t peep() { return resultset_wire_->peep(bip_buffer_).get_length(); }
         std::pair<signed char*, std::size_t> recv_meta() {
-            std::size_t length = resultset_wire_->peep().get_length();
+            std::size_t length = resultset_wire_->peep(bip_buffer_).get_length();
             if(length < metadata_size_boundary) {
-                resultset_wire_->read(buffer, length);
+                resultset_wire_->read(buffer, bip_buffer_, length);
                 return std::pair<signed char*, std::size_t>(buffer, length);
             } else {
                 annex_ = std::make_unique<signed char[]>(length);
-                resultset_wire_->read(annex_.get(), length);
+                resultset_wire_->read(annex_.get(), bip_buffer_, length);
                 return std::pair<signed char*, std::size_t>(annex_.get(), length);
             }
         }
         std::pair<signed char*, std::size_t> get_chunk() {
-            return resultset_wire_->get_chunk();
+            return resultset_wire_->get_chunk(bip_buffer_);
         }
         void dispose(std::size_t length) {
             resultset_wire_->dispose(length);
@@ -100,21 +103,45 @@ public:
         session_wire_container* get_envelope() { return envelope_; }
     private:
         session_wire_container *envelope_;
+        signed char* bip_buffer_;
         std::string rsw_name_;
         unidirectional_simple_wire* resultset_wire_{};
         signed char buffer[metadata_size_boundary];
         std::unique_ptr<signed char[]> annex_;
     };
     
+    class wire_container {
+    public:
+        wire_container() = default;
+        wire_container(unidirectional_message_wire* wire, signed char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        message_header peep(bool wait = false) {
+            return wire_->peep(bip_buffer_, wait);
+        }
+        void write(signed char* from, message_header&& header) {
+            wire_->write(bip_buffer_, from, std::move(header));
+        }
+        void read(signed char* to, std::size_t msg_len) {
+            wire_->read(to, bip_buffer_, msg_len);
+        }        
+    private:
+        unidirectional_message_wire* wire_{};
+        signed char* bip_buffer_{};
+    };
+
     session_wire_container(std::string_view name) : db_name_(name) {
         try {
             managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, db_name_.c_str());
-            bidirectional_message_wire_ = managed_shared_memory_->find<bidirectional_message_wire>(wire_name).first;
+            auto req_wire = managed_shared_memory_->find<unidirectional_message_wire>(request_wire_name).first;
+            auto res_wire = managed_shared_memory_->find<unidirectional_message_wire>(response_wire_name).first;
+            if (req_wire == nullptr || res_wire == nullptr) {
+                throw std::runtime_error("cannot find the session wire");
+            }
+            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
+            response_wire_ = wire_container(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            throw std::runtime_error("cannot find a session wire with the specified name");
+            throw std::runtime_error("cannot find a session with the specified name");
         }
-
         responses.resize(max_responses_size);
         responses.at(0) = std::make_unique<response>(this, 0);  // prepare one entry that always gets used
     }
@@ -141,18 +168,17 @@ public:
         r = responses.at(idx).get();
       case_exist:
         r->set_inuse();
-        bidirectional_message_wire_->get_request_wire().write(msg, message_header(idx, length));
+        request_wire_.write(msg, message_header(idx, length));
         return r;
     }
 
     void read_all() {
-        unidirectional_message_wire& wire = bidirectional_message_wire_->get_response_wire();
         while (true) {
-            message_header h = wire.peep();
+            message_header h = response_wire_.peep();
             if (h.get_length() == 0) { break; }
             response& r = *responses.at(h.get_idx());
             r.set_length(h.get_length());
-            wire.read(r.get_buffer(), h.get_length());
+            response_wire_.read(r.get_buffer(), h.get_length());
         }
     }
 
@@ -166,7 +192,9 @@ public:
 private:
     std::string db_name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
-    bidirectional_message_wire* bidirectional_message_wire_{};
+    wire_container request_wire_{};
+    wire_container response_wire_{};
+    
     std::vector<std::unique_ptr<response>> responses{};
 };
 

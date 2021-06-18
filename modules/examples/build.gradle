@@ -1,0 +1,20 @@
+plugins {
+    id 'application'
+    id 'tsubakuro.java-conventions'
+}
+
+dependencies {
+    implementation 'org.msgpack:msgpack-core:0.8.19'
+
+    implementation project(':sql')
+    implementation project(':ipc')
+    implementation project(':common')
+}
+
+application {
+    mainClass.set('com.nautilus_technologies.tsubakuro.low.Main')
+}
+
+run {
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+}

@@ -79,6 +79,9 @@ private:
 };
 
 
+static constexpr const char* request_wire_name = "request_wire";
+static constexpr const char* response_wire_name = "response_wire";
+
 /**
  * @brief One-to-one unidirectional communication of charactor stream with header T
  */
@@ -89,9 +92,10 @@ public:
     /**
      * @brief Construct a new object.
      */
-    simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : managed_shm_ptr_(managed_shm_ptr), capacity_(capacity) {
+    simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : capacity_(capacity) {
         const std::size_t Alignment = 64;
-        buffer_ = static_cast<signed char*>(managed_shm_ptr_->allocate_aligned(capacity_, Alignment));
+        auto buffer = static_cast<signed char*>(managed_shm_ptr->allocate_aligned(capacity_, Alignment));
+        buffer_handle_ = managed_shm_ptr->get_handle_from_address(buffer);
     }
 
     /**
@@ -105,15 +109,15 @@ public:
     /**
      * @brief push the message into the queue.
      */
-    void write(signed char* buf, T&& header) {
+    void write(signed char* to, signed char* from, T&& header) {
         std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(), header.get_buffer(), T::size);  // FIXME should care of buffer round up
-        memcpy(write_point() + T::size, buf, header.get_length());  // FIXME should care of buffer round up
+        memcpy(write_point(to), header.get_buffer(), T::size);  // FIXME should care of buffer round up
+        memcpy(write_point(to) + T::size, from, header.get_length());  // FIXME should care of buffer round up
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -125,13 +129,13 @@ public:
     /**
      * @brief push record into the queue.
      */
-    void write(signed char* buf, std::size_t length) {
+    void write(signed char* to, signed char* from, std::size_t length) {
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(), buf, length);  // FIXME should care of buffer round up
+        memcpy(write_point(to), from, length);  // FIXME should care of buffer round up
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -143,7 +147,7 @@ public:
     /**
      * @brief poop the current header.
      */
-    T peep(bool wait = false) {
+    T peep(signed char* from, bool wait = false) {
         if (wait) {
             while(length() < T::size) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -152,16 +156,16 @@ public:
         } else {
             if (length() < T::size) { return T(); }
         }
-        T header(read_point());  // FIXME should care of buffer round up
+        T header(read_point(from));  // FIXME should care of buffer round up
         return header;
     }
 
     /**
      * @brief pop the current message.
      */
-    void read(signed char* buf, std::size_t msg_len) {
+    void read(signed char* to, signed char* from, std::size_t msg_len) {
         bool was_full = is_full();
-        memcpy(buf, read_point() + T::size, msg_len);  // FIXME should care of buffer round up
+        memcpy(to, read_point(from) + T::size, msg_len);  // FIXME should care of buffer round up
         poped_ += T::size + msg_len;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
@@ -174,16 +178,16 @@ public:
     /**
      * @brief provide the current chunk to MsgPack.
      */
-    std::pair<signed char*, std::size_t> get_chunk() {
+    std::pair<signed char*, std::size_t> get_chunk(signed char* from) {
         if (chunk_end_ != 0) {
             chunk_end_ = 0;            
-            return std::pair<signed char*, std::size_t>(point(chunk_end_), pushed_ - chunk_end_);
+            return std::pair<signed char*, std::size_t>(point(from, chunk_end_), pushed_ - chunk_end_);
         }
         if ((pushed_ / capacity_) == (poped_ / capacity_)) {
-            return std::pair<signed char*, std::size_t>(read_point(), pushed_ - poped_);
+            return std::pair<signed char*, std::size_t>(read_point(from), pushed_ - poped_);
         }
         chunk_end_ = (pushed_ / capacity_) * capacity_;
-        return std::pair<signed char*, std::size_t>(read_point(), chunk_end_ - poped_);
+        return std::pair<signed char*, std::size_t>(read_point(from), chunk_end_ - poped_);
     }
     /**
      * @brief dispose of data that has completed read and is no longer needed
@@ -193,18 +197,20 @@ public:
         chunk_end_ = 0;
     }
 
+    signed char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+        return static_cast<signed char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
+    }
+    
 private:
     bool is_empty() const { return pushed_ == poped_; }
     bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
-    signed char* read_point() { return buffer_ + index(poped_); }
-    signed char* write_point() { return buffer_ + index(pushed_); }
-    signed char* point(std::size_t i) { return buffer_ + index(i); }
+    signed char* read_point(signed char* buffer) { return buffer + index(poped_); }
+    signed char* write_point(signed char* buffer) { return buffer + index(pushed_); }
+    signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
     
-    boost::interprocess::managed_shared_memory* managed_shm_ptr_;
-    signed char* buffer_;
-
+    boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;
     std::size_t pushed_{0};
     std::size_t poped_{0};
@@ -213,8 +219,8 @@ private:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
-};
 
+};
 
 class unidirectional_message_wire : public simple_wire<message_header> {
 public:
@@ -228,33 +234,6 @@ public:
     bool is_eor() { return eor_; }
 private:
     bool eor_{false};
-};
-
-
-class bidirectional_message_wire
-{
-    static constexpr std::size_t request_buffer_size = (1<<10);
-    static constexpr std::size_t response_buffer_size = (1<<16);
-
-public:
-    bidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) :
-        request_wire_(managed_shm_ptr, request_buffer_size), response_wire_(managed_shm_ptr, response_buffer_size) {
-    }
-
-    /**
-     * @brief Copy and move constructers are deleted.
-     */
-    bidirectional_message_wire(bidirectional_message_wire const&) = delete;
-    bidirectional_message_wire(bidirectional_message_wire&&) = delete;
-    bidirectional_message_wire& operator = (bidirectional_message_wire const&) = delete;
-    bidirectional_message_wire& operator = (bidirectional_message_wire&&) = delete;
-
-    unidirectional_message_wire& get_request_wire() { return request_wire_; }
-    unidirectional_message_wire& get_response_wire() { return response_wire_; }
-
-private:
-    unidirectional_message_wire request_wire_;
-    unidirectional_message_wire response_wire_;
 };
 
 class connection_queue

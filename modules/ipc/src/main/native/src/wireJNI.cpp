@@ -76,14 +76,18 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
     signed char* msg = r->read();
 
-    if (msg == NULL) { return NULL; }
-    return env->NewDirectByteBuffer(msg, r->get_length());
+    do {
+        if (msg != NULL) {
+            return env->NewDirectByteBuffer(msg, r->get_length());
+        }
+        r->wait();
+    } while(true);
 }
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
  * Method:    closeNative
- * Signature: (J)Z
+ * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
@@ -191,7 +195,7 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
  * Method:    closeNative
- * Signature: (J)Z
+ * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)

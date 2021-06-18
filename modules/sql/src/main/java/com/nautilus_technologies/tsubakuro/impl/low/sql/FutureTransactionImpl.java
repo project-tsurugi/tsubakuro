@@ -5,8 +5,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.low.sql.CommonProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 /**
  * FutureTransactionImpl type.
