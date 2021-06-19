@@ -117,7 +117,7 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(signed char* from, message_header&& header) {
+        void write(const signed char* from, message_header&& header) {
             wire_->write(bip_buffer_, from, std::move(header));
         }
         void read(signed char* to, std::size_t msg_len) {

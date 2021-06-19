@@ -34,13 +34,13 @@ public:
     
     message_header(std::uint16_t idx, std::uint16_t length) : idx_(idx), length_(length) {}
     message_header() : message_header(0, 0) {}
-    explicit message_header(signed char* buffer) {
+    explicit message_header(const signed char* buffer) {
         std::memcpy(&idx_, buffer, sizeof(std::uint16_t));
         std::memcpy(&length_, buffer + sizeof(std::uint16_t), sizeof(std::uint16_t));
     }
 
-    std::uint16_t get_length() { return length_; }
-    std::uint16_t get_idx() { return idx_; }
+    std::uint16_t get_length() const { return length_; }
+    std::uint16_t get_idx() const { return idx_; }
     signed char* get_buffer() {
         std::memcpy(buffer_, &idx_, sizeof(std::uint16_t));
         std::memcpy(buffer_ + sizeof(std::uint16_t), &length_, sizeof(std::uint16_t));
@@ -63,11 +63,11 @@ public:
     
     explicit length_header(std::uint16_t length) : length_(length) {}
     length_header() : length_header(static_cast<std::uint16_t>(0)) {}
-    explicit length_header(signed char* buffer) {
+    explicit length_header(const signed char* buffer) {
         std::memcpy(&length_, buffer, sizeof(std::uint16_t));
     }
 
-    std::uint16_t get_length() { return length_; }
+    std::uint16_t get_length() const { return length_; }
     signed char* get_buffer() {
         std::memcpy(buffer_, &length_, sizeof(std::uint16_t));
         return buffer_;
@@ -109,7 +109,7 @@ public:
     /**
      * @brief push the message into the queue.
      */
-    void write(signed char* to, signed char* from, T&& header) {
+    void write(signed char* to, const signed char* from, T&& header) {
         std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -129,7 +129,7 @@ public:
     /**
      * @brief push record into the queue.
      */
-    void write(signed char* to, signed char* from, std::size_t length) {
+    void write(signed char* to, const signed char* from, std::size_t length) {
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
@@ -147,7 +147,7 @@ public:
     /**
      * @brief poop the current header.
      */
-    T peep(signed char* from, bool wait = false) {
+    T peep(const signed char* from, bool wait = false) {
         if (wait) {
             while(length() < T::size) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -163,7 +163,7 @@ public:
     /**
      * @brief pop the current message.
      */
-    void read(signed char* to, signed char* from, std::size_t msg_len) {
+    void read(signed char* to, const signed char* from, std::size_t msg_len) {
         bool was_full = is_full();
         memcpy(to, read_point(from) + T::size, msg_len);  // FIXME should care of buffer round up
         poped_ += T::size + msg_len;
@@ -184,10 +184,10 @@ public:
             return std::pair<signed char*, std::size_t>(point(from, chunk_end_), pushed_ - chunk_end_);
         }
         if ((pushed_ / capacity_) == (poped_ / capacity_)) {
-            return std::pair<signed char*, std::size_t>(read_point(from), pushed_ - poped_);
+            return std::pair<signed char*, std::size_t>(point(from, poped_), pushed_ - poped_);
         }
         chunk_end_ = (pushed_ / capacity_) * capacity_;
-        return std::pair<signed char*, std::size_t>(read_point(from), chunk_end_ - poped_);
+        return std::pair<signed char*, std::size_t>(point(from, poped_), chunk_end_ - poped_);
     }
     /**
      * @brief dispose of data that has completed read and is no longer needed
@@ -206,7 +206,7 @@ private:
     bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
-    signed char* read_point(signed char* buffer) { return buffer + index(poped_); }
+    const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
     signed char* write_point(signed char* buffer) { return buffer + index(pushed_); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
     
