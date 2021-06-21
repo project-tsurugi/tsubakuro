@@ -79,9 +79,9 @@ public:
             }
             bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
         }
-        std::size_t peep() { return resultset_wire_->peep(bip_buffer_).get_length(); }
+        std::size_t peep() { return resultset_wire_->peep(bip_buffer_, true).get_length(); }
         std::pair<signed char*, std::size_t> recv_meta() {
-            std::size_t length = resultset_wire_->peep(bip_buffer_).get_length();
+            std::size_t length = peep();
             if(length < metadata_size_boundary) {
                 resultset_wire_->read(buffer, bip_buffer_, length);
                 return std::pair<signed char*, std::size_t>(buffer, length);

@@ -59,16 +59,13 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     
-    public ResultSetImpl(ResultSetWire resultSetWire) {
+    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
+	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());	
 	this.resultSetWire = resultSetWire;
     }
 	
     public RecordMeta getRecordMeta() {
 	return recordMeta;
-    }
-
-    public void storeSchemaMetaData() throws IOException {
-	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
     }
 
     void skipRestOfColumns() throws IOException {
