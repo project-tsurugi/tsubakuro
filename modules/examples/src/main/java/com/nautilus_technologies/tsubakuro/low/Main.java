@@ -13,7 +13,8 @@ public final class Main {
     
     public static void main(String[] args) {
 	try {
-	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).select(args[0]);
+	    (new Insert(new IpcConnectorImpl(dbName), new SessionImpl())).insert();
+	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).select();
 	} catch (IOException e) {
 	    System.out.println(e);
 	} catch (ExecutionException e) {
