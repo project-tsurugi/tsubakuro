@@ -85,6 +85,19 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
+ * Method:    releaseNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_releaseNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container::response *r = reinterpret_cast<session_wire_container::response*>(static_cast<std::uintptr_t>(handle));
+
+    r->dispose();
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
  * Method:    closeNative
  * Signature: (J)V
  */

@@ -20,9 +20,10 @@ public class SessionWireImpl implements SessionWire {
     private long sessionID;
     
     private static native long openNative(String name) throws IOException;
-    private static native long sendNative(long handle, ByteBuffer buffer);
-    private static native ByteBuffer receiveNative(long handle);
-    private static native void closeNative(long handle);
+    private static native long sendNative(long sessionHandle, ByteBuffer buffer);
+    private static native ByteBuffer receiveNative(long responseHandle);
+    private static native void releaseNative(long responseHandle);
+    private static native void closeNative(long sessionHandle);
 
     static {
 	System.loadLibrary("wire");
@@ -64,7 +65,10 @@ public class SessionWireImpl implements SessionWire {
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	try {
-	    return ResponseProtos.Response.parseFrom(receiveNative(((ResponseWireHandleImpl) handle).getHandle()));
+	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
+	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
+	    releaseNative(responseHandle);
+	    return response;
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException("error: SessionWireImpl.receive()", e);
 	}
