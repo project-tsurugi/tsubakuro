@@ -26,7 +26,7 @@ message PreparedStatement {
 
 /* For data types that the 'tsurugi' supports. */
 enum DataType {
-  NULL = 0;  /* The first enum value must be zero in proto3. */
+  PADDING = 0;  /* The first enum value must be zero in proto3. */
   INT4 = 1;
   INT8 = 2;
   FLOAT4 = 3;
