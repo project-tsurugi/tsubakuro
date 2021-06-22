@@ -4,6 +4,7 @@ import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -52,10 +53,10 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    public Future<ResponseProtos.ResultOnly> executeStatement(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
     	return sessionLink.send(RequestProtos.ExecutePreparedStatement.newBuilder()
 				.setTransactionHandle(transaction)
-				.setPreparedStatementHandle(preparedStatement)
+				.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 				.setParameters(parameterSet)
 				.build());
     }
@@ -66,10 +67,11 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResultSet> processing result of the SQL service
      */
-    public Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+	
 	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecutePreparedQuery.newBuilder()
 							.setTransactionHandle(transaction)
-							.setPreparedStatementHandle(preparedStatement)
+							.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 							.setParameters(parameterSet)
 							.build()),
 				       sessionLink);

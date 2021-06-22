@@ -32,7 +32,7 @@ public interface Transaction extends Closeable {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    Future<ResponseProtos.ResultOnly> executeStatement(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
+    Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
 
     /**
      * Request executeQuery to the SQL service
@@ -40,7 +40,7 @@ public interface Transaction extends Closeable {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResultSet> processing result of the SQL service
      */
-    Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
+    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
 
     /**
      * Request commit to the SQL service
