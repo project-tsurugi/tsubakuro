@@ -109,15 +109,15 @@ public:
     /**
      * @brief push the message into the queue.
      */
-    void write(signed char* to, const signed char* from, T&& header) {
+    void write(signed char* base, const signed char* from, T&& header) {
         std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(to), header.get_buffer(), T::size);  // FIXME should care of buffer round up
-        memcpy(write_point(to) + T::size, from, header.get_length());  // FIXME should care of buffer round up
+        write_to_buffer(base, write_point(base), header.get_buffer(), T::size);
+        write_to_buffer(base, write_point(base) + T::size, from, header.get_length());
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -129,13 +129,13 @@ public:
     /**
      * @brief push record into the queue.
      */
-    void write(signed char* to, const signed char* from, std::size_t length) {
+    void write(signed char* base, const signed char* from, std::size_t length) {
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(to), from, length);  // FIXME should care of buffer round up
+        write_to_buffer(base, write_point(base), from, length);
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -147,22 +147,30 @@ public:
     /**
      * @brief poop the current header.
      */
-    T peep(const signed char* from, bool wait_flag = false) {
+    T peep(const signed char* base, bool wait_flag = false) {
         if (wait_flag) {
             wait(T::size);
         } else {
             if (length() < T::size) { return T(); }
         }
-        T header(read_point(from));  // FIXME should care of buffer round up
+        if ((base + capacity_) > (read_point(base) + sizeof(T))) {
+            T header(read_point(base));  // normal case
+            return header;
+        }
+        signed char buf[sizeof(T)];  // in case for ring buffer full
+        std::size_t first_part = capacity_ - index(poped_);
+        memcpy(buf, read_point(base), first_part);
+        memcpy(buf + first_part, base, sizeof(T) - first_part);
+        T header(buf);
         return header;
     }
 
     /**
      * @brief pop the current message.
      */
-    void read(signed char* to, const signed char* from, std::size_t msg_len) {
+    void read(signed char* to, const signed char* base, std::size_t msg_len) {
         bool was_full = is_full();
-        memcpy(to, read_point(from) + T::size, msg_len);  // FIXME should care of buffer round up
+        read_from_buffer(to, base, read_point(base) + T::size, msg_len);
         poped_ += T::size + msg_len;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
@@ -175,17 +183,17 @@ public:
     /**
      * @brief provide the current chunk to MsgPack.
      */
-    std::pair<signed char*, std::size_t> get_chunk(signed char* from, bool wait_flag = false) {
+    std::pair<signed char*, std::size_t> get_chunk(signed char* base, bool wait_flag = false) {
         if (wait_flag) { wait(1); }
         if (chunk_end_ != 0) {
             chunk_end_ = 0;            
-            return std::pair<signed char*, std::size_t>(point(from, chunk_end_), pushed_ - chunk_end_);
+            return std::pair<signed char*, std::size_t>(point(base, chunk_end_), pushed_ - chunk_end_);
         }
         if ((pushed_ / capacity_) == (poped_ / capacity_)) {
-            return std::pair<signed char*, std::size_t>(point(from, poped_), pushed_ - poped_);
+            return std::pair<signed char*, std::size_t>(point(base, poped_), pushed_ - poped_);
         }
         chunk_end_ = (pushed_ / capacity_) * capacity_;
-        return std::pair<signed char*, std::size_t>(point(from, poped_), chunk_end_ - poped_);
+        return std::pair<signed char*, std::size_t>(point(base, poped_), chunk_end_ - poped_);
     }
     /**
      * @brief dispose of data that has completed read and is no longer needed
@@ -213,7 +221,25 @@ private:
             c_empty_.wait(lock, [this, size](){ return length() >= size; });
         }
     }
-    
+    void write_to_buffer(signed char *base, signed char* to, const signed char* from, std::size_t length) {
+        if((base + capacity_) > (to + length)) {
+            memcpy(to, from, length);
+        } else {
+            std::size_t first_part = capacity_ - (to - base);
+            memcpy(to, from, first_part);
+            memcpy(base, from + first_part, length - first_part);
+        }
+    }
+    void read_from_buffer(signed char* to, const signed char *base, const signed char* from, std::size_t length) {
+        if((base + capacity_) > (from + length)) {
+            memcpy(to, from, length);
+        } else {
+            std::size_t first_part = capacity_ - (from - base);
+            memcpy(to, from, first_part);
+            memcpy(to + first_part, base, length - first_part);
+        }
+    }
+
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;
     std::size_t pushed_{0};
