@@ -147,12 +147,9 @@ public:
     /**
      * @brief poop the current header.
      */
-    T peep(const signed char* from, bool wait = false) {
-        if (wait) {
-            while(length() < T::size) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.wait(lock, [this](){ return length() >= T::size; });
-            }
+    T peep(const signed char* from, bool wait_flag = false) {
+        if (wait_flag) {
+            wait(T::size);
         } else {
             if (length() < T::size) { return T(); }
         }
@@ -178,7 +175,8 @@ public:
     /**
      * @brief provide the current chunk to MsgPack.
      */
-    std::pair<signed char*, std::size_t> get_chunk(signed char* from) {
+    std::pair<signed char*, std::size_t> get_chunk(signed char* from, bool wait_flag = false) {
+        if (wait_flag) { wait(1); }
         if (chunk_end_ != 0) {
             chunk_end_ = 0;            
             return std::pair<signed char*, std::size_t>(point(from, chunk_end_), pushed_ - chunk_end_);
@@ -209,6 +207,12 @@ private:
     const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
     signed char* write_point(signed char* buffer) { return buffer + index(pushed_); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
+    void wait(std::size_t size) {
+        while(length() < size) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.wait(lock, [this, size](){ return length() >= size; });
+        }
+    }
     
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;

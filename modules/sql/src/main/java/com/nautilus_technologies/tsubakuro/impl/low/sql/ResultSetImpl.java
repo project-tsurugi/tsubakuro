@@ -97,13 +97,14 @@ public class ResultSetImpl implements ResultSet {
 	} while (nextColumn());
     }
     public boolean nextRecord() throws IOException {
-	if (unpacker != null) {
+	if (unpacker == null) {
+	    inputStream = resultSetWire.getMessagePackInputStream();
+	} else {
 	    if (columnIndex != recordMeta.fieldCount()) {
 		skipRestOfColumns();
 	    }
 	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 	}
-	inputStream = resultSetWire.getMessagePackInputStream();
 	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 	columnIndex = -1;
 	columnReady = false;

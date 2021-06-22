@@ -92,7 +92,7 @@ public:
             }
         }
         std::pair<signed char*, std::size_t> get_chunk() {
-            return resultset_wire_->get_chunk(bip_buffer_);
+            return resultset_wire_->get_chunk(bip_buffer_, !is_eor());
         }
         void dispose(std::size_t length) {
             resultset_wire_->dispose(length);
