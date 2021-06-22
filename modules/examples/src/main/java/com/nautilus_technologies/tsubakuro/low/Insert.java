@@ -17,8 +17,7 @@ public class Insert {
     
     public void insert(String sql) throws IOException, ExecutionException, InterruptedException {
 	Transaction transaction = session.createTransaction().get();
-	var r = transaction.executeStatement(sql).get();
-	System.out.println(r);
+	transaction.executeStatement(sql).get();
 	transaction.commit().get();
     }
 
