@@ -13,6 +13,7 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
 public final class IpcConnectorImpl implements Connector {
     private static native long getConnectorNative(String name) throws IOException;
     private static native long requestNative(long handle);
+    private static native void waitNative(long handle, long id);
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
 
@@ -35,6 +36,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     public SessionWire getSessionWire() throws IOException {
+	waitNative(handle, id);
 	close();
 	return new SessionWireImpl(name, id);
     }

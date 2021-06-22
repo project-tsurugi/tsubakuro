@@ -72,6 +72,18 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_co
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
+ * Method:    waitNative
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_IpcConnectorImpl_waitNative
+(JNIEnv *, jclass, jlong handle, jlong id)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    container->get_connection_queue().check(id, true);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_IpcConnectorImpl
  * Method:    closeConnectorNative
  * Signature: (J)V
  */
