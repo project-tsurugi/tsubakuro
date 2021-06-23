@@ -30,8 +30,7 @@ public class TransactionImpl implements Transaction {
     public Future<ResponseProtos.ResultOnly> executeStatement(String sql) throws IOException {
 	return sessionLink.send(RequestProtos.ExecuteStatement.newBuilder()
 				.setTransactionHandle(transaction)
-				.setSql(sql)
-				.build());
+				.setSql(sql));
     }
 
     /**
@@ -42,8 +41,7 @@ public class TransactionImpl implements Transaction {
     public Future<ResultSet> executeQuery(String sql) throws IOException {
 	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecuteQuery.newBuilder()
 							.setTransactionHandle(transaction)
-							.setSql(sql)
-							.build()),
+							.setSql(sql)),
 				       sessionLink);
     };
 
@@ -53,12 +51,11 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
     	return sessionLink.send(RequestProtos.ExecutePreparedStatement.newBuilder()
 				.setTransactionHandle(transaction)
 				.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-				.setParameters(parameterSet)
-				.build());
+				.setParameters(parameterSet));
     }
 
     /**
@@ -67,13 +64,12 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResultSet> processing result of the SQL service
      */
-    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
 	
 	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecutePreparedQuery.newBuilder()
 							.setTransactionHandle(transaction)
 							.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-							.setParameters(parameterSet)
-							.build()),
+							.setParameters(parameterSet)),
 				       sessionLink);
     }
 
@@ -83,8 +79,7 @@ public class TransactionImpl implements Transaction {
      */
     public Future<ResponseProtos.ResultOnly> commit() throws IOException {
 	return sessionLink.send(RequestProtos.Commit.newBuilder()
-				.setTransactionHandle(transaction)
-				.build());
+				.setTransactionHandle(transaction));
     }
 
     /**
@@ -93,8 +88,7 @@ public class TransactionImpl implements Transaction {
      */
     public Future<ResponseProtos.ResultOnly> rollback() throws IOException {
 	return sessionLink.send(RequestProtos.Rollback.newBuilder()
-				.setTransactionHandle(transaction)
-				.build());
+				.setTransactionHandle(transaction));
     }
 
     /**

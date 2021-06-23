@@ -34,5 +34,5 @@ public interface Session extends Closeable {
      * @param placeHolder the set of place holder name and type of its variable encoded with protocol buffer
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
-    Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException;
+    Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException;
 }

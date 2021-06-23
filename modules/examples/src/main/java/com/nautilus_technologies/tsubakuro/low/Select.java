@@ -58,14 +58,12 @@ public class Select {
     public void prepareAndSelect() throws IOException, ExecutionException, InterruptedException {
 	String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8))
-	    .build();
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
 	preparedStatement = session.prepare(sql, ph).get();
 
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999))
-	    .build();
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
 	printResultset(transaction.executeQuery(preparedStatement, ps).get());
 	transaction.commit().get();
     }
