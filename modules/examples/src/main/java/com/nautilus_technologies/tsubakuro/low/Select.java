@@ -55,6 +55,10 @@ public class Select {
 	transaction.commit().get();
     }
 
+    public void select() throws IOException, ExecutionException, InterruptedException {
+	select("SELECT * FROM ORDERS WHERE o_id = 99999999");
+    }
+
     public void prepareAndSelect() throws IOException, ExecutionException, InterruptedException {
 	String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
@@ -66,9 +70,5 @@ public class Select {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
 	printResultset(transaction.executeQuery(preparedStatement, ps).get());
 	transaction.commit().get();
-    }
-
-    public void select() throws IOException, ExecutionException, InterruptedException {
-	select("SELECT * FROM ORDERS WHERE o_id = 99999999");
     }
 }
