@@ -104,7 +104,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    wire.write(container->get_bip_buffer(), src, length_header(capacity));
+    wire.write(container->get_bip_buffer(), src, length_header(static_cast<length_header::length_type>(capacity)));
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
