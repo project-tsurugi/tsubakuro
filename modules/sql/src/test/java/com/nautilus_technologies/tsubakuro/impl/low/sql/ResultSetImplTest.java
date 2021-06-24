@@ -49,6 +49,7 @@ class ResultSetImplTest {
 		    packer.packString("This is second string for the test");
 
 		    packer.flush();
+
 		} catch (IOException e) {
 		    System.out.println("error");
 		}
@@ -179,8 +180,14 @@ class ResultSetImplTest {
 	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
 	    // skip the rest of columns (pattern 1)
-
+	    
 	    // second column data
 	    assertTrue(resultSetImpl.nextRecord());
 	    assertTrue(resultSetImpl.nextColumn());
@@ -192,6 +199,50 @@ class ResultSetImplTest {
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.getInt8(), (long) 234567891L);
 	    assertTrue(resultSetImpl.nextColumn());
+	    // skip the rest of columns (pattern 2)
+
+	    // end of records
+	    assertFalse(resultSetImpl.nextRecord());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
+    void receiveSchemaMetaAndRecordWithSkip2() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+	    // skip the rest of columns (pattern 1)
+	    
+	    // second column data
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 876543219L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 2345.67891);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 234567891L);
 	    // skip the rest of columns (pattern 2)
 
 	    // end of records
@@ -352,4 +403,60 @@ class ResultSetImplTest {
             fail("cought IOException");
         }
     }
+
+    @Test
+    void useAfterClose() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+
+	    recordMeta = resultSetImpl.getRecordMeta();
+	    // No duplicate checks are carried out
+
+	    // first column data
+	    resultSetImpl.nextRecord();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getInt8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getFloat8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getCharacter();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getInt8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getFloat8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.isNull();
+	    resultSetImpl.nextColumn();
+
+	    // second column data
+	    resultSetImpl.nextRecord();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getInt8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getFloat8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.isNull();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getInt8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getFloat8();
+	    resultSetImpl.nextColumn();
+	    resultSetImpl.getCharacter();
+	    resultSetImpl.nextColumn();
+
+	    // end of records
+	    resultSetImpl.nextRecord();
+	    resultSetImpl.close();
+
+	} catch (IOException e) {
+	    System.out.println(e);
+            fail("cought IOException");
+        }
+
+	Throwable exception = assertThrows(IOException.class, () -> {
+		resultSetImpl.nextRecord();
+	    });
+	assertEquals("already closed", exception.getMessage());
+   }
 }

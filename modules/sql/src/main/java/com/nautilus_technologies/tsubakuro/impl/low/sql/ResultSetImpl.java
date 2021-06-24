@@ -71,7 +71,9 @@ public class ResultSetImpl implements ResultSet {
 
     void skipRestOfColumns() throws IOException {
 	if (!columnReady) {
-	    nextColumn();
+	    if (!nextColumn()) {
+		return;
+	    }
 	}
 	do {
 	    if (!isNull()) {
