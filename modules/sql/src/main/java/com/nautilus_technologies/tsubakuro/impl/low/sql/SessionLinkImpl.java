@@ -161,6 +161,9 @@ public class SessionLinkImpl {
      * Close the SessionLinkImpl
      */
     public void close() throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	wire.close();
 	wire = null;
     }
