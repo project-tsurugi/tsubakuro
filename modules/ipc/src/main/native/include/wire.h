@@ -262,8 +262,11 @@ public:
     unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
     void set_eor() { eor_ = true; }
     bool is_eor() { return eor_; }
+    void set_closed() { closed_ = true; }
+    bool is_closed() { return closed_; }
 private:
     bool eor_{false};
+    bool closed_{false};
 };
 
 class connection_queue

@@ -68,7 +68,10 @@ public class Select {
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
-	printResultset(transaction.executeQuery(preparedStatement, ps).get());
+	var resultSet = transaction.executeQuery(preparedStatement, ps).get();
+	printResultset(resultSet);
+	preparedStatement.close();
+	resultSet.close();
 	transaction.commit().get();
     }
 }

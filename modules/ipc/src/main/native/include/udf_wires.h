@@ -100,6 +100,9 @@ public:
         bool is_eor() {
             return resultset_wire_->is_eor();
         }
+        void set_closed() {
+            resultset_wire_->set_closed();
+        }
         session_wire_container* get_envelope() { return envelope_; }
     private:
         session_wire_container *envelope_;
@@ -186,6 +189,7 @@ public:
         return new resultset_wire_container(this, name_);
     }
     void dispose_resultset_wire(resultset_wire_container* container) {
+        container->set_closed();
         delete container;
     }
 

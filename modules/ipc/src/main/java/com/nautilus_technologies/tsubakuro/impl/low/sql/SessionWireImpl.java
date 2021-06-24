@@ -48,22 +48,25 @@ public class SessionWireImpl implements SessionWire {
      @param request the RequestProtos.Request message
     */
     public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
-	if (wireHandle != 0) {
-	    var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteString();
-	    ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
-	    req.copyTo(buffer);
-	    long handle = sendNative(wireHandle, buffer);
-	    return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
-	} else {
-	    throw new IOException("error: SessionWireImpl.send()");
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
 	}
+	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteString();
+	ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
+	req.copyTo(buffer);
+	long handle = sendNative(wireHandle, buffer);
+	return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
     }
+
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
+	}
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
@@ -74,7 +77,15 @@ public class SessionWireImpl implements SessionWire {
 	}
     }
 
+    /**
+     * Create a ResultSetWire with the given name.
+     @param name the name of the ResultSetWire to be created, where name must be unique within a session
+     @returns ResultSetWireImpl
+    */
     public ResultSetWire createResultSetWire(String name) throws IOException {
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
+	}
 	return new ResultSetWireImpl(wireHandle, name);
     }
 

@@ -16,15 +16,17 @@ public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
     private boolean isCancelled = false;
 
     private Future<ResponseProtos.Prepare> future;
+    private SessionLinkImpl sessionLinkImpl;
     
-    FuturePreparedStatementImpl(Future<ResponseProtos.Prepare> future) {
+    FuturePreparedStatementImpl(Future<ResponseProtos.Prepare> future, SessionLinkImpl sessionLinkImpl) {
 	this.future = future;
+	this.sessionLinkImpl = sessionLinkImpl;
     }
 
     public PreparedStatementImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.Prepare response = future.get();
-	    return new PreparedStatementImpl(response.getPreparedStatementHandle());
+	    return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
 	} catch (InterruptedException e) {
             throw new ExecutionException(e);
         }

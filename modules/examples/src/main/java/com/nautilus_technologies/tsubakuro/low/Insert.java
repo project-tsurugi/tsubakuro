@@ -53,6 +53,7 @@ public class Insert {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setLValue(7))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setLValue(0));
 	transaction.executeStatement(preparedStatement, ps).get();
+	preparedStatement.close();
 	transaction.commit().get();
     }
 }

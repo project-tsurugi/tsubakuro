@@ -63,9 +63,8 @@ public class SessionImpl implements Session {
     /**
      * Close the Session
      */
-    /**
-     * Close the Transaction
-     */
-    public void close() throws IOException {  // FIXME
+    public void close() throws IOException {
+	sessionLink.close();
+	sessionLink = null;
     }
 }

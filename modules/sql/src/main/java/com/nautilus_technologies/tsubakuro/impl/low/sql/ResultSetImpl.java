@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -97,7 +98,10 @@ public class ResultSetImpl implements ResultSet {
 	} while (nextColumn());
     }
     public boolean nextRecord() throws IOException {
-	if (unpacker == null) {
+	if (Objects.isNull(resultSetWire)) {
+            throw new IOException("already closed");
+	}
+        if (Objects.isNull(unpacker)) {
 	    inputStream = resultSetWire.getMessagePackInputStream();
 	} else {
 	    if (columnIndex != recordMeta.fieldCount()) {
@@ -122,7 +126,7 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	}
 	return false; 
-   }
+    }
     public int getInt4() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -227,5 +231,7 @@ public class ResultSetImpl implements ResultSet {
      * Close the ResultSetImpl
      */
     public void close() throws IOException {
+	resultSetWire.close();
+	resultSetWire = null;
     }
 }

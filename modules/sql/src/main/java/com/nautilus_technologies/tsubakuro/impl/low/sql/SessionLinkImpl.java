@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,10 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.Prepare> contains prepared statement handle
     */
     public Future<PreparedStatement> send(RequestProtos.Prepare.Builder request) throws IOException {
-	return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()));
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
+	return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
     };
 
     /**
@@ -44,6 +48,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
     };
 
@@ -53,6 +60,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request), new ResultOnlyDistiller());
     };
 
@@ -62,6 +72,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecuteQuery(request), new ExecuteQueryDistiller());
     };
 
@@ -71,6 +84,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
     */
     public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request), new ExecuteQueryDistiller());
     };
 
@@ -80,6 +96,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.Begin> contains transaction handle
     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.Begin>send(RequestProtos.Request.newBuilder().setBegin(request), new BeginDistiller());
     };
 
@@ -89,6 +108,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
     };
 
@@ -98,6 +120,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
     };
 
@@ -107,6 +132,9 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
     };
 
@@ -116,10 +144,24 @@ public class SessionLinkImpl {
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
     };
 
     public ResultSetWire createResultSetWire(String name) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
 	return wire.createResultSetWire(name);
+    }
+
+    /**
+     * Close the SessionLinkImpl
+     */
+    public void close() throws IOException {
+	wire.close();
+	wire = null;
     }
 }
