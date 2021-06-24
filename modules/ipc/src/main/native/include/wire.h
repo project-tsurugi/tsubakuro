@@ -30,26 +30,29 @@ namespace tsubakuro::common::wire {
  */
 class message_header {
 public:
-    static constexpr std::size_t size = 2 * sizeof(std::uint16_t);
+    using length_type = std::uint16_t;
+    using index_type = std::uint16_t;
+
+    static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
     
-    message_header(std::uint16_t idx, std::uint16_t length) : idx_(idx), length_(length) {}
+    message_header(index_type idx, length_type length) : idx_(idx), length_(length) {}
     message_header() : message_header(0, 0) {}
     explicit message_header(const signed char* buffer) {
-        std::memcpy(&idx_, buffer, sizeof(std::uint16_t));
-        std::memcpy(&length_, buffer + sizeof(std::uint16_t), sizeof(std::uint16_t));
+        std::memcpy(&idx_, buffer, sizeof(index_type));
+        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
     }
 
-    std::uint16_t get_length() const { return length_; }
-    std::uint16_t get_idx() const { return idx_; }
+    length_type get_length() const { return length_; }
+    index_type get_idx() const { return idx_; }
     signed char* get_buffer() {
-        std::memcpy(buffer_, &idx_, sizeof(std::uint16_t));
-        std::memcpy(buffer_ + sizeof(std::uint16_t), &length_, sizeof(std::uint16_t));
+        std::memcpy(buffer_, &idx_, sizeof(index_type));
+        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
         return buffer_;
     };
 
 private:
-    std::uint16_t idx_;
-    std::uint16_t length_;
+    index_type idx_;
+    length_type length_;
     signed char buffer_[size];
 };
 
@@ -59,22 +62,25 @@ private:
  */
 class length_header {
 public:
-    static constexpr std::size_t size = sizeof(std::uint16_t);
+    using length_type = std::uint16_t;
+
+    static constexpr std::size_t size = sizeof(length_type);
     
-    explicit length_header(std::uint16_t length) : length_(length) {}
-    length_header() : length_header(static_cast<std::uint16_t>(0)) {}
+    explicit length_header(length_type length) : length_(length) {}
+    explicit length_header(std::size_t length) : length_(static_cast<length_type>(length)) {}
+    length_header() : length_header(static_cast<length_type>(0)) {}
     explicit length_header(const signed char* buffer) {
-        std::memcpy(&length_, buffer, sizeof(std::uint16_t));
+        std::memcpy(&length_, buffer, sizeof(length_type));
     }
 
-    std::uint16_t get_length() const { return length_; }
+    length_type get_length() const { return length_; }
     signed char* get_buffer() {
-        std::memcpy(buffer_, &length_, sizeof(std::uint16_t));
+        std::memcpy(buffer_, &length_, sizeof(length_type));
         return buffer_;
     };
 
 private:
-    std::uint16_t length_;
+    length_type length_;
     signed char buffer_[size];
 };
 
@@ -246,6 +252,7 @@ private:
     std::size_t poped_{0};
     std::size_t chunk_end_{0};
 
+protected:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
@@ -260,7 +267,13 @@ public:
 class unidirectional_simple_wire : public simple_wire<length_header> {
 public:
     unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
-    void set_eor() { eor_ = true; }
+    void set_eor() {
+        eor_ = true;
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
     bool is_eor() { return eor_; }
     void set_closed() { closed_ = true; }
     bool is_closed() { return closed_; }
