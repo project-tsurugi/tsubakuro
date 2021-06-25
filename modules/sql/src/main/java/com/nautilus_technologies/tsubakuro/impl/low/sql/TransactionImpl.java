@@ -1,9 +1,11 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -27,10 +29,12 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
     public Future<ResponseProtos.ResultOnly> executeStatement(String sql) throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
 	return sessionLink.send(RequestProtos.ExecuteStatement.newBuilder()
 				.setTransactionHandle(transaction)
-				.setSql(sql)
-				.build());
+				.setSql(sql));
     }
 
     /**
@@ -39,10 +43,12 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResultSet> processing result of the SQL service
      */
     public Future<ResultSet> executeQuery(String sql) throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
 	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecuteQuery.newBuilder()
 							.setTransactionHandle(transaction)
-							.setSql(sql)
-							.build()),
+							.setSql(sql)),
 				       sessionLink);
     };
 
@@ -52,12 +58,14 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
-    public Future<ResponseProtos.ResultOnly> executeStatement(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
     	return sessionLink.send(RequestProtos.ExecutePreparedStatement.newBuilder()
 				.setTransactionHandle(transaction)
-				.setPreparedStatementHandle(preparedStatement)
-				.setParameters(parameterSet)
-				.build());
+				.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+				.setParameters(parameterSet));
     }
 
     /**
@@ -66,12 +74,14 @@ public class TransactionImpl implements Transaction {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<ResultSet> processing result of the SQL service
      */
-    public Future<ResultSet> executeQuery(CommonProtos.PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
 	return new FutureResultSetImpl(sessionLink.send(RequestProtos.ExecutePreparedQuery.newBuilder()
 							.setTransactionHandle(transaction)
-							.setPreparedStatementHandle(preparedStatement)
-							.setParameters(parameterSet)
-							.build()),
+							.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+							.setParameters(parameterSet)),
 				       sessionLink);
     }
 
@@ -80,9 +90,13 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
     public Future<ResponseProtos.ResultOnly> commit() throws IOException {
-	return sessionLink.send(RequestProtos.Commit.newBuilder()
-				.setTransactionHandle(transaction)
-				.build());
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
+	var rv = sessionLink.send(RequestProtos.Commit.newBuilder()
+				.setTransactionHandle(transaction));
+	close();
+	return rv;
     }
 
     /**
@@ -90,14 +104,22 @@ public class TransactionImpl implements Transaction {
      * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
     public Future<ResponseProtos.ResultOnly> rollback() throws IOException {
-	return sessionLink.send(RequestProtos.Rollback.newBuilder()
-				.setTransactionHandle(transaction)
-				.build());
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
+	var rv = sessionLink.send(RequestProtos.Rollback.newBuilder()
+				  .setTransactionHandle(transaction));
+	close();
+	return rv;
     }
 
     /**
      * Close the Transaction
      */
-    public void close() throws IOException {  // FIXME
+    public void close() throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
+	sessionLink = null;
     }
 }

@@ -13,7 +13,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    wire_container* container = new wire_container(std::string_view(name_, len_));
+    server_wire_container* container = new server_wire_container(std::string_view(name_, len_));
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
@@ -21,10 +21,10 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_getNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
-    wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     auto& wire = container->get_request_wire();
-    message_header h = wire.peep(container->get_request_bip_buffer());
+    message_header h = wire.peep();
     if (h.get_idx() != 0) {
         std::abort();  // out of the scope of this test program
     }
@@ -38,7 +38,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
         return NULL;
     }
 
-    wire.read(dst, container->get_request_bip_buffer(), length);
+    wire.read(dst, length);
     env->ReleaseByteArrayElements(dstj, dst, 0);
     return dstj;
 }
@@ -46,7 +46,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
 {
-    wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     jbyte *src = env->GetByteArrayElements(srcj, 0);
     jsize capacity = env->GetArrayLength(srcj);
@@ -55,14 +55,14 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    container->get_response_wire().write(container->get_response_bip_buffer(), src, message_header(0, capacity));
+    container->get_response_wire().write(src, message_header(0, capacity));
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeNative
 ([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
-    wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     delete container;
 }
@@ -75,13 +75,13 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_createRSLNative
 (JNIEnv *env, jclass, jlong handle, jstring name)
 {
-    wire_container* container = reinterpret_cast<wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     const char* name_ = env->GetStringUTFChars(name, NULL);
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    wire_container::resultset_wire_container* rs_container = container->create_resultset_wire(std::string_view(name_, len_));
+    server_wire_container::resultset_wire_container* rs_container = container->create_resultset_wire(std::string_view(name_, len_));
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rs_container));
 }
@@ -94,7 +94,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putSchemaRSLNative
 (JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
-    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wire_container* container = reinterpret_cast<server_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
     auto& wire = container->get_resultset_wire();
 
     jbyte *src = env->GetByteArrayElements(srcj, 0);
@@ -104,7 +104,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    wire.write(container->get_bip_buffer(), src, length_header(capacity));
+    wire.write(container->get_bip_buffer(), src, length_header(static_cast<length_header::length_type>(capacity)));
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
@@ -116,7 +116,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putRecordsRSLNative
 (JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
-    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wire_container* container = reinterpret_cast<server_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
     auto& wire = container->get_resultset_wire();
 
     jbyte *src = env->GetByteArrayElements(srcj, 0);
@@ -138,7 +138,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_setEndOfRecordsRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
-    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wire_container* container = reinterpret_cast<server_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
     auto& wire = container->get_resultset_wire();
 
     wire.set_eor();
@@ -152,7 +152,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
-    wire_container::resultset_wire_container* container = reinterpret_cast<wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wire_container* container = reinterpret_cast<server_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     delete container;
 }

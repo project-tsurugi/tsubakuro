@@ -79,9 +79,9 @@ public:
             }
             bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
         }
-        std::size_t peep() { return resultset_wire_->peep(bip_buffer_).get_length(); }
+        std::size_t peep() { return resultset_wire_->peep(bip_buffer_, true).get_length(); }
         std::pair<signed char*, std::size_t> recv_meta() {
-            std::size_t length = resultset_wire_->peep(bip_buffer_).get_length();
+            std::size_t length = peep();
             if(length < metadata_size_boundary) {
                 resultset_wire_->read(buffer, bip_buffer_, length);
                 return std::pair<signed char*, std::size_t>(buffer, length);
@@ -92,13 +92,16 @@ public:
             }
         }
         std::pair<signed char*, std::size_t> get_chunk() {
-            return resultset_wire_->get_chunk(bip_buffer_);
+            return resultset_wire_->get_chunk(bip_buffer_, !is_eor());
         }
         void dispose(std::size_t length) {
             resultset_wire_->dispose(length);
         }
         bool is_eor() {
             return resultset_wire_->is_eor();
+        }
+        void set_closed() {
+            resultset_wire_->set_closed();
         }
         session_wire_container* get_envelope() { return envelope_; }
     private:
@@ -117,7 +120,7 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(signed char* from, message_header&& header) {
+        void write(const signed char* from, message_header&& header) {
             wire_->write(bip_buffer_, from, std::move(header));
         }
         void read(signed char* to, std::size_t msg_len) {
@@ -186,6 +189,7 @@ public:
         return new resultset_wire_container(this, name_);
     }
     void dispose_resultset_wire(resultset_wire_container* container) {
+        container->set_closed();
         delete container;
     }
 

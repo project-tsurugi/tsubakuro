@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -59,7 +60,8 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     
-    public ResultSetImpl(ResultSetWire resultSetWire) {
+    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
+	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());	
 	this.resultSetWire = resultSetWire;
     }
 	
@@ -67,13 +69,11 @@ public class ResultSetImpl implements ResultSet {
 	return recordMeta;
     }
 
-    public void storeSchemaMetaData() throws IOException {
-	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());
-    }
-
     void skipRestOfColumns() throws IOException {
 	if (!columnReady) {
-	    nextColumn();
+	    if (!nextColumn()) {
+		return;
+	    }
 	}
 	do {
 	    if (!isNull()) {
@@ -100,13 +100,17 @@ public class ResultSetImpl implements ResultSet {
 	} while (nextColumn());
     }
     public boolean nextRecord() throws IOException {
-	if (unpacker != null) {
+	if (Objects.isNull(resultSetWire)) {
+            throw new IOException("already closed");
+	}
+        if (Objects.isNull(unpacker)) {
+	    inputStream = resultSetWire.getMessagePackInputStream();
+	} else {
 	    if (columnIndex != recordMeta.fieldCount()) {
 		skipRestOfColumns();
 	    }
 	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 	}
-	inputStream = resultSetWire.getMessagePackInputStream();
 	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 	columnIndex = -1;
 	columnReady = false;
@@ -124,7 +128,7 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	}
 	return false; 
-   }
+    }
     public int getInt4() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -229,5 +233,7 @@ public class ResultSetImpl implements ResultSet {
      * Close the ResultSetImpl
      */
     public void close() throws IOException {
+	resultSetWire.close();
+	resultSetWire = null;
     }
 }

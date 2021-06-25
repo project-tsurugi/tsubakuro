@@ -34,8 +34,7 @@ public class SessionImpl implements Session {
 	    throw new IOException("this session is not connected to the Database");
 	}
 	return new FutureTransactionImpl(sessionLink, sessionLink.send(RequestProtos.Begin.newBuilder()
-								       .setReadOnly(readOnly)
-								       .build()));
+								       .setReadOnly(readOnly)));
     }
 
     /**
@@ -52,22 +51,20 @@ public class SessionImpl implements Session {
      * @param placeHolder the set of place holder name and type of its variable encoded with protocol buffer
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
-    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException {
+    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException {
 	if (Objects.isNull(sessionLink)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
 	return sessionLink.send(RequestProtos.Prepare.newBuilder()
 				.setSql(sql)
-				.setHostVariables(placeHolder)
-				.build());
+				.setHostVariables(placeHolder));
     }
 
     /**
      * Close the Session
      */
-    /**
-     * Close the Transaction
-     */
-    public void close() throws IOException {  // FIXME
+    public void close() throws IOException {
+	sessionLink.close();
+	sessionLink = null;
     }
 }

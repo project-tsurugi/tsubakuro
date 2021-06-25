@@ -30,26 +30,29 @@ namespace tsubakuro::common::wire {
  */
 class message_header {
 public:
-    static constexpr std::size_t size = 2 * sizeof(std::uint16_t);
+    using length_type = std::uint16_t;
+    using index_type = std::uint16_t;
+
+    static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
     
-    message_header(std::uint16_t idx, std::uint16_t length) : idx_(idx), length_(length) {}
+    message_header(index_type idx, length_type length) : idx_(idx), length_(length) {}
     message_header() : message_header(0, 0) {}
-    explicit message_header(signed char* buffer) {
-        std::memcpy(&idx_, buffer, sizeof(std::uint16_t));
-        std::memcpy(&length_, buffer + sizeof(std::uint16_t), sizeof(std::uint16_t));
+    explicit message_header(const signed char* buffer) {
+        std::memcpy(&idx_, buffer, sizeof(index_type));
+        std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));
     }
 
-    std::uint16_t get_length() { return length_; }
-    std::uint16_t get_idx() { return idx_; }
+    length_type get_length() const { return length_; }
+    index_type get_idx() const { return idx_; }
     signed char* get_buffer() {
-        std::memcpy(buffer_, &idx_, sizeof(std::uint16_t));
-        std::memcpy(buffer_ + sizeof(std::uint16_t), &length_, sizeof(std::uint16_t));
+        std::memcpy(buffer_, &idx_, sizeof(index_type));
+        std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));
         return buffer_;
     };
 
 private:
-    std::uint16_t idx_;
-    std::uint16_t length_;
+    index_type idx_;
+    length_type length_;
     signed char buffer_[size];
 };
 
@@ -59,22 +62,25 @@ private:
  */
 class length_header {
 public:
-    static constexpr std::size_t size = sizeof(std::uint16_t);
+    using length_type = std::uint16_t;
+
+    static constexpr std::size_t size = sizeof(length_type);
     
-    explicit length_header(std::uint16_t length) : length_(length) {}
-    length_header() : length_header(static_cast<std::uint16_t>(0)) {}
-    explicit length_header(signed char* buffer) {
-        std::memcpy(&length_, buffer, sizeof(std::uint16_t));
+    explicit length_header(length_type length) : length_(length) {}
+    explicit length_header(std::size_t length) : length_(static_cast<length_type>(length)) {}
+    length_header() : length_header(static_cast<length_type>(0)) {}
+    explicit length_header(const signed char* buffer) {
+        std::memcpy(&length_, buffer, sizeof(length_type));
     }
 
-    std::uint16_t get_length() { return length_; }
+    length_type get_length() const { return length_; }
     signed char* get_buffer() {
-        std::memcpy(buffer_, &length_, sizeof(std::uint16_t));
+        std::memcpy(buffer_, &length_, sizeof(length_type));
         return buffer_;
     };
 
 private:
-    std::uint16_t length_;
+    length_type length_;
     signed char buffer_[size];
 };
 
@@ -109,15 +115,15 @@ public:
     /**
      * @brief push the message into the queue.
      */
-    void write(signed char* to, signed char* from, T&& header) {
+    void write(signed char* base, const signed char* from, T&& header) {
         std::size_t length = header.get_length() + T::size;
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(to), header.get_buffer(), T::size);  // FIXME should care of buffer round up
-        memcpy(write_point(to) + T::size, from, header.get_length());  // FIXME should care of buffer round up
+        write_to_buffer(base, write_point(base), header.get_buffer(), T::size);
+        write_to_buffer(base, write_point(base) + T::size, from, header.get_length());
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -129,13 +135,13 @@ public:
     /**
      * @brief push record into the queue.
      */
-    void write(signed char* to, signed char* from, std::size_t length) {
+    void write(signed char* base, const signed char* from, std::size_t length) {
         while(length > room()) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        memcpy(write_point(to), from, length);  // FIXME should care of buffer round up
+        write_to_buffer(base, write_point(base), from, length);
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -147,25 +153,30 @@ public:
     /**
      * @brief poop the current header.
      */
-    T peep(signed char* from, bool wait = false) {
-        if (wait) {
-            while(length() < T::size) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.wait(lock, [this](){ return length() >= T::size; });
-            }
+    T peep(const signed char* base, bool wait_flag = false) {
+        if (wait_flag) {
+            wait(T::size);
         } else {
             if (length() < T::size) { return T(); }
         }
-        T header(read_point(from));  // FIXME should care of buffer round up
+        if ((base + capacity_) > (read_point(base) + sizeof(T))) {
+            T header(read_point(base));  // normal case
+            return header;
+        }
+        signed char buf[sizeof(T)];  // in case for ring buffer full
+        std::size_t first_part = capacity_ - index(poped_);
+        memcpy(buf, read_point(base), first_part);
+        memcpy(buf + first_part, base, sizeof(T) - first_part);
+        T header(buf);
         return header;
     }
 
     /**
      * @brief pop the current message.
      */
-    void read(signed char* to, signed char* from, std::size_t msg_len) {
+    void read(signed char* to, const signed char* base, std::size_t msg_len) {
         bool was_full = is_full();
-        memcpy(to, read_point(from) + T::size, msg_len);  // FIXME should care of buffer round up
+        read_from_buffer(to, base, read_point(base) + T::size, msg_len);
         poped_ += T::size + msg_len;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
@@ -178,16 +189,17 @@ public:
     /**
      * @brief provide the current chunk to MsgPack.
      */
-    std::pair<signed char*, std::size_t> get_chunk(signed char* from) {
+    std::pair<signed char*, std::size_t> get_chunk(signed char* base, bool wait_flag = false) {
+        if (wait_flag) { wait(1); }
         if (chunk_end_ != 0) {
             chunk_end_ = 0;            
-            return std::pair<signed char*, std::size_t>(point(from, chunk_end_), pushed_ - chunk_end_);
+            return std::pair<signed char*, std::size_t>(point(base, chunk_end_), pushed_ - chunk_end_);
         }
         if ((pushed_ / capacity_) == (poped_ / capacity_)) {
-            return std::pair<signed char*, std::size_t>(read_point(from), pushed_ - poped_);
+            return std::pair<signed char*, std::size_t>(point(base, poped_), pushed_ - poped_);
         }
         chunk_end_ = (pushed_ / capacity_) * capacity_;
-        return std::pair<signed char*, std::size_t>(read_point(from), chunk_end_ - poped_);
+        return std::pair<signed char*, std::size_t>(point(base, poped_), chunk_end_ - poped_);
     }
     /**
      * @brief dispose of data that has completed read and is no longer needed
@@ -206,16 +218,41 @@ private:
     bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
-    signed char* read_point(signed char* buffer) { return buffer + index(poped_); }
+    const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
     signed char* write_point(signed char* buffer) { return buffer + index(pushed_); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
-    
+    void wait(std::size_t size) {
+        while(length() < size) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.wait(lock, [this, size](){ return length() >= size; });
+        }
+    }
+    void write_to_buffer(signed char *base, signed char* to, const signed char* from, std::size_t length) {
+        if((base + capacity_) > (to + length)) {
+            memcpy(to, from, length);
+        } else {
+            std::size_t first_part = capacity_ - (to - base);
+            memcpy(to, from, first_part);
+            memcpy(base, from + first_part, length - first_part);
+        }
+    }
+    void read_from_buffer(signed char* to, const signed char *base, const signed char* from, std::size_t length) {
+        if((base + capacity_) > (from + length)) {
+            memcpy(to, from, length);
+        } else {
+            std::size_t first_part = capacity_ - (from - base);
+            memcpy(to, from, first_part);
+            memcpy(to + first_part, base, length - first_part);
+        }
+    }
+
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;
     std::size_t pushed_{0};
     std::size_t poped_{0};
     std::size_t chunk_end_{0};
 
+protected:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
@@ -230,10 +267,19 @@ public:
 class unidirectional_simple_wire : public simple_wire<length_header> {
 public:
     unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
-    void set_eor() { eor_ = true; }
+    void set_eor() {
+        eor_ = true;
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
     bool is_eor() { return eor_; }
+    void set_closed() { closed_ = true; }
+    bool is_closed() { return closed_; }
 private:
     bool eor_{false};
+    bool closed_{false};
 };
 
 class connection_queue
