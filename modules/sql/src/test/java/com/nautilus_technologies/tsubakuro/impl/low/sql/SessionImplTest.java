@@ -2,10 +2,11 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.concurrent.Future;
 import java.io.IOException;
+import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
@@ -29,7 +30,11 @@ class SessionImplTest {
 	}
         public V get() throws ExecutionException {
 	    try {
-		return distiller.distill(wire.receive(handle));
+		var response = wire.receive(handle);
+		if (Objects.isNull(response)) {
+		    throw new IOException("received null response at FutureResponseMock, probably test program is incomplete");
+		}
+		return distiller.distill(response);
 	    } catch (IOException e) {
 		throw new ExecutionException(e);
 	    }
@@ -50,11 +55,19 @@ class SessionImplTest {
 
     class SessionWireMock implements SessionWire {
 	public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
-	    if (RequestProtos.Request.RequestCase.BEGIN.equals(request.getRequestCase())) {
+	    switch (request.getRequestCase()) {
+	    case BEGIN:
 		nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);
+	    case PREPARE:
+		nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
+		return new FutureResponseMock<V>(this, distiller);
+	    case DISPOSE_PREPARED_STATEMENT:
+		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+		return new FutureResponseMock<V>(this, distiller);
+	    default:
+		return null;  // dummy as it is test for session
 	    }
-	    return null;  // dummy as it is test for session
 	}
 
 	public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
@@ -70,6 +83,23 @@ class SessionImplTest {
 	public void close() throws IOException {
 	}
     }
+
+    @Test
+    void useSessionAfterClose() {
+	SessionImpl session;
+        try {
+	    session = new SessionImpl();
+	    session.connect(new SessionWireMock());
+	    session.close();
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    session.createTransaction();
+		});
+	    assertEquals("this session is not connected to the Database", exception.getMessage());
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+   }
 
     @Test
     void useTransactionAfterClose() {
@@ -95,19 +125,35 @@ class SessionImplTest {
     }
 
     @Test
-    void useSessionAfterClose() {
+    void usePreparedStatementAfterClose() {
 	SessionImpl session;
         try {
 	    session = new SessionImpl();
 	    session.connect(new SessionWireMock());
-	    session.close();
+
+	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
+	    var ph = RequestProtos.PlaceHolder.newBuilder()
+		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+	    var preparedStatement = session.prepare(sql, ph).get();
+	    preparedStatement.close();
+
+	    var transaction = session.createTransaction().get();
+	    var ps = RequestProtos.ParameterSet.newBuilder()
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
 
 	    Throwable exception = assertThrows(IOException.class, () -> {
-		    session.createTransaction();
+		    var resultSet = transaction.executeQuery(preparedStatement, ps).get();
 		});
-	    assertEquals("this session is not connected to the Database", exception.getMessage());
+	    assertEquals("already closed", exception.getMessage());
+
+	    transaction.commit();
+	    session.close();
 	} catch (IOException e) {
             fail("cought IOException");
+	} catch (InterruptedException e) {
+            fail("cought InterruptedException");
+	} catch (ExecutionException e) {
+            fail("cought ExecutionException");
         }
    }
 }
