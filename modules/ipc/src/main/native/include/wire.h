@@ -123,7 +123,7 @@ public:
         }
         bool was_empty = is_empty();
         write_to_buffer(base, write_point(base), header.get_buffer(), T::size);
-        write_to_buffer(base, write_point(base) + T::size, from, header.get_length());
+        write_to_buffer(base, point(base, pushed_ + T::size), from, header.get_length());
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -192,8 +192,9 @@ public:
     std::pair<signed char*, std::size_t> get_chunk(signed char* base, bool wait_flag = false) {
         if (wait_flag) { wait(1); }
         if (chunk_end_ != 0) {
-            chunk_end_ = 0;            
-            return std::pair<signed char*, std::size_t>(point(base, chunk_end_), pushed_ - chunk_end_);
+            auto sep_point = chunk_end_;
+            chunk_end_ = 0;
+            return std::pair<signed char*, std::size_t>(point(base, sep_point), pushed_ - sep_point);
         }
         if ((pushed_ / capacity_) == (poped_ / capacity_)) {
             return std::pair<signed char*, std::size_t>(point(base, poped_), pushed_ - poped_);
@@ -228,7 +229,7 @@ private:
         }
     }
     void write_to_buffer(signed char *base, signed char* to, const signed char* from, std::size_t length) {
-        if((base + capacity_) > (to + length)) {
+        if((base + capacity_) >= (to + length)) {
             memcpy(to, from, length);
         } else {
             std::size_t first_part = capacity_ - (to - base);
