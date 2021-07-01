@@ -122,7 +122,7 @@ public:
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        write_to_buffer(base, write_point(base), header.get_buffer(), T::size);
+        write_to_buffer(base, point(base, pushed_), header.get_buffer(), T::size);
         write_to_buffer(base, point(base, pushed_ + T::size), from, header.get_length());
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
@@ -141,7 +141,7 @@ public:
             c_full_.wait(lock, [this, length](){ return !(length < room()); } );
         }
         bool was_empty = is_empty();
-        write_to_buffer(base, write_point(base), from, length);
+        write_to_buffer(base, point(base, pushed_), from, length);
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_empty) {
@@ -220,7 +220,6 @@ private:
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
     const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
-    signed char* write_point(signed char* buffer) { return buffer + index(pushed_); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
     void wait(std::size_t size) {
         while(length() < size) {
@@ -238,7 +237,7 @@ private:
         }
     }
     void read_from_buffer(signed char* to, const signed char *base, const signed char* from, std::size_t length) {
-        if((base + capacity_) > (from + length)) {
+        if((base + capacity_) >= (from + length)) {
             memcpy(to, from, length);
         } else {
             std::size_t first_part = capacity_ - (from - base);
@@ -249,15 +248,15 @@ private:
 
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;
+
+protected:
     std::size_t pushed_{0};
     std::size_t poped_{0};
     std::size_t chunk_end_{0};
 
-protected:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
-
 };
 
 class unidirectional_message_wire : public simple_wire<message_header> {
@@ -278,6 +277,10 @@ public:
     bool is_eor() { return eor_; }
     void set_closed() { closed_ = true; }
     bool is_closed() { return closed_; }
+    void initialize() {
+        pushed_ = poped_ = chunk_end_ = 0;
+        eor_ = closed_ = false;
+    }
 private:
     bool eor_{false};
     bool closed_{false};
