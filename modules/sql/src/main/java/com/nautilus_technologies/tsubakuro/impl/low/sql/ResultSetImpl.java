@@ -4,7 +4,9 @@ import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.CodingErrorAction;
 import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePack.UnpackerConfig;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.value.ValueType;
@@ -111,7 +113,10 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 	}
-	unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	unpacker = new UnpackerConfig()
+	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
+	    .withActionOnUnmappableString(CodingErrorAction.IGNORE)
+	    .newUnpacker(inputStream);
 	columnIndex = -1;
 	columnReady = false;
 	return unpacker.hasNext();
