@@ -159,7 +159,7 @@ public:
         } else {
             if (length() < T::size) { return T(); }
         }
-        if ((base + capacity_) > (read_point(base) + sizeof(T))) {
+        if ((base + capacity_) >= (read_point(base) + sizeof(T))) {
             T header(read_point(base));  // normal case
             return header;
         }
@@ -176,7 +176,7 @@ public:
      */
     void read(signed char* to, const signed char* base, std::size_t msg_len) {
         bool was_full = is_full();
-        read_from_buffer(to, base, read_point(base) + T::size, msg_len);
+        read_from_buffer(to, base, read_point(base, T::size), msg_len);
         poped_ += T::size + msg_len;
         std::atomic_thread_fence(std::memory_order_release);
         if (was_full) {
@@ -184,23 +184,33 @@ public:
             c_full_.notify_one();
         }
     }
+
     std::size_t length() { return (pushed_ - poped_); }
+
+    signed char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+        return static_cast<signed char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
+    }
 
     /**
      * @brief provide the current chunk to MsgPack.
      */
     std::pair<signed char*, std::size_t> get_chunk(signed char* base, bool wait_flag = false) {
-        if (wait_flag) { wait(1); }
-        if (chunk_end_ != 0) {
-            auto sep_point = chunk_end_;
-            chunk_end_ = 0;
-            return std::pair<signed char*, std::size_t>(point(base, sep_point), pushed_ - sep_point);
+        if (chunk_end_ < poped_) {
+            chunk_end_ = poped_;
         }
-        if ((pushed_ / capacity_) == (poped_ / capacity_)) {
-            return std::pair<signed char*, std::size_t>(point(base, poped_), pushed_ - poped_);
+        if (wait_flag) {
+            while(chunk_end_ >= pushed_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
+            }
         }
-        chunk_end_ = (pushed_ / capacity_) * capacity_;
-        return std::pair<signed char*, std::size_t>(point(base, poped_), chunk_end_ - poped_);
+        auto chunk_start = chunk_end_;
+        if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
+            chunk_end_ = pushed_;
+        } else {
+            chunk_end_ = (pushed_ / capacity_) * capacity_;
+        }
+        return std::pair<signed char*, std::size_t>(point(base, chunk_start), chunk_end_ - chunk_start);
     }
     /**
      * @brief dispose of data that has completed read and is no longer needed
@@ -210,16 +220,13 @@ public:
         chunk_end_ = 0;
     }
 
-    signed char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-        return static_cast<signed char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
-    }
-    
-private:
-    bool is_empty() const { return pushed_ == poped_; }
+protected:
+    bool is_empty() const { return (pushed_ == poped_) || (pushed_ == chunk_end_); }
     bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
     const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
+    const signed char* read_point(const signed char* buffer, std::size_t offset) { return buffer + index(poped_ + offset); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
     void wait(std::size_t size) {
         while(length() < size) {
@@ -249,7 +256,6 @@ private:
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
     std::size_t capacity_;
 
-protected:
     std::size_t pushed_{0};
     std::size_t poped_{0};
     std::size_t chunk_end_{0};
