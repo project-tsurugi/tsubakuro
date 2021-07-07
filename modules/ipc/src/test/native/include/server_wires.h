@@ -67,12 +67,11 @@ public:
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
             managed_shared_memory_->destroy<unidirectional_message_wire>(request_wire_name);
-            managed_shared_memory_->destroy<unidirectional_message_wire>(response_wire_name);
+            managed_shared_memory_->destroy<response_box>(response_box_name);
             
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
-            auto res_wire = managed_shared_memory_->construct<unidirectional_message_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            response_wire_ = wire_container(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
+            responses_ = managed_shared_memory_->construct<response_box>(response_box_name)();
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             std::abort();  // FIXME
@@ -92,7 +91,7 @@ public:
     }
 
     wire_container& get_request_wire() { return request_wire_; }
-    wire_container& get_response_wire() { return response_wire_; }
+    response_box::response& get_response(std::size_t idx) { return responses_->at(idx); }
 
     resultset_wire_container *create_resultset_wire(std::string_view name_) {
         return new resultset_wire_container(this, name_);
@@ -102,7 +101,7 @@ private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_;
-    wire_container response_wire_;
+    response_box* responses_;
 };
 
 class connection_container
