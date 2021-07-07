@@ -26,7 +26,7 @@
 namespace tsubakuro::common::wire {
 
 /**
- * @brief header information used in request/response message,
+ * @brief header information used in request message,
  * it assumes that machines with the same endianness communicate with each other
  */
 class message_header {
@@ -271,13 +271,9 @@ class response_box {
 public:
     class response {
     public:
-        static constexpr std::size_t max_response_message_length = 256;
+        static constexpr std::size_t max_response_message_length = 128;
 
         response() = default;
-        void initilize(std::size_t idx) {
-        idx_ = idx;
-            dispose();
-        }
 
         /**
          * @brief Copy and move constructers are deleted.
@@ -312,7 +308,6 @@ public:
         }
 
     private:
-        std::size_t idx_;
         std::size_t length_{};
         signed char buffer_[max_response_message_length];
         bool inuse_{};
@@ -325,11 +320,7 @@ public:
     static constexpr std::size_t max_responses_size = 16;
     using response_box_type = std::array<response, max_responses_size>;
 
-    response_box() {
-        for( std::size_t i = 0; i < response_box_.size(); i++) {
-            response_box_.at(i).initilize(i);
-        }
-    }
+    response_box() = default;
     std::size_t size() { return response_box_.size(); }
     response& at(std::size_t idx) { return response_box_.at(idx); }
 
