@@ -302,8 +302,8 @@ public:
                 c_empty_.wait(lock, [this](){ return length_ > 0; } );
             }
         }
-        void write(const char* from,  std::size_t length) {
-            memcpy(buffer_, from, length);
+        char* get_buffer() { return reinterpret_cast<char*>(buffer_); }
+        void flush(std::size_t length) {
             do {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 length_ = length;
