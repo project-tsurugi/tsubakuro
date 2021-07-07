@@ -18,6 +18,7 @@
 #include <memory>
 #include <exception>
 #include <stdexcept> // std::runtime_error
+#include <ostream>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -86,7 +87,7 @@ private:
 
 
 static constexpr const char* request_wire_name = "request_wire";
-static constexpr const char* response_wire_name = "response_wire";
+static constexpr const char* response_box_name = "response_box";
 
 /**
  * @brief One-to-one unidirectional communication of charactor stream with header T
@@ -265,32 +266,85 @@ protected:
     boost::interprocess::interprocess_condition c_full_{};
 };
 
-class unidirectional_message_wire : public simple_wire<message_header> {
-public:
-    unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
-};
 
-class unidirectional_simple_wire : public simple_wire<length_header> {
+class response_box {
 public:
-    unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
-    void set_eor() {
-        eor_ = true;
-        {
-            boost::interprocess::scoped_lock lock(m_mutex_);
+    class response : public std::streambuf {
+    public:
+        static constexpr std::size_t max_response_message_length = 256;
+
+        response() = default;
+        void initilize(std::size_t idx) {
+        idx_ = idx;
+            dispose();
+        }
+
+        /**
+         * @brief Copy and move constructers are deleted.
+         */
+        response(response const&) = delete;
+        response(response&&) = delete;
+        response& operator = (response const&) = delete;
+        response& operator = (response&&) = delete;
+
+        void flush() {
+            do {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                length_ =  pptr() - pbase();
+            } while(false);
             c_empty_.notify_one();
         }
+        std::pair<signed char*, std::size_t> recv() {
+            return std::pair<signed char*, std::size_t>(reinterpret_cast<signed char*>(buffer_), length_);
+        }
+        void set_inuse() { inuse_ = true; }
+        bool is_inuse() { return inuse_; }
+        void dispose() {
+            setp(reinterpret_cast<char*>(buffer_), reinterpret_cast<char*>(buffer_ + max_response_message_length));
+            length_ = 0;
+            inuse_ = false;
+        }
+        void wait() {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            while(length_ == 0) {
+                c_empty_.wait(lock, [this](){ return length_ > 0; } );
+            }
+        }
+        void write(const char* from,  std::size_t length) {
+            memcpy(buffer_, from, length);
+            do {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                length_ = length;
+            } while(false);
+            c_empty_.notify_one();
+        }
+
+    private:
+        std::size_t idx_;
+        std::size_t length_{};
+        signed char buffer_[max_response_message_length];
+        bool inuse_{};
+
+        boost::interprocess::interprocess_mutex m_mutex_{};
+        boost::interprocess::interprocess_condition c_empty_{};
+    };
+
+public:
+    static constexpr std::size_t max_responses_size = 16;
+    using response_box_type = std::array<response, max_responses_size>;
+
+    response_box() {
+        for( std::size_t i = 0; i < response_box_.size(); i++) {
+            response_box_.at(i).initilize(i);
+        }
     }
-    bool is_eor() { return eor_; }
-    void set_closed() { closed_ = true; }
-    bool is_closed() { return closed_; }
-    void initialize() {
-        pushed_ = poped_ = chunk_end_ = 0;
-        eor_ = closed_ = false;
-    }
+    std::size_t size() { return response_box_.size(); }
+    response& at(std::size_t idx) { return response_box_.at(idx); }
+
 private:
-    bool eor_{false};
-    bool closed_{false};
+    response_box_type response_box_{};
 };
+
 
 class connection_queue
 {
@@ -363,6 +417,34 @@ private:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_requested_{};
     boost::interprocess::interprocess_condition c_accepted_{};
+};
+
+
+class unidirectional_message_wire : public simple_wire<message_header> {
+public:
+    unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
+};
+
+class unidirectional_simple_wire : public simple_wire<length_header> {
+public:
+    unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<length_header>(managed_shm_ptr, capacity) {}
+    void set_eor() {
+        eor_ = true;
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
+    bool is_eor() { return eor_; }
+    void set_closed() { closed_ = true; }
+    bool is_closed() { return closed_; }
+    void initialize() {
+        pushed_ = poped_ = chunk_end_ = 0;
+        eor_ = closed_ = false;
+    }
+private:
+    bool eor_{false};
+    bool closed_{false};
 };
 
 };  // namespace tsubakuro::common

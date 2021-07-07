@@ -76,7 +76,7 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
     do {
         auto b = r->recv();
-        if (b.first != nullptr) {
+        if (b.second > 0) {
             return env->NewDirectByteBuffer(b.first, b.second);
         }
         r->wait();
