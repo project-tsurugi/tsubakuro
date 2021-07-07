@@ -269,7 +269,7 @@ protected:
 
 class response_box {
 public:
-    class response : public std::streambuf {
+    class response {
     public:
         static constexpr std::size_t max_response_message_length = 256;
 
@@ -287,20 +287,12 @@ public:
         response& operator = (response const&) = delete;
         response& operator = (response&&) = delete;
 
-        void flush() {
-            do {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                length_ =  pptr() - pbase();
-            } while(false);
-            c_empty_.notify_one();
-        }
         std::pair<signed char*, std::size_t> recv() {
             return std::pair<signed char*, std::size_t>(reinterpret_cast<signed char*>(buffer_), length_);
         }
         void set_inuse() { inuse_ = true; }
         bool is_inuse() { return inuse_; }
         void dispose() {
-            setp(reinterpret_cast<char*>(buffer_), reinterpret_cast<char*>(buffer_ + max_response_message_length));
             length_ = 0;
             inuse_ = false;
         }
