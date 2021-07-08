@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.Objects;
 import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -64,6 +65,19 @@ public class SessionImpl implements Session {
      * Close the Session
      */
     public void close() throws IOException {
+	if (Objects.isNull(sessionLink)) {
+	    throw new IOException("already closed");
+	}
+	try {
+	    var response = sessionLink.send(RequestProtos.Disconnect.newBuilder()).get();
+	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+		throw new IOException(response.getError().getDetail());
+	    }
+	} catch (InterruptedException e) {
+	    throw new IOException(e);
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
+	}
 	sessionLink.close();
 	sessionLink = null;
     }

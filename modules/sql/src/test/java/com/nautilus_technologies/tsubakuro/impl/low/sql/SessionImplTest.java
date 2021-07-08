@@ -65,6 +65,9 @@ class SessionImplTest {
 	    case DISPOSE_PREPARED_STATEMENT:
 		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);
+	    case DISCONNECT:
+		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+		return new FutureResponseMock<V>(this, distiller);
 	    default:
 		return null;  // dummy as it is test for session
 	    }
