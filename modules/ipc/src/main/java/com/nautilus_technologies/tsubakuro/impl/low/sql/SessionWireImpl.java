@@ -20,7 +20,7 @@ public class SessionWireImpl implements SessionWire {
     private long sessionID;
     
     private static native long openNative(String name) throws IOException;
-    private static native long sendNative(long sessionHandle, ByteBuffer buffer);
+    private static native long sendNative(long sessionHandle, byte[] buffer);
     private static native ByteBuffer receiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
     private static native void closeNative(long sessionHandle);
@@ -51,10 +51,8 @@ public class SessionWireImpl implements SessionWire {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
 	}
-	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteString();
-	ByteBuffer buffer = ByteBuffer.allocateDirect(req.size());
-	req.copyTo(buffer);
-	long handle = sendNative(wireHandle, buffer);
+	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
+	long handle = sendNative(wireHandle, req);
 	return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
     }
 

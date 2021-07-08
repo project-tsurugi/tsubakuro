@@ -51,16 +51,17 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
  * Method:    sendNative
- * Signature: (JLjava/nio/ByteBuffer;)J
+ * Signature: (J[B)J
  */
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendNative
-(JNIEnv *env, jclass, jlong handle, jobject buf)
+(JNIEnv *env, jclass, jlong handle, jbyteArray array)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
+    auto address = env->GetByteArrayElements(array, nullptr);
     response_box::response *r =
-        swc->write(static_cast<signed char*>(env->GetDirectBufferAddress(buf)),
-                         env->GetDirectBufferCapacity(buf));
+    swc->write(static_cast<signed char*>(address), env->GetArrayLength(array));
+    env->ReleaseByteArrayElements(array, address, JNI_ABORT);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
 
