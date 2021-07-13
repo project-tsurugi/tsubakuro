@@ -71,7 +71,7 @@ public:
             
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            responses_ = managed_shared_memory_->construct<response_box>(response_box_name)();
+            responses_ = managed_shared_memory_->construct<response_box>(response_box_name)(16, managed_shared_memory_.get());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             std::abort();  // FIXME
