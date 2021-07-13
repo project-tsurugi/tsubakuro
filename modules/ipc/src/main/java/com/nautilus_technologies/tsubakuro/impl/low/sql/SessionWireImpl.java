@@ -20,7 +20,7 @@ public class SessionWireImpl implements SessionWire {
     private long sessionID;
     
     private static native long openNative(String name) throws IOException;
-    private static native long sendNative(long sessionHandle, byte[] buffer);
+    private static native long sendNative(long sessionHandle, byte[] buffer) throws IOException;
     private static native ByteBuffer receiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
     private static native void closeNative(long sessionHandle);
