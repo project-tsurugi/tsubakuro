@@ -18,6 +18,11 @@ public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
     private Future<ResponseProtos.Prepare> future;
     private SessionLinkImpl sessionLinkImpl;
     
+    /**
+     * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
+     * @param future the Future<ResponseProtos.Prepare>
+     * @param sessionLinkImpl the caller of this constructor
+     */
     FuturePreparedStatementImpl(Future<ResponseProtos.Prepare> future, SessionLinkImpl sessionLinkImpl) {
 	this.future = future;
 	this.sessionLinkImpl = sessionLinkImpl;

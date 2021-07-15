@@ -14,20 +14,20 @@ public class FutureResponseImpl<V> implements Future<V> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private SessionWireImpl wire;
+    private SessionWireImpl sessionWireImpl;
     private Distiller<V> distiller;
-    private ResponseWireHandleImpl handle;
+    private ResponseWireHandleImpl responseWireHandleImpl;
 
     /**
-     * Creates a new instance.
-     * @param w the wireImpl class responsible for this communication
-     * @param d the Distiller class that will work for the message to be received
-     * @param h the handle indicating the message to be received in response to the outgoing message
+     * Class constructor, called from SessionWireImpl that is connected to the SQL server.
+     * @param sessionWireImpl the wireImpl class responsible for this communication
+     * @param distiller the Distiller class that will work for the message to be received
+     * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureResponseImpl(SessionWireImpl wire, Distiller<V> distiller, ResponseWireHandleImpl handle) {
-	this.wire = wire;
+    FutureResponseImpl(SessionWireImpl sessionWireImpl, Distiller<V> distiller, ResponseWireHandleImpl responseWireHandleImpl) {
+	this.sessionWireImpl = sessionWireImpl;
 	this.distiller = distiller;
-	this.handle = handle;
+	this.responseWireHandleImpl = responseWireHandleImpl;
     }
 	
     /**
@@ -35,7 +35,7 @@ public class FutureResponseImpl<V> implements Future<V> {
      */
     public V get() throws ExecutionException {
 	try {
-	    return distiller.distill(wire.receive(handle));
+	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}

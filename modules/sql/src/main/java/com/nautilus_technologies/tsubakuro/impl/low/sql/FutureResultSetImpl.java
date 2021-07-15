@@ -15,18 +15,23 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private SessionLinkImpl sessionLink;
+    private SessionLinkImpl sessionLinkImpl;
     private Future<ResponseProtos.ExecuteQuery> future;
     
-    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLink) {
+    /**
+     * Class constructor, called from TransactionImpl that executed the SQL that created this result set.
+     * @param future the Future<ResponseProtos.ExecuteQuery>
+     * @param sessionLinkImpl the sessionLink to which the transaction that created this object belongs
+     */
+    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLinkImpl) {
 	this.future = future;
-	this.sessionLink = sessionLink;
+	this.sessionLinkImpl = sessionLinkImpl;
     }
 
     public ResultSetImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.ExecuteQuery response = future.get();
-	    return new ResultSetImpl(sessionLink.createResultSetWire(response.getName()));
+	    return new ResultSetImpl(sessionLinkImpl.createResultSetWire(response.getName()));
 	} catch (IOException e) {
             throw new ExecutionException(e);
 	} catch (InterruptedException e) {

@@ -11,7 +11,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 public interface Connector extends Closeable {
     /**
      * Connect to the sql service
-     * @param name the database name to connect
+     * @param name the name of the SQL server to connect
      * @return the session
      */
     Future<SessionWire> connect() throws IOException;

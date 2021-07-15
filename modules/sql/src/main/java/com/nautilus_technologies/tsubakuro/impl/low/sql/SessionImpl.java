@@ -15,14 +15,18 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
  * SessionImpl type.
  */
 public class SessionImpl implements Session {
-    private SessionLinkImpl sessionLink;
+    private SessionLinkImpl sessionLinkImpl;
     
     /**
-     * Connect this session to the Database
+     * Connect this session to the SQL server.
+     *
+     * Note. How to connect to a SQL server is implementation dependent.
+     * This implementation assumes that the session wire connected to the database is given.
+     *
      * @param sessionWire the wire that connects to the Database
      */
     public void connect(SessionWire sessionWire) {
-	this.sessionLink = new SessionLinkImpl(sessionWire);
+	this.sessionLinkImpl = new SessionLinkImpl(sessionWire);
     }
 
     /**
@@ -31,11 +35,10 @@ public class SessionImpl implements Session {
      * @return the transaction
      */
     public Future<Transaction> createTransaction(boolean readOnly) throws IOException {
-	if (Objects.isNull(sessionLink)) {
+	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
-	return new FutureTransactionImpl(sessionLink, sessionLink.send(RequestProtos.Begin.newBuilder()
-								       .setReadOnly(readOnly)));
+	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder().setReadOnly(readOnly)), sessionLinkImpl);
     }
 
     /**
@@ -53,10 +56,10 @@ public class SessionImpl implements Session {
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
     public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException {
-	if (Objects.isNull(sessionLink)) {
+	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
-	return sessionLink.send(RequestProtos.Prepare.newBuilder()
+	return sessionLinkImpl.send(RequestProtos.Prepare.newBuilder()
 				.setSql(sql)
 				.setHostVariables(placeHolder));
     }
@@ -65,11 +68,11 @@ public class SessionImpl implements Session {
      * Close the Session
      */
     public void close() throws IOException {
-	if (Objects.isNull(sessionLink)) {
+	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
 	try {
-	    var response = sessionLink.send(RequestProtos.Disconnect.newBuilder()).get();
+	    var response = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder()).get();
 	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
 		throw new IOException(response.getError().getDetail());
 	    }
@@ -78,7 +81,7 @@ public class SessionImpl implements Session {
 	} catch (ExecutionException e) {
 	    throw new IOException(e);
 	}
-	sessionLink.close();
-	sessionLink = null;
+	sessionLinkImpl.close();
+	sessionLinkImpl = null;
     }
 }

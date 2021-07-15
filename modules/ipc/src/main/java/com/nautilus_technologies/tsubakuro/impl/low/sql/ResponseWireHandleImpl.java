@@ -7,15 +7,15 @@ public class ResponseWireHandleImpl extends ResponseWireHandle {
     private long handle;
 
     /**
-     * Creates a new instance.
-     * @param h the handle that this class stores.
+     * Class constructor, called from SessionWireImpl that is connected to the SQL server.
+     * @param handle the handle that this class stores.
      */
     ResponseWireHandleImpl(long handle) {
 	this.handle = handle;
     }
     /**
-     * Returns the handle.
-     * @return the handle
+     * Provides the handle.
+     * @return the handle in long, where the type is implementation-dependent
      */
     long getHandle() {
 	return handle;
