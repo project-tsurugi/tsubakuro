@@ -36,6 +36,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_conne
     try {
         container = new connection_container(std::string_view(name_, len_));
     } catch (std::runtime_error &e) {
+        env->ReleaseStringUTFChars(name, name_);
         jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
         env->ThrowNew(classj, e.what());

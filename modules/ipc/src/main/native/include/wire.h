@@ -17,11 +17,12 @@
 
 #include <memory>
 #include <exception>
+#include <atomic>
 #include <stdexcept> // std::runtime_error
-#include <ostream>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/sync/interprocess_semaphore.hpp>
 
 namespace tsubakuro::common::wire {
 
@@ -114,20 +115,16 @@ public:
     simple_wire& operator = (simple_wire&&) = delete;
             
     /**
-     * @brief push the message into the queue.
+     * @brief push the request message into the queue.
      */
     void write(signed char* base, const signed char* from, T&& header) {
         std::size_t length = header.get_length() + T::size;
-        while(length > room()) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_full_.wait(lock, [this, length](){ return !(length < room()); } );
-        }
-        bool was_empty = is_empty();
+        if (length > room()) { wait_to_write(length); }
         write_to_buffer(base, point(base, pushed_), header.get_buffer(), T::size);
         write_to_buffer(base, point(base, pushed_ + T::size), from, header.get_length());
         pushed_ += length;
-        std::atomic_thread_fence(std::memory_order_release);
-        if (was_empty) {
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
         }
@@ -137,28 +134,35 @@ public:
      * @brief push record into the queue.
      */
     void write(signed char* base, const signed char* from, std::size_t length) {
-        while(length > room()) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_full_.wait(lock, [this, length](){ return !(length < room()); } );
-        }
-        bool was_empty = is_empty();
+        if (length > room()) { wait_to_write(length); }
         write_to_buffer(base, point(base, pushed_), from, length);
         pushed_ += length;
-        std::atomic_thread_fence(std::memory_order_release);
-        if (was_empty) {
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
         }
     }
 
     /**
-     * @brief poop the current header.
+     * @brief peep the current header.
      */
     T peep(const signed char* base, bool wait_flag = false) {
-        if (wait_flag) {
-            wait(T::size);
-        } else {
-            if (length() < T::size) { return T(); }
+        while (true) {
+            if(data_length() >= T::size) {
+                break;
+            }
+            if (wait_flag) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                wait_for_read_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                while(data_length() < T::size) {
+                    c_empty_.wait(lock, [this](){ return data_length() >= T::size; });
+                }
+                wait_for_read_ = false;
+            } else {
+                if (data_length() < T::size) { return T(); }
+            }
         }
         if ((base + capacity_) >= (read_point(base) + sizeof(T))) {
             T header(read_point(base));  // normal case
@@ -176,17 +180,16 @@ public:
      * @brief pop the current message.
      */
     void read(signed char* to, const signed char* base, std::size_t msg_len) {
-        bool was_full = is_full();
         read_from_buffer(to, base, read_point(base, T::size), msg_len);
         poped_ += T::size + msg_len;
-        std::atomic_thread_fence(std::memory_order_release);
-        if (was_full) {
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_write_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.notify_one();
         }
     }
 
-    std::size_t length() { return (pushed_ - poped_); }
+    std::size_t data_length() { return (pushed_ - poped_); }
 
     signed char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
         return static_cast<signed char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
@@ -222,18 +225,19 @@ public:
     }
 
 protected:
-    bool is_empty() const { return (pushed_ == poped_) || (pushed_ == chunk_end_); }
-    bool is_full() const { return (pushed_ - poped_) >= capacity_; }
     std::size_t room() const { return capacity_ - (pushed_ - poped_); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
     const signed char* read_point(const signed char* buffer) { return buffer + index(poped_); }
     const signed char* read_point(const signed char* buffer, std::size_t offset) { return buffer + index(poped_ + offset); }
     signed char* point(signed char* buffer, std::size_t i) { return buffer + index(i); }
-    void wait(std::size_t size) {
-        while(length() < size) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_empty_.wait(lock, [this, size](){ return length() >= size; });
+    void wait_to_write(std::size_t length) {
+        boost::interprocess::scoped_lock lock(m_mutex_);
+        wait_for_write_ = true;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        while(room() < length) {
+            c_full_.wait(lock, [this, length](){ return room() >= length; });
         }
+        wait_for_write_ = false;
     }
     void write_to_buffer(signed char *base, signed char* to, const signed char* from, std::size_t length) {
         if((base + capacity_) >= (to + length)) {
@@ -260,6 +264,8 @@ protected:
     std::size_t pushed_{0};
     std::size_t poped_{0};
     std::size_t chunk_end_{0};
+    std::atomic_bool wait_for_write_{};
+    std::atomic_bool wait_for_read_{};
 
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
@@ -269,11 +275,12 @@ protected:
 
 class response_box {
 public:
+
     class response {
     public:
-        static constexpr std::size_t max_response_message_length = 128;
+        static constexpr std::size_t max_response_message_length = 256;
 
-        response() = default;
+        response() : nstored_(0) {};
 
         /**
          * @brief Copy and move constructers are deleted.
@@ -284,48 +291,51 @@ public:
         response& operator = (response&&) = delete;
 
         std::pair<signed char*, std::size_t> recv() {
+            nstored_.wait();
             return std::pair<signed char*, std::size_t>(reinterpret_cast<signed char*>(buffer_), length_);
         }
-        void set_inuse() { inuse_ = true; }
+        void set_inuse() {
+            inuse_ = true;
+        }
         bool is_inuse() { return inuse_; }
         void dispose() {
             length_ = 0;
             inuse_ = false;
         }
-        void wait() {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            while(length_ == 0) {
-                c_empty_.wait(lock, [this](){ return length_ > 0; } );
-            }
-        }
         char* get_buffer() { return reinterpret_cast<char*>(buffer_); }
         void flush(std::size_t length) {
-            do {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                length_ = length;
-            } while(false);
-            c_empty_.notify_one();
+            length_ = length;
+            nstored_.post();
         }
 
     private:
         std::size_t length_{};
-        signed char buffer_[max_response_message_length];
         bool inuse_{};
+        bool waiter_{};
 
-        boost::interprocess::interprocess_mutex m_mutex_{};
-        boost::interprocess::interprocess_condition c_empty_{};
+        boost::interprocess::interprocess_semaphore nstored_;
+        signed char buffer_[max_response_message_length];
     };
 
-public:
-    static constexpr std::size_t max_responses_size = 16;
-    using response_box_type = std::array<response, max_responses_size>;
+    /**
+     * @brief Construct a new object.
+     */
+    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : mData_(aSize, managed_shm_ptr->get_segment_manager()) {}
+    response_box() = delete;
 
-    response_box() = default;
-    std::size_t size() { return response_box_.size(); }
-    response& at(std::size_t idx) { return response_box_.at(idx); }
+    /**
+     * @brief Copy and move constructers are deleted.
+     */
+    response_box(response_box const&) = delete;
+    response_box(response_box&&) = delete;
+    response_box& operator = (response_box const&) = delete;
+    response_box& operator = (response_box&&) = delete;
+
+    std::size_t size() { return mData_.size(); }
+    response& at(std::size_t idx) { return mData_.at(idx); }
 
 private:
-    response_box_type response_box_{};
+    std::vector<response, boost::interprocess::allocator<response, boost::interprocess::managed_shared_memory::segment_manager>> mData_;
 };
 
 
