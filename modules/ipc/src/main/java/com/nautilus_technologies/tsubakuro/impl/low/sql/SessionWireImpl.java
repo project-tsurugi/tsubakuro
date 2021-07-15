@@ -29,6 +29,11 @@ public class SessionWireImpl implements SessionWire {
 	System.loadLibrary("wire");
     }
 
+    /**
+     * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
+     * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
+     * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
+     */
     public SessionWireImpl(String dbName, long sessionID) throws IOException {
 	wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
 	this.dbName = dbName;

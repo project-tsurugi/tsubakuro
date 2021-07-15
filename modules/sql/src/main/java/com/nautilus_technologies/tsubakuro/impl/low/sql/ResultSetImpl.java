@@ -19,6 +19,9 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
+    /**
+     * Store the schema of the result set.
+     */
     private class RecordMetaImpl implements RecordMeta {
 	private SchemaProtos.RecordMeta recordMeta;
 
@@ -62,15 +65,26 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     
+    /**
+     * Class constructor, called from FutureResultSetImpl.
+     * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
+     */
     public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
 	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());	
 	this.resultSetWire = resultSetWire;
     }
 	
+    /**
+     * Provide the metadata object.
+     * @returns recordMeta the metadata object
+     */
     public RecordMeta getRecordMeta() {
 	return recordMeta;
     }
 
+    /**
+     * Skips column data in the middle of a record.
+     */
     void skipRestOfColumns() throws IOException {
 	if (!columnReady) {
 	    if (!nextColumn()) {
@@ -101,6 +115,10 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	} while (nextColumn());
     }
+
+    /**
+     * Move the read target to the next record.
+     */
     public boolean nextRecord() throws IOException {
 	if (Objects.isNull(resultSetWire)) {
             throw new IOException("already closed");
@@ -121,6 +139,33 @@ public class ResultSetImpl implements ResultSet {
 	columnReady = false;
 	return unpacker.hasNext();
     }
+
+    /**
+     * Move the read target to the next column of current record.
+     *
+     * Reading all columns of all records that a recordSet has is done in the following way.
+     *
+     *   while (resultSet.nextRecord()) {
+     *     while (resultSet.nextColumn()) {
+     *       columnData = resultSet.getXXX();
+     *       do some processing using columnData;
+     *     }
+     *   }
+     */
+    public boolean nextColumn() {
+	detectNull = false;
+	columnIndex++;
+	if (columnIndex < recordMeta.fieldCount()) {
+	    columnReady = true;
+	    return true;
+	}
+	return false;
+    }
+
+    /**
+     * Check if the current column is null.
+     * @returns true if the current column is null.
+     */
     public boolean isNull() throws IOException {
 	if (recordMeta.nullable(columnIndex)) {
 	    MessageFormat format = unpacker.getNextFormat();
@@ -134,6 +179,10 @@ public class ResultSetImpl implements ResultSet {
 	}
 	return false; 
     }
+    /**
+     * Get the value of the current column as an Int4.
+     * @returns the value of current column in Int4
+     */
     public int getInt4() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -152,6 +201,10 @@ public class ResultSetImpl implements ResultSet {
 	columnReady = false;
 	return unpacker.unpackInt();
     }
+    /**
+     * Get the value of the current column as an Int8.
+     * @returns the value of current column in Int8
+     */
     public long getInt8() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -170,6 +223,10 @@ public class ResultSetImpl implements ResultSet {
 	columnReady = false;
 	return unpacker.unpackLong();
     }
+    /**
+     * Get the value of the current column as an Float4.
+     * @returns the value of current column in Float4
+     */
     public float getFloat4() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -188,6 +245,10 @@ public class ResultSetImpl implements ResultSet {
 	columnReady = false;
 	return unpacker.unpackFloat();
     }
+    /**
+     * Get the value of the current column as an Float8.
+     * @returns the value of current column in Float8
+     */
     public double getFloat8() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -206,6 +267,10 @@ public class ResultSetImpl implements ResultSet {
 	columnReady = false;
 	return unpacker.unpackDouble();
     }
+    /**
+     * Get the value of the current column as an Character string.
+     * @returns the value of current column in Character string.
+     */
     public String getCharacter() throws IOException {
 	if (detectNull) {
 	    throw new IOException("the column is Null");
@@ -223,15 +288,6 @@ public class ResultSetImpl implements ResultSet {
 	}
 	columnReady = false;
 	return unpacker.unpackString();
-    }
-    public boolean nextColumn() {
-	detectNull = false;
-	columnIndex++;
-	if (columnIndex < recordMeta.fieldCount()) {
-	    columnReady = true;
-	    return true;
-	}
-	return false;
     }
 
     /**
