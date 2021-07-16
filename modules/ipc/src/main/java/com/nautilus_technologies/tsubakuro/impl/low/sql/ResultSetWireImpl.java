@@ -20,10 +20,18 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     private long wireHandle = 0;  // for c++
 
+    /**
+     * Class constructor, called from FutureResultWireImpl.
+     * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
+     * @param name the name of the ResultSetWireImpl to be created
+     */
     public ResultSetWireImpl(long sessionWireHandle, String name) throws IOException {
 	wireHandle = createNative(sessionWireHandle, name);
     }
 
+    /**
+     * Receive the schema metadata coded in protocolbuffers.
+     */
     public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
 	try {
 	    ByteBuffer buf = receiveSchemaMetaDataNative(wireHandle);
@@ -33,6 +41,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
+    /**
+     * InputStream class to provide received record data coded by MessagePack.
+     */
     class ByteBufferBackedInputStream extends MessagePackInputStream {
 	ByteBuffer buf;
 
@@ -70,6 +81,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 	}
     }
 
+    /**
+     * Provides the InputStream to retrieve the received data.
+     */
     public MessagePackInputStream getMessagePackInputStream() {
 	return new ByteBufferBackedInputStream();
     }

@@ -2,9 +2,13 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.io.Closeable;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.ExecuteQueryDistiller;
 import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
@@ -55,6 +59,31 @@ class SessionWireTest {
 		});
 	    assertEquals("java.io.IOException: response type is inconsistent with the request type", exception.getMessage());
 	    
+	    client.close();
+	    server.close();
+	} catch (IOException e) {
+	    fail("cought IOException");
+	}
+    }
+
+    @Test
+    void multipleRequests() {
+	try {
+	    server = new ServerWireImpl(dbName, sessionID);
+	    client = new SessionWireImpl(dbName, sessionID);
+
+	    // client side send multiple requests, which can be stored in thre response_box
+	    Queue<Future<ResponseProtos.Begin>> queue = new ArrayDeque<>();
+            for (long i = 0; i < 16; i++) {  // 16 is from construction of response_box in test/native/include/server_wires.h
+		queue.add(client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller()));
+	    }
+
+	    // client side send one more request
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var response = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
+		});
+	    assertEquals("the number of pending requests exceeded the number of response boxes", exception.getMessage());
+
 	    client.close();
 	    server.close();
 	} catch (IOException e) {

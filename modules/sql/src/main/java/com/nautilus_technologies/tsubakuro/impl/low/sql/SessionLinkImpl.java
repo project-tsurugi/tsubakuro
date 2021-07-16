@@ -23,8 +23,8 @@ public class SessionLinkImpl {
     private SessionWire wire;
     
     /**
-     * Creates a new instance.
-     * @param w the wire responsible for the communication conducted by this session
+     * Class constructor, called from SessionImpl
+     * @param sessionWire the wire that connects to the Database
      */
     public SessionLinkImpl(SessionWire wire) {
 	this.wire = wire;
@@ -150,6 +150,11 @@ public class SessionLinkImpl {
 	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
     };
 
+    /**
+     * Create a ResultSetWire with the name given as an argument.
+     @param name the name of the ResultSetWire to be created
+     @return a resultSetWire
+    */
     public ResultSetWire createResultSetWire(String name) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
