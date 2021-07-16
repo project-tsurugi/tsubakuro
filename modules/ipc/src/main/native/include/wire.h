@@ -360,42 +360,58 @@ public:
     std::size_t request() {
         std::size_t rv;
 
-        boost::interprocess::scoped_lock lock(m_mutex_);
         rv = ++requested_;
-        c_requested_.notify_one();
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_request_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_requested_.notify_one();
+        }
         return rv;
     }
     bool check(std::size_t n, bool wait = false) {
-        do {
-            if (!wait) {
-                return accepted_ >= n;
-            } else if (accepted_ >= n) {
-                return true;
-            } else {
-                boost::interprocess::scoped_lock lock(m_mutex_);
+        if (!wait) {
+            return accepted_ >= n;
+        } else if (accepted_ >= n) {
+            return true;
+        }
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            wait_for_accept_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            while (accepted_ < n) {
                 c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
             }
-        } while (true);
+            wait_for_accept_ = false;
+        }
+        return true;
     }
     std::size_t listen(bool wait = false) {
-        do {
-            if (accepted_ < requested_) {
-                return accepted_ + 1;
-            }
-            if (!wait) {
-                return 0;
-            } else {
-                boost::interprocess::scoped_lock lock(m_mutex_);
+        if (accepted_ < requested_) {
+            return accepted_ + 1;
+        }
+        if (!wait) {
+            return 0;
+        }
+        {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            wait_for_request_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            while (accepted_ >= requested_) {
                 c_requested_.wait(lock, [this](){ return (accepted_ < requested_); });
             }
-        } while (true);
+            wait_for_request_ = false;
+        }
+        return accepted_ + 1;
     }
     void accept(std::size_t n) {
         if (n == (accepted_ + 1)) {
             if (n <= requested_) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
                 accepted_ = n;
-                c_accepted_.notify_all();
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                if (wait_for_accept_) {
+                    boost::interprocess::scoped_lock lock(m_mutex_);
+                    c_accepted_.notify_all();
+                }
                 return;
             } else {
                 throw std::runtime_error("Received an session id that was not requested for connection");
@@ -407,6 +423,8 @@ public:
 private:
     std::size_t requested_{0};
     std::size_t accepted_{0};
+    std::atomic_bool wait_for_request_{};
+    std::atomic_bool wait_for_accept_{};
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_requested_{};
     boost::interprocess::interprocess_condition c_accepted_{};
