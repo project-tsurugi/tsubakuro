@@ -19,16 +19,6 @@ public class Insert {
 	this.session.connect(connector.connect().get());
     }
     
-    public void insert(String sql) throws IOException, ExecutionException, InterruptedException {
-	Transaction transaction = session.createTransaction().get();
-	transaction.executeStatement(sql).get();
-	transaction.commit().get();
-    }
-
-    public void insert() throws IOException, ExecutionException, InterruptedException {
-	insert("INSERT INTO ORDERS (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) VALUES (99999999, 1234, 3, 1, '20210620', 3, 7, 0)");
-    }
-
     public void prepareAndInsert() throws IOException, ExecutionException, InterruptedException {
 	String sql = "INSERT INTO ORDERS (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) VALUES (:o_id, :o_c_id, :o_d_id, :o_w_id, :o_entry_d, :o_carrier_id, :o_ol_cnt, :o_all_local)";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
@@ -55,5 +45,6 @@ public class Insert {
 	transaction.executeStatement(preparedStatement, ps).get();
 	preparedStatement.close();
 	transaction.commit().get();
+	session.close();
     }
 }
