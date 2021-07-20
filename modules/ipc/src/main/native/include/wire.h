@@ -156,9 +156,7 @@ public:
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                while(data_length() < T::size) {
-                    c_empty_.wait(lock, [this](){ return data_length() >= T::size; });
-                }
+                c_empty_.wait(lock, [this](){ return data_length() >= T::size; });
                 wait_for_read_ = false;
             } else {
                 if (data_length() < T::size) { return T(); }
@@ -203,10 +201,8 @@ public:
             chunk_end_ = poped_;
         }
         if (wait_flag) {
-            while(chunk_end_ >= pushed_) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
-            }
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
         }
         auto chunk_start = chunk_end_;
         if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
@@ -234,9 +230,7 @@ protected:
         boost::interprocess::scoped_lock lock(m_mutex_);
         wait_for_write_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        while(room() < length) {
-            c_full_.wait(lock, [this, length](){ return room() >= length; });
-        }
+        c_full_.wait(lock, [this, length](){ return room() >= length; });
         wait_for_write_ = false;
     }
     void write_to_buffer(signed char *base, signed char* to, const signed char* from, std::size_t length) {
@@ -378,9 +372,7 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_accept_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            while (accepted_ < n) {
-                c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
-            }
+            c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
             wait_for_accept_ = false;
         }
         return true;
@@ -396,9 +388,7 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_request_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            while (accepted_ >= requested_) {
-                c_requested_.wait(lock, [this](){ return (accepted_ < requested_); });
-            }
+            c_requested_.wait(lock, [this](){ return (accepted_ < requested_); });
             wait_for_request_ = false;
         }
         return accepted_ + 1;
