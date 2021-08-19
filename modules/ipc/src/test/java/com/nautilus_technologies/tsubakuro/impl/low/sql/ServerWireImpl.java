@@ -80,14 +80,6 @@ public class ServerWireImpl implements Closeable {
 	}
     }
 
-    public void putSchemaRSL(long handle, SchemaProtos.RecordMeta metadata) throws IOException {
-	if (handle != 0) {
-	    putSchemaRSLNative(handle, metadata.toByteArray());
-	} else {
-	    throw new IOException("error: resultSetWireHandle is 0");
-	}
-    }
-
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
 	if (handle != 0) {
 	    putRecordsRSLNative(handle, ba);

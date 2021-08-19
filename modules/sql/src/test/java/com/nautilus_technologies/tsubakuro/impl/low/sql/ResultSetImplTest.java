@@ -88,10 +88,6 @@ class ResultSetImplTest {
 	    msgPackInputStreamMock = new MessagePackInputStreamMock();
 	}
 
-	public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
-	    return ProtosForTest.SchemaProtosChecker.builder().build();
-	}
-
 	public MessagePackInputStream getMessagePackInputStream() {
 	    return msgPackInputStreamMock;
 	}
@@ -103,25 +99,10 @@ class ResultSetImplTest {
     private ResultSetImpl resultSetImpl;
 
     @Test
-    void receiveSchemaMetaAndRecord() {
+    void receiveRecord() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    assertEquals(recordMeta.fieldCount(), 6);
-	    assertEquals(recordMeta.at(0), CommonProtos.DataType.INT8);
-	    assertFalse(recordMeta.nullable(0));
-	    assertEquals(recordMeta.at(1), CommonProtos.DataType.FLOAT8);
-	    assertFalse(recordMeta.nullable(1));
-	    assertEquals(recordMeta.at(2), CommonProtos.DataType.STRING);
-	    assertTrue(recordMeta.nullable(2));
-	    assertEquals(recordMeta.at(3), CommonProtos.DataType.INT8);
-	    assertFalse(recordMeta.nullable(3));
-	    assertEquals(recordMeta.at(4), CommonProtos.DataType.FLOAT8);
-	    assertFalse(recordMeta.nullable(4));
-	    assertEquals(recordMeta.at(5), CommonProtos.DataType.STRING);
-	    assertTrue(recordMeta.nullable(5));
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -164,13 +145,10 @@ class ResultSetImplTest {
    }
 
     @Test
-    void receiveSchemaMetaAndRecordWithSkip() {
+    void receiveAndRecordWithSkip() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -210,13 +188,10 @@ class ResultSetImplTest {
     }
 
     @Test
-    void receiveSchemaMetaAndRecordWithSkip2() {
+    void receiveAndRecordWithSkip2() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -257,10 +232,7 @@ class ResultSetImplTest {
     void getColumnWithoutNextColumn() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -281,10 +253,7 @@ class ResultSetImplTest {
     void getColumnInDifferntType() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -304,10 +273,7 @@ class ResultSetImplTest {
     void getColumnThatIsNull() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -338,10 +304,7 @@ class ResultSetImplTest {
     void getColumnThatIsNullPattern2() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -371,10 +334,7 @@ class ResultSetImplTest {
     void getColumnWithoutNextRecord() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
@@ -408,10 +368,7 @@ class ResultSetImplTest {
     void useAfterClose() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
-
-	    recordMeta = resultSetImpl.getRecordMeta();
-	    // No duplicate checks are carried out
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
 	    resultSetImpl.nextRecord();

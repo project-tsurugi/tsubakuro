@@ -312,7 +312,7 @@ public final class ProtosForTest {
 	}
     }
 
-    private static long sessionID = 123;
+    static long sessionID = 123;
 
     /**
      * Check of Request level message
@@ -695,12 +695,17 @@ public final class ProtosForTest {
 	static ResponseProtos.ExecuteQuery.Builder builder() {
 	    return
 		ResponseProtos.ExecuteQuery.newBuilder()
-		.setName("ResultSetName");
+		.setResultSetInfo(ResponseProtos.ResultSetInfo.newBuilder()
+				  .setName("ResultSetName")
+				  .setRecordMeta(SchemaProtosChecker.builder())
+				  );
+
 	}
 	public static boolean check(ResponseProtos.ExecuteQuery dst) {
 	    return
-		ResponseProtos.ExecuteQuery.ResultCase.NAME.equals(dst.getResultCase())
-		&& dst.getName().equals("ResultSetName");
+		ResponseProtos.ExecuteQuery.ResultCase.RESULT_SET_INFO.equals(dst.getResultCase())
+		&& dst.getResultSetInfo().getName().equals("ResultSetName")
+		&& SchemaProtosChecker.check(dst.getResultSetInfo().getRecordMeta());
 	}
 	void test() {
 	    try {

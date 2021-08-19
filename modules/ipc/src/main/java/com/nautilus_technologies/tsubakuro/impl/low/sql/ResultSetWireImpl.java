@@ -30,18 +30,6 @@ public class ResultSetWireImpl implements ResultSetWire {
     }
 
     /**
-     * Receive the schema metadata coded in protocolbuffers.
-     */
-    public SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException {
-	try {
-	    ByteBuffer buf = receiveSchemaMetaDataNative(wireHandle);
-	    return SchemaProtos.RecordMeta.parseFrom(buf);
-	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    throw new IOException("error: ResultSetWireImpl.receiveSchemaMetaData()", e);
-	}
-    }
-
-    /**
      * InputStream class to provide received record data coded by MessagePack.
      */
     class ByteBufferBackedInputStream extends MessagePackInputStream {

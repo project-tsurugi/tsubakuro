@@ -138,18 +138,39 @@ class ResponseProtosTest {
     void executeQuerySuccess() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setExecuteQuery(ResponseProtos.ExecuteQuery.newBuilder()
-			     .setName("nameOfTheResult"))
-	    .build();
+			     .setResultSetInfo(ResponseProtos.ResultSetInfo.newBuilder()
+					       .setName("nameOfTheResult")
+					       .setRecordMeta(SchemaProtos.RecordMeta.newBuilder()
+							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
+							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
+							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.STRING).setNullable(true))
+							      .build())
+					       )
+			     ).build();
 
 	byte[] data = src.toByteArray();
 	
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
+	    var recordMeta = dst.getExecuteQuery().getResultSetInfo().getRecordMeta();
+            SchemaProtos.RecordMeta.Column v1 = recordMeta.getColumnsList().get(0);
+            SchemaProtos.RecordMeta.Column v2 = recordMeta.getColumnsList().get(1);
+            SchemaProtos.RecordMeta.Column v3 = recordMeta.getColumnsList().get(2);
 
 	    assertAll(
 		      () -> assertTrue(ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())),
-		      () -> assertTrue(ResponseProtos.ExecuteQuery.ResultCase.NAME.equals(dst.getExecuteQuery().getResultCase())),
-		      () -> assertEquals(dst.getExecuteQuery().getName(), "nameOfTheResult"));
+		      () -> assertTrue(ResponseProtos.ExecuteQuery.ResultCase.RESULT_SET_INFO.equals(dst.getExecuteQuery().getResultCase())),
+		      () -> assertEquals(dst.getExecuteQuery().getResultSetInfo().getName(), "nameOfTheResult"),
+                      () -> assertEquals(v1.getName(), "v1"),
+                      () -> assertEquals(v1.getType(), CommonProtos.DataType.INT8),
+                      () -> assertEquals(v1.getNullable(), false),
+                      () -> assertEquals(v2.getName(), "v2"),
+                      () -> assertEquals(v2.getType(), CommonProtos.DataType.FLOAT8),
+                      () -> assertEquals(v2.getNullable(), false),
+                      () -> assertEquals(v3.getName(), "v3"),
+                      () -> assertEquals(v3.getType(), CommonProtos.DataType.STRING),
+                      () -> assertEquals(v3.getNullable(), true),
+                      () -> assertEquals(recordMeta.getColumnsList().size(), 3));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	}

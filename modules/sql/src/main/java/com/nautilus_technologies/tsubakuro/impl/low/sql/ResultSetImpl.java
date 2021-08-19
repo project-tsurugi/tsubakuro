@@ -69,8 +69,8 @@ public class ResultSetImpl implements ResultSet {
      * Class constructor, called from FutureResultSetImpl.
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
      */
-    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
-	recordMeta = new RecordMetaImpl(resultSetWire.receiveSchemaMetaData());	
+    public ResultSetImpl(ResultSetWire resultSetWire, SchemaProtos.RecordMeta recordMeta) throws IOException {
+	this.recordMeta = new RecordMetaImpl(recordMeta);
 	this.resultSetWire = resultSetWire;
     }
 	
