@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package protocol;
+package response;
 
 import "common.proto";
 import "schema.proto";
