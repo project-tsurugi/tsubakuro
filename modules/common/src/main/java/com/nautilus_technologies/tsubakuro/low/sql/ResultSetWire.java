@@ -11,11 +11,6 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
  */
 public interface ResultSetWire extends Closeable {
     /**
-     * Receive the schema metadata.
-     */
-    SchemaProtos.RecordMeta receiveSchemaMetaData() throws IOException;
-
-    /**
      * Receiving data sent by MessagePack is supposed to be retrieved via InputStream.
      */
     abstract class MessagePackInputStream extends InputStream {

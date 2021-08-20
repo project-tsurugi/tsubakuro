@@ -68,8 +68,7 @@ class ResultSetTotalTest {
 	    server.put(responseToBeSent);
 
 	    // server side send SchemaMeta
-	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
-	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
+	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getResultSetInfo().getName());
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest());
@@ -80,8 +79,8 @@ class ResultSetTotalTest {
 	    assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
 
 	    // client side receive SchemaMeta
-	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
-	    var schemaMeta = resultSetWire.receiveSchemaMetaData();
+	    var resultSetWire = client.createResultSetWire(responseReceived.getResultSetInfo().getName());
+	    var schemaMeta = responseReceived.getResultSetInfo().getRecordMeta();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
 	    // client side receive Records

@@ -48,23 +48,20 @@ class ResultSetWireTest {
     }
 
     @Test
-    void schemaMetaAndRecords() {
+    void records() {
 	try {
 	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
-	    // server side send SchemaMeta
+	    // server side create RSL
 	    long rsHandle = server.createRSL("resultset-1");
-	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest());
 	    server.setEndOfRecordsRSL(rsHandle);
 
-	    // client side receive SchemaMeta
+	    // client create RSL
 	    var resultSetWire = client.createResultSetWire("resultset-1");
-	    var schemaMeta = resultSetWire.receiveSchemaMetaData();
-	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
 	    // client side receive Records
 	    // first column data
@@ -133,9 +130,8 @@ class ResultSetWireTest {
 	    server = new ServerWireImpl(dbName, sessionID);
 	    client = new SessionWireImpl(dbName, sessionID);
 
-	    // server side send SchemaMeta
+	    // server side create RSL
 	    long rsHandle = server.createRSL("resultset-1");
-	    server.putSchemaRSL(rsHandle, ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest());
@@ -150,4 +146,3 @@ class ResultSetWireTest {
 	assertEquals("cannot find a result_set wire with the specified name", exception.getMessage());
     }
 }
-
