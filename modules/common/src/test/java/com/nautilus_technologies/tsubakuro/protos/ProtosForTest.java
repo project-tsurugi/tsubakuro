@@ -85,8 +85,8 @@ public final class ProtosForTest {
 	static RequestProtos.ParameterSet.Builder builder() {
 	    return
 		RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setIValue(11))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setDValue(123.45));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setInt4Value(11))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setFloat8Value(123.45));
 	}
 	static boolean check(RequestProtos.ParameterSet dst) {
 	    RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);	
@@ -94,9 +94,9 @@ public final class ProtosForTest {
 	
 	    return
 		v1.getName().equals("v1")
-		&& RequestProtos.ParameterSet.Parameter.ValueCase.I_VALUE.equals(v1.getValueCase())
+		&& RequestProtos.ParameterSet.Parameter.ValueCase.INT4_VALUE.equals(v1.getValueCase())
 		&& v2.getName().equals("v2")
-		&& RequestProtos.ParameterSet.Parameter.ValueCase.D_VALUE.equals(v2.getValueCase())
+		&& RequestProtos.ParameterSet.Parameter.ValueCase.FLOAT8_VALUE.equals(v2.getValueCase())
 		&& (dst.getParametersList().size() == 2);
 	}
 	@Test
@@ -844,10 +844,10 @@ public final class ProtosForTest {
 		SchemaProtos.RecordMeta.newBuilder()
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8).setNullable(false))
-		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.STRING).setNullable(true))
+		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.CHARACTER).setNullable(true))
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.INT8))
 		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8).setNullable(false))
-		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.STRING).setNullable(true));
+		.addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.CHARACTER).setNullable(true));
 	}
 	public static boolean check(SchemaProtos.RecordMeta dst) {
 	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
@@ -865,7 +865,7 @@ public final class ProtosForTest {
 		&& v2.getType().equals(CommonProtos.DataType.FLOAT8)
 		&& (v2.getNullable() ==  false)
 		&& v3.getName().equals("v3")
-		&& v3.getType().equals(CommonProtos.DataType.STRING)
+		&& v3.getType().equals(CommonProtos.DataType.CHARACTER)
 		&& (v3.getNullable() ==  true)
 		&& v4.getType().equals(CommonProtos.DataType.INT8)
 		&& v4.getName().equals("")
@@ -874,7 +874,7 @@ public final class ProtosForTest {
 		&& v5.getType().equals(CommonProtos.DataType.FLOAT8)
 		&& (v5.getNullable() ==  false)
 		&& v6.getName().equals("")
-		&& v6.getType().equals(CommonProtos.DataType.STRING)
+		&& v6.getType().equals(CommonProtos.DataType.CHARACTER)
 		&& (v6.getNullable() ==  true)
 		&& (dst.getColumnsList().size() == 6);
 	}
