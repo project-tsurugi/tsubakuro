@@ -11,7 +11,7 @@ class SchemaProtosTest {
 	SchemaProtos.RecordMeta src = SchemaProtos.RecordMeta.newBuilder()
 	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
 	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.STRING).setNullable(true))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.CHARACTER).setNullable(true))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -31,7 +31,7 @@ class SchemaProtosTest {
 		      () -> assertEquals(v2.getType(), CommonProtos.DataType.FLOAT8),
 		      () -> assertEquals(v2.getNullable(), false),
 		      () -> assertEquals(v3.getName(), "v3"),
-		      () -> assertEquals(v3.getType(), CommonProtos.DataType.STRING),
+		      () -> assertEquals(v3.getType(), CommonProtos.DataType.CHARACTER),
 		      () -> assertEquals(v3.getNullable(), true),
 		      () -> assertEquals(dst.getColumnsList().size(), 3));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -44,7 +44,7 @@ class SchemaProtosTest {
 	SchemaProtos.RecordMeta src = SchemaProtos.RecordMeta.newBuilder()
 	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.INT8))
 	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8))
-	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.STRING).setNullable(true))
+	    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.CHARACTER).setNullable(true))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -64,7 +64,7 @@ class SchemaProtosTest {
 		      () -> assertEquals(v2.getType(), CommonProtos.DataType.FLOAT8),
 		      () -> assertEquals(v2.getNullable(), false),
 		      () -> assertEquals(v3.getName(), ""),
-		      () -> assertEquals(v3.getType(), CommonProtos.DataType.STRING),
+		      () -> assertEquals(v3.getType(), CommonProtos.DataType.CHARACTER),
 		      () -> assertEquals(v3.getNullable(), true),
 		      () -> assertEquals(dst.getColumnsList().size(), 3));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {

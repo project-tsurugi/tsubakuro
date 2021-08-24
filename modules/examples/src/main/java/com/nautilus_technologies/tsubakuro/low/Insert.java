@@ -26,7 +26,7 @@ public class Insert {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_c_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_d_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_entry_d").setType(CommonProtos.DataType.STRING))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_entry_d").setType(CommonProtos.DataType.CHARACTER))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_carrier_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_ol_cnt").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_all_local").setType(CommonProtos.DataType.INT8));
@@ -34,14 +34,14 @@ public class Insert {
 
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setLValue(1234))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setLValue(3))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setLValue(1))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_entry_d").setSValue("20210620"))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setLValue(3))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setLValue(7))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setLValue(0));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(1234))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_entry_d").setCharacterValue("20210620"))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setInt8Value(3))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setInt8Value(7))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(0));
 	transaction.executeStatement(preparedStatement, ps).get();
 	preparedStatement.close();
 	transaction.commit().get();

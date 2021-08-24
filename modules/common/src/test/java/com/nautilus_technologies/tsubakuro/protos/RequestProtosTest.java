@@ -35,8 +35,8 @@ class RequestProtosTest {
     @Test
     void parameterSet() {
 	RequestProtos.ParameterSet src = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setIValue(11))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setDValue(123.45))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setInt4Value(11))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setFloat8Value(123.45))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -49,9 +49,9 @@ class RequestProtosTest {
 	
 	    assertAll(
 		      () -> assertEquals(v1.getName(), "v1"),
-		      () -> assertTrue(RequestProtos.ParameterSet.Parameter.ValueCase.I_VALUE.equals(v1.getValueCase())),
+		      () -> assertTrue(RequestProtos.ParameterSet.Parameter.ValueCase.INT4_VALUE.equals(v1.getValueCase())),
 		      () -> assertEquals(v2.getName(), "v2"),
-		      () -> assertTrue(RequestProtos.ParameterSet.Parameter.ValueCase.D_VALUE.equals(v2.getValueCase())),
+		      () -> assertTrue(RequestProtos.ParameterSet.Parameter.ValueCase.FLOAT8_VALUE.equals(v2.getValueCase())),
 		      () -> assertEquals(dst.getParametersList().size(), 2));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");

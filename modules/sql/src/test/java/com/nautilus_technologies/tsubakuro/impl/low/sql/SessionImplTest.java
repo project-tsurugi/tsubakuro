@@ -142,7 +142,7 @@ class SessionImplTest {
 
 	    var transaction = session.createTransaction().get();
 	    var ps = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
 
 	    Throwable exception = assertThrows(IOException.class, () -> {
 		    var resultSet = transaction.executeQuery(preparedStatement, ps).get();

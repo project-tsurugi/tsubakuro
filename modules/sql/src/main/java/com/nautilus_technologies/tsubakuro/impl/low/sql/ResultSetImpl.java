@@ -106,7 +106,7 @@ public class ResultSetImpl implements ResultSet {
 		case FLOAT8:
 		    getFloat8();
 		    break;
-		case STRING:
+		case CHARACTER:
 		    getCharacter();
 		    break;
 		default:

@@ -36,7 +36,7 @@ public class Select {
 		    case FLOAT8:
 			System.out.println(resultSet.getFloat8());
 			break;
-		    case STRING:
+		    case CHARACTER:
 			System.out.println(resultSet.getCharacter());
 			break;
 		    default:
@@ -57,7 +57,7 @@ public class Select {
 
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setLValue(99999999));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
 	var resultSet = transaction.executeQuery(preparedStatement, ps).get();
 	printResultset(resultSet);
 	preparedStatement.close();
