@@ -13,7 +13,7 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name) throws IOException;
     private static native ByteBuffer getChunkNative(long handle);
-    private static native void disposeUsedDataNative(long handle, long length);
+    private static native void disposeUsedDataNative(long handle, long length) throws IOException;
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
@@ -63,7 +63,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    buf.get(bytes, off, len);
 	    return len;
 	}
-	public synchronized void disposeUsedData(long length) {
+	public synchronized void disposeUsedData(long length) throws IOException {
 	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
 	}
     }

@@ -111,32 +111,18 @@ public:
     }
 
     /**
-     * @brief Construct a new object.
-     * for result_set_wire
+     * @brief Construct a new object for result_set_wire.
      */
-    simple_wire() : managed_shm_ptr_(nullptr), capacity_(0) {
+    simple_wire() {
+        managed_shm_ptr_ = nullptr;
         buffer_handle_ = 0;
+        capacity_ = 0;
     }
     simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr)
         : managed_shm_ptr_(managed_shm_ptr), capacity_(0) {
         buffer_handle_ = 0;
     }
-    void set_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-        managed_shm_ptr_ = managed_shm_ptr;
-    }
 
-    void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
-        buffer_handle_ = handle;
-        capacity_ = capacity;
-    }
-    void detach_buffer() {
-        buffer_handle_ = 0;
-        capacity_ = 0;
-    }
-    bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
-        return handle == buffer_handle_;
-    }
-    
     /**
      * @brief Copy and move constructers are delete.
      */
@@ -145,25 +131,6 @@ public:
     simple_wire& operator = (simple_wire const&) = delete;
     simple_wire& operator = (simple_wire&&) = delete;
             
-    /**
-     * @brief push the request message into the queue.
-     */
-    void write(char* base, const char* from, T&& header) {
-        std::size_t length = header.get_length() + T::size;
-        if (length > room()) { wait_to_write(length); }
-        write_in_buffer(base, point(base, pushed_), header.get_buffer(), T::size);
-        write_in_buffer(base, point(base, pushed_ + T::size), from, header.get_length());
-        pushed_ += length;
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_read_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_empty_.notify_one();
-        }
-    }
-    void write(const char* from, T&& header) {
-        write(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), from, std::move(header));
-    }
-
     /**
      * @brief peep the current header.
      */
@@ -197,34 +164,6 @@ public:
         return peep(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), wait_flag);
     }
 
-    const char* payload(const char* base, std::size_t length) {
-        if (index(poped_ + T::size) < index(poped_ + T::size + length)) {
-            return read_point(base, T::size);
-        }
-        copy_of_payload_ = static_cast<char*>(malloc(length));
-        read_from_buffer(copy_of_payload_, base, read_point(base, T::size), length);
-        return copy_of_payload_;  // ring buffer wrap around case
-    }
-    const char* payload(std::size_t length) {
-        return payload(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
-    }
-
-    /**
-     * @brief pop the current message.
-     */
-    void read(char* to, const char* base, std::size_t length) {
-        read_from_buffer(to, base, read_point(base, T::size), length);
-        poped_ += T::size + length;
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_write_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_full_.notify_one();
-        }
-    }
-    void read(char* to, std::size_t length) {
-        read(to, static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
-    }
-
     std::size_t data_length() { return (pushed_ - poped_); }
 
     char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
@@ -235,23 +174,6 @@ public:
     }
 
     std::size_t read_point() const { return poped_; }
-
-    /**
-     * @brief dispose of data that has completed read and is no longer needed
-     *  used by endpoint IF
-     */
-    void dispose(const char* base, const std::size_t rp) {
-        if (poped_ == rp) {
-            poped_ += peep(base).get_length();
-            if (copy_of_payload_ != nullptr) {
-                free(copy_of_payload_);
-                copy_of_payload_ = nullptr;
-            }
-        }
-    }
-    void dispose(const std::size_t rp) {
-        dispose(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), rp);
-    }
 
 protected:
     std::size_t index(std::size_t n) const { return n %  capacity_; }
@@ -283,6 +205,7 @@ protected:
             memcpy(to + first_part, base, length - first_part);
         }
     }
+    std::size_t room() const { return capacity_ - (pushed_ - poped_); }
 
     boost::interprocess::managed_shared_memory* managed_shm_ptr_;
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
@@ -291,17 +214,12 @@ protected:
     std::size_t pushed_{0};
     std::size_t poped_{0};
 
-private:
-    std::size_t room() const { return capacity_ - (pushed_ - poped_); }
-
     std::atomic_bool wait_for_write_{};
     std::atomic_bool wait_for_read_{};
 
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_empty_{};
     boost::interprocess::interprocess_condition c_full_{};
-
-    char *copy_of_payload_{};  // in case of ring buffer wrap around
 };
 
 
@@ -309,6 +227,74 @@ private:
 class unidirectional_message_wire : public simple_wire<message_header> {
 public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
+
+    /**
+     * @brief push the request message into the queue.
+     */
+    void write(char* base, const char* from, message_header&& header) {
+        std::size_t length = header.get_length() + message_header::size;
+        if (length > room()) { wait_to_write(length); }
+        write_in_buffer(base, point(base, pushed_), header.get_buffer(), message_header::size);
+        write_in_buffer(base, point(base, pushed_ + message_header::size), from, header.get_length());
+        pushed_ += length;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
+    void write(const char* from, message_header&& header) {
+        write(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), from, std::move(header));
+    }
+
+
+    const char* payload(const char* base, std::size_t length) {
+        if (index(poped_ + message_header::size) < index(poped_ + message_header::size + length)) {
+            return read_point(base, message_header::size);
+        }
+        copy_of_payload_ = static_cast<char*>(malloc(length));
+        read_from_buffer(copy_of_payload_, base, read_point(base, message_header::size), length);
+        return copy_of_payload_;  // ring buffer wrap around case
+    }
+    const char* payload(std::size_t length) {
+        return payload(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
+    }
+
+    /**
+     * @brief pop the current message.
+     */
+    void read(char* to, const char* base, std::size_t length) {
+        read_from_buffer(to, base, read_point(base, message_header::size), length);
+        poped_ += message_header::size + length;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
+        }
+    }
+    void read(char* to, std::size_t length) {
+        read(to, static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
+    }
+
+    /**
+     * @brief dispose of data that has completed read and is no longer needed
+     *  used by endpoint IF
+     */
+    void dispose(const char* base, const std::size_t rp) {
+        if (poped_ == rp) {
+            poped_ += peep(base).get_length();
+            if (copy_of_payload_ != nullptr) {
+                free(copy_of_payload_);
+                copy_of_payload_ = nullptr;
+            }
+        }
+    }
+    void dispose(const std::size_t rp) {
+        dispose(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), rp);
+    }
+
+private:
+    char *copy_of_payload_{};  // in case of ring buffer wrap around
 };
 
 
@@ -393,6 +379,9 @@ class unidirectional_simple_wire : public simple_wire<length_header> {
 public:
     unidirectional_simple_wire() : simple_wire<length_header>() {}
     unidirectional_simple_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr) : simple_wire<length_header>(managed_shm_ptr) {}
+    void set_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+        managed_shm_ptr_ = managed_shm_ptr;
+    }
 
     /**
      * @brief Copy and move constructers are deleted.
@@ -429,9 +418,21 @@ public:
     }
     bool is_eor() { return eor_; }
 
+    void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
+        buffer_handle_ = handle;
+        capacity_ = capacity;
+    }
+    void detach_buffer() {
+        buffer_handle_ = 0;
+        capacity_ = 0;
+    }
+    bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
+        return handle == buffer_handle_;
+    }
+
 private:
     void write(char* base, const char* from, std::size_t length) {
-        if (length > room()) { wait_to_write(length); }
+        if ((length + length_header::size) > room()) { wait_to_write(length + length_header::size); }
         if (piled_ == 0) {
             length_header h(static_cast<length_header::length_type>(0));
             write_in_buffer(base, point(base, pushed_), h.get_buffer(), length_header::size);            
@@ -493,8 +494,6 @@ private:
         return true;
     }
 
-    std::size_t room() const { return capacity_ - ((pushed_ + length_header::size + piled_) - poped_); }
-    
     std::size_t n_records_{0};
     std::size_t piled_{0};
     std::size_t chunk_resume_{0};

@@ -24,8 +24,62 @@ class session_wire_container
     static constexpr std::size_t metadata_size_boundary = 256;
 
 public:
-    class resultset_wire_container {
+    class resultset_wires_container {
     public:
+        resultset_wires_container(session_wire_container *envelope, std::string_view name)
+            : envelope_(envelope), managed_shm_ptr_(envelope_->managed_shared_memory_.get()), rsw_name_(name) {
+            shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
+            if (shm_resultset_wires_ == nullptr) {
+                throw std::runtime_error("cannot find the resultset wire");
+            }
+        }
+        std::pair<char*, std::size_t> get_chunk(bool wait_flag = false) {
+            if (current_wire_ == nullptr) {
+                current_wire_ = search();
+            }
+            if (current_wire_ != nullptr) {
+                return current_wire_->get_chunk(wait_flag);
+            }
+            std::abort();  //  FIXME
+        }
+        void dispose(std::size_t length) {
+            if (current_wire_ != nullptr) {
+                if(!current_wire_->dispose(length)) {
+                    current_wire_ = nullptr;
+                    throw std::runtime_error("mismatch in data size");
+                }
+                current_wire_ = nullptr;
+                return;
+            }
+            std::abort();  //  FIXME
+        }
+        bool is_eor() {
+            if (current_wire_ == nullptr) {
+                current_wire_ = search();
+            }
+            if (current_wire_ != nullptr) {
+                auto rv = current_wire_->is_eor();
+                current_wire_ = nullptr;
+                return rv;
+            }
+            std::abort();  //  FIXME
+        }
+        session_wire_container* get_envelope() { return envelope_; }
+
+    private:
+        shm_resultset_wire* search() {
+            return shm_resultset_wires_->search();
+        }
+
+        session_wire_container *envelope_;
+        boost::interprocess::managed_shared_memory* managed_shm_ptr_;
+        std::string rsw_name_;
+        shm_resultset_wires* shm_resultset_wires_{};
+        //   for client
+        shm_resultset_wire* current_wire_{};
+    };
+
+#if 0
         resultset_wire_container(session_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {
             resultset_wire_ = envelope_->managed_shared_memory_->find<unidirectional_simple_wire>(rsw_name_.c_str()).first;
             if (resultset_wire_ == nullptr) {
@@ -55,7 +109,8 @@ public:
         char buffer[metadata_size_boundary];
         std::unique_ptr<char[]> annex_;
     };
-    
+#endif
+
     class wire_container {
     public:
         wire_container() = default;
@@ -108,11 +163,10 @@ public:
         }
         throw std::runtime_error("the number of pending requests exceeded the number of response boxes");
     }
-
-    resultset_wire_container *create_resultset_wire(std::string_view name_) {
-        return new resultset_wire_container(this, name_);
+    resultset_wires_container *create_resultset_wire(std::string_view name_) {
+        return new resultset_wires_container(this, name_);
     }
-    void dispose_resultset_wire(resultset_wire_container* container) {
+    void dispose_resultset_wire(resultset_wires_container* container) {
 //        container->set_closed();
         delete container;
     }

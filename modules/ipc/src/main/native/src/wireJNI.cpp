@@ -128,7 +128,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
     if (name_ == nullptr) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    session_wire_container::resultset_wire_container* rwc;
+    session_wire_container::resultset_wires_container* rwc;
     try {
         rwc = swc->create_resultset_wire(std::string_view(name_, len_));
     } catch (std::runtime_error &e) {
@@ -149,7 +149,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
 JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_getChunkNative
 (JNIEnv *env, jclass, jlong handle)
 {
-    session_wire_container::resultset_wire_container* rwc = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     auto buf = rwc->get_chunk();
     if(buf.second > 0) {
@@ -164,11 +164,18 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_disposeUsedDataNative
-(JNIEnv *, jclass, jlong handle, jlong)
+(JNIEnv *env, jclass, jlong handle, jlong length)
 {
-    session_wire_container::resultset_wire_container* rwc = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    rwc->dispose();
+    try {
+        rwc->dispose(length);
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+    }
 }
 
 /*
@@ -179,7 +186,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Re
 JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_isEndOfRecordNative
 (JNIEnv *, jclass, jlong handle)
 {
-    session_wire_container::resultset_wire_container* rwc = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     return static_cast<jboolean>(rwc->is_eor());
 }
@@ -192,7 +199,7 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sq
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
-    session_wire_container::resultset_wire_container* rwc = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     if (rwc != nullptr) {
         session_wire_container* envelope = rwc->get_envelope();
