@@ -34,55 +34,55 @@ public:
             bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
         }
         std::size_t peep() { return resultset_wire_->peep(bip_buffer_, true).get_length(); }
-        std::pair<signed char*, std::size_t> recv_meta() {
+        std::pair<char*, std::size_t> recv_meta() {
             std::size_t length = peep();
             if(length < metadata_size_boundary) {
                 resultset_wire_->read(buffer, bip_buffer_, length);
-                return std::pair<signed char*, std::size_t>(buffer, length);
+                return std::pair<char*, std::size_t>(buffer, length);
             } else {
-                annex_ = std::make_unique<signed char[]>(length);
+                annex_ = std::make_unique<char[]>(length);
                 resultset_wire_->read(annex_.get(), bip_buffer_, length);
-                return std::pair<signed char*, std::size_t>(annex_.get(), length);
+                return std::pair<char*, std::size_t>(annex_.get(), length);
             }
         }
-        std::pair<signed char*, std::size_t> get_chunk() {
+        std::pair<char*, std::size_t> get_chunk() {
             return resultset_wire_->get_chunk(bip_buffer_, !is_eor());
         }
-        void dispose(std::size_t length) {
-            resultset_wire_->dispose(length);
+        void dispose() {
+            resultset_wire_->dispose();
         }
         bool is_eor() {
             return resultset_wire_->is_eor();
         }
-        void set_closed() {
-            resultset_wire_->set_closed();
-        }
+//        void set_closed() {
+//            resultset_wire_->set_closed();
+//        }
         session_wire_container* get_envelope() { return envelope_; }
     private:
         session_wire_container *envelope_;
-        signed char* bip_buffer_;
+        char* bip_buffer_;
         std::string rsw_name_;
         unidirectional_simple_wire* resultset_wire_{};
-        signed char buffer[metadata_size_boundary];
-        std::unique_ptr<signed char[]> annex_;
+        char buffer[metadata_size_boundary];
+        std::unique_ptr<char[]> annex_;
     };
     
     class wire_container {
     public:
         wire_container() = default;
-        wire_container(unidirectional_message_wire* wire, signed char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(const signed char* from, message_header&& header) {
+        void write(const char* from, message_header&& header) {
             wire_->write(bip_buffer_, from, std::move(header));
         }
-        void read(signed char* to, std::size_t msg_len) {
+        void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
         }        
     private:
         unidirectional_message_wire* wire_{};
-        signed char* bip_buffer_{};
+        char* bip_buffer_{};
     };
 
     session_wire_container(std::string_view name) : db_name_(name) {
@@ -108,7 +108,7 @@ public:
     session_wire_container& operator = (session_wire_container const&) = delete;
     session_wire_container& operator = (session_wire_container&&) = delete;
 
-    response_box::response *write(signed char* msg, std::size_t length) {
+    response_box::response *write(char* msg, std::size_t length) {
         for (std::size_t idx = 0 ; idx < responses_->size() ; idx++) {
             response_box::response& r = responses_->at(idx);
             if(!r.is_inuse()) {
@@ -124,7 +124,7 @@ public:
         return new resultset_wire_container(this, name_);
     }
     void dispose_resultset_wire(resultset_wire_container* container) {
-        container->set_closed();
+//        container->set_closed();
         delete container;
     }
 

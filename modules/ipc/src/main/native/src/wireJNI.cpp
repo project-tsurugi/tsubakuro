@@ -60,7 +60,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 
     auto address = env->GetByteArrayElements(array, nullptr);
     try {
-        response_box::response *r = swc->write(static_cast<signed char*>(address), env->GetArrayLength(array));
+        response_box::response *r = swc->write(reinterpret_cast<char *>(address), env->GetArrayLength(array));
         env->ReleaseByteArrayElements(array, address, JNI_ABORT);
         return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
     } catch (std::runtime_error &e) {
@@ -178,11 +178,11 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_disposeUsedDataNative
-(JNIEnv *, jclass, jlong handle, jlong length)
+(JNIEnv *, jclass, jlong handle, jlong)
 {
     session_wire_container::resultset_wire_container* rwc = reinterpret_cast<session_wire_container::resultset_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    rwc->dispose(static_cast<std::size_t>(length));
+    rwc->dispose();
 }
 
 /*
