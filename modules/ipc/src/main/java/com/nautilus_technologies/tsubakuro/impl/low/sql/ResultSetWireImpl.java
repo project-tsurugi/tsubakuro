@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name) throws IOException;
-    private static native ByteBuffer receiveSchemaMetaDataNative(long handle);
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
