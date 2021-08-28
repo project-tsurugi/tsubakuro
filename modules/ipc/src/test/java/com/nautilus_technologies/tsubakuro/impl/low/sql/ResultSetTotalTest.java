@@ -25,25 +25,27 @@ class ResultSetTotalTest {
     private String dbName = "tsubakuro";
     private long sessionID = 1;
 
-    byte[] createRecordsForTest() throws IOException {
+    byte[] createRecordsForTest(int index) throws IOException {
 	ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 	MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
 
-	// first column data
-	packer.packLong((long) 987654321);
-	packer.packDouble((double) 12345.6789);
-	packer.packString("This is a string for the test");
-	packer.packLong((long) 123456789);
-	packer.packDouble((double) 98765.4321);
-	packer.packNil();
-
-	// second column data
-	packer.packLong((long) 876543219);
-	packer.packDouble((double) 2345.67891);
-	packer.packNil();
-	packer.packLong((long) 234567891);
-	packer.packDouble((double) 8765.43219);
-	packer.packString("This is second string for the test");
+	if (index == 1) {
+	    // first record data
+	    packer.packLong((long) 987654321);
+	    packer.packDouble((double) 12345.6789);
+	    packer.packString("This is a string for the test");
+	    packer.packLong((long) 123456789);
+	    packer.packDouble((double) 98765.4321);
+	    packer.packNil();
+	} else if (index == 2) {
+	    // second record data
+	    packer.packLong((long) 876543219);
+	    packer.packDouble((double) 2345.67891);
+	    packer.packNil();
+	    packer.packLong((long) 234567891);
+	    packer.packDouble((double) 8765.43219);
+	    packer.packString("This is second string for the test");
+	}
 
 	packer.flush();
 	return outputStream.toByteArray();
@@ -71,8 +73,11 @@ class ResultSetTotalTest {
 	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getResultSetInfo().getName());
 
 	    // server side send Records
-	    server.putRecordsRSL(rsHandle, createRecordsForTest());
-	    server.setEndOfRecordsRSL(rsHandle);
+	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
+	    server.commitRSL(rsHandle);
+	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
+	    server.commitRSL(rsHandle);
+	    server.commitRSL(rsHandle);
 
 	    // client side receive Response
 	    var responseReceived = futureResponse.get();
@@ -84,7 +89,7 @@ class ResultSetTotalTest {
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
 	    // client side receive Records
-	    // first column data
+	    // first record data
 	    var inputStream = resultSetWire.getMessagePackInputStream();
 	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 
@@ -108,7 +113,7 @@ class ResultSetTotalTest {
 
 	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
 
-	    // second column data
+	    // second record data
 	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);

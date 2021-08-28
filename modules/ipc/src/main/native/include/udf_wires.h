@@ -30,7 +30,7 @@ public:
             : envelope_(envelope), managed_shm_ptr_(envelope_->managed_shared_memory_.get()), rsw_name_(name) {
             shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
-                throw std::runtime_error("cannot find the resultset wire");
+                throw std::runtime_error("cannot find a result_set wire with the specified name");
             }
         }
         std::pair<char*, std::size_t> get_chunk(bool wait_flag = false) {
@@ -79,38 +79,6 @@ public:
         shm_resultset_wire* current_wire_{};
     };
 
-#if 0
-        resultset_wire_container(session_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {
-            resultset_wire_ = envelope_->managed_shared_memory_->find<unidirectional_simple_wire>(rsw_name_.c_str()).first;
-            if (resultset_wire_ == nullptr) {
-                throw std::runtime_error("cannot find a result_set wire with the specified name");
-            }
-            bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
-        }
-        std::size_t peep() { return resultset_wire_->peep(bip_buffer_, true).get_length(); }
-        std::pair<char*, std::size_t> get_chunk() {
-            return resultset_wire_->get_chunk(bip_buffer_, !is_eor());
-        }
-        void dispose() {
-            resultset_wire_->dispose();
-        }
-        bool is_eor() {
-            return resultset_wire_->is_eor();
-        }
-//        void set_closed() {
-//            resultset_wire_->set_closed();
-//        }
-        session_wire_container* get_envelope() { return envelope_; }
-    private:
-        session_wire_container *envelope_;
-        char* bip_buffer_;
-        std::string rsw_name_;
-        unidirectional_simple_wire* resultset_wire_{};
-        char buffer[metadata_size_boundary];
-        std::unique_ptr<char[]> annex_;
-    };
-#endif
-
     class wire_container {
     public:
         wire_container() = default;
@@ -137,7 +105,7 @@ public:
             if (req_wire == nullptr || responses_ == nullptr) {
                 throw std::runtime_error("cannot find the session wire");
             }
-            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
+            request_wire_ = wire_container(req_wire, req_wire->get_bip_address());
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             throw std::runtime_error("cannot find a session with the specified name");

@@ -136,50 +136,51 @@ public:
      */
     T peep(const char* base, bool wait_flag = false) {
         while (true) {
-            if(data_length() >= T::size) {
+            if(stored() >= T::size) {
                 break;
             }
             if (wait_flag) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return data_length() >= T::size; });
+                c_empty_.wait(lock, [this](){ return stored() >= T::size; });
                 wait_for_read_ = false;
             } else {
-                if (data_length() < T::size) { return T(); }
+                if (stored() < T::size) { return T(); }
             }
         }
-        if ((base + capacity_) >= (read_point(base) + sizeof(T))) {
-            T header(read_point(base));  // normal case
+        if ((base + capacity_) >= (read_address(base) + sizeof(T))) {
+            T header(read_address(base));  // normal case
             return header;
         }
         char buf[sizeof(T)];  // in case for ring buffer full
         std::size_t first_part = capacity_ - index(poped_);
-        memcpy(buf, read_point(base), first_part);
+        memcpy(buf, read_address(base), first_part);
         memcpy(buf + first_part, base, sizeof(T) - first_part);
         T header(buf);
         return header;
     }
     T peep(bool wait_flag = false) {
-        return peep(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), wait_flag);
+        return peep(get_bip_address(), wait_flag);
     }
 
-    std::size_t data_length() { return (pushed_ - poped_); }
-
-    char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+    char* get_bip_address() {
         if (buffer_handle_ != 0) {
-            return static_cast<char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
+            return static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_));
         }
         return nullptr;
     }
 
+    // for ipc_request
     std::size_t read_point() const { return poped_; }
 
 protected:
+    std::size_t stored() const { return (pushed_ - poped_); }
+    std::size_t room() const { return capacity_ - stored(); }
     std::size_t index(std::size_t n) const { return n %  capacity_; }
-    const char* read_point(const char* base) const { return base + index(poped_); }
-    const char* read_point(const char* base, std::size_t offset) const { return base + index(poped_ + offset); }
-    char* point(char* base, std::size_t i) { return base + index(i); }
+    char* buffer_address(char* base, std::size_t n) { return base + index(n); }
+    const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_ + offset); }
+    const char* read_address(const char* base) const { return base + index(poped_); }
     void wait_to_write(std::size_t length) {
         boost::interprocess::scoped_lock lock(m_mutex_);
         wait_for_write_ = true;
@@ -205,7 +206,6 @@ protected:
             memcpy(to + first_part, base, length - first_part);
         }
     }
-    std::size_t room() const { return capacity_ - (pushed_ - poped_); }
 
     boost::interprocess::managed_shared_memory* managed_shm_ptr_;
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};
@@ -229,13 +229,13 @@ public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
-     * @brief push the request message into the queue.
+     * @brief push a request message into the queue.
      */
     void write(char* base, const char* from, message_header&& header) {
         std::size_t length = header.get_length() + message_header::size;
         if (length > room()) { wait_to_write(length); }
-        write_in_buffer(base, point(base, pushed_), header.get_buffer(), message_header::size);
-        write_in_buffer(base, point(base, pushed_ + message_header::size), from, header.get_length());
+        write_in_buffer(base, buffer_address(base, pushed_), header.get_buffer(), message_header::size);
+        write_in_buffer(base, buffer_address(base, pushed_ + message_header::size), from, header.get_length());
         pushed_ += length;
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
@@ -244,27 +244,29 @@ public:
         }
     }
     void write(const char* from, message_header&& header) {
-        write(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), from, std::move(header));
+        write(get_bip_address(), from, std::move(header));
     }
 
-
+    /**
+     * @brief get the address of the first request message in the queue.
+     */
     const char* payload(const char* base, std::size_t length) {
         if (index(poped_ + message_header::size) < index(poped_ + message_header::size + length)) {
-            return read_point(base, message_header::size);
+            return read_address(base, message_header::size);
         }
         copy_of_payload_ = static_cast<char*>(malloc(length));
-        read_from_buffer(copy_of_payload_, base, read_point(base, message_header::size), length);
+        read_from_buffer(copy_of_payload_, base, read_address(base, message_header::size), length);
         return copy_of_payload_;  // ring buffer wrap around case
     }
     const char* payload(std::size_t length) {
-        return payload(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
+        return payload(get_bip_address(), length);
     }
 
     /**
      * @brief pop the current message.
      */
     void read(char* to, const char* base, std::size_t length) {
-        read_from_buffer(to, base, read_point(base, message_header::size), length);
+        read_from_buffer(to, base, read_address(base, message_header::size), length);
         poped_ += message_header::size + length;
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_write_) {
@@ -273,24 +275,26 @@ public:
         }
     }
     void read(char* to, std::size_t length) {
-        read(to, static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
+        read(to, get_bip_address(), length);
     }
 
     /**
-     * @brief dispose of data that has completed read and is no longer needed
+     * @brief dispose the message in the queue at read_point that has completed read and is no longer needed
      *  used by endpoint IF
      */
-    void dispose(const char* base, const std::size_t rp) {
-        if (poped_ == rp) {
+    void dispose(const char* base, const std::size_t read_point) {
+        if (poped_ == read_point) {
             poped_ += peep(base).get_length();
             if (copy_of_payload_ != nullptr) {
                 free(copy_of_payload_);
                 copy_of_payload_ = nullptr;
             }
+            return;
         }
+        //  FIXME (Processing when a message located later is discarded first)
     }
-    void dispose(const std::size_t rp) {
-        dispose(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), rp);
+    void dispose(const std::size_t read_point) {
+        dispose(get_bip_address(), read_point);
     }
 
 private:
@@ -328,16 +332,12 @@ public:
             length_ = 0;
             inuse_ = false;
         }
-        char* get_buffer() {
-            return buffer_;
-        }
-        void flush(std::size_t length) {
-            length_ = length;
-            nstored_.post();
-        }
         char* get_buffer(std::size_t length) {
             length_ = length;
-            return buffer_;
+            if (length <= max_response_message_length) {
+                return buffer_;
+            }
+            std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
         void flush() {
             nstored_.post();
@@ -355,7 +355,7 @@ public:
     /**
      * @brief Construct a new object.
      */
-    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : mData_(aSize, managed_shm_ptr->get_segment_manager()) {}
+    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {}
     response_box() = delete;
 
     /**
@@ -366,11 +366,11 @@ public:
     response_box& operator = (response_box const&) = delete;
     response_box& operator = (response_box&&) = delete;
 
-    std::size_t size() { return mData_.size(); }
-    response& at(std::size_t idx) { return mData_.at(idx); }
+    std::size_t size() { return boxes_.size(); }
+    response& at(std::size_t idx) { return boxes_.at(idx); }
 
 private:
-    std::vector<response, boost::interprocess::allocator<response, boost::interprocess::managed_shared_memory::segment_manager>> mData_;
+    std::vector<response, boost::interprocess::allocator<response, boost::interprocess::managed_shared_memory::segment_manager>> boxes_;
 };
 
 
@@ -395,26 +395,23 @@ public:
      * @brief push an unit of data into the wire.
      */
     void write(const char* from, std::size_t length) {
-        write(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), from, length);
+        write(get_bip_address(), from, length);
     }
     void commit() {
-        commit(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)));
+        commit(get_bip_address());
     }
 
     /**
      * @brief provide the current chunk to MsgPack.
      */
     std::pair<char*, std::size_t> get_chunk(bool wait_flag) {
-        return get_chunk(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), wait_flag);
+        return get_chunk(get_bip_address(), wait_flag);
     }
     bool has_record() {
         return n_records_ > 0;
     }
-    void dispose() {
-        dispose(static_cast<const char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)));
-    }
     bool dispose(std::size_t length) {
-        return dispose(static_cast<const char*>(managed_shm_ptr_->get_address_from_handle(buffer_handle_)), length);
+        return dispose(get_bip_address(), length);
     }
     bool is_eor() { return eor_; }
 
@@ -435,18 +432,17 @@ private:
         if ((length + length_header::size) > room()) { wait_to_write(length + length_header::size); }
         if (piled_ == 0) {
             length_header h(static_cast<length_header::length_type>(0));
-            write_in_buffer(base, point(base, pushed_), h.get_buffer(), length_header::size);            
+            write_in_buffer(base, buffer_address(base, pushed_), h.get_buffer(), length_header::size);
         }
-        write_in_buffer(base, point(base, pushed_ + length_header::size + piled_), from, length);
+        write_in_buffer(base, buffer_address(base, pushed_ + length_header::size + piled_), from, length);
         piled_ += length;
     }
-
     void commit(char* base) {
         if (piled_ == 0) {
             eor_ = true;
         }
         length_header h(static_cast<length_header::length_type>(piled_));
-        write_in_buffer(base, point(base, pushed_), h.get_buffer(), length_header::size);
+        write_in_buffer(base, buffer_address(base, pushed_), h.get_buffer(), length_header::size);
         n_records_++;
         pushed_ += length_header::size + piled_;
         piled_ = 0;
@@ -455,7 +451,6 @@ private:
             r_condition_.notify_one();
         }
     }
-
     std::pair<char*, std::size_t> get_chunk(char* base, bool wait_flag) {
         if (!has_record() && wait_flag) {
             boost::interprocess::scoped_lock lock(r_mutex_);
@@ -471,20 +466,14 @@ private:
         if (chunk_resume_ != 0) {
             auto resume_point = chunk_resume_;
             chunk_resume_ = 0;
-            return std::pair<char*, std::size_t>(point(base, resume_point), length - seq_length);
+            return std::pair<char*, std::size_t>(buffer_address(base, resume_point), length - seq_length);
         }
         if (seq_length >= length) {
-            return std::pair<char*, std::size_t>(point(base, chunk_start), length);
+            return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), length);
         }
         chunk_resume_ = chunk_start + seq_length;
-        return std::pair<char*, std::size_t>(point(base, chunk_start), seq_length);
+        return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), seq_length);
     }
-
-    void dispose(const char* base) {
-        poped_ += (length_header::size + peep(base).get_length());
-        n_records_--;
-    }
-
     bool dispose(const char* base, std::size_t length) {
         if (length != peep(base).get_length()) {
             return false;
@@ -525,7 +514,7 @@ public:
         }
         for (auto&& wire: unidirectional_simple_wires_) {
             if (!wire.equal(0)) {
-                managed_shm_ptr_->deallocate(wire.get_bip_address(managed_shm_ptr_));
+                managed_shm_ptr_->deallocate(wire.get_bip_address());
                 wire.detach_buffer();
             }
         }
@@ -553,7 +542,7 @@ public:
         return &unidirectional_simple_wires_.at(index);
     }
     void release(shm_resultset_wire* wire) {
-        char* buffer = wire->get_bip_address(managed_shm_ptr_);
+        char* buffer = wire->get_bip_address();
 
         if (reserved_ == nullptr) {
             reserved_ = buffer;
@@ -563,7 +552,6 @@ public:
         count_using_--;
         return;
     }
-    
     shm_resultset_wire* search() {
         if (only_one_buffer_) {
             return &unidirectional_simple_wires_.at(0);
