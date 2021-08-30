@@ -38,13 +38,13 @@ public:
                 current_wire_ = search();
             }
             if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(wait_flag);
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wait_flag);
             }
             std::abort();  //  FIXME
         }
         void dispose(std::size_t length) {
             if (current_wire_ != nullptr) {
-                if(!current_wire_->dispose(length)) {
+                if(!current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_), length)) {
                     current_wire_ = nullptr;
                     throw std::runtime_error("mismatch in data size");
                 }
@@ -105,7 +105,7 @@ public:
             if (req_wire == nullptr || responses_ == nullptr) {
                 throw std::runtime_error("cannot find the session wire");
             }
-            request_wire_ = wire_container(req_wire, req_wire->get_bip_address());
+            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             throw std::runtime_error("cannot find a session with the specified name");
