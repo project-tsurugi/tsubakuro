@@ -268,7 +268,7 @@ public:
      */
     void dispose(const char* base, const std::size_t read_point) {
         if (poped_ == read_point) {
-            poped_ += peep(base).get_length();
+            poped_ += (peep(base).get_length() + message_header::size);
             if (copy_of_payload_ != nullptr) {
                 free(copy_of_payload_);
                 copy_of_payload_ = nullptr;
