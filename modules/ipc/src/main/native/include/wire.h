@@ -541,6 +541,8 @@ public:
         }
         return nullptr;
     }
+    void set_closed() { closed_ = true; }
+    bool is_closed() { return closed_; }
 
 private:
     std::size_t search_free_wire() {
@@ -564,6 +566,7 @@ private:
     std::size_t count_using_{};
     std::size_t next_index_{};
     bool only_one_buffer_{};
+    bool closed_{false};
 };
 
 using shm_resultset_wires = unidirectional_simple_wires;
