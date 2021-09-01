@@ -130,6 +130,36 @@ class ResultSetWireTest {
     }
 
     @Test
+    void noRecord() {
+	try {
+	    server = new ServerWireImpl(dbName, sessionID);
+	    client = new SessionWireImpl(dbName, sessionID);
+
+	    // server side create RSL
+	    long rsHandle = server.createRSL("resultset-1");
+
+	    // server side send Records
+	    server.commitRSL(rsHandle);
+
+	    // client create RSL
+	    var resultSetWire = client.createResultSetWire("resultset-1");
+
+	    // client side receive Records
+	    // first record data
+	    var inputStream = resultSetWire.getMessagePackInputStream();
+	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+
+	    assertFalse(unpacker.hasNext());
+	    // RESPONSE test end
+
+	    client.close();
+	    server.close();
+	} catch (IOException e) {
+	    fail("cought IOException");
+	}
+    }
+
+    @Test
     void notExist() {
 	try {
 	    server = new ServerWireImpl(dbName, sessionID);

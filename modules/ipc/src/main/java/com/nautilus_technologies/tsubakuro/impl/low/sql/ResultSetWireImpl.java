@@ -33,11 +33,16 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     class ByteBufferBackedInputStream extends MessagePackInputStream {
 	ByteBuffer buf;
+	boolean eor;
 
 	ByteBufferBackedInputStream() {
 	    buf = ResultSetWireImpl.getChunkNative(wireHandle);
+	    eor = (buf == null);
 	}
 	public synchronized int read() throws IOException {
+	    if (eor) {
+		return -1;
+	    }
 	    if (!buf.hasRemaining()) {
 		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
@@ -50,6 +55,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return buf.get();
 	}
 	public synchronized int read(byte[] bytes, int off, int len) throws IOException {
+	    if (eor) {
+		return -1;
+	    }
 	    if (!buf.hasRemaining()) {
 		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
