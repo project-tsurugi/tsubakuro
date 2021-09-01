@@ -64,6 +64,7 @@ public:
             }
             std::abort();  //  FIXME
         }
+        void set_closed() { shm_resultset_wires_->set_closed(); }
         session_wire_container* get_envelope() { return envelope_; }
 
     private:
@@ -135,7 +136,7 @@ public:
         return new resultset_wires_container(this, name_);
     }
     void dispose_resultset_wire(resultset_wires_container* container) {
-//        container->set_closed();
+        container->set_closed();
         delete container;
     }
 
