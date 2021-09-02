@@ -15,20 +15,24 @@ public final class Main {
     public static void main(String[] args) throws  Exception {
         long threads = 1;
         long loop = 1000000;
+        long pendings = 0;
         int argl = args.length;
 
         if (argl > 0) {
             threads = Integer.parseInt(args[0]);
             if (argl > 1) {
-		loop = Integer.parseInt(args[1]);
+                pendings = Integer.parseInt(args[1]);
+                if (argl > 2) {
+                    loop = Integer.parseInt(args[2]);
+                }
             }
-	}
+        }
 
 	new Insert(new IpcConnectorImpl(dbName), new SessionImpl()).prepareAndInsert(threads);
 
 	ArrayList<Select> tasks = new ArrayList<>();
         for (int i = 0; i < threads; i++) {
-            tasks.add(new Select(new IpcConnectorImpl(dbName), new SessionImpl(), i, loop));
+            tasks.add(new Select(new IpcConnectorImpl(dbName), new SessionImpl(), i, pendings, loop));
         }
 
         long start = System.currentTimeMillis();
