@@ -43,7 +43,7 @@ public final class Main {
             tasks.get(i).join();
         }
         var elapsed = System.currentTimeMillis() - start;
-        System.out.printf("threads: %d loop: %d elapsed: %d ms, average: %d ns%n",
-			  threads, loop, elapsed, (elapsed * 1000000) / loop);
+        System.out.printf("threads: %d pendings: %d loop: %d elapsed: %d ms, average: %d ns%n",
+			  threads, pendings, loop, elapsed, (elapsed * 1000000) / loop);
     }
 }

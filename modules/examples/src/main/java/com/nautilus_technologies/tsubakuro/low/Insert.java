@@ -19,7 +19,7 @@ public class Insert {
 	this.session.connect(connector.connect().get());
     }
     
-    public void prepareAndInsert(long index) throws IOException, ExecutionException, InterruptedException {
+    public void prepareAndInsert(long threads) throws IOException, ExecutionException, InterruptedException {
 	String sql = "INSERT INTO ORDERS (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) VALUES (:o_id, :o_c_id, :o_d_id, :o_w_id, :o_entry_d, :o_carrier_id, :o_ol_cnt, :o_all_local)";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8))
@@ -33,9 +33,9 @@ public class Insert {
 	preparedStatement = session.prepare(sql, ph).get();
 
 	Transaction transaction = session.createTransaction().get();
-	for (long i = 0; i < index; i++) {
+	for (long index = 0; index < threads; index++) {
 	    var ps = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(i + 1))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(index + 1))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(1234))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1))
