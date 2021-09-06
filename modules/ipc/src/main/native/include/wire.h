@@ -618,7 +618,7 @@ public:
         return true;
     }
     std::size_t listen(bool wait = false) {
-        if (accepted_ < requested_) {
+        if (accepted_ < requested_ || terminate_) {
             return accepted_ + 1;
         }
         if (!wait) {
@@ -628,7 +628,7 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_request_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            c_requested_.wait(lock, [this](){ return (accepted_ < requested_); });
+            c_requested_.wait(lock, [this](){ return (accepted_ < requested_) || terminate_; });
             wait_for_request_ = false;
         }
         return accepted_ + 1;
@@ -649,12 +649,22 @@ public:
         }
         throw std::runtime_error("The session id is not sequential");
     }
+    void request_terminate() {
+        terminate_ = true;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_request_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_requested_.notify_one();
+        }
+    }
+    bool is_terminated() { return terminate_; }
 
 private:
     std::size_t requested_{0};
     std::size_t accepted_{0};
     std::atomic_bool wait_for_request_{};
     std::atomic_bool wait_for_accept_{};
+    std::atomic_bool terminate_{};
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_requested_{};
     boost::interprocess::interprocess_condition c_accepted_{};
