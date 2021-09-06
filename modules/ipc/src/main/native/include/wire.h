@@ -656,8 +656,10 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_requested_.notify_one();
         }
+        s_terminated_.wait();
     }
     bool is_terminated() { return terminate_; }
+    void confirm_terminated() { s_terminated_.post(); }
 
 private:
     std::size_t requested_{0};
@@ -668,6 +670,7 @@ private:
     boost::interprocess::interprocess_mutex m_mutex_{};
     boost::interprocess::interprocess_condition c_requested_{};
     boost::interprocess::interprocess_condition c_accepted_{};
+    boost::interprocess::interprocess_semaphore s_terminated_{0};
 };
 
 };  // namespace tsubakuro::common
