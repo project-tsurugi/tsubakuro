@@ -77,23 +77,25 @@ public class Select extends Thread {
 
             Queue<Future<ResultSet>> queue = new ArrayDeque<>();
 
-	    transaction = session.createTransaction().get();
-            for (long i = 0; i < loop; i++) {
-		var ps = RequestProtos.ParameterSet.newBuilder()
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(index + 1));
-		queue.add(transaction.executeQuery(preparedStatement, ps));
-		if (queue.size() > pendings) {
+            for (long i = 0; i < loop / 1000; i++) {
+		transaction = session.createTransaction().get();
+		for (long j = 0; j < 1000; j++) {
+		    var ps = RequestProtos.ParameterSet.newBuilder()
+			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(index + 1));
+		    queue.add(transaction.executeQuery(preparedStatement, ps));
+		    if (queue.size() > pendings) {
+			var resultSet = queue.poll().get();
+			printResultset(resultSet);
+			resultSet.close();
+		    }
+		}
+		while (queue.size() > 0) {
 		    var resultSet = queue.poll().get();
 		    printResultset(resultSet);
 		    resultSet.close();
 		}
+		transaction.commit().get();
 	    }
-            while (queue.size() > 0) {
-		var resultSet = queue.poll().get();
-		printResultset(resultSet);
-		resultSet.close();
-            }
-	    transaction.commit().get();
 
 	    preparedStatement.close();
 	    session.close();
