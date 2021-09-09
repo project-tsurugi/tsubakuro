@@ -452,6 +452,7 @@ private:
         length_header h(static_cast<length_header::length_type>(piled_));
         write_in_buffer(base, buffer_address(base, pushed_), h.get_buffer(), length_header::size);
         n_records_++;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
         pushed_ += length_header::size + piled_;
         piled_ = 0;
         if (wait_for_record_) {
