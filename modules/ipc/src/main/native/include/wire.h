@@ -38,7 +38,7 @@ public:
     static constexpr index_type not_use = 0xffff;
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
-    
+
     message_header(index_type idx, length_type length) : idx_(idx), length_(length) {}
     message_header() : message_header(0, 0) {}
     explicit message_header(const char* buffer) {
@@ -69,7 +69,7 @@ public:
     using length_type = std::uint16_t;
 
     static constexpr std::size_t size = sizeof(length_type);
-    
+
     explicit length_header(length_type length) : length_(length) {}
     explicit length_header(std::size_t length) : length_(static_cast<length_type>(length)) {}
     length_header() : length_header(static_cast<length_type>(0)) {}
@@ -124,7 +124,7 @@ public:
     simple_wire(simple_wire&&) = delete;
     simple_wire& operator = (simple_wire const&) = delete;
     simple_wire& operator = (simple_wire&&) = delete;
-            
+
     /**
      * @brief peep the current header.
      */
@@ -371,7 +371,7 @@ public:
     unidirectional_simple_wire(unidirectional_simple_wire&&) = delete;
     unidirectional_simple_wire& operator = (unidirectional_simple_wire const&) = delete;
     unidirectional_simple_wire& operator = (unidirectional_simple_wire&&) = delete;
-    
+
     /**
      * @brief push an unit of data into the wire.
      *  used by server only
@@ -461,7 +461,7 @@ private:
         }
     }
 
-    std::size_t n_records_{0};
+    std::atomic_ulong n_records_{0};
     std::size_t piled_{0};
     std::size_t chunk_resume_{0};
     bool eor_{false};
@@ -479,7 +479,7 @@ public:
     static constexpr std::size_t wire_size = (1<<16);  // 64K bytes (tentative)
     static constexpr std::size_t Alignment = 64;
     using allocator = boost::interprocess::allocator<shm_resultset_wire, boost::interprocess::managed_shared_memory::segment_manager>;
-    
+
     unidirectional_simple_wires(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t count)
         : managed_shm_ptr_(managed_shm_ptr), unidirectional_simple_wires_(count, managed_shm_ptr->get_segment_manager()) {
         for (auto&& wire: unidirectional_simple_wires_) {
