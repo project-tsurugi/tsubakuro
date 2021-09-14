@@ -4,7 +4,7 @@
 #include "com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl.h"
 #include "server_wires.h"
 
-using namespace tsubakuro::common::wire;
+using namespace tateyama::common::wire;
 
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_createNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)

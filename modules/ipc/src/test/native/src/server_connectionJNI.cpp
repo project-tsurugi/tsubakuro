@@ -4,7 +4,7 @@
 #include "com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl.h"
 #include "server_wires.h"
 
-using namespace tsubakuro::common::wire;
+using namespace tateyama::common::wire;
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl
