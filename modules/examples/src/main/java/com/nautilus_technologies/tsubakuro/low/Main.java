@@ -10,7 +10,7 @@ public final class Main {
     private Main() {
     }
     
-    private static String dbName = "tsubakuro";
+    private static String dbName = "tateyama";
     
     public static void main(String[] args) throws  Exception {
         long threads = 1;

@@ -25,7 +25,7 @@
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 /**
  * @brief header information used in request message,
@@ -685,4 +685,4 @@ private:
     boost::interprocess::interprocess_semaphore s_terminated_{0};
 };
 
-};  // namespace tsubakuro::common
+};  // namespace tateyama::common

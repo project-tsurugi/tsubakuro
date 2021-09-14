@@ -19,7 +19,7 @@
 #include "com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
 
-using namespace tsubakuro::common::wire;
+using namespace tateyama::common::wire;
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
