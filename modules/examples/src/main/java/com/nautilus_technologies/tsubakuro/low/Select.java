@@ -69,4 +69,14 @@ public class Select {
 	transaction.commit().get();
 	session.close();
     }
+    public void select() throws IOException, ExecutionException, InterruptedException {
+	String sql = "SELECT * FROM WAREHOUSE";
+
+	Transaction transaction = session.createTransaction().get();
+	var resultSet = transaction.executeQuery(sql).get();
+	printResultset(resultSet);
+	resultSet.close();
+	transaction.commit().get();
+	session.close();
+    }
 }

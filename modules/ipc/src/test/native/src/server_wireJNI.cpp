@@ -114,12 +114,12 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
  * Method:    commitRSLNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_commitRSLNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_eorRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
     server_wire_container::resultset_wire* wire = reinterpret_cast<server_wire_container::resultset_wire*>(static_cast<std::uintptr_t>(handle));
 
-    wire->commit();
+    wire->eor();
 }
 
 /*

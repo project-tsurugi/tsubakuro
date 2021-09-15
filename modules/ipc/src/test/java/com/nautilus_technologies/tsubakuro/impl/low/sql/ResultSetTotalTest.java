@@ -74,10 +74,10 @@ class ResultSetTotalTest {
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
-	    server.commitRSL(rsHandle);
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 
 	    // client side receive Response
 	    var responseReceived = futureResponse.get();

@@ -60,10 +60,10 @@ class ResultSetWireTest {
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
-	    server.commitRSL(rsHandle);
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 
 	    // client create RSL
 	    var resultSetWire = client.createResultSetWire("resultset-1");
@@ -139,7 +139,7 @@ class ResultSetWireTest {
 	    long rsHandle = server.createRSL("resultset-1");
 
 	    // server side send Records
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 
 	    // client create RSL
 	    var resultSetWire = client.createResultSetWire("resultset-1");
@@ -170,10 +170,10 @@ class ResultSetWireTest {
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
-	    server.commitRSL(rsHandle);
-	    server.commitRSL(rsHandle);
+	    server.eorRSL(rsHandle);
+	    server.eorRSL(rsHandle);
 	} catch (IOException e) {
 	    fail("cought IOException");
 	}

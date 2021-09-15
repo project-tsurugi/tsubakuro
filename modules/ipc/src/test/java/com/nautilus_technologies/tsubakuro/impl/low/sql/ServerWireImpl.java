@@ -20,7 +20,7 @@ public class ServerWireImpl implements Closeable {
     private static native void closeNative(long handle);
     private static native long createRSLNative(long handle, String name);
     private static native void putRecordsRSLNative(long handle, byte[] buffer);
-    private static native void commitRSLNative(long handle);
+    private static native void eorRSLNative(long handle);
     private static native void closeRSLNative(long handle);
 
     static {
@@ -87,9 +87,9 @@ public class ServerWireImpl implements Closeable {
 	}
     }
 
-    public void commitRSL(long handle) throws IOException {
+    public void eorRSL(long handle) throws IOException {
 	if (handle != 0) {
-	    commitRSLNative(handle);
+	    eorRSLNative(handle);
 	} else {
 	    throw new IOException("error: resultSetWireHandle is 0");
 	}
