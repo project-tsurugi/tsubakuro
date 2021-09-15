@@ -17,7 +17,7 @@
 
 #include "wire.h"
 
-namespace tsubakuro::common::wire {
+namespace tateyama::common::wire {
 
 class server_wire_container
 {
@@ -27,39 +27,43 @@ class server_wire_container
     static constexpr std::size_t response_buffer_size = (1<<16);
     
 public:
-    class resultset_wire_container {
+    // resultset_wires_container
+    class resultset_wires_container {
     public:
-        resultset_wire_container(server_wire_container *envelope, std::string_view name) : envelope_(envelope), rsw_name_(name) {
-            envelope_->managed_shared_memory_->destroy<unidirectional_simple_wire>(rsw_name_.c_str());
-            resultset_wire_ = envelope_->managed_shared_memory_->construct<unidirectional_simple_wire>(rsw_name_.c_str())(envelope_->managed_shared_memory_.get(), resultset_wire_size);
-            bip_buffer_ = resultset_wire_->get_bip_address(envelope_->managed_shared_memory_.get());
+        resultset_wires_container(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count)
+            : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name) {
+            managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
+            shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
         }
-        unidirectional_simple_wire& get_resultset_wire() { return *resultset_wire_; }
-        signed char* get_bip_buffer() { return bip_buffer_; }
+
+        shm_resultset_wire* acquire() {
+            return shm_resultset_wires_->acquire();
+        }
+
     private:
-        server_wire_container *envelope_;
-        signed char* bip_buffer_;
+        boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
-        unidirectional_simple_wire* resultset_wire_{};
+        shm_resultset_wires* shm_resultset_wires_{};
     };
-    
+
     class wire_container {
     public:
         wire_container() = default;
-        wire_container(unidirectional_message_wire* wire, signed char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(signed char* from, message_header&& header) {
+        void write(char* from, message_header&& header) {
             wire_->write(bip_buffer_, from, std::move(header));
         }
-        void read(signed char* to, std::size_t msg_len) {
+        void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
-        }        
+        }
     private:
         unidirectional_message_wire* wire_{};
-        signed char* bip_buffer_{};
+        char* bip_buffer_{};
     };
+    using resultset_wire = shm_resultset_wire;
 
     server_wire_container(std::string_view name) : name_(name) {
         boost::interprocess::shared_memory_object::remove(name_.c_str());
@@ -93,8 +97,11 @@ public:
     wire_container& get_request_wire() { return request_wire_; }
     response_box::response& get_response(std::size_t idx) { return responses_->at(idx); }
 
-    resultset_wire_container *create_resultset_wire(std::string_view name_) {
-        return new resultset_wire_container(this, name_);
+    resultset_wire *create_resultset_wire(std::string_view name) {
+        if (!resultset_wires_) {
+            resultset_wires_ = std::make_unique<resultset_wires_container>(managed_shared_memory_.get(), name, 8);
+        }
+        return resultset_wires_->acquire();
     }
     
 private:
@@ -102,6 +109,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_;
     response_box* responses_;
+    std::unique_ptr<resultset_wires_container> resultset_wires_{};
 };
 
 class connection_container
@@ -143,4 +151,4 @@ private:
     connection_queue* connection_queue_;
 };
 
-};  // namespace tsubakuro::common
+};  // namespace tateyama::common::wire

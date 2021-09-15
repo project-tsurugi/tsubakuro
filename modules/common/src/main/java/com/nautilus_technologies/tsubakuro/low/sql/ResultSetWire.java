@@ -14,7 +14,7 @@ public interface ResultSetWire extends Closeable {
      * Receiving data sent by MessagePack is supposed to be retrieved via InputStream.
      */
     abstract class MessagePackInputStream extends InputStream {
-	public abstract void disposeUsedData(long length);
+	public abstract void disposeUsedData(long length) throws IOException;
     }
 
     /**

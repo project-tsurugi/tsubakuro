@@ -13,7 +13,7 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name) throws IOException;
     private static native ByteBuffer getChunkNative(long handle);
-    private static native void disposeUsedDataNative(long handle, long length);
+    private static native void disposeUsedDataNative(long handle, long length) throws IOException;
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
@@ -33,11 +33,16 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     class ByteBufferBackedInputStream extends MessagePackInputStream {
 	ByteBuffer buf;
+	boolean eor;
 
 	ByteBufferBackedInputStream() {
 	    buf = ResultSetWireImpl.getChunkNative(wireHandle);
+	    eor = (buf == null);
 	}
 	public synchronized int read() throws IOException {
+	    if (eor) {
+		return -1;
+	    }
 	    if (!buf.hasRemaining()) {
 		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
@@ -50,6 +55,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return buf.get();
 	}
 	public synchronized int read(byte[] bytes, int off, int len) throws IOException {
+	    if (eor) {
+		return -1;
+	    }
 	    if (!buf.hasRemaining()) {
 		buf = ResultSetWireImpl.getChunkNative(wireHandle);
 		if (buf == null) {
@@ -63,7 +71,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    buf.get(bytes, off, len);
 	    return len;
 	}
-	public synchronized void disposeUsedData(long length) {
+	public synchronized void disposeUsedData(long length) throws IOException {
 	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
 	}
     }
