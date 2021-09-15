@@ -74,9 +74,7 @@ class ResultSetTotalTest {
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
-	    server.eorRSL(rsHandle);
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
-	    server.eorRSL(rsHandle);
 	    server.eorRSL(rsHandle);
 
 	    // client side receive Response
