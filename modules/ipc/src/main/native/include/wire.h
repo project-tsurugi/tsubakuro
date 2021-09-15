@@ -384,47 +384,44 @@ public:
         write(get_bip_address(managed_shm_ptr_), from, length);
     }
     /**
-     * @brief mark the end of the record pushed
-     *  used by server only
+     * @brief mark the end of the result set
      */
-    void commit() {
-        commit(get_bip_address(managed_shm_ptr_));
-    }
-
-    std::pair<char*, std::size_t> get_chunk(char* base, bool wait_flag) {
-        if (!has_record() && wait_flag) {
+    void eor() {
+        eor_ = true;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_record_) {
             boost::interprocess::scoped_lock lock(r_mutex_);
-            wait_for_record_ = true;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            r_condition_.wait(lock, [this](){ return has_record(); });
-            wait_for_record_ = false;
+            r_condition_.notify_one();
         }
+    }
 
-        std::size_t length = peep(base).get_length();
-        std::size_t chunk_start = poped_ + length_header::size;
-        std::size_t seq_length = capacity_ - (chunk_start % capacity_);
-        if (chunk_resume_ != 0) {
-            auto resume_point = chunk_resume_;
-            chunk_resume_ = 0;
-            return std::pair<char*, std::size_t>(buffer_address(base, resume_point), length - seq_length);
+    /**
+     * @brief provide the current chunk to MsgPack.
+     */
+    std::pair<char*, std::size_t> get_chunk(char* base, bool wait_flag = false) {
+        if (chunk_end_ < poped_) {
+            chunk_end_ = poped_;
         }
-        if (seq_length >= length) {
-            return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), length);
+        if (wait_flag) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
         }
-        chunk_resume_ = chunk_start + seq_length;
-        return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), seq_length);
-    }
-    bool dispose(const char* base, std::size_t length) {
-        if (length != peep(base).get_length()) {
-            return false;
+        auto chunk_start = chunk_end_;
+        if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
+            chunk_end_ = pushed_;
+        } else {
+            chunk_end_ = (pushed_ / capacity_) * capacity_;
         }
-        poped_ += (length_header::size + length);
-        n_records_--;
-        return true;
+        return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), chunk_end_ - chunk_start);
     }
-    bool has_record() {
-        return n_records_ > 0;
+    /**
+     * @brief dispose of data that has completed read and is no longer needed
+     */
+    void dispose(std::size_t length) {
+        poped_ += length;
+        chunk_end_ = 0;
     }
+    [[nodiscard]] bool has_data() const { return pushed_ > poped_; }
     [[nodiscard]] bool is_eor() const { return eor_; }
 
     void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
@@ -441,34 +438,13 @@ public:
 
 private:
     void write(char* base, const char* from, std::size_t length) {
-        if ((length + length_header::size) > room()) { wait_to_write(length + length_header::size); }
-        if (piled_ == 0) {
-            length_header h(static_cast<length_header::length_type>(0));
-            write_in_buffer(base, buffer_address(base, pushed_), h.get_buffer(), length_header::size);
-        }
-        write_in_buffer(base, buffer_address(base, pushed_ + length_header::size + piled_), from, length);
-        piled_ += length;
-    }
-    void commit(char* base) {
-        if (piled_ == 0) {
-            eor_ = true;
-        }
-        length_header h(static_cast<length_header::length_type>(piled_));
-        write_in_buffer(base, buffer_address(base, pushed_), h.get_buffer(), length_header::size);
-        n_records_++;
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        pushed_ += length_header::size + piled_;
-        piled_ = 0;
-        if (wait_for_record_) {
-            boost::interprocess::scoped_lock lock(r_mutex_);
-            r_condition_.notify_one();
-        }
+        if ((length) > room()) { wait_to_write(length); }
+        write_in_buffer(base, buffer_address(base, pushed_), from, length);
+        pushed_ += length;
     }
 
-    std::atomic_ulong n_records_{0};
-    std::size_t piled_{0};
-    std::size_t chunk_resume_{0};
-    bool eor_{false};
+    std::size_t chunk_end_{0};
+    std::atomic_bool eor_{false};
 
     boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
     std::atomic_bool wait_for_record_{};
@@ -547,7 +523,7 @@ public:
             return &unidirectional_simple_wires_.at(0);
         }
         for (auto&& wire: unidirectional_simple_wires_) {
-            if(wire.has_record()) {
+            if(wire.has_data()) {
                 return &wire;
             }
         }

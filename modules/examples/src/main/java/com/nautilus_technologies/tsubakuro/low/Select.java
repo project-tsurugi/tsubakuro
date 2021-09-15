@@ -20,7 +20,11 @@ public class Select {
     }
     
     void printResultset(ResultSet resultSet) throws IOException {
+	int count = 1;
+
 	while (resultSet.nextRecord()) {
+	    System.out.println("---- ( " + count + " )----");
+	    count++;
 	    while (resultSet.nextColumn()) {
 		if (!resultSet.isNull()) {
 		    switch (resultSet.getRecordMeta().at()) {
@@ -50,14 +54,14 @@ public class Select {
     }
 
     public void prepareAndSelect() throws IOException, ExecutionException, InterruptedException {
-	String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
+	String sql = "SELECT * FROM WAREHOUSE WHERE w_id = :w_id";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("w_id").setType(CommonProtos.DataType.INT8));
 	preparedStatement = session.prepare(sql, ph).get();
 
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(1));
 	var resultSet = transaction.executeQuery(preparedStatement, ps).get();
 	printResultset(resultSet);
 	preparedStatement.close();
