@@ -2,6 +2,9 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.Date;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -146,13 +149,19 @@ public class NewOrder {
 	prepared9 = session.prepare(sql9, ph9).get();
     }
 
-    void setParams() {
-	paramsWid = randomGenerator.uniformWithin(1, 1);  // FIXME warehouse_low, warehouse_high
-	paramsDid = randomGenerator.uniformWithin(1, 10);  // scale::districts
-	paramsCid = randomGenerator.uniformWithin(1, 3000);  // scale::customers
-	paramsOlCnt = randomGenerator.uniformWithin(5, 15); // scale::min_ol_count, scale::max_ol_count
+    static String timeStamp() {
+	Date date = new Date();
+	SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy", new Locale("US"));
+	return dateFormat.format(date);
+    }
 
-	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= 10); //kNewOrderRemotePercent);
+    void setParams() {
+	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
+	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
+	paramsCid = randomGenerator.uniformWithin(1, Scale.customers());  // scale::customers
+	paramsOlCnt = randomGenerator.uniformWithin(Scale.minOlCount(), Scale.maxOlCount()); // scale::min_ol_count, scale::max_ol_count
+
+	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.kNewOrderRemote()); //kNewOrderRemotePercent
 	if (paramsRemoteWarehouse && warehouses > 1) {
 	    do {
 		paramsSupplyWid = randomGenerator.uniformWithin(1, warehouses);
@@ -165,10 +174,9 @@ public class NewOrder {
 
 	for (int ol = 1; ol <= paramsOlCnt; ++ol) {
 	    paramsQty[ol - 1] = randomGenerator.uniformWithin(1, 10);
-	    paramsItemId[ol - 1] = randomGenerator.nonUniformWithin(8191, 1, 100000); // scale::items
+	    paramsItemId[ol - 1] = randomGenerator.nonUniformWithin(8191, 1, Scale.items()); // scale::items
 	}
-
-	paramsEntryD = "                        "; // FIXME
+	paramsEntryD = timeStamp();
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
@@ -206,6 +214,7 @@ public class NewOrder {
 	if (resultSet1.nextRecord()) {
 	    throw new IOException("extra record");
 	}
+	resultSet1.close();
 
 	// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
@@ -223,6 +232,7 @@ public class NewOrder {
 	if (resultSet2.nextRecord()) {
 	    throw new IOException("extra record");
 	}
+	resultSet2.close();
 
 	// UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id
 	var ps3 = RequestProtos.ParameterSet.newBuilder()
@@ -287,6 +297,7 @@ public class NewOrder {
 	    if (resultSet6.nextRecord()) {
 		throw new IOException("extra record");
 	    }
+	    resultSet6.close();
 
 	    //	SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 	    var ps7 = RequestProtos.ParameterSet.newBuilder()
@@ -307,6 +318,7 @@ public class NewOrder {
 	    if (resultSet7.nextRecord()) {
 		throw new IOException("extra record");
 	    }
+	    resultSet7.close();
 
 	    String olDistInfo = ""; // FIXME
 

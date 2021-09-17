@@ -10,6 +10,10 @@ public class  TpccClient extends Thread {
     RandomGenerator randomGenerator;
     long warehouses;
     NewOrder newOrder;
+    Payment payment;
+    Delivery delivery;
+    OrderStatus orderStatus;
+    StockLevel stockLevel;
     
     public  TpccClient(Connector connector, Session session) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
@@ -18,12 +22,16 @@ public class  TpccClient extends Thread {
 	this.warehouses = warehouses();
 	
 	this.newOrder = new NewOrder(session, randomGenerator, warehouses);
+	this.payment = new Payment(session, randomGenerator, warehouses);
+	this.delivery = new Delivery(session, randomGenerator, warehouses);
+	this.orderStatus = new OrderStatus(session, randomGenerator, warehouses);
+	this.stockLevel = new StockLevel(session, randomGenerator, warehouses);
 	prepare();
     }
 
     long warehouses()  throws IOException, ExecutionException, InterruptedException {
 	var transaction = session.createTransaction().get();
-	var resultSet = transaction.executeQuery("SELECT COUNT(*) FROM WAREHOUSE").get();
+	var resultSet = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE").get();
 	long count = 0;
 	if (resultSet.nextRecord()) {
 	    if (resultSet.nextColumn()) {
@@ -36,19 +44,27 @@ public class  TpccClient extends Thread {
 
     void prepare()  throws IOException, ExecutionException, InterruptedException {
 	newOrder.prepare();
+	payment.prepare();
+	delivery.prepare();
+	orderStatus.prepare();
+	stockLevel.prepare();
     }
 
     public void run() {
 	try {
-	    newOrder.transaction();
+	    //	    newOrder.transaction();
+	    //	    payment.transaction();
+	    //	    delivery.transaction();
+	    //	    orderStatus.transaction();
+	    //	    stockLevel.transaction();
 
 	    session.close();
 	} catch (IOException e) {
             System.out.println(e);
-	} catch (ExecutionException e) {
-	    System.out.println(e);
-	} catch (InterruptedException e) {
-	    System.out.println(e);
+	    //	} catch (ExecutionException e) {
+	    //	    System.out.println(e);
+	    //	} catch (InterruptedException e) {
+	    //	    System.out.println(e);
         }
     }
 }
