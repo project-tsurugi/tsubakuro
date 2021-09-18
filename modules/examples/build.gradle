@@ -12,7 +12,7 @@ dependencies {
 }
 
 application {
-    mainClass.set('com.nautilus_technologies.tsubakuro.low.Main')
+    mainClass.set('com.nautilus_technologies.tsubakuro.low.tpcc.Main')
 }
 
 run {

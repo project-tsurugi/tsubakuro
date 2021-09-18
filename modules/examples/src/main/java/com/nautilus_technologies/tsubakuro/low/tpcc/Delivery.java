@@ -17,6 +17,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class Delivery {
     Session session;
     RandomGenerator randomGenerator;
+    Profile profile;
 
     PreparedStatement prepared1;
     PreparedStatement prepared2;
@@ -36,10 +37,11 @@ public class Delivery {
     long cId;
     double olTotal;
 
-    public Delivery(Session session, RandomGenerator randomGenerator, long warehouses) throws IOException, ExecutionException, InterruptedException {
+    public Delivery(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
-	this.warehouses = warehouses;
+	this.warehouses = profile.warehouses;
+	this.profile = profile;
     }
 
     public void prepare() throws IOException, ExecutionException, InterruptedException {

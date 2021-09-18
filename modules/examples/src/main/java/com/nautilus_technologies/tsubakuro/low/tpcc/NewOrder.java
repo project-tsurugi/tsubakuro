@@ -17,6 +17,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class NewOrder {
     Session session;
     RandomGenerator randomGenerator;
+    Profile profile;
 
     PreparedStatement prepared1;
     PreparedStatement prepared2;
@@ -63,10 +64,11 @@ public class NewOrder {
     String sData;
     String[] sDistData;
 
-    public NewOrder(Session session, RandomGenerator randomGenerator, long warehouses) throws IOException, ExecutionException, InterruptedException {
+    public NewOrder(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
-	this.warehouses = warehouses;
+	this.warehouses = profile.warehouses;
+	this.profile = profile;
 	this.paramsQty = new long[15];
 	this.paramsItemId = new long[15];
 
@@ -320,9 +322,14 @@ public class NewOrder {
 	    }
 	    resultSet7.close();
 
-	    String olDistInfo = ""; // FIXME
-
+	    String olDistInfo = sDistData[(int) paramsDid - 1].substring(0, 24);
 	    stock[olNumber - 1] = sQuantity;
+
+	    if (iData.indexOf("original") >= 0 && sData.indexOf("original") >= 0) {
+		bg[olNumber - 1] = "B";
+	    } else {
+		bg[olNumber - 1] = "G";
+	    }		
 
 	    if (sQuantity > olQuantity) {
 		sQuantity = sQuantity - olQuantity;

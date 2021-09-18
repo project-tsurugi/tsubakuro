@@ -17,6 +17,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class OrderStatus {
     Session session;
     RandomGenerator randomGenerator;
+    Profile profile;
 
     PreparedStatement prepared1;
     PreparedStatement prepared2;
@@ -49,10 +50,11 @@ public class OrderStatus {
     long[] olAmount;
     String[] olDeliveryD;
 
-    public OrderStatus(Session session, RandomGenerator randomGenerator, long warehouses) throws IOException, ExecutionException, InterruptedException {
+    public OrderStatus(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
-	this.warehouses = warehouses;
+	this.warehouses = profile.warehouses;
+	this.profile = profile;
 
 	int kOlMax = (int) Scale.maxOlCount();
 	olIid = new long[kOlMax];

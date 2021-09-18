@@ -17,6 +17,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class StockLevel {
     Session session;
     RandomGenerator randomGenerator;
+    Profile profile;
 
     PreparedStatement prepared1;
     PreparedStatement prepared2;
@@ -31,10 +32,11 @@ public class StockLevel {
     long queryResult;
     final long oidRange = 20;
 
-    public StockLevel(Session session, RandomGenerator randomGenerator, long warehouses) throws IOException, ExecutionException, InterruptedException {
+    public StockLevel(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
-	this.warehouses = warehouses;
+	this.warehouses = profile.warehouses;
+	this.profile = profile;
     }
 
     public void prepare() throws IOException, ExecutionException, InterruptedException {

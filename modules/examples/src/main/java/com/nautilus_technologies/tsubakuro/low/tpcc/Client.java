@@ -5,41 +5,28 @@ import java.util.concurrent.ExecutionException;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 
-public class  TpccClient extends Thread {
+public class  Client extends Thread {
     Session session;
     RandomGenerator randomGenerator;
-    long warehouses;
+    Profile profile;
     NewOrder newOrder;
     Payment payment;
     Delivery delivery;
     OrderStatus orderStatus;
     StockLevel stockLevel;
     
-    public  TpccClient(Connector connector, Session session) throws IOException, ExecutionException, InterruptedException {
+    public  Client(Connector connector, Session session, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.session.connect(connector.connect().get());
 	this.randomGenerator = new RandomGenerator();
-	this.warehouses = warehouses();
+	this.profile = profile;
 	
-	this.newOrder = new NewOrder(session, randomGenerator, warehouses);
-	this.payment = new Payment(session, randomGenerator, warehouses);
-	this.delivery = new Delivery(session, randomGenerator, warehouses);
-	this.orderStatus = new OrderStatus(session, randomGenerator, warehouses);
-	this.stockLevel = new StockLevel(session, randomGenerator, warehouses);
+	this.newOrder = new NewOrder(session, randomGenerator, profile);
+	this.payment = new Payment(session, randomGenerator, profile);
+	this.delivery = new Delivery(session, randomGenerator, profile);
+	this.orderStatus = new OrderStatus(session, randomGenerator, profile);
+	this.stockLevel = new StockLevel(session, randomGenerator, profile);
 	prepare();
-    }
-
-    long warehouses()  throws IOException, ExecutionException, InterruptedException {
-	var transaction = session.createTransaction().get();
-	var resultSet = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE").get();
-	long count = 0;
-	if (resultSet.nextRecord()) {
-	    if (resultSet.nextColumn()) {
-		count = resultSet.getInt8();
-	    }
-	}
-	transaction.commit().get();
-	return count;
     }
 
     void prepare()  throws IOException, ExecutionException, InterruptedException {

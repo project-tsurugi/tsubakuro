@@ -17,6 +17,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class Payment {
     Session session;
     RandomGenerator randomGenerator;
+    Profile profile;
 
     PreparedStatement prepared1;
     PreparedStatement prepared2;
@@ -72,10 +73,11 @@ public class Payment {
     static String[] nameParts = {"BAR", "OUGHT", "ABLE", "PRI", "PRES",
 				 "ESE", "ANTI", "CALLY", "ATION", "EING"};
 
-    public Payment(Session session, RandomGenerator randomGenerator, long warehouses) throws IOException, ExecutionException, InterruptedException {
+    public Payment(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
-	this.warehouses = warehouses;
+	this.warehouses = profile.warehouses;
+	this.profile = profile;
     }
 
     public void prepare() throws IOException, ExecutionException, InterruptedException {
@@ -315,7 +317,7 @@ public class Payment {
 	
 	cBalance += paramsHamount;
 	
-	if (cCredit == "BC") {
+	if (cCredit.indexOf("BC") >= 0) {
 	    // SELECT c_data FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
@@ -333,12 +335,13 @@ public class Payment {
 	    }
 	    resultSet8.close();
 	    
-	    String cNewData = ""; //FIXME
-	    
+	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata; 
+	    cNewData += cData;
+
 	    // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData.substring(0, 500)))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
