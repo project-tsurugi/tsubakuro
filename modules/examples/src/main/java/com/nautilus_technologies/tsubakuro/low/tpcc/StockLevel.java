@@ -57,7 +57,7 @@ public class StockLevel {
 	prepared2 = session.prepare(sql2, ph2).get();
     }
 
-    void setParams() {
+    public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
 	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
 	paramsThreshold = randomGenerator.uniformWithin(10, 20);

@@ -97,10 +97,14 @@ public class Delivery {
 	prepared7 = session.prepare(sql7, ph7).get();
     }
 
-    void setParams() {
+    public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
 	paramsOcarrierId = randomGenerator.uniformWithin(1, 10);
 	paramsOlDeliveryD = NewOrder.timeStamp();
+    }
+
+    public long warehouseId() {
+	return paramsWid;
     }
 
     public void transaction() throws IOException, ExecutionException, InterruptedException {

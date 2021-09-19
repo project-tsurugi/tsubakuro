@@ -108,7 +108,7 @@ public class OrderStatus {
 	prepared6 = session.prepare(sql6, ph6).get();
     }
 
-    void setParams() {
+    public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
 	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;

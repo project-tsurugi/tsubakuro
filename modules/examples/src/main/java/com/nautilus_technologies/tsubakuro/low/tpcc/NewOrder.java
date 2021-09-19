@@ -157,13 +157,13 @@ public class NewOrder {
 	return dateFormat.format(date);
     }
 
-    void setParams() {
+    public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
 	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
 	paramsCid = randomGenerator.uniformWithin(1, Scale.customers());  // scale::customers
 	paramsOlCnt = randomGenerator.uniformWithin(Scale.minOlCount(), Scale.maxOlCount()); // scale::min_ol_count, scale::max_ol_count
 
-	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.kNewOrderRemote()); //kNewOrderRemotePercent
+	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.K_NEW_ORDER_REMOTE); //kNewOrderRemotePercent
 	if (paramsRemoteWarehouse && warehouses > 1) {
 	    do {
 		paramsSupplyWid = randomGenerator.uniformWithin(1, warehouses);

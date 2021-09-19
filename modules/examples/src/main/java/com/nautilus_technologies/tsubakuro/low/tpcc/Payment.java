@@ -164,7 +164,7 @@ public class Payment {
 	return name;
     }
 
-    void setParams() {
+    public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
 	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
 	paramsHamount = ((double) randomGenerator.uniformWithin(100, 500000)) / 100.0;

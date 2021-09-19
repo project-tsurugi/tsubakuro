@@ -3,6 +3,9 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.ArrayList;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 
@@ -30,26 +33,34 @@ public final class Main {
     
     static String dbName = "tateyama";
     static int threads = 2;
+    static int duration = 10;
     
     public static void main(String[] args) {
 	ArrayList<Client> clients = new ArrayList<>();
 	ArrayList<Profile> profiles = new ArrayList<>();
+	CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+	AtomicBoolean stop = new AtomicBoolean();
+	AtomicBoolean[] doingDelivery = new AtomicBoolean[threads];
+
 	try {
 	    var warehouses = warehouses();
 	
 	    for (int i = 0; i < threads; i++) {
+		doingDelivery[i].set(false);
 		var profile = new Profile();
 		profile.warehouses = warehouses;
 		profile.index = i;
 
 		profiles.add(profile);
-		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile));
+		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }
 	    
 	    long start = System.currentTimeMillis();
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).start();
 	    }
+	    Thread.sleep(duration * 1000);
+	    stop.set(true);
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).join();
 	    }
