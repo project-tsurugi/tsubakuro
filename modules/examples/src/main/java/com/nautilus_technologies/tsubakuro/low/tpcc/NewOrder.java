@@ -28,7 +28,7 @@ public class NewOrder {
     PreparedStatement prepared7;
     PreparedStatement prepared8;
     PreparedStatement prepared9;
-    
+
     long warehouses;
     long paramsWid;
     long paramsDid;
@@ -41,7 +41,7 @@ public class NewOrder {
     boolean paramsWillRollback;
     String paramsEntryD;
     long paramsAllLocal;
-    
+
     long[] stock;
     String[] bg;
     double[] amt;
@@ -159,9 +159,9 @@ public class NewOrder {
 
     public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
-	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
-	paramsCid = randomGenerator.uniformWithin(1, Scale.customers());  // scale::customers
-	paramsOlCnt = randomGenerator.uniformWithin(Scale.minOlCount(), Scale.maxOlCount()); // scale::min_ol_count, scale::max_ol_count
+	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
+	paramsCid = randomGenerator.uniformWithin(1, Scale.CUSTOMERS);  // scale::customers
+	paramsOlCnt = randomGenerator.uniformWithin(Scale.MIN_OL_COUNT, Scale.MAX_OL_COUNT); // scale::min_ol_count, scale::max_ol_count
 
 	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.K_NEW_ORDER_REMOTE); //kNewOrderRemotePercent
 	if (paramsRemoteWarehouse && warehouses > 1) {
@@ -176,24 +176,36 @@ public class NewOrder {
 
 	for (int ol = 1; ol <= paramsOlCnt; ++ol) {
 	    paramsQty[ol - 1] = randomGenerator.uniformWithin(1, 10);
-	    paramsItemId[ol - 1] = randomGenerator.nonUniformWithin(8191, 1, Scale.items()); // scale::items
+	    paramsItemId[ol - 1] = randomGenerator.nonUniformWithin(8191, 1, Scale.ITEMS); // scale::items
 	}
 	paramsEntryD = timeStamp();
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
     public void transaction() throws IOException, ExecutionException, InterruptedException {
-	setParams();
-	total = 0;
-	var transaction = session.createTransaction().get();
+	profile.invocation.newOrder++;
+	while (true) {
+	    total = 0;
+	    var transaction = session.createTransaction().get();
 
-	//  transaction logic
-	firstHalf(transaction);
-	secondHalf(transaction);
+	    //  transaction logic
+	    firstHalf(transaction);
+	    secondHalf(transaction);
 
-	transaction.commit().get();
+	    if (paramsWillRollback) {
+		transaction.rollback().get();
+		profile.newOrderIntentionalRollback++;
+		break;
+	    }
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.newOrder++;
+		break;
+	    }
+	    profile.retry.newOrder++;
+	}
     }
-	
+
     void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	// SELECT w_tax, c_discount, c_last, c_credit FROM WAREHOUSE, CUSTOMER WHERE w_id = :w_id AND c_w_id = w_id AND c_d_id = :c_d_id AND c_id = :c_id;
 	var ps1 = RequestProtos.ParameterSet.newBuilder()
@@ -246,9 +258,9 @@ public class NewOrder {
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 	    throw new IOException("error in statement execution");
 	}
-	
+
 	oid = dNextOid + 1;
-	
+
 	// INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (:o_id, :o_d_id, :o_w_id, :o_c_id, :o_entry_d, :o_ol_cnt, :o_all_local
 	var ps4 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oid))
@@ -281,7 +293,7 @@ public class NewOrder {
 	    var olSupplyWid = paramsSupplyWid;
 	    var olIid = paramsItemId[olNumber - 1];
 	    var olQuantity = paramsQty[olNumber - 1];
-	    
+
 	    // SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id
 	    var ps6 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
@@ -329,7 +341,7 @@ public class NewOrder {
 		bg[olNumber - 1] = "B";
 	    } else {
 		bg[olNumber - 1] = "G";
-	    }		
+	    }
 
 	    if (sQuantity > olQuantity) {
 		sQuantity = sQuantity - olQuantity;

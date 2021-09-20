@@ -57,7 +57,7 @@ public class  Client extends Thread {
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId].getAndSet(true)) {
-			delivery.transaction();			
+			delivery.transaction();
 			doingDelivery[wId].set(false);
 			pendingDelivery--;
 			if (pendingDelivery > 0) {

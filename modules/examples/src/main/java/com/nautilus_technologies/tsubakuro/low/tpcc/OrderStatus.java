@@ -26,7 +26,7 @@ public class OrderStatus {
     PreparedStatement prepared5;
     PreparedStatement prepared6;
     PreparedStatement prepared7;
-    
+
     long warehouses;
     long paramsWid;
     long paramsDid;
@@ -56,7 +56,7 @@ public class OrderStatus {
 	this.warehouses = profile.warehouses;
 	this.profile = profile;
 
-	int kOlMax = (int) Scale.maxOlCount();
+	int kOlMax = (int) Scale.MAX_OL_COUNT;
 	olIid = new long[kOlMax];
 	olSupplyWid = new long[kOlMax];
 	olQuantity = new long[kOlMax];
@@ -110,112 +110,118 @@ public class OrderStatus {
 
     public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
-	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
+	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;
 	if (paramsByName) {
-	    paramsClast = Payment.lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.lnames() - 1));  // scale::lnames
+	    paramsClast = Payment.lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.L_NAMES - 1));  // scale::lnames
 	} else {
-	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.customers());  // scale::customers
+	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.CUSTOMERS);  // scale::customers
 	}
     }
 
     public void transaction() throws IOException, ExecutionException, InterruptedException {
-	setParams();
+	profile.invocation.orderStatus++;
+	while (true) {
+	    var transaction = session.createTransaction().get();
 
-	var transaction = session.createTransaction().get();
+	    if (!paramsByName) {
+		cId = paramsCid;
+	    } else {
+		cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
+	    }
 
-    	if (!paramsByName) {
-            cId = paramsCid;
-	} else {
-	    cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
+	    if (cId != 0) {
+		// "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
+		var ps3 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
+		var future3 = transaction.executeQuery(prepared3, ps3);
+		var resultSet3 = future3.get();
+		if (!resultSet3.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet3.nextColumn();
+		cBalance = resultSet3.getFloat8();
+		resultSet3.nextColumn();
+		cFirst = resultSet3.getCharacter();
+		resultSet3.nextColumn();
+		cMiddle = resultSet3.getCharacter();
+		resultSet3.nextColumn();
+		cLast = resultSet3.getCharacter();
+		if (resultSet3.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet3.close();
+
+		// "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
+		var ps4 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
+		var future4 = transaction.executeQuery(prepared4, ps4);
+		var resultSet4 = future4.get();
+		if (!resultSet4.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet4.nextColumn();
+		oId = resultSet4.getInt8();
+		if (resultSet4.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet4.close();
+
+		// "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
+		var ps5 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
+		var future5 = transaction.executeQuery(prepared5, ps5);
+		var resultSet5 = future5.get();
+		if (!resultSet5.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet5.nextColumn();
+		oCarrierId = resultSet5.getInt8();
+		resultSet5.nextColumn();
+		oEntryD = resultSet5.getCharacter();
+		resultSet5.nextColumn();
+		oOlCnt = resultSet5.getInt8();
+		if (resultSet5.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet5.close();
+
+		// "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
+		var ps6 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
+		var future6 = transaction.executeQuery(prepared6, ps6);
+		var resultSet6 = future6.get();
+		int i = 0;
+		while (resultSet6.nextRecord()) {
+		    resultSet6.nextColumn();
+		    olIid[i] = resultSet6.getInt8();
+		    resultSet6.nextColumn();
+		    olSupplyWid[i] = resultSet6.getInt8();
+		    resultSet6.nextColumn();
+		    olQuantity[i] = resultSet6.getInt8();
+		    resultSet6.nextColumn();
+		    olAmount[i] = resultSet6.getInt8();
+		    resultSet6.nextColumn();
+		    olDeliveryD[i] = resultSet6.getCharacter();
+		    i++;
+		}
+		resultSet6.close();
+	    }
+
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.orderStatus++;
+		break;
+	    }
+	    profile.retry.orderStatus++;
 	}
-
-	if (cId != 0) {
-	    // "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
-	    var ps3 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
-	    var future3 = transaction.executeQuery(prepared3, ps3);
-	    var resultSet3 = future3.get();
-	    if (!resultSet3.nextRecord()) {
-		throw new IOException("no record");
-	    }
-	    resultSet3.nextColumn();
-	    cBalance = resultSet3.getFloat8();
-	    resultSet3.nextColumn();
-	    cFirst = resultSet3.getCharacter();
-	    resultSet3.nextColumn();
-	    cMiddle = resultSet3.getCharacter();
-	    resultSet3.nextColumn();
-	    cLast = resultSet3.getCharacter();
-	    if (resultSet3.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet3.close();
-	    
-	    // "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
-	    var ps4 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
-	    var future4 = transaction.executeQuery(prepared4, ps4);
-	    var resultSet4 = future4.get();
-	    if (!resultSet4.nextRecord()) {
-		throw new IOException("no record");
-	    }
-	    resultSet4.nextColumn();
-	    oId = resultSet4.getInt8();
-	    if (resultSet4.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet4.close();
-	    
-	    // "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
-	    var ps5 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
-	    var future5 = transaction.executeQuery(prepared5, ps5);
-	    var resultSet5 = future5.get();
-	    if (!resultSet5.nextRecord()) {
-		throw new IOException("no record");
-	    }
-	    resultSet5.nextColumn();
-	    oCarrierId = resultSet5.getInt8();
-	    resultSet5.nextColumn();
-	    oEntryD = resultSet5.getCharacter();
-	    resultSet5.nextColumn();
-	    oOlCnt = resultSet5.getInt8();
-	    if (resultSet5.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet5.close();
-	    
-	    // "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
-	    var ps6 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
-	    var future6 = transaction.executeQuery(prepared6, ps6);
-	    var resultSet6 = future6.get();
-	    int i = 0;
-	    while (resultSet6.nextRecord()) {
-		resultSet6.nextColumn();
-		olIid[i] = resultSet6.getInt8();
-		resultSet6.nextColumn();
-		olSupplyWid[i] = resultSet6.getInt8();
-		resultSet6.nextColumn();
-		olQuantity[i] = resultSet6.getInt8();
-		resultSet6.nextColumn();
-		olAmount[i] = resultSet6.getInt8();
-		resultSet6.nextColumn();
-		olDeliveryD[i] = resultSet6.getCharacter();
-		i++;
-	    }
-	    resultSet6.close();
-	}
-
-	transaction.commit().get();
     }
 }

@@ -29,7 +29,7 @@ public class Payment {
     PreparedStatement prepared8;
     PreparedStatement prepared9;
     PreparedStatement prepared10;
-    
+
     long warehouses;
     long paramsWid;
     long paramsDid;
@@ -64,7 +64,8 @@ public class Payment {
     String cZip;
     String cPhone;
     String cCredit;
-    double cCreditLim;    
+    double cCreditLim;
+
     double cDiscount;
     double cBalance;
     String cSince;
@@ -166,29 +167,36 @@ public class Payment {
 
     public void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
-	paramsDid = randomGenerator.uniformWithin(1, Scale.districts());  // scale::districts
+	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
 	paramsHamount = ((double) randomGenerator.uniformWithin(100, 500000)) / 100.0;
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;
 	if (paramsByName) {
-	    paramsClast = lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.lnames() - 1));  // scale::lnames
+	    paramsClast = lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.L_NAMES - 1));  // scale::lnames
 	} else {
-	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.customers());  // scale::customers
+	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.CUSTOMERS);  // scale::customers
 	}
 	paramsHdate = dateStamp();
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
     public void transaction() throws IOException, ExecutionException, InterruptedException {
-	setParams();
-	var transaction = session.createTransaction().get();
+	profile.invocation.payment++;
+	while (true) {
+	    var transaction = session.createTransaction().get();
 
-	//  transaction logic
-	firstHalf(transaction);
-	if (cId != 0) {
-	    secondHalf(transaction);
+	    //  transaction logic
+	    firstHalf(transaction);
+	    if (cId != 0) {
+		secondHalf(transaction);
+	    }
+
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.payment++;
+		break;
+	    }
+	    profile.retry.payment++;
 	}
-
-	transaction.commit().get();
     }
 
     void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
@@ -314,9 +322,9 @@ public class Payment {
 	    throw new IOException("extra record");
 	}
 	resultSet7.close();
-	
+
 	cBalance += paramsHamount;
-	
+
 	if (cCredit.indexOf("BC") >= 0) {
 	    // SELECT c_data FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
@@ -334,14 +342,14 @@ public class Payment {
 		throw new IOException("extra record");
 	    }
 	    resultSet8.close();
-	    
-	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata; 
-	    cNewData += cData;
+
+	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;
+	    cNewData += cData.substring(0, 500 - cNewData.length());
 
 	    // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData.substring(0, 500)))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
@@ -363,5 +371,5 @@ public class Payment {
 		throw new IOException("error in statement execution");
 	    }
 	}
-    }	    
+    }
 }

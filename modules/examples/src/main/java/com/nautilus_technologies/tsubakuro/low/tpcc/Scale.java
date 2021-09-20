@@ -4,31 +4,12 @@ public final class Scale {
     private Scale() {
     }
 
-    public static long warehouses() {
-	return 1;
-    }
-    public static long items() {
-	return 100000;
-    }
-    public static long districts() {
-	return 10;
-    }
-    public static long customers() {
-	return 3000;
-    }
-    public static long orders() {
-	return 3000;
-    }
-    public static long minOlCount() {
-	return 5;
-    }
-    public static long maxOlCount() {
-	return 15;
-    }
-    public static long maxOl() {
-	return maxOlCount() + 1;
-    }
-    public static long lnames() {
-	return 1000;
-    }
+    public static final long ITEMS = 100000;
+    public static final long DISTRICTS = 10;
+    public static final long CUSTOMERS = 3000;
+    public static final long ORDERS = 3000;
+    public static final long MIN_OL_COUNT = 5;
+    public static final long MAX_OL_COUNT = 15;
+    public static final long MAX_OL = MAX_OL_COUNT + 1;
+    public static final long L_NAMES = 1000;
 }

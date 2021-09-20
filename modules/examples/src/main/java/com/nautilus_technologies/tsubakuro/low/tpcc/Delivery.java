@@ -26,7 +26,7 @@ public class Delivery {
     PreparedStatement prepared5;
     PreparedStatement prepared6;
     PreparedStatement prepared7;
-    
+
     long warehouses;
     long paramsWid;
     long paramsOcarrierId;
@@ -108,12 +108,11 @@ public class Delivery {
     }
 
     public void transaction() throws IOException, ExecutionException, InterruptedException {
-	setParams();
-
+	profile.invocation.delivery++;
 	while (true) {
 	    var transaction = session.createTransaction().get();
 
-	    for (long dId = 1; dId <= Scale.districts(); dId++) {
+	    for (long dId = 1; dId <= Scale.DISTRICTS; dId++) {
 		// "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
 		var ps1 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
@@ -210,8 +209,10 @@ public class Delivery {
 	    }
 	    var commitResponse = transaction.commit().get();
 	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.delivery++;
 		break;
 	    }
+	    profile.retry.delivery++;
 	}
     }
 }
