@@ -44,7 +44,6 @@ public class  Client extends Thread {
 	delivery.prepare();
 	orderStatus.prepare();
 	stockLevel.prepare();
-	System.out.printf("prepare ended");
     }
 
     public void run() {
@@ -53,7 +52,6 @@ public class  Client extends Thread {
 
 	try {
 	    barrier.await();
-	    System.out.printf("client main loop started");
 	    long start = System.currentTimeMillis();
 
 	    while (!stop.get()) {

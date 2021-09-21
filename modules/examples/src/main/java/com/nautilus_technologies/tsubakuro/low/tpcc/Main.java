@@ -67,10 +67,10 @@ public final class Main {
 		clients.get(i).start();
 	    }
 	    barrier.await();
-	    System.out.printf("benchmark started");
+	    System.out.println("benchmark started");
 	    Thread.sleep(duration * 1000);
 	    stop.set(true);
-	    System.out.printf("benchmark stoped");
+	    System.out.println("benchmark stoped");
 	    var total = new Profile();
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).join();

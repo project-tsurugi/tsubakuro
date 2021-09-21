@@ -4,7 +4,21 @@ import java.util.Random;
 
 public class RandomGenerator {
     Random random;
-    
+
+    static long c255;
+    static long c1023;
+    static long c8191;
+
+    static {
+	var random = new Random();
+	long r = random.nextLong();
+	c255 = r % (Scale.L_NAMES - 1);
+	r = random.nextLong();
+	c1023 = (r % Scale.CUSTOMERS) + 1;
+	r = random.nextLong();
+	c8191 = (r % Scale.ITEMS) + 1;
+    }
+
     public RandomGenerator() {
 	this.random = new Random();
     }
@@ -24,9 +38,14 @@ public class RandomGenerator {
 	}
 	return b + s;
     }    
-    public long nonUniformWithin(long a, long x, long y) {
-	long c = uniformWithin(0, a);
-	return (((uniformWithin(0, a) | uniformWithin(x, y)) + c) % (y - x + 1)) + x;
+    public long nonUniform255Within(long x, long y) {
+	return (((uniformWithin(0, 255) | uniformWithin(x, y)) + c255) % (y - x + 1)) + x;
+    }
+    public long nonUniform1023Within(long x, long y) {
+	return (((uniformWithin(0, 1023) | uniformWithin(x, y)) + c1023) % (y - x + 1)) + x;
+    }
+    public long nonUniform8191Within(long x, long y) {
+	return (((uniformWithin(0, 8191) | uniformWithin(x, y)) + c8191) % (y - x + 1)) + x;
     }
     public String makeAlphaString(long min, long max) {
 	char character = 'a';

@@ -176,7 +176,7 @@ public class NewOrder {
 
 	for (int ol = 1; ol <= paramsOlCnt; ++ol) {
 	    paramsQty[ol - 1] = randomGenerator.uniformWithin(1, 10);
-	    paramsItemId[ol - 1] = randomGenerator.nonUniformWithin(8191, 1, Scale.ITEMS); // scale::items
+	    paramsItemId[ol - 1] = randomGenerator.nonUniform8191Within(1, Scale.ITEMS); // scale::items
 	}
 	paramsEntryD = timeStamp();
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);

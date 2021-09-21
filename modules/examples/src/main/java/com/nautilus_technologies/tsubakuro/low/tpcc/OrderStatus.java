@@ -113,9 +113,9 @@ public class OrderStatus {
 	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;
 	if (paramsByName) {
-	    paramsClast = Payment.lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.L_NAMES - 1));  // scale::lnames
+	    paramsClast = Payment.lastName((int) randomGenerator.nonUniform255Within(0, Scale.L_NAMES - 1));  // scale::lnames
 	} else {
-	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.CUSTOMERS);  // scale::customers
+	    paramsCid = randomGenerator.nonUniform1023Within(1, Scale.CUSTOMERS);  // scale::customers
 	}
     }
 

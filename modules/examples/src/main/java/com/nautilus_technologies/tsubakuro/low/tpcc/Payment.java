@@ -171,9 +171,9 @@ public class Payment {
 	paramsHamount = ((double) randomGenerator.uniformWithin(100, 500000)) / 100.0;
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;
 	if (paramsByName) {
-	    paramsClast = lastName((int) randomGenerator.nonUniformWithin(255, 0, Scale.L_NAMES - 1));  // scale::lnames
+	    paramsClast = lastName((int) randomGenerator.nonUniform255Within(0, Scale.L_NAMES - 1));  // scale::lnames
 	} else {
-	    paramsCid = randomGenerator.nonUniformWithin(1023, 1, Scale.CUSTOMERS);  // scale::customers
+	    paramsCid = randomGenerator.nonUniform1023Within(1, Scale.CUSTOMERS);  // scale::customers
 	}
 	paramsHdate = dateStamp();
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
@@ -284,7 +284,7 @@ public class Payment {
 	var ps7 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	var future7 = transaction.executeQuery(prepared7, ps7);
 	var resultSet7 = future7.get();
 	if (!resultSet7.nextRecord()) {
@@ -330,7 +330,7 @@ public class Payment {
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future8 = transaction.executeQuery(prepared8, ps8);
 	    var resultSet8 = future8.get();
 	    if (!resultSet8.nextRecord()) {
