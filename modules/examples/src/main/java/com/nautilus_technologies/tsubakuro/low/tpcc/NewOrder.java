@@ -259,7 +259,7 @@ public class NewOrder {
 	    throw new IOException("error in statement execution");
 	}
 
-	oid = dNextOid + 1;
+	oid = dNextOid;
 
 	// INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (:o_id, :o_d_id, :o_w_id, :o_c_id, :o_entry_d, :o_ol_cnt, :o_all_local
 	var ps4 = RequestProtos.ParameterSet.newBuilder()
