@@ -348,7 +348,7 @@ public class Payment {
 
 	    // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
@@ -361,7 +361,7 @@ public class Payment {
 	} else {
 	    // UPDATE CUSTOMER SET c_balance = :c_balance WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps10 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
