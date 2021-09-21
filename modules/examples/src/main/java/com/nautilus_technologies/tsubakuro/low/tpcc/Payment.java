@@ -256,8 +256,6 @@ public class Payment {
 	    throw new IOException("no record");
 	}
 	resultSet4.nextColumn();
-	dName = resultSet4.getCharacter();
-	resultSet4.nextColumn();
 	dStreet1 = resultSet4.getCharacter();
 	resultSet4.nextColumn();
 	dStreet2 = resultSet4.getCharacter();
@@ -267,6 +265,8 @@ public class Payment {
 	dState = resultSet4.getCharacter();
 	resultSet4.nextColumn();
 	dZip = resultSet4.getCharacter();
+	resultSet4.nextColumn();
+	dName = resultSet4.getCharacter();
 	if (resultSet4.nextRecord()) {
 	    throw new IOException("extra record");
 	}
@@ -351,7 +351,7 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsDid))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
@@ -363,7 +363,7 @@ public class Payment {
 	    var ps10 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_barance").setFloat8Value(cBalance))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsDid))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future10 = transaction.executeStatement(prepared10, ps10);
 	    var result10 = future10.get();

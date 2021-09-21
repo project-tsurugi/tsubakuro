@@ -32,25 +32,32 @@ public final class Main {
     }
     
     static String dbName = "tateyama";
-    static int threads = 2;
-    static int duration = 10;
+    static int threads = 8;
+    static int duration = 30;
     
     public static void main(String[] args) {
-	ArrayList<Client> clients = new ArrayList<>();
-	ArrayList<Profile> profiles = new ArrayList<>();
-	CyclicBarrier barrier = new CyclicBarrier(threads + 1);
-	AtomicBoolean stop = new AtomicBoolean();
-	AtomicBoolean[] doingDelivery = new AtomicBoolean[threads];
+        int argl = args.length;
+	if (argl > 0) {
+            threads = Integer.parseInt(args[0]);
+            if (argl > 1) {
+                duration = Integer.parseInt(args[1]);
+            }
+        }
 
 	try {
+	    ArrayList<Client> clients = new ArrayList<>();
+	    ArrayList<Profile> profiles = new ArrayList<>();
+	    CyclicBarrier barrier = new CyclicBarrier(threads + 1);
+	    AtomicBoolean stop = new AtomicBoolean();
+	    AtomicBoolean[] doingDelivery = new AtomicBoolean[threads];
 	    var warehouses = warehouses();
 	
 	    for (int i = 0; i < threads; i++) {
-		doingDelivery[i].set(false);
+		doingDelivery[i] = new AtomicBoolean(false);
+
 		var profile = new Profile();
 		profile.warehouses = warehouses;
 		profile.index = i;
-
 		profiles.add(profile);
 		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }
@@ -59,18 +66,25 @@ public final class Main {
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).start();
 	    }
+	    barrier.await();
+	    System.out.printf("benchmark started");
 	    Thread.sleep(duration * 1000);
 	    stop.set(true);
+	    System.out.printf("benchmark stoped");
+	    var total = new Profile();
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).join();
+		total.add(profiles.get(i));
 	    }
-	    System.out.printf("elapsed: %d ms%n", System.currentTimeMillis() - start);
+	    total.print();
 	} catch (IOException e) {
 	    System.out.println(e);
 	} catch (ExecutionException e) {
 	    System.out.println(e);
 	} catch (InterruptedException e) {
 	    System.out.println(e);
-        }
+	} catch (BrokenBarrierException e) {
+	    System.out.println(e);
+	}
     }
 }

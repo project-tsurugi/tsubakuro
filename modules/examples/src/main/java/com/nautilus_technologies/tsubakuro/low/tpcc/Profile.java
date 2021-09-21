@@ -9,13 +9,11 @@ public class Profile {
 	long stockLevel;
 
 	public Counter() {
-	}
-	void initialize() {
-	    newOrder = 0;
-	    payment = 0;
-	    delivery = 0;
-	    orderStatus = 0;
-	    stockLevel = 0;
+	    this.newOrder = 0;
+	    this.payment = 0;
+	    this.delivery = 0;
+	    this.orderStatus = 0;
+	    this.stockLevel = 0;
 	}
 	void add(Counter counter) {
 	    newOrder += counter.newOrder;
@@ -33,12 +31,13 @@ public class Profile {
     public Counter retry;
     public Counter error;
     public long newOrderIntentionalRollback;
+    public long elapsed;
 
     public Profile() {
-	invocation.initialize();
-	completion.initialize();
-	retry.initialize();
-	error.initialize();
+	invocation = new Counter();
+	completion = new Counter();
+	retry = new Counter();
+	error = new Counter();
 	newOrderIntentionalRollback = 0;
     }
     public void add(Profile profile) {
@@ -47,5 +46,13 @@ public class Profile {
 	retry.add(profile.retry);
 	error.add(profile.error);
 	newOrderIntentionalRollback += profile.newOrderIntentionalRollback;
+    }
+    public void print() {
+	System.out.println(elapsed);
+	System.out.println(invocation.newOrder + ":" + completion.newOrder + ":" + retry.newOrder + ":" + newOrderIntentionalRollback);
+	System.out.println(invocation.payment + ":" + completion.payment + ":" + retry.payment);
+	System.out.println(invocation.delivery + ":" + completion.delivery + ":" + retry.delivery);
+	System.out.println(invocation.orderStatus + ":" + completion.orderStatus + ":" + retry.orderStatus);
+	System.out.println(invocation.stockLevel + ":" + completion.stockLevel + ":" + retry.stockLevel);
     }
 }

@@ -44,6 +44,7 @@ public class  Client extends Thread {
 	delivery.prepare();
 	orderStatus.prepare();
 	stockLevel.prepare();
+	System.out.printf("prepare ended");
     }
 
     public void run() {
@@ -52,6 +53,8 @@ public class  Client extends Thread {
 
 	try {
 	    barrier.await();
+	    System.out.printf("client main loop started");
+	    long start = System.currentTimeMillis();
 
 	    while (!stop.get()) {
 		if (pendingDelivery > 0) {
@@ -91,15 +94,20 @@ public class  Client extends Thread {
 		    stockLevel.transaction();
 		}
 	    }
+	    profile.elapsed = System.currentTimeMillis() - start;
 	    session.close();
-	} catch (BrokenBarrierException e) {
-            System.out.println(e);
 	} catch (IOException e) {
             System.out.println(e);
+	    e.printStackTrace();
 	} catch (ExecutionException e) {
 	    System.out.println(e);
+	    e.printStackTrace();
 	} catch (InterruptedException e) {
 	    System.out.println(e);
+	    e.printStackTrace();
+	} catch (BrokenBarrierException e) {
+            System.out.println(e);
+	    e.printStackTrace();
         }
     }
 }

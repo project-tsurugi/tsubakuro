@@ -23,7 +23,7 @@ public final class Customer {
 	var ps1 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setCharacterValue(paramsClast));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future1 = transaction.executeQuery(prepared1, ps1);
 	var resultSet1 = future1.get();
 	if (!resultSet1.nextRecord()) {
@@ -39,7 +39,7 @@ public final class Customer {
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setCharacterValue(paramsClast));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future2 = transaction.executeQuery(prepared2, ps2);
 	var resultSet2 = future2.get();
 	if (nameCnt == 0) {

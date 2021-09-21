@@ -10,10 +10,19 @@ public class RandomGenerator {
     }
 
     public long uniformWithin(long a, long b) {
+	long r = random.nextLong();
 	if (a < b) {
-	    return a + random.nextLong() % (b - a + 1);
+	    long s = r % (b - a + 1);
+	    if (s < 0) {
+		s += (b - a + 1);
+	    }
+	    return a + s;
 	}
-	return b + random.nextLong() % (a - b + 1);
+	long s = r % (a - b + 1);
+	if (s < 0) {
+	    s += (a - b + 1);
+	}
+	return b + s;
     }    
     public long nonUniformWithin(long a, long x, long y) {
 	long c = uniformWithin(0, a);
