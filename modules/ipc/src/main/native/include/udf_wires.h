@@ -38,7 +38,7 @@ public:
                 current_wire_ = search();
             }
             if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), !current_wire_->is_eor());
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
             }
             std::abort();  //  FIXME
         }
