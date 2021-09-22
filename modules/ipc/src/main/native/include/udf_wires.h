@@ -30,7 +30,9 @@ public:
             : envelope_(envelope), managed_shm_ptr_(envelope_->managed_shared_memory_.get()), rsw_name_(name) {
             shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
-                throw std::runtime_error("cannot find a result_set wire with the specified name");
+                std::string msg("cannot find a result_set wire with the specified name: ");
+                msg += name;
+                throw std::runtime_error(msg.c_str());
             }
         }
         std::pair<char*, std::size_t> get_chunk() {
@@ -155,7 +157,9 @@ public:
             connection_queue_ = managed_shared_memory_->find<connection_queue>(connection_queue::name).first;
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
-            throw std::runtime_error("cannot find a database with the specified name");
+                std::string msg("cannot find a database with the specified name: ");
+                msg += db_name;
+                throw std::runtime_error(msg.c_str());
         }
     }
 

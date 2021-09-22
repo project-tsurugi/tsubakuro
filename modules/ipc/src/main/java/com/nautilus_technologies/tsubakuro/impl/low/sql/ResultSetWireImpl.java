@@ -25,6 +25,9 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param name the name of the ResultSetWireImpl to be created
      */
     public ResultSetWireImpl(long sessionWireHandle, String name) throws IOException {
+	if (name.length() == 0) {
+	    throw new IOException("ResultSet wire name is empty");
+	}
 	wireHandle = createNative(sessionWireHandle, name);
     }
 

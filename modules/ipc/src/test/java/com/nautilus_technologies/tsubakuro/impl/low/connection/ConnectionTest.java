@@ -52,6 +52,6 @@ class ConnectionTest {
         Throwable exception = assertThrows(IOException.class, () -> {
 		var future = connector.connect();
 	    });
-	assertEquals("cannot find a database with the specified name", exception.getMessage());
+	assertEquals("cannot find a database with the specified name: tsubakuro", exception.getMessage());
     }
 }
