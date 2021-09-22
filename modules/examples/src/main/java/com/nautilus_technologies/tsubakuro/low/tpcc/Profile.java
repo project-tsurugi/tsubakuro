@@ -32,6 +32,7 @@ public class Profile {
     public Counter error;
     public long newOrderIntentionalRollback;
     public long elapsed;
+    public long count;
 
     public Profile() {
 	invocation = new Counter();
@@ -39,6 +40,7 @@ public class Profile {
 	retry = new Counter();
 	error = new Counter();
 	newOrderIntentionalRollback = 0;
+	count = 0;
     }
     public void add(Profile profile) {
 	invocation.add(profile.invocation);
@@ -46,6 +48,8 @@ public class Profile {
 	retry.add(profile.retry);
 	error.add(profile.error);
 	newOrderIntentionalRollback += profile.newOrderIntentionalRollback;
+	elapsed += profile.elapsed;
+	count++;
     }
     public void print() {
 	System.out.println(elapsed);

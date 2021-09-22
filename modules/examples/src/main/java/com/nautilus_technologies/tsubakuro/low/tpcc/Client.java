@@ -20,7 +20,7 @@ public class  Client extends Thread {
     Delivery delivery;
     OrderStatus orderStatus;
     StockLevel stockLevel;
-    
+
     public  Client(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop, AtomicBoolean[] doingDelivery) throws IOException, ExecutionException, InterruptedException {
 	this.barrier = barrier;
 	this.stop = stop;
@@ -29,7 +29,7 @@ public class  Client extends Thread {
 	this.session.connect(connector.connect().get());
 	this.randomGenerator = new RandomGenerator();
 	this.profile = profile;
-	
+
 	this.newOrder = new NewOrder(session, randomGenerator, profile);
 	this.payment = new Payment(session, randomGenerator, profile);
 	this.delivery = new Delivery(session, randomGenerator, profile);
@@ -57,9 +57,9 @@ public class  Client extends Thread {
 	    while (!stop.get()) {
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
-		    if (!doingDelivery[wId].getAndSet(true)) {
+		    if (!doingDelivery[wId - 1].getAndSet(true)) {
 			delivery.transaction();
-			doingDelivery[wId].set(false);
+			doingDelivery[wId - 1].set(false);
 			pendingDelivery--;
 			if (pendingDelivery > 0) {
 			    delivery.setParams();
@@ -81,9 +81,9 @@ public class  Client extends Thread {
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
 		    wId = (int) delivery.warehouseId();
-		    if (!doingDelivery[wId].getAndSet(true)) {
+		    if (!doingDelivery[wId - 1].getAndSet(true)) {
 			delivery.transaction();
-			doingDelivery[wId].set(false);
+			doingDelivery[wId - 1].set(false);
 		    } else {
 			pendingDelivery++;
 		    }

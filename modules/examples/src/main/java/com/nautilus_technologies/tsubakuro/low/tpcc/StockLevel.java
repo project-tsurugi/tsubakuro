@@ -90,7 +90,7 @@ public class StockLevel {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id_high").setInt8Value(oId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id_low").setInt8Value(oId - oidRange))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id_low").setInt8Value(oId - oidRange))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold));
 	    var future2 = transaction.executeQuery(prepared2, ps2);

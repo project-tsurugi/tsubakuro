@@ -267,7 +267,7 @@ public class NewOrder {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(paramsCid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_endty_d").setCharacterValue(paramsEntryD))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_entry_d").setCharacterValue(paramsEntryD))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setInt8Value(paramsOlCnt))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(paramsAllLocal));
 	var future4 = transaction.executeStatement(prepared4, ps4);
@@ -327,6 +327,7 @@ public class NewOrder {
 	    resultSet7.nextColumn();
             sData = resultSet7.getCharacter();
             for (int i = 0; i < 10; i++) {
+		resultSet7.nextColumn();
 		sDistData[i] = resultSet7.getCharacter();
             }
 	    if (resultSet7.nextRecord()) {
@@ -352,8 +353,8 @@ public class NewOrder {
 	    // UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_idd").setInt8Value(olIid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_i").setInt8Value(olSupplyWid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
 	    var future8 = transaction.executeStatement(prepared8, ps8);
 	    var result8 = future8.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
@@ -374,7 +375,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_supply_w_id").setInt8Value(olSupplyWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_quantity").setInt8Value(olQuantity))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_amount").setFloat8Value(olAmount))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_i").setCharacterValue(olDistInfo));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo));
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {

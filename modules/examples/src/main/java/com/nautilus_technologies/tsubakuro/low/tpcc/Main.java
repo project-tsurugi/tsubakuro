@@ -14,7 +14,7 @@ public final class Main {
 	var connector = new IpcConnectorImpl(dbName);
 	var session = new SessionImpl();
 	session.connect(connector.connect().get());
-	
+
 	var transaction = session.createTransaction().get();
 	var resultSet = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE").get();
 	long count = 0;
@@ -30,11 +30,11 @@ public final class Main {
 
     private Main() {
     }
-    
+
     static String dbName = "tateyama";
     static int threads = 8;
     static int duration = 30;
-    
+
     public static void main(String[] args) {
         int argl = args.length;
 	if (argl > 0) {
@@ -45,23 +45,25 @@ public final class Main {
         }
 
 	try {
+	    var warehouses = warehouses();
+	    AtomicBoolean[] doingDelivery = new AtomicBoolean[(int) warehouses];
+	    for (int i = 0; i < warehouses; i++) {
+		doingDelivery[i] = new AtomicBoolean(false);
+	    }
+
 	    ArrayList<Client> clients = new ArrayList<>();
 	    ArrayList<Profile> profiles = new ArrayList<>();
 	    CyclicBarrier barrier = new CyclicBarrier(threads + 1);
 	    AtomicBoolean stop = new AtomicBoolean();
-	    AtomicBoolean[] doingDelivery = new AtomicBoolean[threads];
-	    var warehouses = warehouses();
-	
-	    for (int i = 0; i < threads; i++) {
-		doingDelivery[i] = new AtomicBoolean(false);
 
+	    for (int i = 0; i < threads; i++) {
 		var profile = new Profile();
 		profile.warehouses = warehouses;
 		profile.index = i;
 		profiles.add(profile);
 		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }
-	    
+
 	    long start = System.currentTimeMillis();
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).start();

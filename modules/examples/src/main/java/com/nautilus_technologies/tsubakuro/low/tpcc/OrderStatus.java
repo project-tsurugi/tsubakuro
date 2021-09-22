@@ -47,7 +47,7 @@ public class OrderStatus {
     long[] olIid;
     long[] olSupplyWid;
     long[] olQuantity;
-    long[] olAmount;
+    double[] olAmount;
     String[] olDeliveryD;
 
     public OrderStatus(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
@@ -60,7 +60,7 @@ public class OrderStatus {
 	olIid = new long[kOlMax];
 	olSupplyWid = new long[kOlMax];
 	olQuantity = new long[kOlMax];
-	olAmount = new long[kOlMax];
+	olAmount = new double[kOlMax];
 	olDeliveryD = new String[kOlMax];
     }
 
@@ -182,7 +182,9 @@ public class OrderStatus {
 		    throw new IOException("no record");
 		}
 		resultSet5.nextColumn();
-		oCarrierId = resultSet5.getInt8();
+		if (!resultSet5.isNull()) {
+		    oCarrierId = resultSet5.getInt8();
+		}
 		resultSet5.nextColumn();
 		oEntryD = resultSet5.getCharacter();
 		resultSet5.nextColumn();
@@ -208,7 +210,7 @@ public class OrderStatus {
 		    resultSet6.nextColumn();
 		    olQuantity[i] = resultSet6.getInt8();
 		    resultSet6.nextColumn();
-		    olAmount[i] = resultSet6.getInt8();
+		    olAmount[i] = resultSet6.getFloat8();
 		    resultSet6.nextColumn();
 		    olDeliveryD[i] = resultSet6.getCharacter();
 		    i++;

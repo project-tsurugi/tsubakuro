@@ -157,7 +157,7 @@ public class Delivery {
 		// "UPDATE ORDERS SET o_carrier_id = :o_carrier_id WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
 		var ps4 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setInt8Value(paramsOcarrierId))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_o_id").setInt8Value(noOid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(noOid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
 		var future4 = transaction.executeStatement(prepared4, ps4);
