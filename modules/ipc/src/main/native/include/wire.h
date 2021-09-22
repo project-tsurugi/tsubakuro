@@ -390,21 +390,24 @@ public:
         eor_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_record_) {
-            boost::interprocess::scoped_lock lock(r_mutex_);
-            r_condition_.notify_one();
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
         }
     }
 
     /**
      * @brief provide the current chunk to MsgPack.
      */
-    std::pair<char*, std::size_t> get_chunk(char* base, bool wait_flag = false) {
+    std::pair<char*, std::size_t> get_chunk(char* base) {
         if (chunk_end_ < poped_) {
             chunk_end_ = poped_;
         }
-        if (wait_flag) {
+        if (!((chunk_end_ < pushed_) || eor_)) {
             boost::interprocess::scoped_lock lock(m_mutex_);
-            c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
+            wait_for_record_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            c_empty_.wait(lock, [this](){ return (chunk_end_ < pushed_) || eor_; });
+            wait_for_record_ = false;
         }
         auto chunk_start = chunk_end_;
         if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
@@ -441,6 +444,11 @@ private:
         if ((length) > room()) { wait_to_write(length); }
         write_in_buffer(base, buffer_address(base, pushed_), from, length);
         pushed_ += length;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_record_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
     }
 
     std::size_t chunk_end_{0};
@@ -448,8 +456,6 @@ private:
 
     boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
     std::atomic_bool wait_for_record_{};
-    boost::interprocess::interprocess_mutex r_mutex_{};
-    boost::interprocess::interprocess_condition r_condition_{};
 };
 
 using shm_resultset_wire = unidirectional_simple_wire;
