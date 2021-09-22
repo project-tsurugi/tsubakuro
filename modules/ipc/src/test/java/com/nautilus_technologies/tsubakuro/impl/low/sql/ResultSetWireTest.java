@@ -177,6 +177,6 @@ class ResultSetWireTest {
 	Throwable exception = assertThrows(IOException.class, () -> {
 		var resultSetWire = client.createResultSetWire("resultset-2");  // not exist
 	    });
-	assertEquals("cannot find a result_set wire with the specified name", exception.getMessage());
+	assertEquals("cannot find a result_set wire with the specified name: resultset-2", exception.getMessage());
     }
 }
