@@ -58,11 +58,18 @@ public class  Client extends Thread {
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
-			delivery.transaction();
-			doingDelivery[wId - 1].set(false);
-			pendingDelivery--;
-			if (pendingDelivery > 0) {
-			    delivery.setParams();
+			while (true) {
+			    try {
+				delivery.transaction();
+				doingDelivery[wId - 1].set(false);
+				pendingDelivery--;
+				if (pendingDelivery > 0) {
+				    delivery.setParams();
+				}
+				break;
+			    } catch (IOException e) {
+				profile.retry.delivery++;
+			    }
 			}
 			continue;
 		    }
@@ -71,32 +78,68 @@ public class  Client extends Thread {
 		var transactionType = randomGenerator.uniformWithin(1, 100);
 		if (transactionType <= Percent.KXCT_NEWORDER_PERCENT) {
 		    newOrder.setParams();
-		    newOrder.transaction();
+		    while (true) {
+			try {
+			    newOrder.transaction();
+			    break;
+			} catch (IOException e) {
+			    profile.retry.newOrder++;
+			}
+		    }
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
 		    payment.setParams();
-		    payment.transaction();
+		    while (true) {
+			try {
+			    payment.transaction();
+			    break;
+			} catch (IOException e) {
+			    profile.retry.payment++;
+			}
+		    }
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
 		    orderStatus.setParams();
-		    orderStatus.transaction();
+		    while (true) {
+			try {
+			    orderStatus.transaction();
+			    break;
+			} catch (IOException e) {
+			    profile.retry.orderStatus++;
+			}
+		    }
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
-		    wId = (int) delivery.warehouseId();
-		    if (!doingDelivery[wId - 1].getAndSet(true)) {
-			delivery.transaction();
-			doingDelivery[wId - 1].set(false);
-		    } else {
-			pendingDelivery++;
+		    while (true) {
+			try {
+			    wId = (int) delivery.warehouseId();
+			    if (!doingDelivery[wId - 1].getAndSet(true)) {
+				delivery.transaction();
+				doingDelivery[wId - 1].set(false);
+			    } else {
+				pendingDelivery++;
+			    }
+			    break;
+			} catch (IOException e) {
+			    profile.retry.delivery++;
+			}
 		    }
 		} else {
 		    stockLevel.setParams();
-		    stockLevel.transaction();
+		    while (true) {
+			try {
+			    stockLevel.transaction();
+			    break;
+			} catch (IOException e) {
+			    profile.retry.newOrder++;
+			}
+		    }
 		}
 	    }
 	    profile.elapsed = System.currentTimeMillis() - start;
-	    session.close();
-	} catch (IOException e) {
-            System.out.println(e);
-	    e.printStackTrace();
+	    try {
+		session.close();
+	    } catch (IOException e) {
+		System.out.println(e);
+	    }
 	} catch (ExecutionException e) {
 	    System.out.println(e);
 	    e.printStackTrace();
