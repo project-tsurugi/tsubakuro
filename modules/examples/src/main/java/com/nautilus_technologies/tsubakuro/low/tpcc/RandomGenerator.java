@@ -13,10 +13,19 @@ public class RandomGenerator {
 	var random = new Random();
 	long r = random.nextLong();
 	c255 = r % (Scale.L_NAMES - 1);
+	if (c255 < 0) {
+	    c255 += (Scale.L_NAMES - 1);
+	}
 	r = random.nextLong();
 	c1023 = (r % Scale.CUSTOMERS) + 1;
+	if (c1023 < 0) {
+	    c1023 += Scale.CUSTOMERS;
+	}
 	r = random.nextLong();
 	c8191 = (r % Scale.ITEMS) + 1;
+	if (c8191 < 0) {
+	    c8191 += (Scale.ITEMS - 1);
+	}
     }
 
     public RandomGenerator() {
@@ -37,7 +46,7 @@ public class RandomGenerator {
 	    s += (a - b + 1);
 	}
 	return b + s;
-    }    
+    }
     public long nonUniform255Within(long x, long y) {
 	return (((uniformWithin(0, 255) | uniformWithin(x, y)) + c255) % (y - x + 1)) + x;
     }
