@@ -272,8 +272,8 @@ public class Payment {
 	}
 	resultSet4.close();
 
-    	if (!paramsByName) {
-            cId = paramsCid;
+	if (!paramsByName) {
+	    cId = paramsCid;
 	} else {
 	    cId = Customer.chooseCustomer(transaction, prepared5, prepared6, paramsWid, paramsDid, paramsClast);
 	}
@@ -288,6 +288,7 @@ public class Payment {
 	var future7 = transaction.executeQuery(prepared7, ps7);
 	var resultSet7 = future7.get();
 	if (!resultSet7.nextRecord()) {
+	    System.out.printf("%b:%d:%d:%d\n", paramsByName, paramsWid, paramsDid, cId);
 	    throw new IOException("no record");
 	}
 	resultSet7.nextColumn();
@@ -344,7 +345,12 @@ public class Payment {
 	    resultSet8.close();
 
 	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;
-	    cNewData += cData.substring(0, 500 - cNewData.length());
+	    int length = 500 - cNewData.length();
+	    if (length < cData.length()) {
+		cNewData += cData.substring(0, length);
+	    } else {
+		cNewData += cData;
+	    }
 
 	    // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()

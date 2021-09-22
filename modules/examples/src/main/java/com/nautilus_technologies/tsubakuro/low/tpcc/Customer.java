@@ -34,6 +34,7 @@ public final class Customer {
 	if (resultSet1.nextRecord()) {
 	    throw new IOException("extra record");
 	}
+	resultSet1.close();
 
 	// SELECT c_id FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_last = :c_last  ORDER by c_first"
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
@@ -48,10 +49,12 @@ public final class Customer {
 	if ((nameCnt % 2) > 0) {
 	    nameCnt++;
 	}
-	for (long i = 0; i < nameCnt; i++) {
+	for (long i = 0; i < (nameCnt / 2); i++) {
 	    resultSet2.nextRecord();
 	}
 	resultSet2.nextColumn();
-	return resultSet2.getInt8();
+	var rv = resultSet2.getInt8();
+	resultSet2.close();
+	return rv;
     }
 }
