@@ -54,6 +54,9 @@ public final class Customer {
 	}
 	resultSet2.nextColumn();
 	var rv = resultSet2.getInt8();
+	while (resultSet2.nextRecord()) {
+	    resultSet2.nextColumn();
+	}
 	resultSet2.close();
 	return rv;
     }

@@ -107,11 +107,9 @@ public class Delivery {
 	return paramsWid;
     }
 
-    public void transaction() throws IOException, ExecutionException, InterruptedException {
+    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.delivery++;
 	while (true) {
-	    var transaction = session.createTransaction().get();
-
 	    for (long dId = 1; dId <= Scale.DISTRICTS; dId++) {
 		// "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
 		var ps1 = RequestProtos.ParameterSet.newBuilder()

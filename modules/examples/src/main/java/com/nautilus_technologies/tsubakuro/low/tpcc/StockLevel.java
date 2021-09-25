@@ -63,11 +63,9 @@ public class StockLevel {
 	paramsThreshold = randomGenerator.uniformWithin(10, 20);
     }
 
-    public void transaction() throws IOException, ExecutionException, InterruptedException {
+    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.stockLevel++;
 	while (true) {
-	    var transaction = session.createTransaction().get();
-
 	    // "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id"
 
 	    var ps1 = RequestProtos.ParameterSet.newBuilder()

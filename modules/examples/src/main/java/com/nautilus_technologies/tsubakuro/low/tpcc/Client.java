@@ -7,6 +7,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 
 public class  Client extends Thread {
     CyclicBarrier barrier;
@@ -46,6 +47,11 @@ public class  Client extends Thread {
 	stockLevel.prepare();
     }
 
+    Transaction createTransaction() throws IOException, InterruptedException, ExecutionException {
+	var transaction = session.createTransaction().get();
+	return transaction;
+    }
+
     public void run() {
 	int pendingDelivery = 0;
 	int wId;
@@ -58,9 +64,10 @@ public class  Client extends Thread {
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
-			while (true) {
+			while (!stop.get()) {
+			    var transaction = createTransaction();
 			    try {
-				delivery.transaction();
+				delivery.transaction(transaction);
 				doingDelivery[wId - 1].set(false);
 				pendingDelivery--;
 				if (pendingDelivery > 0) {
@@ -68,6 +75,8 @@ public class  Client extends Thread {
 				}
 				break;
 			    } catch (IOException e) {
+				e.printStackTrace();
+				transaction.rollback();
 				profile.retry.delivery++;
 			    }
 			}
@@ -78,58 +87,74 @@ public class  Client extends Thread {
 		var transactionType = randomGenerator.uniformWithin(1, 100);
 		if (transactionType <= Percent.KXCT_NEWORDER_PERCENT) {
 		    newOrder.setParams();
-		    while (true) {
+		    while (!stop.get()) {
+			var transaction = createTransaction();
 			try {
-			    newOrder.transaction();
+			    newOrder.transaction(transaction);
 			    break;
 			} catch (IOException e) {
+			    e.printStackTrace();
+			    transaction.rollback();
 			    profile.retry.newOrder++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
 		    payment.setParams();
-		    while (true) {
+		    while (!stop.get()) {
+			var transaction = createTransaction();
 			try {
-			    payment.transaction();
+			    payment.transaction(transaction);
 			    break;
 			} catch (IOException e) {
+			    e.printStackTrace();
+			    transaction.rollback();
 			    profile.retry.payment++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
 		    orderStatus.setParams();
-		    while (true) {
+		    while (!stop.get()) {
+			var transaction = createTransaction();
 			try {
-			    orderStatus.transaction();
+			    orderStatus.transaction(transaction);
 			    break;
 			} catch (IOException e) {
+			    e.printStackTrace();
+			    transaction.rollback();
 			    profile.retry.orderStatus++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
-		    while (true) {
+		    while (!stop.get()) {
+			var transaction = createTransaction();
 			try {
 			    wId = (int) delivery.warehouseId();
 			    if (!doingDelivery[wId - 1].getAndSet(true)) {
-				delivery.transaction();
+				delivery.transaction(transaction);
 				doingDelivery[wId - 1].set(false);
 			    } else {
 				pendingDelivery++;
 			    }
 			    break;
 			} catch (IOException e) {
+			    System.out.println("delivery IOException");
+			    e.printStackTrace();
+			    transaction.rollback();
 			    profile.retry.delivery++;
 			}
 		    }
 		} else {
 		    stockLevel.setParams();
-		    while (true) {
+		    while (!stop.get()) {
+			var transaction = createTransaction();
 			try {
-			    stockLevel.transaction();
+			    stockLevel.transaction(transaction);
 			    break;
 			} catch (IOException e) {
-			    profile.retry.newOrder++;
+			    e.printStackTrace();
+			    transaction.rollback();
+			    profile.retry.stockLevel++;
 			}
 		    }
 		}
@@ -140,6 +165,9 @@ public class  Client extends Thread {
 	    } catch (IOException e) {
 		System.out.println(e);
 	    }
+	} catch (IOException e) {
+	    System.out.println(e);
+	    e.printStackTrace();
 	} catch (ExecutionException e) {
 	    System.out.println(e);
 	    e.printStackTrace();

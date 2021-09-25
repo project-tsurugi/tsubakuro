@@ -182,11 +182,10 @@ public class NewOrder {
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
-    public void transaction() throws IOException, ExecutionException, InterruptedException {
+    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.newOrder++;
 	while (true) {
 	    total = 0;
-	    var transaction = session.createTransaction().get();
 
 	    //  transaction logic
 	    firstHalf(transaction);

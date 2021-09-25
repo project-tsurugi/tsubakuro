@@ -179,11 +179,9 @@ public class Payment {
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
-    public void transaction() throws IOException, ExecutionException, InterruptedException {
+    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.payment++;
 	while (true) {
-	    var transaction = session.createTransaction().get();
-
 	    //  transaction logic
 	    firstHalf(transaction);
 	    if (cId != 0) {
