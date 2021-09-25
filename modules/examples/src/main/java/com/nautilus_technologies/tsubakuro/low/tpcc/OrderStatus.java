@@ -119,11 +119,9 @@ public class OrderStatus {
 	}
     }
 
-    public void transaction() throws IOException, ExecutionException, InterruptedException {
+    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.orderStatus++;
 	while (true) {
-	    var transaction = session.createTransaction().get();
-
 	    if (!paramsByName) {
 		cId = paramsCid;
 	    } else {
@@ -166,9 +164,6 @@ public class OrderStatus {
 		}
 		resultSet4.nextColumn();
 		oId = resultSet4.getInt8();
-		if (resultSet4.nextRecord()) {
-		    throw new IOException("extra record");
-		}
 		resultSet4.close();
 
 		// "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
@@ -212,7 +207,9 @@ public class OrderStatus {
 		    resultSet6.nextColumn();
 		    olAmount[i] = resultSet6.getFloat8();
 		    resultSet6.nextColumn();
-		    olDeliveryD[i] = resultSet6.getCharacter();
+		    if (!resultSet6.isNull()) {
+			olDeliveryD[i] = resultSet6.getCharacter();
+		    }
 		    i++;
 		}
 		resultSet6.close();
