@@ -167,6 +167,9 @@ public class ResultSetImpl implements ResultSet {
      * @returns true if the current column is null.
      */
     public boolean isNull() throws IOException {
+	if (!columnReady) {
+	    throw new IOException("the column is not ready to be read");
+	}
 	if (recordMeta.nullable(columnIndex)) {
 	    MessageFormat format = unpacker.getNextFormat();
 	    ValueType type = format.getValueType();
