@@ -28,7 +28,8 @@ public class Profile {
     public long index;
     public Counter invocation;
     public Counter completion;
-    public Counter retry;
+    public Counter retryOnStatement;
+    public Counter retryOnCommit;
     public Counter error;
     public long newOrderIntentionalRollback;
     public long elapsed;
@@ -37,7 +38,8 @@ public class Profile {
     public Profile() {
 	invocation = new Counter();
 	completion = new Counter();
-	retry = new Counter();
+	retryOnStatement = new Counter();
+	retryOnCommit = new Counter();
 	error = new Counter();
 	newOrderIntentionalRollback = 0;
 	count = 0;
@@ -45,7 +47,8 @@ public class Profile {
     public void add(Profile profile) {
 	invocation.add(profile.invocation);
 	completion.add(profile.completion);
-	retry.add(profile.retry);
+	retryOnStatement.add(profile.retryOnStatement);
+	retryOnCommit.add(profile.retryOnCommit);
 	error.add(profile.error);
 	newOrderIntentionalRollback += profile.newOrderIntentionalRollback;
 	elapsed += profile.elapsed;
@@ -53,10 +56,10 @@ public class Profile {
     }
     public void print() {
 	System.out.println(elapsed);
-	System.out.println(invocation.newOrder + ":" + completion.newOrder + ":" + retry.newOrder + ":" + newOrderIntentionalRollback);
-	System.out.println(invocation.payment + ":" + completion.payment + ":" + retry.payment);
-	System.out.println(invocation.delivery + ":" + completion.delivery + ":" + retry.delivery);
-	System.out.println(invocation.orderStatus + ":" + completion.orderStatus + ":" + retry.orderStatus);
-	System.out.println(invocation.stockLevel + ":" + completion.stockLevel + ":" + retry.stockLevel);
+	System.out.println(invocation.newOrder + ":" + completion.newOrder + ":" + newOrderIntentionalRollback + " - " + retryOnStatement.newOrder + ":" + retryOnCommit.newOrder);
+	System.out.println(invocation.payment + ":" + completion.payment + " - " + retryOnStatement.payment + ":" + retryOnCommit.payment);
+	System.out.println(invocation.delivery + ":" + completion.delivery + " - " + retryOnStatement.delivery + ":" + retryOnCommit.delivery);
+	System.out.println(invocation.orderStatus + ":" + completion.orderStatus + " - " + retryOnStatement.orderStatus + ":" + retryOnCommit.orderStatus);
+	System.out.println(invocation.stockLevel + ":" + completion.stockLevel + " - " + retryOnStatement.stockLevel + ":" + retryOnCommit.stockLevel);
     }
 }

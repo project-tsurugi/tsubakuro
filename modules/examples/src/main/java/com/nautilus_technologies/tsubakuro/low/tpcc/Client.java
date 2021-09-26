@@ -67,20 +67,24 @@ public class  Client extends Thread {
 			while (!stop.get()) {
 			    var transaction = createTransaction();
 			    try {
-				delivery.transaction(transaction);
-				doingDelivery[wId - 1].set(false);
-				pendingDelivery--;
-				if (pendingDelivery > 0) {
-				    delivery.setParams();
+				if (delivery.transaction(transaction)) {
+				    doingDelivery[wId - 1].set(false);
+				    pendingDelivery--;
+				    if (pendingDelivery > 0) {
+					delivery.setParams();
+				    }
+				    break;
+				} else {
+				    doingDelivery[wId - 1].set(false);
 				}
-				break;
 			    } catch (IOException e) {
 				e.printStackTrace();
 				transaction.rollback();
-				profile.retry.delivery++;
+				doingDelivery[wId - 1].set(false);
+				profile.retryOnStatement.delivery++;
 			    }
 			}
-			continue;
+			continue;  // next transaction
 		    }
 		}
 
@@ -90,12 +94,13 @@ public class  Client extends Thread {
 		    while (!stop.get()) {
 			var transaction = createTransaction();
 			try {
-			    newOrder.transaction(transaction);
-			    break;
+			    if (newOrder.transaction(transaction)) {
+				break;
+			    }
 			} catch (IOException e) {
 			    e.printStackTrace();
 			    transaction.rollback();
-			    profile.retry.newOrder++;
+			    profile.retryOnStatement.newOrder++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
@@ -103,12 +108,13 @@ public class  Client extends Thread {
 		    while (!stop.get()) {
 			var transaction = createTransaction();
 			try {
-			    payment.transaction(transaction);
-			    break;
+			    if (payment.transaction(transaction)) {
+				break;
+			    }
 			} catch (IOException e) {
 			    e.printStackTrace();
 			    transaction.rollback();
-			    profile.retry.payment++;
+			    profile.retryOnStatement.payment++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
@@ -116,32 +122,37 @@ public class  Client extends Thread {
 		    while (!stop.get()) {
 			var transaction = createTransaction();
 			try {
-			    orderStatus.transaction(transaction);
-			    break;
+			    if (orderStatus.transaction(transaction)) {
+				break;
+			    }
 			} catch (IOException e) {
 			    e.printStackTrace();
 			    transaction.rollback();
-			    profile.retry.orderStatus++;
+			    profile.retryOnStatement.orderStatus++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
+		    wId = (int) delivery.warehouseId();
 		    while (!stop.get()) {
 			var transaction = createTransaction();
 			try {
-			    wId = (int) delivery.warehouseId();
 			    if (!doingDelivery[wId - 1].getAndSet(true)) {
-				delivery.transaction(transaction);
-				doingDelivery[wId - 1].set(false);
+				if (delivery.transaction(transaction)) {
+				    doingDelivery[wId - 1].set(false);
+				    break;
+				} else {
+				    doingDelivery[wId - 1].set(false);
+				}
 			    } else {
 				pendingDelivery++;
+				break;
 			    }
-			    break;
 			} catch (IOException e) {
-			    System.out.println("delivery IOException");
 			    e.printStackTrace();
 			    transaction.rollback();
-			    profile.retry.delivery++;
+			    doingDelivery[wId - 1].set(false);
+			    profile.retryOnStatement.delivery++;
 			}
 		    }
 		} else {
@@ -149,12 +160,13 @@ public class  Client extends Thread {
 		    while (!stop.get()) {
 			var transaction = createTransaction();
 			try {
-			    stockLevel.transaction(transaction);
-			    break;
+			    if (stockLevel.transaction(transaction)) {
+				break;
+			    }
 			} catch (IOException e) {
 			    e.printStackTrace();
 			    transaction.rollback();
-			    profile.retry.stockLevel++;
+			    profile.retryOnStatement.stockLevel++;
 			}
 		    }
 		}

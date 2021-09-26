@@ -182,27 +182,26 @@ public class NewOrder {
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
-    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.newOrder++;
-	while (true) {
-	    total = 0;
+	total = 0;
 
-	    //  transaction logic
-	    firstHalf(transaction);
-	    secondHalf(transaction);
+	//  transaction logic
+	firstHalf(transaction);
+	secondHalf(transaction);
 
-	    if (paramsWillRollback) {
-		transaction.rollback().get();
-		profile.newOrderIntentionalRollback++;
-		break;
-	    }
-	    var commitResponse = transaction.commit().get();
-	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-		profile.completion.newOrder++;
-		break;
-	    }
-	    profile.retry.newOrder++;
+	if (paramsWillRollback) {
+	    transaction.rollback().get();
+	    profile.newOrderIntentionalRollback++;
+	    return true;
 	}
+	var commitResponse = transaction.commit().get();
+	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+	    profile.completion.newOrder++;
+	    return true;
+	}
+	profile.retryOnCommit.newOrder++;
+	return false;
     }
 
     void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
@@ -324,11 +323,11 @@ public class NewOrder {
 	    resultSet7.nextColumn();
 	    sQuantity = resultSet7.getInt8();
 	    resultSet7.nextColumn();
-            sData = resultSet7.getCharacter();
-            for (int i = 0; i < 10; i++) {
+	    sData = resultSet7.getCharacter();
+	    for (int i = 0; i < 10; i++) {
 		resultSet7.nextColumn();
 		sDistData[i] = resultSet7.getCharacter();
-            }
+	    }
 	    if (resultSet7.nextRecord()) {
 		throw new IOException("extra record");
 	    }

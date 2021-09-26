@@ -179,22 +179,21 @@ public class Payment {
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
-    public void transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	profile.invocation.payment++;
-	while (true) {
-	    //  transaction logic
-	    firstHalf(transaction);
-	    if (cId != 0) {
-		secondHalf(transaction);
-	    }
-
-	    var commitResponse = transaction.commit().get();
-	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-		profile.completion.payment++;
-		break;
-	    }
-	    profile.retry.payment++;
+	//  transaction logic
+	firstHalf(transaction);
+	if (cId != 0) {
+	    secondHalf(transaction);
 	}
+
+	var commitResponse = transaction.commit().get();
+	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+	    profile.completion.payment++;
+	    return true;
+	}
+	profile.retryOnCommit.payment++;
+	return false;
     }
 
     void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
