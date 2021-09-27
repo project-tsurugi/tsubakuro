@@ -55,11 +55,13 @@ public class Profile {
 	count++;
     }
     public void print() {
-	System.out.println(elapsed);
-	System.out.println(invocation.newOrder + ":" + completion.newOrder + ":" + newOrderIntentionalRollback + " - " + retryOnStatement.newOrder + ":" + retryOnCommit.newOrder);
-	System.out.println(invocation.payment + ":" + completion.payment + " - " + retryOnStatement.payment + ":" + retryOnCommit.payment);
-	System.out.println(invocation.delivery + ":" + completion.delivery + " - " + retryOnStatement.delivery + ":" + retryOnCommit.delivery);
-	System.out.println(invocation.orderStatus + ":" + completion.orderStatus + " - " + retryOnStatement.orderStatus + ":" + retryOnCommit.orderStatus);
-	System.out.println(invocation.stockLevel + ":" + completion.stockLevel + " - " + retryOnStatement.stockLevel + ":" + retryOnCommit.stockLevel);
+	System.out.println("duration(mS): " + elapsed);
+	System.out.println("     tx type: invocation:completion(:intentional rollback) - retry on statement:retry on commit");
+	System.out.println("-----------------------------------------------------------------------------------------------");
+	System.out.println("   new order: " + invocation.newOrder + ":" + completion.newOrder + ":" + newOrderIntentionalRollback + " - " + retryOnStatement.newOrder + ":" + retryOnCommit.newOrder);
+	System.out.println("     payment: " + invocation.payment + ":" + completion.payment + " - " + retryOnStatement.payment + ":" + retryOnCommit.payment);
+	System.out.println("    delivery: " + invocation.delivery + ":" + completion.delivery + " - " + retryOnStatement.delivery + ":" + retryOnCommit.delivery);
+	System.out.println("order status: " + invocation.orderStatus + ":" + completion.orderStatus + " - " + retryOnStatement.orderStatus + ":" + retryOnCommit.orderStatus);
+	System.out.println(" stock level: " + invocation.stockLevel + ":" + completion.stockLevel + " - " + retryOnStatement.stockLevel + ":" + retryOnCommit.stockLevel);
     }
 }
