@@ -80,6 +80,7 @@ public class  Client extends Thread {
 				}
 			    } catch (IOException e) {
 				if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				    e.printStackTrace();
 				    throw new IOException("error in rollback");
 				}
 				doingDelivery[wId - 1].set(false);
@@ -101,6 +102,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
 			    profile.retryOnStatement.newOrder++;
@@ -116,6 +118,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
 			    profile.retryOnStatement.payment++;
@@ -131,6 +134,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
 			    profile.retryOnStatement.orderStatus++;
@@ -155,6 +159,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
 			    doingDelivery[wId - 1].set(false);
@@ -171,6 +176,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
 			    profile.retryOnStatement.stockLevel++;
@@ -184,17 +190,8 @@ public class  Client extends Thread {
 	    } catch (IOException e) {
 		System.out.println(e);
 	    }
-	} catch (IOException e) {
+	} catch (IOException | ExecutionException | InterruptedException | BrokenBarrierException e) {
 	    System.out.println(e);
-	    e.printStackTrace();
-	} catch (ExecutionException e) {
-	    System.out.println(e);
-	    e.printStackTrace();
-	} catch (InterruptedException e) {
-	    System.out.println(e);
-	    e.printStackTrace();
-	} catch (BrokenBarrierException e) {
-            System.out.println(e);
 	    e.printStackTrace();
         }
     }
