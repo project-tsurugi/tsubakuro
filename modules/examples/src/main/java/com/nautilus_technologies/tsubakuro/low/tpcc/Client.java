@@ -79,12 +79,12 @@ public class  Client extends Thread {
 				    doingDelivery[wId - 1].set(false);
 				}
 			    } catch (IOException e) {
+				doingDelivery[wId - 1].set(false);
+				profile.retryOnStatement.delivery++;
 				if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				    e.printStackTrace();
 				    throw new IOException("error in rollback");
 				}
-				doingDelivery[wId - 1].set(false);
-				profile.retryOnStatement.delivery++;
 			    }
 			}
 			continue;  // next transaction
@@ -101,11 +101,11 @@ public class  Client extends Thread {
 				break;
 			    }
 			} catch (IOException e) {
+			    profile.retryOnStatement.newOrder++;
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
-			    profile.retryOnStatement.newOrder++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
@@ -117,11 +117,11 @@ public class  Client extends Thread {
 				break;
 			    }
 			} catch (IOException e) {
+			    profile.retryOnStatement.payment++;
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
-			    profile.retryOnStatement.payment++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
@@ -133,11 +133,11 @@ public class  Client extends Thread {
 				break;
 			    }
 			} catch (IOException e) {
+			    profile.retryOnStatement.orderStatus++;
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
-			    profile.retryOnStatement.orderStatus++;
 			}
 		    }
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
@@ -158,12 +158,12 @@ public class  Client extends Thread {
 				break;
 			    }
 			} catch (IOException e) {
+			    doingDelivery[wId - 1].set(false);
+			    profile.retryOnStatement.delivery++;
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
-			    doingDelivery[wId - 1].set(false);
-			    profile.retryOnStatement.delivery++;
 			}
 		    }
 		} else {
@@ -175,11 +175,11 @@ public class  Client extends Thread {
 				break;
 			    }
 			} catch (IOException e) {
+			    profile.retryOnStatement.stockLevel++;
 			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
-			    profile.retryOnStatement.stockLevel++;
 			}
 		    }
 		}
