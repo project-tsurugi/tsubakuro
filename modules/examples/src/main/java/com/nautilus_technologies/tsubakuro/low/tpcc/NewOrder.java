@@ -191,9 +191,12 @@ public class NewOrder {
 	secondHalf(transaction);
 
 	if (paramsWillRollback) {
-	    transaction.rollback().get();
-	    profile.newOrderIntentionalRollback++;
-	    return true;
+	    var rollbackResponse = transaction.rollback().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(rollbackResponse.getResultCase())) {
+		profile.newOrderIntentionalRollback++;
+		return true;
+	    }
+	    throw new IOException("error in intentional rollback");
 	}
 	var commitResponse = transaction.commit().get();
 	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
