@@ -4,6 +4,7 @@ package response;
 
 import "common.proto";
 import "schema.proto";
+import "status.proto";
 
 option java_package = "com.nautilus_technologies.tsubakuro.protos";
 option java_outer_classname = "ResponseProtos";
@@ -18,7 +19,8 @@ message Success {
 
 /* For response of error containing a error message. */
 message Error {
-  string detail = 1;
+  status.Status status = 1;
+  string detail = 2;
 }
 
 /* For record meta message sent back at the beginning of the result set. */

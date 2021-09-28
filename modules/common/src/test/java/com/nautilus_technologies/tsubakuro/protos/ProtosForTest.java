@@ -638,11 +638,13 @@ public final class ProtosForTest {
 	static ResponseProtos.Error.Builder builder() {
 	    return
 		ResponseProtos.Error.newBuilder()
+		.setStatus(StatusProtos.Status.NOT_FOUND)
 		.setDetail("This is a error for test purpose");
 	}
 	static boolean check(ResponseProtos.Error dst) {
 	    return
-		dst.getDetail().equals("This is a error for test purpose");
+		dst.getStatus().equals(StatusProtos.Status.NOT_FOUND)
+		&& dst.getDetail().equals("This is a error for test purpose");
 	}
 	@Test
 	void test() {

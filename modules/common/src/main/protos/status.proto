@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package status;
+
+option java_package = "com.nautilus_technologies.tsubakuro.protos";
+option java_outer_classname = "StatusProtos";
+
+enum Status {
+  OK = 0;
+
+  NOT_FOUND = 1;
+  ALREADY_EXISTS = 2;
+  USER_ROLLBACK = 3;
+
+  ERR_UNKNOWN = -1;
+  ERR_IO_ERROR = -2;
+  ERR_PARSE_ERROR = -3;
+  ERR_TRANSLATOR_ERROR = -4;
+  ERR_COMPILER_ERROR = -5;
+  ERR_INVALID_ARGUMENT = -6;
+  ERR_INVALID_STATE = -7;
+  ERR_UNSUPPORTED = -8;
+  ERR_USER_ERROR = -9;
+  ERR_ABORTED = -10;
+  ERR_ABORTED_RETRYABLE = -11;
+  ERR_NOT_FOUND = -12;
+  ERR_ALREADY_EXISTS = -13;
+  ERR_INCONSISTENT_INDEX = -14;
+  ERR_TIME_OUT = -15;
+}
