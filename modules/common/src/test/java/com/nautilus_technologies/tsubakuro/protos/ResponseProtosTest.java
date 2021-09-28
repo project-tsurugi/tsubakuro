@@ -30,7 +30,9 @@ class ResponseProtosTest {
     void resultOnlyError() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setResultOnly(ResponseProtos.ResultOnly.newBuilder()
-			   .setError(ResponseProtos.Error.newBuilder().setDetail("This is a error for test")))
+			   .setError(ResponseProtos.Error.newBuilder()
+				     .setStatus(StatusProtos.Status.NOT_FOUND)
+				     .setDetail("This is a error for test")))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -41,6 +43,7 @@ class ResponseProtosTest {
 	    assertAll(
 		      () -> assertTrue(ResponseProtos.Response.ResponseCase.RESULT_ONLY.equals(dst.getResponseCase())),
 		      () -> assertTrue(ResponseProtos.ResultOnly.ResultCase.ERROR.equals(dst.getResultOnly().getResultCase())),
+		      () -> assertEquals(dst.getResultOnly().getError().getStatus(), StatusProtos.Status.NOT_FOUND),
 		      () -> assertEquals(dst.getResultOnly().getError().getDetail(), "This is a error for test"));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
@@ -73,7 +76,9 @@ class ResponseProtosTest {
     void beginError() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setBegin(ResponseProtos.Begin.newBuilder()
-			   .setError(ResponseProtos.Error.newBuilder().setDetail("This is a error for test")))
+			   .setError(ResponseProtos.Error.newBuilder()
+				     .setStatus(StatusProtos.Status.NOT_FOUND)
+				     .setDetail("This is a error for test")))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -84,6 +89,7 @@ class ResponseProtosTest {
 	    assertAll(
 		      () -> assertTrue(ResponseProtos.Response.ResponseCase.BEGIN.equals(dst.getResponseCase())),
 		      () -> assertTrue(ResponseProtos.Begin.ResultCase.ERROR.equals(dst.getBegin().getResultCase())),
+		      () -> assertEquals(dst.getBegin().getError().getStatus(), StatusProtos.Status.NOT_FOUND),
 		      () -> assertEquals(dst.getBegin().getError().getDetail(), "This is a error for test"));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
@@ -116,7 +122,9 @@ class ResponseProtosTest {
     void prepareError() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setPrepare(ResponseProtos.Prepare.newBuilder()
-			   .setError(ResponseProtos.Error.newBuilder().setDetail("This is a error for test")))
+			   .setError(ResponseProtos.Error.newBuilder()
+				     .setStatus(StatusProtos.Status.NOT_FOUND)
+				     .setDetail("This is a error for test")))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -127,6 +135,7 @@ class ResponseProtosTest {
 	    assertAll(
 		      () -> assertTrue(ResponseProtos.Response.ResponseCase.PREPARE.equals(dst.getResponseCase())),
 		      () -> assertTrue(ResponseProtos.Prepare.ResultCase.ERROR.equals(dst.getPrepare().getResultCase())),
+		      () -> assertEquals(dst.getPrepare().getError().getStatus(), StatusProtos.Status.NOT_FOUND),
 		      () -> assertEquals(dst.getPrepare().getError().getDetail(), "This is a error for test"));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
@@ -180,7 +189,9 @@ class ResponseProtosTest {
     void executeQueryError() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setExecuteQuery(ResponseProtos.ExecuteQuery.newBuilder()
-			   .setError(ResponseProtos.Error.newBuilder().setDetail("This is a error for test")))
+			   .setError(ResponseProtos.Error.newBuilder()
+				     .setStatus(StatusProtos.Status.NOT_FOUND)
+				     .setDetail("This is a error for test")))
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -191,6 +202,7 @@ class ResponseProtosTest {
 	    assertAll(
 		      () -> assertTrue(ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())),
 		      () -> assertTrue(ResponseProtos.ExecuteQuery.ResultCase.ERROR.equals(dst.getExecuteQuery().getResultCase())),
+		      () -> assertEquals(dst.getExecuteQuery().getError().getStatus(), StatusProtos.Status.NOT_FOUND),
 		      () -> assertEquals(dst.getExecuteQuery().getError().getDetail(), "This is a error for test"));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
