@@ -115,13 +115,17 @@ public class Delivery {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
 	    var future1 = transaction.executeQuery(prepared1, ps1);
-	    var resultSet1 = future1.get();
-	    if (!resultSet1.nextRecord()) {
-		throw new IOException("no record");
+	    try {
+		var resultSet1 = future1.get();
+		if (!resultSet1.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet1.nextColumn();
+		noOid = resultSet1.getInt8();
+		resultSet1.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    resultSet1.nextColumn();
-	    noOid = resultSet1.getInt8();
-	    resultSet1.close();
 
 	    // "DELETE FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id AND no_o_id = :no_o_id"
 	    var ps2 = RequestProtos.ParameterSet.newBuilder()
@@ -140,16 +144,20 @@ public class Delivery {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
 	    var future3 = transaction.executeQuery(prepared3, ps3);
-	    var resultSet3 = future3.get();
-	    if (!resultSet3.nextRecord()) {
-		throw new IOException("no record");
+	    try {
+		var resultSet3 = future3.get();
+		if (!resultSet3.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet3.nextColumn();
+		cId = resultSet3.getInt8();
+		if (resultSet3.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet3.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    resultSet3.nextColumn();
-	    cId = resultSet3.getInt8();
-	    if (resultSet3.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet3.close();
 
 	    // "UPDATE ORDERS SET o_carrier_id = :o_carrier_id WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
 	    var ps4 = RequestProtos.ParameterSet.newBuilder()
@@ -181,16 +189,20 @@ public class Delivery {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
 	    var future6 = transaction.executeQuery(prepared6, ps6);
-	    var resultSet6 = future6.get();
-	    if (!resultSet6.nextRecord()) {
-		throw new IOException("no record");
+	    try {
+		var resultSet6 = future6.get();
+		if (!resultSet6.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet6.nextColumn();
+		olTotal = resultSet6.getFloat8();
+		if (resultSet6.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet6.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    resultSet6.nextColumn();
-	    olTotal = resultSet6.getFloat8();
-	    if (resultSet6.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet6.close();
 
 	    // "UPDATE CUSTOMER SET c_balance = c_balance + :ol_total WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
 	    var ps7 = RequestProtos.ParameterSet.newBuilder()

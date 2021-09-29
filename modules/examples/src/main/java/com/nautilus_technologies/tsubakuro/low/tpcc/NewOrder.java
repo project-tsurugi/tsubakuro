@@ -192,11 +192,11 @@ public class NewOrder {
 
 	if (paramsWillRollback) {
 	    var rollbackResponse = transaction.rollback().get();
-	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(rollbackResponse.getResultCase())) {
-		profile.newOrderIntentionalRollback++;
-		return true;
+	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(rollbackResponse.getResultCase())) {
+		throw new IOException("error in intentional rollback");
 	    }
-	    throw new IOException("error in intentional rollback");
+	    profile.newOrderIntentionalRollback++;
+	    return true;
 	}
 	var commitResponse = transaction.commit().get();
 	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
@@ -214,40 +214,48 @@ public class NewOrder {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid));
 	var future1 = transaction.executeQuery(prepared1, ps1);
-	var resultSet1 = future1.get();
-	if (!resultSet1.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet1 = future1.get();
+	    if (!resultSet1.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet1.nextColumn();
+	    wTax = resultSet1.getFloat8();
+	    resultSet1.nextColumn();
+	    cDiscount = resultSet1.getFloat8();
+	    resultSet1.nextColumn();
+	    cLast = resultSet1.getCharacter();
+	    resultSet1.nextColumn();
+	    cCredit = resultSet1.getCharacter();
+	    if (resultSet1.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet1.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet1.nextColumn();
-	wTax = resultSet1.getFloat8();
-	resultSet1.nextColumn();
-	cDiscount = resultSet1.getFloat8();
-	resultSet1.nextColumn();
-	cLast = resultSet1.getCharacter();
-	resultSet1.nextColumn();
-	cCredit = resultSet1.getCharacter();
-	if (resultSet1.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet1.close();
 
 	// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	var future2 = transaction.executeQuery(prepared2, ps2);
-	var resultSet2 = future2.get();
-	if (!resultSet2.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet2 = future2.get();
+	    if (!resultSet2.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet2.nextColumn();
+	    dNextOid = resultSet2.getInt8();
+	    resultSet2.nextColumn();
+	    dTax = resultSet2.getFloat8();
+	    if (resultSet2.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet2.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet2.nextColumn();
-	dNextOid = resultSet2.getInt8();
-	resultSet2.nextColumn();
-	dTax = resultSet2.getFloat8();
-	if (resultSet2.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet2.close();
 
 	// UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id
 	var ps3 = RequestProtos.ParameterSet.newBuilder()
@@ -299,42 +307,50 @@ public class NewOrder {
 	    var ps6 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
 	    var future6 = transaction.executeQuery(prepared6, ps6);
-	    var resultSet6 = future6.get();
-	    if (!resultSet6.nextRecord()) {
-		throw new IOException("no record");
+	    try {
+		var resultSet6 = future6.get();
+		if (!resultSet6.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet6.nextColumn();
+		iPrice = resultSet6.getFloat8();
+		resultSet6.nextColumn();
+		iName = resultSet6.getCharacter();
+		resultSet6.nextColumn();
+		iData = resultSet6.getCharacter();
+		if (resultSet6.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet6.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    resultSet6.nextColumn();
-	    iPrice = resultSet6.getFloat8();
-	    resultSet6.nextColumn();
-	    iName = resultSet6.getCharacter();
-	    resultSet6.nextColumn();
-	    iData = resultSet6.getCharacter();
-	    if (resultSet6.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet6.close();
 
 	    //	SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 	    var ps7 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
 	    var future7 = transaction.executeQuery(prepared7, ps7);
-	    var resultSet7 = future7.get();
-	    if (!resultSet7.nextRecord()) {
-		throw new IOException("no record");
-	    }
-	    resultSet7.nextColumn();
-	    sQuantity = resultSet7.getInt8();
-	    resultSet7.nextColumn();
-	    sData = resultSet7.getCharacter();
-	    for (int i = 0; i < 10; i++) {
+	    try {
+		var resultSet7 = future7.get();
+		if (!resultSet7.nextRecord()) {
+		    throw new IOException("no record");
+		}
 		resultSet7.nextColumn();
-		sDistData[i] = resultSet7.getCharacter();
+		sQuantity = resultSet7.getInt8();
+		resultSet7.nextColumn();
+		sData = resultSet7.getCharacter();
+		for (int i = 0; i < 10; i++) {
+		    resultSet7.nextColumn();
+		    sDistData[i] = resultSet7.getCharacter();
+		}
+		if (resultSet7.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet7.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    if (resultSet7.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet7.close();
 
 	    String olDistInfo = sDistData[(int) paramsDid - 1].substring(0, 24);
 	    stock[olNumber - 1] = sQuantity;

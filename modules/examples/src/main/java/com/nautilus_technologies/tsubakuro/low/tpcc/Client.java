@@ -74,9 +74,9 @@ public class  Client extends Thread {
 				    if (pendingDelivery > 0) {
 					delivery.setParams();
 				    }
-				    break;
+				    break;  // next transaction
 				} else {
-				    doingDelivery[wId - 1].set(false);
+				    doingDelivery[wId - 1].set(false);  // commit fail
 				}
 			    } catch (IOException e) {
 				doingDelivery[wId - 1].set(false);
@@ -143,28 +143,27 @@ public class  Client extends Thread {
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
 		    wId = (int) delivery.warehouseId();
-		    while (!stop.get()) {
-			var transaction = createTransaction();
-			try {
-			    if (!doingDelivery[wId - 1].getAndSet(true)) {
+		    if (!doingDelivery[wId - 1].getAndSet(true)) {
+			while (!stop.get()) {
+			    var transaction = createTransaction();
+			    try {
 				if (delivery.transaction(transaction)) {
 				    doingDelivery[wId - 1].set(false);
 				    break;
 				} else {
 				    doingDelivery[wId - 1].set(false);
 				}
-			    } else {
-				pendingDelivery++;
-				break;
-			    }
-			} catch (IOException e) {
-			    doingDelivery[wId - 1].set(false);
-			    profile.retryOnStatement.delivery++;
-			    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				e.printStackTrace();
-				throw new IOException("error in rollback");
+			    } catch (IOException e) {
+				doingDelivery[wId - 1].set(false);
+				profile.retryOnStatement.delivery++;
+				if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+				    e.printStackTrace();
+				    throw new IOException("error in rollback");
+				}
 			    }
 			}
+		    } else {
+			pendingDelivery++;
 		    }
 		} else {
 		    stockLevel.setParams();

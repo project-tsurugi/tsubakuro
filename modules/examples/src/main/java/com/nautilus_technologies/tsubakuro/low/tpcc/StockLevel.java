@@ -70,16 +70,20 @@ public class StockLevel {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	var future1 = transaction.executeQuery(prepared1, ps1);
-	var resultSet1 = future1.get();
-	if (!resultSet1.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet1 = future1.get();
+	    if (!resultSet1.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet1.nextColumn();
+	    oId = resultSet1.getInt8();
+	    if (resultSet1.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet1.close();
+	} catch (ExecutionException e) {
+		throw new IOException(e);
 	}
-	resultSet1.nextColumn();
-	oId = resultSet1.getInt8();
-	if (resultSet1.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet1.close();
 
 	// "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
@@ -90,16 +94,20 @@ public class StockLevel {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold));
 	var future2 = transaction.executeQuery(prepared2, ps2);
-	var resultSet2 = future2.get();
-	if (!resultSet2.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet2 = future2.get();
+	    if (!resultSet2.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet2.nextColumn();
+	    queryResult = resultSet2.getInt8();
+	    if (resultSet2.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet2.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet2.nextColumn();
-	queryResult = resultSet2.getInt8();
-	if (resultSet2.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet2.close();
 
 	var commitResponse = transaction.commit().get();
 	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {

@@ -211,26 +211,30 @@ public class Payment {
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid));
 	var future2 = transaction.executeQuery(prepared2, ps2);
-	var resultSet2 = future2.get();
-	if (!resultSet2.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet2 = future2.get();
+	    if (!resultSet2.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet2.nextColumn();
+	    wName = resultSet2.getCharacter();
+	    resultSet2.nextColumn();
+	    wStreet1 = resultSet2.getCharacter();
+	    resultSet2.nextColumn();
+	    wStreet2 = resultSet2.getCharacter();
+	    resultSet2.nextColumn();
+	    wCity = resultSet2.getCharacter();
+	    resultSet2.nextColumn();
+	    wState = resultSet2.getCharacter();
+	    resultSet2.nextColumn();
+	    wZip = resultSet2.getCharacter();
+	    if (resultSet2.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet2.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet2.nextColumn();
-	wName = resultSet2.getCharacter();
-	resultSet2.nextColumn();
-	wStreet1 = resultSet2.getCharacter();
-	resultSet2.nextColumn();
-	wStreet2 = resultSet2.getCharacter();
-	resultSet2.nextColumn();
-	wCity = resultSet2.getCharacter();
-	resultSet2.nextColumn();
-	wState = resultSet2.getCharacter();
-	resultSet2.nextColumn();
-	wZip = resultSet2.getCharacter();
-	if (resultSet2.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet2.close();
 
 	// UPDATE DISTRICT SET d_ytd = d_ytd + :h_amount WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ps3 = RequestProtos.ParameterSet.newBuilder()
@@ -248,26 +252,30 @@ public class Payment {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	var future4 = transaction.executeQuery(prepared4, ps4);
-	var resultSet4 = future4.get();
-	if (!resultSet4.nextRecord()) {
-	    throw new IOException("no record");
+	try {
+	    var resultSet4 = future4.get();
+	    if (!resultSet4.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet4.nextColumn();
+	    dStreet1 = resultSet4.getCharacter();
+	    resultSet4.nextColumn();
+	    dStreet2 = resultSet4.getCharacter();
+	    resultSet4.nextColumn();
+	    dCity = resultSet4.getCharacter();
+	    resultSet4.nextColumn();
+	    dState = resultSet4.getCharacter();
+	    resultSet4.nextColumn();
+	    dZip = resultSet4.getCharacter();
+	    resultSet4.nextColumn();
+	    dName = resultSet4.getCharacter();
+	    if (resultSet4.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet4.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet4.nextColumn();
-	dStreet1 = resultSet4.getCharacter();
-	resultSet4.nextColumn();
-	dStreet2 = resultSet4.getCharacter();
-	resultSet4.nextColumn();
-	dCity = resultSet4.getCharacter();
-	resultSet4.nextColumn();
-	dState = resultSet4.getCharacter();
-	resultSet4.nextColumn();
-	dZip = resultSet4.getCharacter();
-	resultSet4.nextColumn();
-	dName = resultSet4.getCharacter();
-	if (resultSet4.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet4.close();
 
 	if (!paramsByName) {
 	    cId = paramsCid;
@@ -283,43 +291,46 @@ public class Payment {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	var future7 = transaction.executeQuery(prepared7, ps7);
-	var resultSet7 = future7.get();
-	if (!resultSet7.nextRecord()) {
-	    System.out.printf("%b:%d:%d:%d\n", paramsByName, paramsWid, paramsDid, cId);
-	    throw new IOException("no record");
+	try {
+	    var resultSet7 = future7.get();
+	    if (!resultSet7.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet7.nextColumn();
+	    cFirst = resultSet7.getCharacter();  // c_first(0)
+	    resultSet7.nextColumn();
+	    cMiddle = resultSet7.getCharacter();  // c_middle(1)
+	    resultSet7.nextColumn();
+	    cLast = resultSet7.getCharacter();  // c_last(2)
+	    resultSet7.nextColumn();
+	    cStreet1 = resultSet7.getCharacter();  // c_street_1(3)
+	    resultSet7.nextColumn();
+	    cStreet2 = resultSet7.getCharacter();  // c_street_1(4)
+	    resultSet7.nextColumn();
+	    cCity = resultSet7.getCharacter();  // c_city(5)
+	    resultSet7.nextColumn();
+	    cState = resultSet7.getCharacter();  // c_state(6)
+	    resultSet7.nextColumn();
+	    cZip = resultSet7.getCharacter();  // c_zip(7)
+	    resultSet7.nextColumn();
+	    cPhone = resultSet7.getCharacter();  // c_phone(8)
+	    resultSet7.nextColumn();
+	    cCredit = resultSet7.getCharacter();  // c_credit(9)
+	    resultSet7.nextColumn();
+	    cCreditLim = resultSet7.getFloat8();  // c_credit_lim(10)
+	    resultSet7.nextColumn();
+	    cDiscount = resultSet7.getFloat8();  // c_discount(11)
+	    resultSet7.nextColumn();
+	    cBalance = resultSet7.getFloat8();  // c_balance(12)
+	    resultSet7.nextColumn();
+	    cSince = resultSet7.getCharacter();  // c_since(13)
+	    if (resultSet7.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet7.close();
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet7.nextColumn();
-	cFirst = resultSet7.getCharacter();  // c_first(0)
-	resultSet7.nextColumn();
-	cMiddle = resultSet7.getCharacter();  // c_middle(1)
-	resultSet7.nextColumn();
-	cLast = resultSet7.getCharacter();  // c_last(2)
-	resultSet7.nextColumn();
-	cStreet1 = resultSet7.getCharacter();  // c_street_1(3)
-	resultSet7.nextColumn();
-	cStreet2 = resultSet7.getCharacter();  // c_street_1(4)
-	resultSet7.nextColumn();
-	cCity = resultSet7.getCharacter();  // c_city(5)
-	resultSet7.nextColumn();
-	cState = resultSet7.getCharacter();  // c_state(6)
-	resultSet7.nextColumn();
-	cZip = resultSet7.getCharacter();  // c_zip(7)
-	resultSet7.nextColumn();
-	cPhone = resultSet7.getCharacter();  // c_phone(8)
-	resultSet7.nextColumn();
-	cCredit = resultSet7.getCharacter();  // c_credit(9)
-	resultSet7.nextColumn();
-	cCreditLim = resultSet7.getFloat8();  // c_credit_lim(10)
-	resultSet7.nextColumn();
-	cDiscount = resultSet7.getFloat8();  // c_discount(11)
-	resultSet7.nextColumn();
-	cBalance = resultSet7.getFloat8();  // c_balance(12)
-	resultSet7.nextColumn();
-	cSince = resultSet7.getCharacter();  // c_since(13)
-	if (resultSet7.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet7.close();
 
 	cBalance += paramsHamount;
 
@@ -330,16 +341,20 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future8 = transaction.executeQuery(prepared8, ps8);
-	    var resultSet8 = future8.get();
-	    if (!resultSet8.nextRecord()) {
-		throw new IOException("no record");
+	    try {
+		var resultSet8 = future8.get();
+		if (!resultSet8.nextRecord()) {
+		    throw new IOException("no record");
+		}
+		resultSet8.nextColumn();
+		cData = resultSet8.getCharacter();
+		if (resultSet8.nextRecord()) {
+		    throw new IOException("extra record");
+		}
+		resultSet8.close();
+	    } catch (ExecutionException e) {
+		throw new IOException(e);
 	    }
-	    resultSet8.nextColumn();
-	    cData = resultSet8.getCharacter();
-	    if (resultSet8.nextRecord()) {
-		throw new IOException("extra record");
-	    }
-	    resultSet8.close();
 
 	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;
 	    int length = 500 - cNewData.length();

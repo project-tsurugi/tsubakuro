@@ -25,16 +25,21 @@ public final class Customer {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future1 = transaction.executeQuery(prepared1, ps1);
-	var resultSet1 = future1.get();
-	if (!resultSet1.nextRecord()) {
-	    throw new IOException("no record");
+	long nameCnt;
+	try {
+	    var resultSet1 = future1.get();
+	    if (!resultSet1.nextRecord()) {
+		throw new IOException("no record");
+	    }
+	    resultSet1.nextColumn();
+	    nameCnt = resultSet1.getInt8();
+	    if (resultSet1.nextRecord()) {
+		throw new IOException("extra record");
+	    }
+	    resultSet1.close();
+	} catch (ExecutionException e) {
+		throw new IOException(e);
 	}
-	resultSet1.nextColumn();
-	var nameCnt = resultSet1.getInt8();
-	if (resultSet1.nextRecord()) {
-	    throw new IOException("extra record");
-	}
-	resultSet1.close();
 
 	// SELECT c_id FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_last = :c_last  ORDER by c_first"
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
@@ -42,22 +47,26 @@ public final class Customer {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future2 = transaction.executeQuery(prepared2, ps2);
-	var resultSet2 = future2.get();
-	if (nameCnt == 0) {
-	    return 0;
-	}
-	if ((nameCnt % 2) > 0) {
-	    nameCnt++;
-	}
-	for (long i = 0; i < (nameCnt / 2); i++) {
-	    resultSet2.nextRecord();
-	}
-	resultSet2.nextColumn();
-	var rv = resultSet2.getInt8();
-	while (resultSet2.nextRecord()) {
+	try {
+	    var resultSet2 = future2.get();
+	    if (nameCnt == 0) {
+		return 0;
+	    }
+	    if ((nameCnt % 2) > 0) {
+		nameCnt++;
+	    }
+	    for (long i = 0; i < (nameCnt / 2); i++) {
+		resultSet2.nextRecord();
+	    }
 	    resultSet2.nextColumn();
+	    var rv = resultSet2.getInt8();
+	    while (resultSet2.nextRecord()) {
+		resultSet2.nextColumn();
+	    }
+	    resultSet2.close();
+	    return rv;
+	} catch (ExecutionException e) {
+	    throw new IOException(e);
 	}
-	resultSet2.close();
-	return rv;
     }
 }
