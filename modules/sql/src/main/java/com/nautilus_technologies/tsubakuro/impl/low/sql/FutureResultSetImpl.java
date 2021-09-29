@@ -31,8 +31,11 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     public ResultSetImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.ExecuteQuery response = future.get();
+	    if (ResponseProtos.ExecuteQuery.ResultCase.ERROR.equals(response.getResultCase())) {
+		throw new ExecutionException("error in query execution", null);
+	    }
 	    return new ResultSetImpl(sessionLinkImpl.createResultSetWire(response.getResultSetInfo().getName()),
-				     response.getResultSetInfo().getRecordMeta());
+					 response.getResultSetInfo().getRecordMeta());
 	} catch (IOException e) {
             throw new ExecutionException(e);
 	} catch (InterruptedException e) {
