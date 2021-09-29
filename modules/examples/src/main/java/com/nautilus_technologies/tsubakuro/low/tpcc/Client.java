@@ -81,7 +81,7 @@ public class  Client extends Thread {
 			    } catch (IOException e) {
 				doingDelivery[wId - 1].set(false);
 				profile.retryOnStatement.delivery++;
-				if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+				if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				    e.printStackTrace();
 				    throw new IOException("error in rollback");
 				}
@@ -102,7 +102,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    profile.retryOnStatement.newOrder++;
-			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
@@ -118,7 +118,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    profile.retryOnStatement.payment++;
-			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
@@ -134,7 +134,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    profile.retryOnStatement.orderStatus++;
-			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
@@ -160,7 +160,7 @@ public class  Client extends Thread {
 			} catch (IOException e) {
 			    doingDelivery[wId - 1].set(false);
 			    profile.retryOnStatement.delivery++;
-			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
@@ -176,7 +176,7 @@ public class  Client extends Thread {
 			    }
 			} catch (IOException e) {
 			    profile.retryOnStatement.stockLevel++;
-			    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(transaction.rollback().get().getResultCase())) {
 				e.printStackTrace();
 				throw new IOException("error in rollback");
 			    }
