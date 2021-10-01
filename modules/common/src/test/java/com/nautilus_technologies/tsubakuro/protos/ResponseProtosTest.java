@@ -144,32 +144,28 @@ class ResponseProtosTest {
 
 
     @Test
-    void executeQuerySuccess() {
+    void executeQuery() {
 	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
 	    .setExecuteQuery(ResponseProtos.ExecuteQuery.newBuilder()
-			     .setResultSetInfo(ResponseProtos.ResultSetInfo.newBuilder()
-					       .setName("nameOfTheResult")
-					       .setRecordMeta(SchemaProtos.RecordMeta.newBuilder()
-							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
-							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
-							      .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.CHARACTER).setNullable(true))
-							      .build())
-					       )
+			     .setName("nameOfTheResult")
+			     .setRecordMeta(SchemaProtos.RecordMeta.newBuilder()
+					    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
+					    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8))
+					    .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.CHARACTER).setNullable(true))
+					    .build())
 			     ).build();
 
 	byte[] data = src.toByteArray();
 	
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
-	    var recordMeta = dst.getExecuteQuery().getResultSetInfo().getRecordMeta();
+	    var recordMeta = dst.getExecuteQuery().getRecordMeta();
             SchemaProtos.RecordMeta.Column v1 = recordMeta.getColumnsList().get(0);
             SchemaProtos.RecordMeta.Column v2 = recordMeta.getColumnsList().get(1);
             SchemaProtos.RecordMeta.Column v3 = recordMeta.getColumnsList().get(2);
 
 	    assertAll(
-		      () -> assertTrue(ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())),
-		      () -> assertTrue(ResponseProtos.ExecuteQuery.ResultCase.RESULT_SET_INFO.equals(dst.getExecuteQuery().getResultCase())),
-		      () -> assertEquals(dst.getExecuteQuery().getResultSetInfo().getName(), "nameOfTheResult"),
+		      () -> assertEquals(dst.getExecuteQuery().getName(), "nameOfTheResult"),
                       () -> assertEquals(v1.getName(), "v1"),
                       () -> assertEquals(v1.getType(), CommonProtos.DataType.INT8),
                       () -> assertEquals(v1.getNullable(), false),
@@ -180,30 +176,6 @@ class ResponseProtosTest {
                       () -> assertEquals(v3.getType(), CommonProtos.DataType.CHARACTER),
                       () -> assertEquals(v3.getNullable(), true),
                       () -> assertEquals(recordMeta.getColumnsList().size(), 3));
-	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
-	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
-	}
-    }
-
-    @Test
-    void executeQueryError() {
-	ResponseProtos.Response src = ResponseProtos.Response.newBuilder()
-	    .setExecuteQuery(ResponseProtos.ExecuteQuery.newBuilder()
-			   .setError(ResponseProtos.Error.newBuilder()
-				     .setStatus(StatusProtos.Status.NOT_FOUND)
-				     .setDetail("This is a error for test")))
-	    .build();
-
-	byte[] data = src.toByteArray();
-	
-	try {
-	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
-
-	    assertAll(
-		      () -> assertTrue(ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())),
-		      () -> assertTrue(ResponseProtos.ExecuteQuery.ResultCase.ERROR.equals(dst.getExecuteQuery().getResultCase())),
-		      () -> assertEquals(dst.getExecuteQuery().getError().getStatus(), StatusProtos.Status.NOT_FOUND),
-		      () -> assertEquals(dst.getExecuteQuery().getError().getDetail(), "This is a error for test"));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	}

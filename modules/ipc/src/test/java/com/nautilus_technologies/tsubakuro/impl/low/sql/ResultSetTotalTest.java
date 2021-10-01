@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -59,7 +60,7 @@ class ResultSetTotalTest {
 
 	    // REQUEST test begin
 	    // client side send Request
-	    var futureResponse = client.send(ProtosForTest.ExecuteQueryRequestChecker.builder(), new ExecuteQueryDistiller());
+	    var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
 	    // server side receive Request
 	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
 	    // REQUEST test end
@@ -70,20 +71,24 @@ class ResultSetTotalTest {
 	    server.put(responseToBeSent);
 
 	    // server side send SchemaMeta
-	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getResultSetInfo().getName());
+	    long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
 
 	    // server side send Records
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(1));
 	    server.putRecordsRSL(rsHandle, createRecordsForTest(2));
 	    server.eorRSL(rsHandle);
 
+	    // server side send query result on ResponseProtos ResultOnly
+	    server.put(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+
+
 	    // client side receive Response
-	    var responseReceived = futureResponse.get();
+	    var responseReceived = futureResponse.getLeft().get();
 	    assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
 
 	    // client side receive SchemaMeta
-	    var resultSetWire = client.createResultSetWire(responseReceived.getResultSetInfo().getName());
-	    var schemaMeta = responseReceived.getResultSetInfo().getRecordMeta();
+	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
+	    var schemaMeta = responseReceived.getRecordMeta();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 
 	    // client side receive Records
@@ -138,6 +143,45 @@ class ResultSetTotalTest {
 	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
 
 	    assertFalse(unpacker.hasNext());
+
+	    var responseResultOnly = futureResponse.getRight().get();
+	    assertTrue(ProtosForTest.ResultOnlyChecker.check(responseResultOnly));
+	    // RESPONSE test end
+
+	    client.close();
+	    server.close();
+	} catch (IOException e) {
+	    fail("cought IOException");
+	} catch (InterruptedException e) {
+	    fail("cought IOException");
+	} catch (ExecutionException e) {
+	    fail("cought IOException");
+	}
+    }
+
+    @Test
+    void requestAndNoResponseLevel() {
+	try {
+	    server = new ServerWireImpl(dbName, sessionID);
+	    client = new SessionWireImpl(dbName, sessionID);
+
+	    // REQUEST test begin
+	    // client side send Request
+	    var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
+	    // server side receive Request
+	    assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
+	    // REQUEST test end
+
+
+	    // RESPONSE test begin
+	    // server side send ResultOnly Response without ExecuteQueryResponse
+	    server.put(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+
+	    // client side receive Response
+	    assertTrue(Objects.isNull(futureResponse.getLeft().get()));
+
+	    var responseResultOnly = futureResponse.getRight().get();
+	    assertTrue(ProtosForTest.ResultOnlyChecker.check(responseResultOnly));
 	    // RESPONSE test end
 
 	    client.close();

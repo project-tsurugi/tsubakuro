@@ -290,10 +290,12 @@ class response_box {
 public:
 
     class response {
+        friend class response_box;
+
     public:
         static constexpr std::size_t max_response_message_length = 256;
 
-        response() : nstored_(0) {};
+        response() : expected_(1), nstored_(0) {};
         ~response() = default;
 
         /**
@@ -306,39 +308,106 @@ public:
 
         std::pair<char*, std::size_t> recv() {
             nstored_.wait();
-            return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
+            if (read_ == 0) {
+                if (annex_) {
+                    return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
+                }
+                return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
+            } else {
+                if (second_annex_) {
+                    return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
+                }
+                return std::pair<char*, std::size_t>(static_cast<char*>(buffer_) + length_, second_length_);
+            }
         }
         void set_inuse() {
             inuse_ = true;
         }
         [[nodiscard]] bool is_inuse() const { return inuse_; }
         void dispose() {
-            length_ = 0;
-            inuse_ = false;
+            if (++read_ == expected_) {
+                length_ = second_length_ = 0;
+                written_ = read_ = 0;
+                expected_ = 1;
+                inuse_ = false;
+                if (annex_) {
+                    managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(annex_));
+                    annex_ = 0;
+                    annex_length_ = 0;
+                }
+                if (second_annex_) {
+                    managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(second_annex_));
+                    second_annex_ = 0;
+                    second_annex_length_ = 0;
+                }
+            }
         }
         char* get_buffer(std::size_t length) {
-            length_ = length;
-            if (length <= max_response_message_length) {
-                return static_cast<char*>(buffer_);
+            if (written_++ == 0) {
+                if (length <= max_response_message_length) {
+                    length_ = length;
+                    return static_cast<char*>(buffer_);
+                }
+                annex_ = allocate_buffer(length);
+                annex_length_ = length;
+                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
+            } else {
+                if (second_length_ <= (max_response_message_length - length_)) {
+                    second_length_ = length;
+                    return static_cast<char*>(buffer_) + length_;
+                }
+                second_annex_ = allocate_buffer(length);
+                second_annex_length_ = length;
+                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
             }
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
         void flush() {
             nstored_.post();
         }
-
+        void set_query_mode() {
+            expected_ = 2;
+        }
+        void un_receive() {
+            expected_--;
+            read_--;
+            nstored_.post();
+        }
     private:
+        static constexpr std::size_t Alignment = sizeof(std::size_t);
+
+        void set_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+            managed_shm_ptr_ = managed_shm_ptr;
+        }
+        boost::interprocess::managed_shared_memory::handle_t allocate_buffer(std::size_t length) {
+            auto buffer = static_cast<char*>(managed_shm_ptr_->allocate_aligned(length, Alignment));
+            return managed_shm_ptr_->get_handle_from_address(buffer);
+        }
+
         std::size_t length_{};
+        std::size_t second_length_{};
+        unsigned expected_;
+        unsigned written_{};
+        unsigned read_{};
         bool inuse_{};
 
+        boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         boost::interprocess::interprocess_semaphore nstored_;
         char buffer_[max_response_message_length]{};  //NOLINT
+        boost::interprocess::managed_shared_memory::handle_t annex_{};
+        std::size_t annex_length_{};
+        boost::interprocess::managed_shared_memory::handle_t second_annex_{};
+        std::size_t second_annex_length_{};
     };
 
     /**
      * @brief Construct a new object.
      */
-    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {}
+    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {
+        for (auto &&r: boxes_) {
+            r.set_managed_shared_memory(managed_shm_ptr);
+        }
+    }
     response_box() = delete;
     ~response_box() = default;
 

@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -62,8 +63,11 @@ public class Select {
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(1));
-	var resultSet = transaction.executeQuery(preparedStatement, ps).get();
+	var pair = transaction.executeQuery(preparedStatement, ps);
+	var resultSet = pair.getLeft().get();
 	printResultset(resultSet);
+	pair.getRight().get();
+
 	preparedStatement.close();
 	resultSet.close();
 	transaction.commit().get();
@@ -73,8 +77,10 @@ public class Select {
 	String sql = "SELECT * FROM WAREHOUSE";
 
 	Transaction transaction = session.createTransaction().get();
-	var resultSet = transaction.executeQuery(sql).get();
+	var pair = transaction.executeQuery(sql);
+	var resultSet = pair.getLeft().get();
 	printResultset(resultSet);
+	pair.getRight().get();
 	resultSet.close();
 	transaction.commit().get();
 	session.close();

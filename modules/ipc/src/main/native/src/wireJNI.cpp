@@ -75,6 +75,21 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
+ * Method:    sendQueryNative
+ * Signature: (J[B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendQueryNative
+  (JNIEnv *env, jclass clazz, jlong handle, jbyteArray array)
+{
+    jlong rv = Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_sendNative(env, clazz, handle, array);
+    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(rv));
+    r->set_query_mode();
+
+    return rv;
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
  * Method:    receiveNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
@@ -85,6 +100,18 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql
 
     auto b = r->recv();
     return env->NewDirectByteBuffer(b.first, b.second);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
+ * Method:    unReceiveNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_unReceiveNative
+  (JNIEnv *, jclass, jlong handle)
+{
+    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
+    r->un_receive();
 }
 
 /*

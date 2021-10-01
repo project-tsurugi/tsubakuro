@@ -4,9 +4,11 @@ import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
@@ -21,7 +23,9 @@ public class SessionWireImpl implements SessionWire {
     
     private static native long openNative(String name) throws IOException;
     private static native long sendNative(long sessionHandle, byte[] buffer) throws IOException;
+    private static native long sendQueryNative(long sessionHandle, byte[] buffer) throws IOException;
     private static native ByteBuffer receiveNative(long responseHandle);
+    private static native void unReceiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
     private static native void closeNative(long sessionHandle);
 
@@ -51,6 +55,7 @@ public class SessionWireImpl implements SessionWire {
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
+     @returns a Future response message corresponding the request
     */
     public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
 	if (wireHandle == 0) {
@@ -59,6 +64,21 @@ public class SessionWireImpl implements SessionWire {
 	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
 	long handle = sendNative(wireHandle, req);
 	return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
+    }
+
+    /**
+     * Send RequestProtos.Request to the SQL server via the native wire.
+     @param request the RequestProtos.Request message
+     @returns a couple of Future response message corresponding the request
+    */
+    public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
+	}
+	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
+	long handle = sendQueryNative(wireHandle, req);
+	return Pair.of(new FutureQueryResponseImpl(this, new ResponseWireHandleImpl(handle)),
+		       new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller(), new ResponseWireHandleImpl(handle)));
     }
 
     /**
@@ -78,6 +98,17 @@ public class SessionWireImpl implements SessionWire {
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException("error: SessionWireImpl.receive()", e);
 	}
+    }
+
+    /**
+     * UnReceive one ResponseProtos.Response
+     @param handle the handle to the response box
+    */
+    public void unReceive(ResponseWireHandle handle) throws IOException {
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
+	}
+	unReceiveNative(((ResponseWireHandleImpl) handle).getHandle());
     }
 
     /**

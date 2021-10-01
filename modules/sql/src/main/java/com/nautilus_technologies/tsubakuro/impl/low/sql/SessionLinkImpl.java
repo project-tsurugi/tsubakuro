@@ -6,12 +6,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
-import com.nautilus_technologies.tsubakuro.protos.ExecuteQueryDistiller;
 import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -69,25 +69,27 @@ public class SessionLinkImpl {
     /**
      * Send execute sql query request to via wire.send()
      @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
+     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
+     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
     */
-    public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecuteQuery.Builder request) throws IOException {
+    public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteQuery.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
 	}
-	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecuteQuery(request), new ExecuteQueryDistiller());
+	return wire.sendQuery(RequestProtos.Request.newBuilder().setExecuteQuery(request));
     };
 
     /**
      * Send execute prepared query request to via wire.send()
      @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire
+     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
+     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
     */
-    public Future<ResponseProtos.ExecuteQuery> send(RequestProtos.ExecutePreparedQuery.Builder request) throws IOException {
+    public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecutePreparedQuery.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
 	}
-	return wire.<ResponseProtos.ExecuteQuery>send(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request), new ExecuteQueryDistiller());
+	return wire.sendQuery(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request));
     };
 
     /**
