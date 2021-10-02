@@ -11,21 +11,9 @@ public class RandomGenerator {
 
     static {
 	var random = new Random();
-	long r = random.nextLong();
-	c255 = r % (Scale.L_NAMES - 1);
-	if (c255 < 0) {
-	    c255 += (Scale.L_NAMES - 1);
-	}
-	r = random.nextLong();
-	c1023 = (r % Scale.CUSTOMERS) + 1;
-	if (c1023 < 0) {
-	    c1023 += Scale.CUSTOMERS;
-	}
-	r = random.nextLong();
-	c8191 = (r % Scale.ITEMS) + 1;
-	if (c8191 < 0) {
-	    c8191 += (Scale.ITEMS - 1);
-	}
+	c255 = random.nextInt((int) Scale.L_NAMES - 1);
+	c1023 = random.nextInt((int) Scale.CUSTOMERS) + 1;
+	c8191 = random.nextInt((int) Scale.ITEMS) + 1;
     }
 
     public RandomGenerator() {
@@ -33,19 +21,10 @@ public class RandomGenerator {
     }
 
     public long uniformWithin(long a, long b) {
-	long r = random.nextLong();
 	if (a < b) {
-	    long s = r % (b - a + 1);
-	    if (s < 0) {
-		s += (b - a + 1);
-	    }
-	    return a + s;
+	    return a + random.nextInt((int) (b - a + 1));
 	}
-	long s = r % (a - b + 1);
-	if (s < 0) {
-	    s += (a - b + 1);
-	}
-	return b + s;
+	return b + random.nextInt((int) (a - b + 1));
     }
     public long nonUniform255Within(long x, long y) {
 	return (((uniformWithin(0, 255) | uniformWithin(x, y)) + c255) % (y - x + 1)) + x;
