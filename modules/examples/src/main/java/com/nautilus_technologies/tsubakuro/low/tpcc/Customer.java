@@ -38,7 +38,11 @@ public final class Customer {
 	    }
 	    resultSet1.close();
 	} catch (ExecutionException e) {
-		throw new IOException(e);
+	    throw new IOException(e);
+	}
+
+	if (nameCnt == 0) {
+	    return 0;
 	}
 
 	// SELECT c_id FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_last = :c_last  ORDER by c_first"
@@ -49,9 +53,6 @@ public final class Customer {
 	var future2 = transaction.executeQuery(prepared2, ps2);
 	try {
 	    var resultSet2 = future2.get();
-	    if (nameCnt == 0) {
-		return 0;
-	    }
 	    if ((nameCnt % 2) > 0) {
 		nameCnt++;
 	    }
@@ -60,9 +61,6 @@ public final class Customer {
 	    }
 	    resultSet2.nextColumn();
 	    var rv = resultSet2.getInt8();
-	    while (resultSet2.nextRecord()) {
-		resultSet2.nextColumn();
-	    }
 	    resultSet2.close();
 	    return rv;
 	} catch (ExecutionException e) {

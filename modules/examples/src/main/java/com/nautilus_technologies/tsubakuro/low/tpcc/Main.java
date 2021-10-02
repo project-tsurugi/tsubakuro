@@ -69,7 +69,7 @@ public final class Main {
 		clients.get(i).start();
 	    }
 	    barrier.await();
-	    System.out.println("benchmark started");
+	    System.out.println("benchmark started, warehouse = " + warehouses + ", threads = " + threads);
 	    Thread.sleep(duration * 1000);
 	    stop.set(true);
 	    System.out.println("benchmark stoped");
