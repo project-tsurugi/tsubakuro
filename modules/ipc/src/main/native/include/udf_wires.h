@@ -37,12 +37,12 @@ public:
         }
         std::pair<char*, std::size_t> get_chunk() {
             if (current_wire_ == nullptr) {
-                current_wire_ = search();
+                current_wire_ = active_wire();
             }
             if (current_wire_ != nullptr) {
                 return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
             }
-            std::abort();  //  FIXME
+            return std::pair<char*, std::size_t>(nullptr, 0);
         }
         void dispose(std::size_t length) {
             if (current_wire_ != nullptr) {
@@ -50,25 +50,17 @@ public:
                 current_wire_ = nullptr;
                 return;
             }
-            std::abort();  //  FIXME
+            std::abort();  //  This must not happen.
         }
         bool is_eor() {
-            if (current_wire_ == nullptr) {
-                current_wire_ = search();
-            }
-            if (current_wire_ != nullptr) {
-                auto rv = current_wire_->is_eor();
-                current_wire_ = nullptr;
-                return rv;
-            }
-            std::abort();  //  FIXME
+            return shm_resultset_wires_->is_eor();
         }
         void set_closed() { shm_resultset_wires_->set_closed(); }
         session_wire_container* get_envelope() { return envelope_; }
 
     private:
-        shm_resultset_wire* search() {
-            return shm_resultset_wires_->search();
+        shm_resultset_wire* active_wire() {
+            return shm_resultset_wires_->active_wire();
         }
 
         session_wire_container *envelope_;

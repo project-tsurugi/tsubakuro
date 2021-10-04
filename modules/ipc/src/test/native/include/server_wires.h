@@ -34,16 +34,21 @@ public:
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name) {
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
             shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
+            current_wire_ = shm_resultset_wires_->acquire();
         }
 
-        shm_resultset_wire* acquire() {
-            return shm_resultset_wires_->acquire();
+        void write(const char* from, std::size_t length) {
+            current_wire_->write(from, length);
+        }
+        void set_eor() {
+            shm_resultset_wires_->set_eor();
         }
 
     private:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
+        shm_resultset_wire* current_wire_{};
     };
 
     class wire_container {
@@ -97,11 +102,11 @@ public:
     wire_container& get_request_wire() { return request_wire_; }
     response_box::response& get_response(std::size_t idx) { return responses_->at(idx); }
 
-    resultset_wire *create_resultset_wire(std::string_view name) {
+    resultset_wires_container *create_resultset_wires(std::string_view name) {
         if (!resultset_wires_) {
             resultset_wires_ = std::make_unique<resultset_wires_container>(managed_shared_memory_.get(), name, 8);
         }
-        return resultset_wires_->acquire();
+        return resultset_wires_.get();
     }
     
 private:
