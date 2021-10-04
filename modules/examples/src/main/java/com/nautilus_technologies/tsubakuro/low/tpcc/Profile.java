@@ -54,7 +54,7 @@ public class Profile {
 	elapsed += profile.elapsed;
 	count++;
     }
-    public void print() {
+    public void print(int threads) {
 	System.out.println("duration(mS): " + elapsed);
 	System.out.println("     tx type: invocation:completion(:intentional rollback) - retry on statement:retry on commit");
 	System.out.println("-----------------------------------------------------------------------------------------------");
@@ -63,5 +63,7 @@ public class Profile {
 	System.out.println("    delivery: " + invocation.delivery + ":" + completion.delivery + " - " + retryOnStatement.delivery + ":" + retryOnCommit.delivery);
 	System.out.println("order status: " + invocation.orderStatus + ":" + completion.orderStatus + " - " + retryOnStatement.orderStatus + ":" + retryOnCommit.orderStatus);
 	System.out.println(" stock level: " + invocation.stockLevel + ":" + completion.stockLevel + " - " + retryOnStatement.stockLevel + ":" + retryOnCommit.stockLevel);
+	System.out.println("-----------------------------------------------------------------------------------------------");
+	System.out.printf("#NoTPM %.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) threads));
     }
 }

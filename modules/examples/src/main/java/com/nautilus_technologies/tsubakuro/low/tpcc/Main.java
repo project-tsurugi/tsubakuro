@@ -78,7 +78,7 @@ public final class Main {
 		clients.get(i).join();
 		total.add(profiles.get(i));
 	    }
-	    total.print();
+	    total.print(threads);
 	} catch (IOException e) {
 	    System.out.println(e);
 	} catch (ExecutionException e) {
