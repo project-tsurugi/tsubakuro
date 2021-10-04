@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
@@ -107,121 +108,150 @@ public class Delivery {
 	return paramsWid;
     }
 
-    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	profile.invocation.delivery++;
-	for (long dId = 1; dId <= Scale.DISTRICTS; dId++) {
-	    // "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
-	    var ps1 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
-	    var future1 = transaction.executeQuery(prepared1, ps1);
-	    try {
-		var resultSet1 = future1.get();
-		if (!resultSet1.nextRecord()) {
-		    throw new IOException("no record");
+    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+	    throw new IOException("error in rollback");
+	}
+    }
+
+    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+	while (!stop.get()) {
+	    var transaction = session.createTransaction().get();
+	    profile.invocation.delivery++;
+	    long dId;
+	    for (dId = 1; dId <= Scale.DISTRICTS; dId++) {
+		// "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
+		var ps1 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
+		var future1 = transaction.executeQuery(prepared1, ps1);
+		try {
+		    var resultSet1 = future1.get();
+		    if (!resultSet1.nextRecord()) {
+			profile.retryOnStatement.delivery++;
+			rollback(transaction);
+			break;
+		    }
+		    resultSet1.nextColumn();
+		    noOid = resultSet1.getInt8();
+		    resultSet1.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
 		}
-		resultSet1.nextColumn();
-		noOid = resultSet1.getInt8();
-		resultSet1.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
-	    }
-
-	    // "DELETE FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id AND no_o_id = :no_o_id"
-	    var ps2 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(noOid));
-	    var future2 = transaction.executeStatement(prepared2, ps2);
-	    var result2 = future2.get();
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result2.getResultCase())) {
-		throw new IOException("error in statement execution");
-	    }
-
-	    // "SELECT o_c_id FROM ORDERS WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
-	    var ps3 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(noOid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
-	    var future3 = transaction.executeQuery(prepared3, ps3);
-	    try {
-		var resultSet3 = future3.get();
-		if (!resultSet3.nextRecord()) {
-		    throw new IOException("no record");
+		// "DELETE FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id AND no_o_id = :no_o_id"
+		var ps2 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(noOid));
+		var future2 = transaction.executeStatement(prepared2, ps2);
+		var result2 = future2.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result2.getResultCase())) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
 		}
-		resultSet3.nextColumn();
-		cId = resultSet3.getInt8();
-		if (resultSet3.nextRecord()) {
-		    throw new IOException("extra record");
+		// "SELECT o_c_id FROM ORDERS WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
+		var ps3 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(noOid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
+		var future3 = transaction.executeQuery(prepared3, ps3);
+		try {
+		    var resultSet3 = future3.get();
+		    if (!resultSet3.nextRecord()) {
+			profile.retryOnStatement.delivery++;
+			rollback(transaction);
+			break;
+		    }
+		    resultSet3.nextColumn();
+		    cId = resultSet3.getInt8();
+		    if (resultSet3.nextRecord()) {
+			profile.retryOnStatement.delivery++;
+			rollback(transaction);
+			break;
+		    }
+		    resultSet3.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
 		}
-		resultSet3.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
-	    }
-
-	    // "UPDATE ORDERS SET o_carrier_id = :o_carrier_id WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
-	    var ps4 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setInt8Value(paramsOcarrierId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(noOid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
-	    var future4 = transaction.executeStatement(prepared4, ps4);
-	    var result4 = future4.get();
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
-		throw new IOException("error in statement execution");
-	    }
-
-	    // "UPDATE ORDER_LINE SET ol_delivery_d = :ol_delivery_d WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
-	    var ps5 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_delivery_d").setCharacterValue(paramsOlDeliveryD))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(noOid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
-	    var future5 = transaction.executeStatement(prepared5, ps5);
-	    var result5 = future5.get();
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
-		throw new IOException("error in statement execution");
-	    }
-
-	    // "SELECT o_c_id FROM ORDERS WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
-	    var ps6 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(noOid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
-	    var future6 = transaction.executeQuery(prepared6, ps6);
-	    try {
-		var resultSet6 = future6.get();
-		if (!resultSet6.nextRecord()) {
-		    throw new IOException("no record");
+		// "UPDATE ORDERS SET o_carrier_id = :o_carrier_id WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
+		var ps4 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setInt8Value(paramsOcarrierId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(noOid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
+		var future4 = transaction.executeStatement(prepared4, ps4);
+		var result4 = future4.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
 		}
-		resultSet6.nextColumn();
-		olTotal = resultSet6.getFloat8();
-		if (resultSet6.nextRecord()) {
-		    throw new IOException("extra record");
+		// "UPDATE ORDER_LINE SET ol_delivery_d = :ol_delivery_d WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
+		var ps5 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_delivery_d").setCharacterValue(paramsOlDeliveryD))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(noOid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
+		var future5 = transaction.executeStatement(prepared5, ps5);
+		var result5 = future5.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
 		}
-		resultSet6.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
+		// "SELECT o_c_id FROM ORDERS WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
+		var ps6 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(noOid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
+		var future6 = transaction.executeQuery(prepared6, ps6);
+		try {
+		    var resultSet6 = future6.get();
+		    if (!resultSet6.nextRecord()) {
+			profile.retryOnStatement.delivery++;
+			rollback(transaction);
+			break;
+		    }
+		    resultSet6.nextColumn();
+		    olTotal = resultSet6.getFloat8();
+		    if (resultSet6.nextRecord()) {
+			profile.retryOnStatement.delivery++;
+			rollback(transaction);
+			break;
+		    }
+		    resultSet6.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
+		}
+		// "UPDATE CUSTOMER SET c_balance = c_balance + :ol_total WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
+		var ps7 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_total").setFloat8Value(olTotal))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(dId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
+		var future7 = transaction.executeStatement(prepared7, ps7);
+		var result7 = future7.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result7.getResultCase())) {
+		    profile.retryOnStatement.delivery++;
+		    rollback(transaction);
+		    break;
+		}
 	    }
-
-	    // "UPDATE CUSTOMER SET c_balance = c_balance + :ol_total WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
-	    var ps7 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_total").setFloat8Value(olTotal))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(dId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
-	    var future7 = transaction.executeStatement(prepared7, ps7);
-	    var result7 = future7.get();
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result7.getResultCase())) {
-		throw new IOException("error in statement execution");
+	    if (dId > Scale.DISTRICTS) {
+		var commitResponse = transaction.commit().get();
+		if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		    profile.completion.delivery++;
+		    return;
+		}
+		profile.retryOnCommit.delivery++;
 	    }
 	}
-	var commitResponse = transaction.commit().get();
-	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-	    profile.completion.delivery++;
-	    return true;
-	}
-	profile.retryOnCommit.delivery++;
-	return false;
     }
 }

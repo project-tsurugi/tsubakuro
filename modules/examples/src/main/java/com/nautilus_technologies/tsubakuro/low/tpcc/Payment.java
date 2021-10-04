@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
@@ -179,24 +180,36 @@ public class Payment {
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
-    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	profile.invocation.payment++;
-	//  transaction logic
-	firstHalf(transaction);
-	if (cId != 0) {
-	    secondHalf(transaction);
+    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+	    throw new IOException("error in rollback");
 	}
-
-	var commitResponse = transaction.commit().get();
-	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-	    profile.completion.payment++;
-	    return true;
-	}
-	profile.retryOnCommit.payment++;
-	return false;
     }
 
-    void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+	while (!stop.get()) {
+	    var transaction = session.createTransaction().get();
+	    profile.invocation.payment++;
+	    //  transaction logic
+	    if (!firstHalf(transaction)) {
+		continue;
+	    }
+	    if (cId != 0) {
+		if (!secondHalf(transaction)) {
+		    continue;
+		}
+	    }
+
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.payment++;
+		return;
+	    }
+	    profile.retryOnCommit.payment++;
+	}
+    }
+
+    boolean firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	// UPDATE WAREHOUSE SET w_ytd = w_ytd + :h_amount WHERE w_id = :w_id
 	var ps1 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("h_amount").setFloat8Value(paramsHamount))
@@ -204,7 +217,9 @@ public class Payment {
 	var future1 = transaction.executeStatement(prepared1, ps1);
 	var result1 = future1.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result1.getResultCase())) {
-	    throw new IOException("error in statement execution");
+	    profile.retryOnStatement.payment++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// SELECT w_street_1, w_street_2, w_city, w_state, w_zip, w_name FROM WAREHOUSE WHERE w_id = :w_id
@@ -214,7 +229,9 @@ public class Payment {
 	try {
 	    var resultSet2 = future2.get();
 	    if (!resultSet2.nextRecord()) {
-		throw new IOException("no record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet2.nextColumn();
 	    wName = resultSet2.getCharacter();
@@ -229,11 +246,15 @@ public class Payment {
 	    resultSet2.nextColumn();
 	    wZip = resultSet2.getCharacter();
 	    if (resultSet2.nextRecord()) {
-		throw new IOException("extra record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet2.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    profile.retryOnStatement.payment++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// UPDATE DISTRICT SET d_ytd = d_ytd + :h_amount WHERE d_w_id = :d_w_id AND d_id = :d_id";
@@ -244,7 +265,9 @@ public class Payment {
 	var future3 = transaction.executeStatement(prepared3, ps3);
 	var result3 = future3.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
-	    throw new IOException("error in statement execution");
+	    profile.retryOnStatement.payment++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// SELECT d_street_1, d_street_2, d_city, d_state, d_zip, d_name FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
@@ -255,7 +278,9 @@ public class Payment {
 	try {
 	    var resultSet4 = future4.get();
 	    if (!resultSet4.nextRecord()) {
-		throw new IOException("no record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet4.nextColumn();
 	    dStreet1 = resultSet4.getCharacter();
@@ -270,11 +295,15 @@ public class Payment {
 	    resultSet4.nextColumn();
 	    dName = resultSet4.getCharacter();
 	    if (resultSet4.nextRecord()) {
-		throw new IOException("extra record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet4.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    profile.retryOnStatement.payment++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	if (!paramsByName) {
@@ -282,9 +311,10 @@ public class Payment {
 	} else {
 	    cId = Customer.chooseCustomer(transaction, prepared5, prepared6, paramsWid, paramsDid, paramsClast);
 	}
+	return true;
     }
 
-    void secondHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    boolean secondHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	// SELECT c_first, c_middle, c_last, c_street_1, c_street_2, c_city, c_state, c_zip, c_phone, c_credit, c_credit_lim, c_discount, c_balance, c_since FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	var ps7 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
@@ -294,7 +324,9 @@ public class Payment {
 	try {
 	    var resultSet7 = future7.get();
 	    if (!resultSet7.nextRecord()) {
-		throw new IOException("no record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet7.nextColumn();
 	    cFirst = resultSet7.getCharacter();  // c_first(0)
@@ -325,11 +357,15 @@ public class Payment {
 	    resultSet7.nextColumn();
 	    cSince = resultSet7.getCharacter();  // c_since(13)
 	    if (resultSet7.nextRecord()) {
-		throw new IOException("extra record");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet7.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    profile.retryOnStatement.payment++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	cBalance += paramsHamount;
@@ -344,16 +380,22 @@ public class Payment {
 	    try {
 		var resultSet8 = future8.get();
 		if (!resultSet8.nextRecord()) {
-		    throw new IOException("no record");
+		    profile.retryOnStatement.payment++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet8.nextColumn();
 		cData = resultSet8.getCharacter();
 		if (resultSet8.nextRecord()) {
-		    throw new IOException("extra record");
+		    profile.retryOnStatement.payment++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet8.close();
 	    } catch (ExecutionException e) {
-		throw new IOException(e);
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 
 	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;
@@ -374,7 +416,9 @@ public class Payment {
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
-		throw new IOException("error in statement execution");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	} else {
 	    // UPDATE CUSTOMER SET c_balance = :c_balance WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
@@ -386,8 +430,11 @@ public class Payment {
 	    var future10 = transaction.executeStatement(prepared10, ps10);
 	    var result10 = future10.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result10.getResultCase())) {
-		throw new IOException("error in statement execution");
+                profile.retryOnStatement.payment++;
+                rollback(transaction);
+                return false;
 	    }
 	}
+	return true;
     }
 }

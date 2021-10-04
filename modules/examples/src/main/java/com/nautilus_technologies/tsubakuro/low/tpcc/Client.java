@@ -48,11 +48,6 @@ public class  Client extends Thread {
 	stockLevel.prepare();
     }
 
-    Transaction createTransaction() throws IOException, InterruptedException, ExecutionException {
-	var transaction = session.createTransaction().get();
-	return transaction;
-    }
-
     public void run() {
 	int pendingDelivery = 0;
 	int wId;
@@ -65,122 +60,38 @@ public class  Client extends Thread {
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
-			while (!stop.get()) {
-			    var transaction = createTransaction();
-			    try {
-				if (delivery.transaction(transaction)) {
-				    doingDelivery[wId - 1].set(false);
-				    pendingDelivery--;
-				    if (pendingDelivery > 0) {
-					delivery.setParams();
-				    }
-				    break;  // next transaction
-				} else {
-				    doingDelivery[wId - 1].set(false);  // commit fail
-				}
-			    } catch (IOException e) {
-				doingDelivery[wId - 1].set(false);
-				profile.retryOnStatement.delivery++;
-				if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				    e.printStackTrace();
-				    throw new IOException("error in rollback");
-				}
-			    }
+			delivery.transaction(stop);
+			doingDelivery[wId - 1].set(false);
+			pendingDelivery--;
+			if (pendingDelivery > 0) {
+			    delivery.setParams();
 			}
-			continue;  // next transaction
+			continue;
 		    }
 		}
 
 		var transactionType = randomGenerator.uniformWithin(1, 100);
 		if (transactionType <= Percent.KXCT_NEWORDER_PERCENT) {
 		    newOrder.setParams();
-		    while (!stop.get()) {
-			var transaction = createTransaction();
-			try {
-			    if (newOrder.transaction(transaction)) {
-				break;
-			    }
-			} catch (IOException e) {
-			    profile.retryOnStatement.newOrder++;
-			    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				e.printStackTrace();
-				throw new IOException("error in rollback");
-			    }
-			}
-		    }
+		    newOrder.transaction(stop);
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
 		    payment.setParams();
-		    while (!stop.get()) {
-			var transaction = createTransaction();
-			try {
-			    if (payment.transaction(transaction)) {
-				break;
-			    }
-			} catch (IOException e) {
-			    profile.retryOnStatement.payment++;
-			    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				e.printStackTrace();
-				throw new IOException("error in rollback");
-			    }
-			}
-		    }
+		    payment.transaction(stop);
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
 		    orderStatus.setParams();
-		    while (!stop.get()) {
-			var transaction = createTransaction();
-			try {
-			    if (orderStatus.transaction(transaction)) {
-				break;
-			    }
-			} catch (IOException e) {
-			    profile.retryOnStatement.orderStatus++;
-			    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				e.printStackTrace();
-				throw new IOException("error in rollback");
-			    }
-			}
-		    }
+		    orderStatus.transaction(stop);
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    delivery.setParams();
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
-			while (!stop.get()) {
-			    var transaction = createTransaction();
-			    try {
-				if (delivery.transaction(transaction)) {
-				    doingDelivery[wId - 1].set(false);
-				    break;
-				} else {
-				    doingDelivery[wId - 1].set(false);
-				}
-			    } catch (IOException e) {
-				doingDelivery[wId - 1].set(false);
-				profile.retryOnStatement.delivery++;
-				if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				    e.printStackTrace();
-				    throw new IOException("error in rollback");
-				}
-			    }
-			}
+			delivery.transaction(stop);
+			doingDelivery[wId - 1].set(false);
 		    } else {
 			pendingDelivery++;
 		    }
 		} else {
 		    stockLevel.setParams();
-		    while (!stop.get()) {
-			var transaction = createTransaction();
-			try {
-			    if (stockLevel.transaction(transaction)) {
-				break;
-			    }
-			} catch (IOException e) {
-			    profile.retryOnStatement.stockLevel++;
-			    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-				e.printStackTrace();
-				throw new IOException("error in rollback");
-			    }
-			}
-		    }
+		    stockLevel.transaction(stop);
 		}
 	    }
 	    profile.elapsed = System.currentTimeMillis() - start;

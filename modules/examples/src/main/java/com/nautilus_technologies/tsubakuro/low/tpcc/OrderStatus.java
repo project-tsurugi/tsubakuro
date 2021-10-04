@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
@@ -119,123 +120,149 @@ public class OrderStatus {
 	}
     }
 
-    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	profile.invocation.orderStatus++;
-	if (!paramsByName) {
-	    cId = paramsCid;
-	} else {
-	    cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
+    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+	    throw new IOException("error in rollback");
 	}
+    }
 
-	if (cId != 0) {
-	    // "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
-	    var ps3 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
-	    var future3 = transaction.executeQuery(prepared3, ps3);
-	    try {
-		var resultSet3 = future3.get();
-		if (!resultSet3.nextRecord()) {
-		    throw new IOException("no record");
-		}
-		resultSet3.nextColumn();
-		cBalance = resultSet3.getFloat8();
-		resultSet3.nextColumn();
-		cFirst = resultSet3.getCharacter();
-		resultSet3.nextColumn();
-		cMiddle = resultSet3.getCharacter();
-		resultSet3.nextColumn();
-		cLast = resultSet3.getCharacter();
-		if (resultSet3.nextRecord()) {
-		    throw new IOException("extra record");
-		}
-		resultSet3.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
+    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+	while (!stop.get()) {
+	    var transaction = session.createTransaction().get();
+	    profile.invocation.orderStatus++;
+	    if (!paramsByName) {
+		cId = paramsCid;
+	    } else {
+		cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
 	    }
 
-	    // "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
-	    var ps4 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
-	    var future4 = transaction.executeQuery(prepared4, ps4);
-	    try {
-		var resultSet4 = future4.get();
-		if (!resultSet4.nextRecord()) {
-		    throw new IOException("no record");
-		}
-		resultSet4.nextColumn();
-		oId = resultSet4.getInt8();
-		resultSet4.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
-	    }
-
-	    // "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
-	    var ps5 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
-	    var future5 = transaction.executeQuery(prepared5, ps5);
-	    try {
-		var resultSet5 = future5.get();
-		if (!resultSet5.nextRecord()) {
-		    throw new IOException("no record");
-		}
-		resultSet5.nextColumn();
-		if (!resultSet5.isNull()) {
-		    oCarrierId = resultSet5.getInt8();
-		}
-		resultSet5.nextColumn();
-		oEntryD = resultSet5.getCharacter();
-		resultSet5.nextColumn();
-		oOlCnt = resultSet5.getInt8();
-		if (resultSet5.nextRecord()) {
-		    throw new IOException("extra record");
-		}
-		resultSet5.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
-	    }
-
-	    // "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
-	    var ps6 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
-	    var future6 = transaction.executeQuery(prepared6, ps6);
-	    try {
-		var resultSet6 = future6.get();
-		int i = 0;
-		while (resultSet6.nextRecord()) {
-		    resultSet6.nextColumn();
-		    olIid[i] = resultSet6.getInt8();
-		    resultSet6.nextColumn();
-		    olSupplyWid[i] = resultSet6.getInt8();
-		    resultSet6.nextColumn();
-		    olQuantity[i] = resultSet6.getInt8();
-		    resultSet6.nextColumn();
-		    olAmount[i] = resultSet6.getFloat8();
-		    resultSet6.nextColumn();
-		    if (!resultSet6.isNull()) {
-			olDeliveryD[i] = resultSet6.getCharacter();
+	    if (cId != 0) {
+		// "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
+		var ps3 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
+		var future3 = transaction.executeQuery(prepared3, ps3);
+		try {
+		    var resultSet3 = future3.get();
+		    if (!resultSet3.nextRecord()) {
+			profile.retryOnStatement.orderStatus++;
+			rollback(transaction);
+			continue;
 		    }
-		    i++;
+		    resultSet3.nextColumn();
+		    cBalance = resultSet3.getFloat8();
+		    resultSet3.nextColumn();
+		    cFirst = resultSet3.getCharacter();
+		    resultSet3.nextColumn();
+		    cMiddle = resultSet3.getCharacter();
+		    resultSet3.nextColumn();
+		    cLast = resultSet3.getCharacter();
+		    if (resultSet3.nextRecord()) {
+			profile.retryOnStatement.orderStatus++;
+			rollback(transaction);
+			continue;
+		    }
+		    resultSet3.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.orderStatus++;
+		    rollback(transaction);
+		    continue;
 		}
-		resultSet6.close();
-	    } catch (ExecutionException e) {
-		throw new IOException(e);
-	    }
-	}
 
-	var commitResponse = transaction.commit().get();
-	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-	    profile.completion.orderStatus++;
-	    return true;
+		// "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
+		var ps4 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
+		var future4 = transaction.executeQuery(prepared4, ps4);
+		try {
+		    var resultSet4 = future4.get();
+		    if (!resultSet4.nextRecord()) {
+			profile.retryOnStatement.orderStatus++;
+			rollback(transaction);
+			continue;
+		    }
+		    resultSet4.nextColumn();
+		    oId = resultSet4.getInt8();
+		    resultSet4.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.orderStatus++;
+		    rollback(transaction);
+		    continue;
+		}
+
+		// "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
+		var ps5 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
+		var future5 = transaction.executeQuery(prepared5, ps5);
+		try {
+		    var resultSet5 = future5.get();
+		    if (!resultSet5.nextRecord()) {
+			profile.retryOnStatement.orderStatus++;
+			rollback(transaction);
+			continue;
+		    }
+		    resultSet5.nextColumn();
+		    if (!resultSet5.isNull()) {
+			oCarrierId = resultSet5.getInt8();
+		    }
+		    resultSet5.nextColumn();
+		    oEntryD = resultSet5.getCharacter();
+		    resultSet5.nextColumn();
+		    oOlCnt = resultSet5.getInt8();
+		    if (resultSet5.nextRecord()) {
+			profile.retryOnStatement.orderStatus++;
+			rollback(transaction);
+			continue;
+		    }
+		    resultSet5.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.orderStatus++;
+		    rollback(transaction);
+		    continue;
+		}
+
+		// "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
+		var ps6 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
+		var future6 = transaction.executeQuery(prepared6, ps6);
+		try {
+		    var resultSet6 = future6.get();
+		    int i = 0;
+		    while (resultSet6.nextRecord()) {
+			resultSet6.nextColumn();
+			olIid[i] = resultSet6.getInt8();
+			resultSet6.nextColumn();
+			olSupplyWid[i] = resultSet6.getInt8();
+			resultSet6.nextColumn();
+			olQuantity[i] = resultSet6.getInt8();
+			resultSet6.nextColumn();
+			olAmount[i] = resultSet6.getFloat8();
+			resultSet6.nextColumn();
+			if (!resultSet6.isNull()) {
+			    olDeliveryD[i] = resultSet6.getCharacter();
+			}
+			i++;
+		    }
+		    resultSet6.close();
+		} catch (ExecutionException e) {
+		    profile.retryOnStatement.orderStatus++;
+		    rollback(transaction);
+		    continue;
+		}
+	    }
+
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.orderStatus++;
+		return;
+	    }
+	    profile.retryOnCommit.orderStatus++;
 	}
-	profile.retryOnCommit.orderStatus++;
-	return false;
     }
 }

@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Date;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
@@ -182,32 +183,41 @@ public class NewOrder {
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
-    public boolean transaction(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	profile.invocation.newOrder++;
-	total = 0;
-
-	//  transaction logic
-	firstHalf(transaction);
-	secondHalf(transaction);
-
-	if (paramsWillRollback) {
-	    var rollbackResponse = transaction.rollback().get();
-	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(rollbackResponse.getResultCase())) {
-		throw new IOException("error in intentional rollback");
-	    }
-	    profile.newOrderIntentionalRollback++;
-	    return true;
+    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+	    throw new IOException("error in rollback");
 	}
-	var commitResponse = transaction.commit().get();
-	if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-	    profile.completion.newOrder++;
-	    return true;
-	}
-	profile.retryOnCommit.newOrder++;
-	return false;
     }
 
-    void firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+	while (!stop.get()) {
+	    var transaction = session.createTransaction().get();
+	    profile.invocation.newOrder++;
+	    total = 0;
+
+	    //  transaction logic
+	    if (!firstHalf(transaction)) {
+		continue;
+	    }
+	    if (!secondHalf(transaction)) {
+		continue;
+	    }
+
+	    if (paramsWillRollback) {
+		rollback(transaction);
+		profile.newOrderIntentionalRollback++;
+		return;
+	    }
+	    var commitResponse = transaction.commit().get();
+	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		profile.completion.newOrder++;
+		return;
+	    }
+	    profile.retryOnCommit.newOrder++;
+	}
+    }
+
+    boolean firstHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	// SELECT w_tax, c_discount, c_last, c_credit FROM WAREHOUSE, CUSTOMER WHERE w_id = :w_id AND c_w_id = w_id AND c_d_id = :c_d_id AND c_id = :c_id;
 	var ps1 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid))
@@ -217,7 +227,9 @@ public class NewOrder {
 	try {
 	    var resultSet1 = future1.get();
 	    if (!resultSet1.nextRecord()) {
-		throw new IOException("no record");
+		profile.retryOnStatement.newOrder++;
+		rollback(transaction);
+		return false;
 	    }
 	    resultSet1.nextColumn();
 	    wTax = resultSet1.getFloat8();
@@ -228,11 +240,15 @@ public class NewOrder {
 	    resultSet1.nextColumn();
 	    cCredit = resultSet1.getCharacter();
 	    if (resultSet1.nextRecord()) {
-		throw new IOException("extra record");
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet1.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    profile.retryOnStatement.newOrder++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
@@ -243,18 +259,24 @@ public class NewOrder {
 	try {
 	    var resultSet2 = future2.get();
 	    if (!resultSet2.nextRecord()) {
-		throw new IOException("no record");
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet2.nextColumn();
 	    dNextOid = resultSet2.getInt8();
 	    resultSet2.nextColumn();
 	    dTax = resultSet2.getFloat8();
 	    if (resultSet2.nextRecord()) {
-		throw new IOException("extra record");
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet2.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    profile.retryOnStatement.newOrder++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id
@@ -265,7 +287,9 @@ public class NewOrder {
 	var future3 = transaction.executeStatement(prepared3, ps3);
 	var result3 = future3.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
-	    throw new IOException("error in statement execution");
+	    profile.retryOnStatement.newOrder++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	oid = dNextOid;
@@ -282,7 +306,9 @@ public class NewOrder {
 	var future4 = transaction.executeStatement(prepared4, ps4);
 	var result4 = future4.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
-	    throw new IOException("error in statement execution");
+	    profile.retryOnStatement.newOrder++;
+	    rollback(transaction);
+	    return false;
 	}
 
 	// INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
@@ -293,11 +319,14 @@ public class NewOrder {
 	var future5 = transaction.executeStatement(prepared5, ps5);
 	var result5 = future5.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
-	    throw new IOException("error in statement execution");
+	    profile.retryOnStatement.newOrder++;
+	    rollback(transaction);
+	    return false;
 	}
+	return true;
     }
 
-    void secondHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    boolean secondHalf(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	for (int olNumber = 1; olNumber <= paramsOlCnt; olNumber++) {
 	    var olSupplyWid = paramsSupplyWid;
 	    var olIid = paramsItemId[olNumber - 1];
@@ -310,7 +339,9 @@ public class NewOrder {
 	    try {
 		var resultSet6 = future6.get();
 		if (!resultSet6.nextRecord()) {
-		    throw new IOException("no record");
+		    profile.retryOnStatement.newOrder++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet6.nextColumn();
 		iPrice = resultSet6.getFloat8();
@@ -319,11 +350,15 @@ public class NewOrder {
 		resultSet6.nextColumn();
 		iData = resultSet6.getCharacter();
 		if (resultSet6.nextRecord()) {
-		    throw new IOException("extra record");
+		    profile.retryOnStatement.newOrder++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet6.close();
 	    } catch (ExecutionException e) {
-		throw new IOException(e);
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 
 	    //	SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
@@ -334,7 +369,9 @@ public class NewOrder {
 	    try {
 		var resultSet7 = future7.get();
 		if (!resultSet7.nextRecord()) {
-		    throw new IOException("no record");
+		    profile.retryOnStatement.newOrder++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet7.nextColumn();
 		sQuantity = resultSet7.getInt8();
@@ -345,11 +382,15 @@ public class NewOrder {
 		    sDistData[i] = resultSet7.getCharacter();
 		}
 		if (resultSet7.nextRecord()) {
-		    throw new IOException("extra record");
+		    profile.retryOnStatement.newOrder++;
+		    rollback(transaction);
+		    return false;
 		}
 		resultSet7.close();
 	    } catch (ExecutionException e) {
-		throw new IOException(e);
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 
 	    String olDistInfo = sDistData[(int) paramsDid - 1].substring(0, 24);
@@ -375,7 +416,9 @@ public class NewOrder {
 	    var future8 = transaction.executeStatement(prepared8, ps8);
 	    var result8 = future8.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
-		throw new IOException("error in statement execution");
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 
 	    double olAmount = olQuantity * iPrice * (1 + wTax + dTax) * (1 - cDiscount);
@@ -396,8 +439,11 @@ public class NewOrder {
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
-		throw new IOException("error in statement execution");
+                profile.retryOnStatement.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 	}
+	return true;
     }
 }
