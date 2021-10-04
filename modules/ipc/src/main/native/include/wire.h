@@ -619,7 +619,14 @@ public:
             boost::interprocess::scoped_lock lock(m_record_);
             wait_for_record_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            c_record_.wait(lock, [this](){ return is_eor(); });
+            c_record_.wait(lock,
+                           [this](){
+                               bool rv = is_eor();
+                               for (auto&& wire: unidirectional_simple_wires_) {
+                                   rv |= wire.has_record();
+                               }
+                               return rv;
+                           });
             wait_for_record_ = false;
         } while(!is_eor());
 
@@ -665,6 +672,9 @@ private:
         std::abort();  // FIXME
     }
 
+    /**
+     * @brief notify the arrival of a record
+     */
     void notify_record_arrival() {
         if (wait_for_record_) {
             boost::interprocess::scoped_lock lock(m_record_);
