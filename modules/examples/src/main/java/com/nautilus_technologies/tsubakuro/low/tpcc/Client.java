@@ -7,8 +7,6 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 public class  Client extends Thread {
     CyclicBarrier barrier;

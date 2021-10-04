@@ -29,16 +29,16 @@ public final class Customer {
 	try {
 	    var resultSet1 = future1.get();
 	    if (!resultSet1.nextRecord()) {
-		throw new IOException("no record");
+		return -1;
 	    }
 	    resultSet1.nextColumn();
 	    nameCnt = resultSet1.getInt8();
 	    if (resultSet1.nextRecord()) {
-		throw new IOException("extra record");
+		return -1;
 	    }
 	    resultSet1.close();
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    return -1;
 	}
 
 	if (nameCnt == 0) {
@@ -64,7 +64,7 @@ public final class Customer {
 	    resultSet2.close();
 	    return rv;
 	} catch (ExecutionException e) {
-	    throw new IOException(e);
+	    return -1;
 	}
     }
 }

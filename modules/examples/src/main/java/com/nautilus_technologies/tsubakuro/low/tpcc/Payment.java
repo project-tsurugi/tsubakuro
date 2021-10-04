@@ -73,7 +73,7 @@ public class Payment {
     String cData;
 
     static String[] nameParts = {"BAR", "OUGHT", "ABLE", "PRI", "PRES",
-				 "ESE", "ANTI", "CALLY", "ATION", "EING"};
+                                 "ESE", "ANTI", "CALLY", "ATION", "EING"};
 
     public Payment(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
 	this.session = session;
@@ -192,18 +192,18 @@ public class Payment {
 	    profile.invocation.payment++;
 	    //  transaction logic
 	    if (!firstHalf(transaction)) {
-		continue;
+                continue;
 	    }
 	    if (cId != 0) {
-		if (!secondHalf(transaction)) {
-		    continue;
-		}
+                if (!secondHalf(transaction)) {
+                    continue;
+                }
 	    }
 
 	    var commitResponse = transaction.commit().get();
 	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-		profile.completion.payment++;
-		return;
+                profile.completion.payment++;
+                return;
 	    }
 	    profile.retryOnCommit.payment++;
 	}
@@ -218,6 +218,7 @@ public class Payment {
 	var result1 = future1.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result1.getResultCase())) {
 	    profile.retryOnStatement.payment++;
+	    profile.warehouseTable.payment++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -230,6 +231,7 @@ public class Payment {
 	    var resultSet2 = future2.get();
 	    if (!resultSet2.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.warehouseTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
@@ -247,12 +249,14 @@ public class Payment {
 	    wZip = resultSet2.getCharacter();
 	    if (resultSet2.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.warehouseTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
 	    resultSet2.close();
 	} catch (ExecutionException e) {
 	    profile.retryOnStatement.payment++;
+	    profile.warehouseTable.payment++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -266,6 +270,7 @@ public class Payment {
 	var result3 = future3.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 	    profile.retryOnStatement.payment++;
+	    profile.districtTable.payment++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -279,6 +284,7 @@ public class Payment {
 	    var resultSet4 = future4.get();
 	    if (!resultSet4.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.districtTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
@@ -296,12 +302,14 @@ public class Payment {
 	    dName = resultSet4.getCharacter();
 	    if (resultSet4.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.districtTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
 	    resultSet4.close();
 	} catch (ExecutionException e) {
 	    profile.retryOnStatement.payment++;
+	    profile.districtTable.payment++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -310,6 +318,12 @@ public class Payment {
 	    cId = paramsCid;
 	} else {
 	    cId = Customer.chooseCustomer(transaction, prepared5, prepared6, paramsWid, paramsDid, paramsClast);
+	    if (cId < 0) {
+                profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
+                rollback(transaction);
+                return false;
+	    }
 	}
 	return true;
     }
@@ -325,6 +339,7 @@ public class Payment {
 	    var resultSet7 = future7.get();
 	    if (!resultSet7.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
@@ -358,12 +373,14 @@ public class Payment {
 	    cSince = resultSet7.getCharacter();  // c_since(13)
 	    if (resultSet7.nextRecord()) {
                 profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
 	    resultSet7.close();
 	} catch (ExecutionException e) {
 	    profile.retryOnStatement.payment++;
+	    profile.customerTable.payment++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -373,27 +390,30 @@ public class Payment {
 	if (cCredit.indexOf("BC") >= 0) {
 	    // SELECT c_data FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future8 = transaction.executeQuery(prepared8, ps8);
 	    try {
-		var resultSet8 = future8.get();
-		if (!resultSet8.nextRecord()) {
-		    profile.retryOnStatement.payment++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet8.nextColumn();
-		cData = resultSet8.getCharacter();
-		if (resultSet8.nextRecord()) {
-		    profile.retryOnStatement.payment++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet8.close();
+                var resultSet8 = future8.get();
+                if (!resultSet8.nextRecord()) {
+                    profile.retryOnStatement.payment++;
+                    profile.customerTable.payment++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet8.nextColumn();
+                cData = resultSet8.getCharacter();
+                if (resultSet8.nextRecord()) {
+                    profile.retryOnStatement.payment++;
+                    profile.customerTable.payment++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet8.close();
 	    } catch (ExecutionException e) {
                 profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
@@ -401,36 +421,38 @@ public class Payment {
 	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;
 	    int length = 500 - cNewData.length();
 	    if (length < cData.length()) {
-		cNewData += cData.substring(0, length);
+                cNewData += cData.substring(0, length);
 	    } else {
-		cNewData += cData;
+                cNewData += cData;
 	    }
 
 	    // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_data").setCharacterValue(cNewData))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
                 profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
 	    }
 	} else {
 	    // UPDATE CUSTOMER SET c_balance = :c_balance WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
 	    var ps10 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_balance").setFloat8Value(cBalance))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future10 = transaction.executeStatement(prepared10, ps10);
 	    var result10 = future10.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result10.getResultCase())) {
                 profile.retryOnStatement.payment++;
+                profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
 	    }

@@ -167,7 +167,7 @@ public class NewOrder {
 	paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.K_NEW_ORDER_REMOTE); //kNewOrderRemotePercent
 	if (paramsRemoteWarehouse && warehouses > 1) {
 	    do {
-		paramsSupplyWid = randomGenerator.uniformWithin(1, warehouses);
+                paramsSupplyWid = randomGenerator.uniformWithin(1, warehouses);
 	    } while (paramsSupplyWid != paramsWid);
 	    paramsAllLocal = 0;
 	} else {
@@ -197,21 +197,21 @@ public class NewOrder {
 
 	    //  transaction logic
 	    if (!firstHalf(transaction)) {
-		continue;
+                continue;
 	    }
 	    if (!secondHalf(transaction)) {
-		continue;
+                continue;
 	    }
 
 	    if (paramsWillRollback) {
-		rollback(transaction);
-		profile.newOrderIntentionalRollback++;
-		return;
+                rollback(transaction);
+                profile.newOrderIntentionalRollback++;
+                return;
 	    }
 	    var commitResponse = transaction.commit().get();
 	    if (ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-		profile.completion.newOrder++;
-		return;
+                profile.completion.newOrder++;
+                return;
 	    }
 	    profile.retryOnCommit.newOrder++;
 	}
@@ -227,9 +227,10 @@ public class NewOrder {
 	try {
 	    var resultSet1 = future1.get();
 	    if (!resultSet1.nextRecord()) {
-		profile.retryOnStatement.newOrder++;
-		rollback(transaction);
-		return false;
+                profile.retryOnStatement.newOrder++;
+                profile.customerTable.newOrder++;
+                rollback(transaction);
+                return false;
 	    }
 	    resultSet1.nextColumn();
 	    wTax = resultSet1.getFloat8();
@@ -241,12 +242,14 @@ public class NewOrder {
 	    cCredit = resultSet1.getCharacter();
 	    if (resultSet1.nextRecord()) {
                 profile.retryOnStatement.newOrder++;
+                profile.customerTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
 	    resultSet1.close();
 	} catch (ExecutionException e) {
 	    profile.retryOnStatement.newOrder++;
+	    profile.customerTable.newOrder++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -260,6 +263,7 @@ public class NewOrder {
 	    var resultSet2 = future2.get();
 	    if (!resultSet2.nextRecord()) {
                 profile.retryOnStatement.newOrder++;
+                profile.districtTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
@@ -269,12 +273,14 @@ public class NewOrder {
 	    dTax = resultSet2.getFloat8();
 	    if (resultSet2.nextRecord()) {
                 profile.retryOnStatement.newOrder++;
+                profile.districtTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
 	    resultSet2.close();
 	} catch (ExecutionException e) {
 	    profile.retryOnStatement.newOrder++;
+	    profile.districtTable.newOrder++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -288,6 +294,7 @@ public class NewOrder {
 	var result3 = future3.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 	    profile.retryOnStatement.newOrder++;
+	    profile.districtTable.newOrder++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -307,6 +314,7 @@ public class NewOrder {
 	var result4 = future4.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
 	    profile.retryOnStatement.newOrder++;
+	    profile.ordersTable.newOrder++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -320,6 +328,7 @@ public class NewOrder {
 	var result5 = future5.get();
 	if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
 	    profile.retryOnStatement.newOrder++;
+	    profile.ordersTable.newOrder++;
 	    rollback(transaction);
 	    return false;
 	}
@@ -334,27 +343,27 @@ public class NewOrder {
 
 	    // SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id
 	    var ps6 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
 	    var future6 = transaction.executeQuery(prepared6, ps6);
 	    try {
-		var resultSet6 = future6.get();
-		if (!resultSet6.nextRecord()) {
-		    profile.retryOnStatement.newOrder++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet6.nextColumn();
-		iPrice = resultSet6.getFloat8();
-		resultSet6.nextColumn();
-		iName = resultSet6.getCharacter();
-		resultSet6.nextColumn();
-		iData = resultSet6.getCharacter();
-		if (resultSet6.nextRecord()) {
-		    profile.retryOnStatement.newOrder++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet6.close();
+                var resultSet6 = future6.get();
+                if (!resultSet6.nextRecord()) {
+                    profile.retryOnStatement.newOrder++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet6.nextColumn();
+                iPrice = resultSet6.getFloat8();
+                resultSet6.nextColumn();
+                iName = resultSet6.getCharacter();
+                resultSet6.nextColumn();
+                iData = resultSet6.getCharacter();
+                if (resultSet6.nextRecord()) {
+                    profile.retryOnStatement.newOrder++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet6.close();
 	    } catch (ExecutionException e) {
                 profile.retryOnStatement.newOrder++;
                 rollback(transaction);
@@ -363,32 +372,35 @@ public class NewOrder {
 
 	    //	SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 	    var ps7 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
 	    var future7 = transaction.executeQuery(prepared7, ps7);
 	    try {
-		var resultSet7 = future7.get();
-		if (!resultSet7.nextRecord()) {
-		    profile.retryOnStatement.newOrder++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet7.nextColumn();
-		sQuantity = resultSet7.getInt8();
-		resultSet7.nextColumn();
-		sData = resultSet7.getCharacter();
-		for (int i = 0; i < 10; i++) {
-		    resultSet7.nextColumn();
-		    sDistData[i] = resultSet7.getCharacter();
-		}
-		if (resultSet7.nextRecord()) {
-		    profile.retryOnStatement.newOrder++;
-		    rollback(transaction);
-		    return false;
-		}
-		resultSet7.close();
+                var resultSet7 = future7.get();
+                if (!resultSet7.nextRecord()) {
+                    profile.retryOnStatement.newOrder++;
+                    profile.stockTable.newOrder++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet7.nextColumn();
+                sQuantity = resultSet7.getInt8();
+                resultSet7.nextColumn();
+                sData = resultSet7.getCharacter();
+                for (int i = 0; i < 10; i++) {
+                    resultSet7.nextColumn();
+                    sDistData[i] = resultSet7.getCharacter();
+                }
+                if (resultSet7.nextRecord()) {
+                    profile.retryOnStatement.newOrder++;
+                    profile.stockTable.newOrder++;
+                    rollback(transaction);
+                    return false;
+                }
+                resultSet7.close();
 	    } catch (ExecutionException e) {
                 profile.retryOnStatement.newOrder++;
+                profile.stockTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
@@ -397,26 +409,27 @@ public class NewOrder {
 	    stock[olNumber - 1] = sQuantity;
 
 	    if (iData.indexOf("original") >= 0 && sData.indexOf("original") >= 0) {
-		bg[olNumber - 1] = "B";
+                bg[olNumber - 1] = "B";
 	    } else {
-		bg[olNumber - 1] = "G";
+                bg[olNumber - 1] = "G";
 	    }
 
 	    if (sQuantity > olQuantity) {
-		sQuantity = sQuantity - olQuantity;
+                sQuantity = sQuantity - olQuantity;
 	    } else {
-		sQuantity = sQuantity - olQuantity + 91;
+                sQuantity = sQuantity - olQuantity + 91;
 	    }
 
 	    // UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 	    var ps8 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
 	    var future8 = transaction.executeStatement(prepared8, ps8);
 	    var result8 = future8.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
                 profile.retryOnStatement.newOrder++;
+                profile.stockTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
@@ -427,19 +440,20 @@ public class NewOrder {
 
 	    // INSERT INTO ORDER_LINE (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)VALUES (:ol_o_id, :ol_d_id, :ol_w_id, :ol_number, :ol_i_id, :ol_supply_w_id, :ol_quantity, :ol_amount, :ol_dist_info
 	    var ps9 = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_number").setInt8Value(olNumber))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_i_id").setInt8Value(olIid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_supply_w_id").setInt8Value(olSupplyWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_quantity").setInt8Value(olQuantity))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_amount").setFloat8Value(olAmount))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_number").setInt8Value(olNumber))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_i_id").setInt8Value(olIid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_supply_w_id").setInt8Value(olSupplyWid))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_quantity").setInt8Value(olQuantity))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_amount").setFloat8Value(olAmount))
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo));
 	    var future9 = transaction.executeStatement(prepared9, ps9);
 	    var result9 = future9.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
                 profile.retryOnStatement.newOrder++;
+                profile.ordersTable.newOrder++;
                 rollback(transaction);
                 return false;
 	    }
