@@ -90,6 +90,6 @@ public class Profile {
 	System.out.printf(" stock level: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
 			  ordersTable.stockLevel, districtTable.stockLevel, warehouseTable.stockLevel, customerTable.stockLevel, stockTable.stockLevel);
 	System.out.println("-----------------------------------------------------------------------------------------------");
-	System.out.printf("#NoTPM %.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) threads));
+	System.out.printf("##NoTPM=%.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) threads));
     }
 }

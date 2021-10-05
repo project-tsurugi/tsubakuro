@@ -79,6 +79,10 @@ public class  Client extends Thread {
 		    orderStatus.setParams();
 		    orderStatus.transaction(stop);
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
+		    if (pendingDelivery > 0) {
+			pendingDelivery++;
+			continue;
+		    }
 		    delivery.setParams();
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
