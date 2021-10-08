@@ -127,10 +127,7 @@ public class Delivery {
                 try {
                     var resultSet1 = future1.get();
                     if (!resultSet1.nextRecord()) {
-                	profile.retryOnStatement.delivery++;
-                	profile.ordersTable.delivery++;
-                	rollback(transaction);
-                	break;
+                        continue;
                     }
                     resultSet1.nextColumn();
                     noOid = resultSet1.getInt8();
@@ -216,10 +213,7 @@ public class Delivery {
                 try {
                     var resultSet6 = future6.get();
                     if (!resultSet6.nextRecord()) {
-                	profile.retryOnStatement.delivery++;
-                	profile.ordersTable.delivery++;
-                	rollback(transaction);
-                	break;
+			continue;
                     }
                     resultSet6.nextColumn();
                     olTotal = resultSet6.getFloat8();
