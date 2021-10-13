@@ -55,10 +55,12 @@ public class  Client extends Thread {
 	    long start = System.currentTimeMillis();
 
 	    while (!stop.get()) {
+		long transactionStart = System.nanoTime();
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
 			delivery.transaction(stop);
+			profile.time.delivery += (System.nanoTime() - transactionStart);
 			doingDelivery[wId - 1].set(false);
 			pendingDelivery--;
 			if (pendingDelivery > 0) {
@@ -72,12 +74,15 @@ public class  Client extends Thread {
 		if (transactionType <= Percent.KXCT_NEWORDER_PERCENT) {
 		    newOrder.setParams();
 		    newOrder.transaction(stop);
+		    profile.time.newOrder += (System.nanoTime() - transactionStart);
 		} else if (transactionType <= Percent.KXCT_PAYMENT_PERCENT) {
 		    payment.setParams();
 		    payment.transaction(stop);
+		    profile.time.payment += (System.nanoTime() - transactionStart);
 		} else if (transactionType <= Percent.KXCT_ORDERSTATUS_PERCENT) {
 		    orderStatus.setParams();
 		    orderStatus.transaction(stop);
+		    profile.time.orderStatus += (System.nanoTime() - transactionStart);
 		} else if (transactionType <= Percent.KXCT_DELIEVERY_PERCENT) {
 		    if (pendingDelivery > 0) {
 			pendingDelivery++;
@@ -87,6 +92,7 @@ public class  Client extends Thread {
 		    wId = (int) delivery.warehouseId();
 		    if (!doingDelivery[wId - 1].getAndSet(true)) {
 			delivery.transaction(stop);
+			profile.time.delivery += (System.nanoTime() - transactionStart);
 			doingDelivery[wId - 1].set(false);
 		    } else {
 			pendingDelivery++;
@@ -94,6 +100,7 @@ public class  Client extends Thread {
 		} else {
 		    stockLevel.setParams();
 		    stockLevel.transaction(stop);
+		    profile.time.stockLevel += (System.nanoTime() - transactionStart);
 		}
 	    }
 	    profile.elapsed = System.currentTimeMillis() - start;

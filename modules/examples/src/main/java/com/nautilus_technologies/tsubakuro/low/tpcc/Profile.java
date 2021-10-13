@@ -26,6 +26,7 @@ public class Profile {
 
     public long warehouses;
     public long index;
+    public Counter time;
     public Counter invocation;
     public Counter completion;
     public Counter retryOnStatement;
@@ -41,6 +42,7 @@ public class Profile {
     public long count;
 
     public Profile() {
+	time = new Counter();
 	invocation = new Counter();
 	completion = new Counter();
 	retryOnStatement = new Counter();
@@ -55,6 +57,7 @@ public class Profile {
 	count = 0;
     }
     public void add(Profile profile) {
+	time.add(profile.time);
 	invocation.add(profile.invocation);
 	completion.add(profile.completion);
 	retryOnStatement.add(profile.retryOnStatement);
@@ -69,25 +72,35 @@ public class Profile {
 	elapsed += profile.elapsed;
 	count++;
     }
+    long ns2us(long t) {
+	return (t + 500) / 1000;
+    }
     public void print(int threads) {
-	System.out.println("duration(mS): " + elapsed);
+	System.out.printf("duration(mS): %d\n", elapsed / count);
+	System.out.println("===============================================================================================");
+	System.out.printf("   new order: %12d / %8d = %6d (us)\n", ns2us(time.newOrder), completion.newOrder + newOrderIntentionalRollback, ns2us(time.newOrder / (completion.newOrder + newOrderIntentionalRollback)));
+	System.out.printf("     payment: %12d / %8d = %6d (us)\n", ns2us(time.payment), completion.payment, ns2us(time.payment / completion.payment));
+	System.out.printf("    delivery: %12d / %8d = %6d (us)\n", ns2us(time.delivery), completion.delivery, ns2us(time.delivery / completion.delivery));
+	System.out.printf("order status: %12d / %8d = %6d (us)\n", ns2us(time.orderStatus), completion.orderStatus, ns2us(time.orderStatus / completion.orderStatus));
+	System.out.printf(" stock level: %12d / %8d = %6d (us)\n", ns2us(time.stockLevel), completion.stockLevel, ns2us(time.stockLevel / completion.stockLevel));
+	System.out.println("===============================================================================================");
 	System.out.println("     tx type: invocation:completion(:intentional rollback) - retry on statement:retry on commit");
 	System.out.println("-----------------------------------------------------------------------------------------------");
-	System.out.printf("   new order: %d:%d:%d - %d:%d\n", invocation.newOrder, completion.newOrder, newOrderIntentionalRollback, retryOnStatement.newOrder, retryOnCommit.newOrder);
-	System.out.printf("     payment: %d:%d - %d:%d\n", invocation.payment, completion.payment, retryOnStatement.payment, retryOnCommit.payment);
-	System.out.printf("    delivery: %d:%d - %d:%d\n", invocation.delivery, completion.delivery, retryOnStatement.delivery, retryOnCommit.delivery);
-	System.out.printf("order status: %d:%d - %d:%d\n", invocation.orderStatus, completion.orderStatus, retryOnStatement.orderStatus, retryOnCommit.orderStatus);
-	System.out.printf(" stock level: %d:%d - %d:%d\n", invocation.stockLevel, completion.stockLevel, retryOnStatement.stockLevel, retryOnCommit.stockLevel);
+	System.out.printf("   new order: %8d:%8d:%8d - %8d:%8d\n", invocation.newOrder, completion.newOrder, newOrderIntentionalRollback, retryOnStatement.newOrder, retryOnCommit.newOrder);
+	System.out.printf("     payment: %8d:%8d          - %8d:%8d\n", invocation.payment, completion.payment, retryOnStatement.payment, retryOnCommit.payment);
+	System.out.printf("    delivery: %8d:%8d          - %8d:%8d\n", invocation.delivery, completion.delivery, retryOnStatement.delivery, retryOnCommit.delivery);
+	System.out.printf("order status: %8d:%8d          - %8d:%8d\n", invocation.orderStatus, completion.orderStatus, retryOnStatement.orderStatus, retryOnCommit.orderStatus);
+	System.out.printf(" stock level: %8d:%8d          - %8d:%8d\n", invocation.stockLevel, completion.stockLevel, retryOnStatement.stockLevel, retryOnCommit.stockLevel);
 	System.out.println("-----------------------------------------------------------------------------------------------");
-	System.out.printf("   new order: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
+	System.out.printf("   new order: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.newOrder, districtTable.newOrder, warehouseTable.newOrder, customerTable.newOrder, stockTable.newOrder);
-	System.out.printf("     payment: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
+	System.out.printf("     payment: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.payment, districtTable.payment, warehouseTable.payment, customerTable.payment, stockTable.payment);
-	System.out.printf("    delivery: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
+	System.out.printf("    delivery: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.delivery, districtTable.delivery, warehouseTable.delivery, customerTable.delivery, stockTable.delivery);
-	System.out.printf("order status: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
+	System.out.printf("order status: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.orderStatus, districtTable.orderStatus, warehouseTable.orderStatus, customerTable.orderStatus, stockTable.orderStatus);
-	System.out.printf(" stock level: ORDERS %d DISTRICT %d WAREHOUSE %d CUSTOMER %d STOCK %d\n",
+	System.out.printf(" stock level: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.stockLevel, districtTable.stockLevel, warehouseTable.stockLevel, customerTable.stockLevel, stockTable.stockLevel);
 	System.out.println("-----------------------------------------------------------------------------------------------");
 	System.out.printf("##NoTPM=%.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) threads));
