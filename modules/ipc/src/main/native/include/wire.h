@@ -295,7 +295,7 @@ public:
     public:
         static constexpr std::size_t max_response_message_length = 256;
 
-        response() : expected_(1), nstored_(0) {};
+        response() : nstored_(0) {};
         ~response() = default;
 
         /**
@@ -309,16 +309,15 @@ public:
         std::pair<char*, std::size_t> recv() {
             nstored_.wait();
             if (read_ == 0) {
-                if (annex_) {
+                if (annex_ != 0) {
                     return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
                 }
                 return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
-            } else {
-                if (second_annex_) {
-                    return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
-                }
-                return std::pair<char*, std::size_t>(static_cast<char*>(buffer_) + length_, second_length_);
             }
+            if (second_annex_ != 0) {
+                return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
+            }
+            return std::pair<char*, std::size_t>(static_cast<char*>(buffer_) + length_, second_length_);  // NOLINT
         }
         void set_inuse() {
             inuse_ = true;
@@ -330,12 +329,12 @@ public:
                 written_ = read_ = 0;
                 expected_ = 1;
                 inuse_ = false;
-                if (annex_) {
+                if (annex_ != 0) {
                     managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(annex_));
                     annex_ = 0;
                     annex_length_ = 0;
                 }
-                if (second_annex_) {
+                if (second_annex_ != 0) {
                     managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(second_annex_));
                     second_annex_ = 0;
                     second_annex_length_ = 0;
@@ -350,15 +349,15 @@ public:
                 }
                 annex_ = allocate_buffer(length);
                 annex_length_ = length;
-                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
+                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
             } else {
                 if (second_length_ <= (max_response_message_length - length_)) {
                     second_length_ = length;
-                    return static_cast<char*>(buffer_) + length_;
+                    return static_cast<char*>(buffer_) + length_;  // NOLINT
                 }
                 second_annex_ = allocate_buffer(length);
                 second_annex_length_ = length;
-                static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
+                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
             }
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
@@ -386,12 +385,12 @@ public:
 
         std::size_t length_{};
         std::size_t second_length_{};
-        unsigned expected_;
+        unsigned expected_{1};
         unsigned written_{};
         unsigned read_{};
         bool inuse_{};
 
-        boost::interprocess::managed_shared_memory* managed_shm_ptr_;
+        boost::interprocess::managed_shared_memory* managed_shm_ptr_{};
         boost::interprocess::interprocess_semaphore nstored_;
         char buffer_[max_response_message_length]{};  //NOLINT
         boost::interprocess::managed_shared_memory::handle_t annex_{};
