@@ -28,8 +28,8 @@ public final class Customer {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future1 = transaction.executeQuery(prepared1, ps1);
 	long nameCnt = 0;
+	var resultSet1 = future1.getLeft().get();
 	try {
-	    var resultSet1 = future1.getLeft().get();
 	    if (!Objects.isNull(resultSet1)) {
 		if (!resultSet1.nextRecord()) {
 		    future1.getRight().get();
@@ -41,13 +41,14 @@ public final class Customer {
 		    future1.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet1.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
 	    }
 	} catch (ExecutionException e) {
 	    return -1;
+	} finally {
+	    resultSet1.close();
 	}
 
 	if (nameCnt == 0) {
@@ -61,8 +62,8 @@ public final class Customer {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
 	var future2 = transaction.executeQuery(prepared2, ps2);
 	long rv = -1;
+	var resultSet2 = future2.getLeft().get();
 	try {
-	    var resultSet2 = future2.getLeft().get();
 	    if (!Objects.isNull(resultSet2)) {
 		if ((nameCnt % 2) > 0) {
 		    nameCnt++;
@@ -75,7 +76,6 @@ public final class Customer {
 		}
 		resultSet2.nextColumn();
 		rv = resultSet2.getInt8();
-		resultSet2.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -83,6 +83,8 @@ public final class Customer {
 	    return rv;
 	} catch (ExecutionException e) {
 	    return -1;
+	} finally {
+	    resultSet2.close();
 	}
     }
 }

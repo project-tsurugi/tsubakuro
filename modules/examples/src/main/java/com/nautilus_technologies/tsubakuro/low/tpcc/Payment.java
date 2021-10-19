@@ -228,8 +228,8 @@ public class Payment {
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid));
 	var future2 = transaction.executeQuery(prepared2, ps2);
+	var resultSet2 = future2.getLeft().get();
 	try {
-	    var resultSet2 = future2.getLeft().get();
 	    if (!Objects.isNull(resultSet2)) {
 		if (!resultSet2.nextRecord()) {
 		    future2.getRight().get();
@@ -251,7 +251,6 @@ public class Payment {
 		    future2.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet2.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -261,6 +260,8 @@ public class Payment {
 	    profile.warehouseTable.payment++;
 	    rollback(transaction);
 	    return false;
+	} finally {
+	    resultSet2.close();
 	}
 
 	// UPDATE DISTRICT SET d_ytd = d_ytd + :h_amount WHERE d_w_id = :d_w_id AND d_id = :d_id";
@@ -282,8 +283,8 @@ public class Payment {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	var future4 = transaction.executeQuery(prepared4, ps4);
+	var resultSet4 = future4.getLeft().get();
 	try {
-	    var resultSet4 = future4.getLeft().get();
 	    if (!Objects.isNull(resultSet4)) {
 		if (!resultSet4.nextRecord()) {
 		    future4.getRight().get();
@@ -305,7 +306,6 @@ public class Payment {
 		    future4.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet4.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -315,6 +315,8 @@ public class Payment {
 	    profile.districtTable.payment++;
 	    rollback(transaction);
 	    return false;
+	} finally {
+	    resultSet4.close();
 	}
 
 	if (!paramsByName) {
@@ -338,8 +340,8 @@ public class Payment {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	var future7 = transaction.executeQuery(prepared7, ps7);
+	var resultSet7 = future7.getLeft().get();
 	try {
-	    var resultSet7 = future7.getLeft().get();
 	    if (!Objects.isNull(resultSet7)) {
 		if (!resultSet7.nextRecord()) {
 		    future7.getRight().get();
@@ -377,7 +379,6 @@ public class Payment {
 		    future7.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet7.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -387,6 +388,8 @@ public class Payment {
 	    profile.customerTable.payment++;
 	    rollback(transaction);
 	    return false;
+	} finally {
+	    resultSet7.close();
 	}
 
 	cBalance += paramsHamount;
@@ -398,8 +401,8 @@ public class Payment {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId));
 	    var future8 = transaction.executeQuery(prepared8, ps8);
+	    var resultSet8 = future8.getLeft().get();
 	    try {
-		var resultSet8 = future8.getLeft().get();
 		if (!Objects.isNull(resultSet8)) {
 		    if (!resultSet8.nextRecord()) {
 			future8.getRight().get();
@@ -411,7 +414,6 @@ public class Payment {
 			future8.getRight().get();
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet8.close();
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future8.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -421,6 +423,8 @@ public class Payment {
                 profile.customerTable.payment++;
                 rollback(transaction);
                 return false;
+	    } finally {
+		resultSet8.close();
 	    }
 
 	    String cNewData = String.format("| %4d %2d %4d %2d %4d $%7.2f ", cId, paramsDid, paramsWid, paramsDid, paramsWid, paramsHamount) + paramsHdate + " " + paramsHdata;

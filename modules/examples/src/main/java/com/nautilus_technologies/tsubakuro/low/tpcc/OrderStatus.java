@@ -143,14 +143,14 @@ public class OrderStatus {
                 }
 	    }
 	    if (cId != 0) {
+		// "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
+		var ps3 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
+		var future3 = transaction.executeQuery(prepared3, ps3);
+		var resultSet3 = future3.getLeft().get();
 		try {
-		    // "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
-		    var ps3 = RequestProtos.ParameterSet.newBuilder()
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid));
-		    var future3 = transaction.executeQuery(prepared3, ps3);
-		    var resultSet3 = future3.getLeft().get();
 		    if (!Objects.isNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
 			    future3.getRight().get();
@@ -168,19 +168,27 @@ public class OrderStatus {
 			    future3.getRight().get();
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet3.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
+                } catch (ExecutionException e) {
+                    profile.retryOnStatement.orderStatus++;
+                    profile.ordersTable.orderStatus++;
+                    rollback(transaction);
+                    continue;
+                } finally {
+		    resultSet3.close();
+                }
 
-		    // "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
-		    var ps4 = RequestProtos.ParameterSet.newBuilder()
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
-		    var future4 = transaction.executeQuery(prepared4, ps4);
-		    var resultSet4 = future4.getLeft().get();
+		// "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
+		var ps4 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId));
+		var future4 = transaction.executeQuery(prepared4, ps4);
+		var resultSet4 = future4.getLeft().get();
+		try {
 		    if (!Objects.isNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
 			    future4.getRight().get();
@@ -188,19 +196,27 @@ public class OrderStatus {
 			}
 			resultSet4.nextColumn();
 			oId = resultSet4.getInt8();
-			resultSet4.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
+                } catch (ExecutionException e) {
+                    profile.retryOnStatement.orderStatus++;
+                    profile.ordersTable.orderStatus++;
+                    rollback(transaction);
+                    continue;
+                } finally {
+		    resultSet4.close();
+                }
 
-		    // "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
-		    var ps5 = RequestProtos.ParameterSet.newBuilder()
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
-		    var future5 = transaction.executeQuery(prepared5, ps5);
-		    var resultSet5 = future5.getLeft().get();
+		// "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
+		var ps5 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId));
+		var future5 = transaction.executeQuery(prepared5, ps5);
+		var resultSet5 = future5.getLeft().get();
+		try {
 		    if (!Objects.isNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
 			    future5.getRight().get();
@@ -218,19 +234,27 @@ public class OrderStatus {
 			    future5.getRight().get();
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet5.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
+                } catch (ExecutionException e) {
+                    profile.retryOnStatement.orderStatus++;
+                    profile.ordersTable.orderStatus++;
+                    rollback(transaction);
+                    continue;
+                } finally {
+		    resultSet5.close();
+                }
 
-		    // "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
-		    var ps6 = RequestProtos.ParameterSet.newBuilder()
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
-			.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
-		    var future6 = transaction.executeQuery(prepared6, ps6);
-		    var resultSet6 = future6.getLeft().get();
+		// "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
+		var ps6 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id").setInt8Value(oId))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
+		var future6 = transaction.executeQuery(prepared6, ps6);
+		var resultSet6 = future6.getLeft().get();
+		try {
 		    if (!Objects.isNull(resultSet6)) {
 			int i = 0;
 			while (resultSet6.nextRecord()) {
@@ -248,7 +272,6 @@ public class OrderStatus {
 			    }
 			    i++;
 			}
-			resultSet6.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -258,6 +281,8 @@ public class OrderStatus {
                     profile.ordersTable.orderStatus++;
                     rollback(transaction);
                     continue;
+                } finally {
+		    resultSet6.close();
                 }
 	    }
 

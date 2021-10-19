@@ -125,8 +125,8 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
                 var future1 = transaction.executeQuery(prepared1, ps1);
+		var resultSet1 = future1.getLeft().get();
                 try {
-		    var resultSet1 = future1.getLeft().get();
 		    if (!Objects.isNull(resultSet1)) {
 			if (resultSet1.nextRecord()) {
 			    future1.getRight().get();
@@ -134,7 +134,6 @@ public class Delivery {
 			}
 			resultSet1.nextColumn();
 			noOid = resultSet1.getInt8();
-			resultSet1.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -144,6 +143,8 @@ public class Delivery {
                     profile.ordersTable.delivery++;
                     rollback(transaction);
                     break;
+                } finally {
+		    resultSet1.close();
                 }
                 var ps2 = RequestProtos.ParameterSet.newBuilder()  // "DELETE FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id AND no_o_id = :no_o_id"
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
@@ -162,8 +163,8 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid));
                 var future3 = transaction.executeQuery(prepared3, ps3);
+		var resultSet3 = future3.getLeft().get();
 		try {
-		    var resultSet3 = future3.getLeft().get();
 		    if (!Objects.isNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
 			    future3.getRight().get();
@@ -175,7 +176,6 @@ public class Delivery {
 			    future3.getRight().get();
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet3.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -185,6 +185,8 @@ public class Delivery {
                     profile.ordersTable.delivery++;
                     rollback(transaction);
                     break;
+                } finally {
+		    resultSet3.close();
                 }
                 var ps4 = RequestProtos.ParameterSet.newBuilder()  // "UPDATE ORDERS SET o_carrier_id = :o_carrier_id WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_carrier_id").setInt8Value(paramsOcarrierId))
@@ -217,8 +219,8 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid));
                 var future6 = transaction.executeQuery(prepared6, ps6);
+		var resultSet6 = future6.getLeft().get();
 		try {
-		    var resultSet6 = future6.getLeft().get();
 		    if (!Objects.isNull(resultSet6)) {
 			if (!resultSet6.nextRecord()) {
 			    future6.getRight().get();
@@ -230,7 +232,6 @@ public class Delivery {
 			    future6.getRight().get();
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet6.close();
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -240,6 +241,8 @@ public class Delivery {
                     profile.ordersTable.delivery++;
                     rollback(transaction);
                     break;
+                } finally {
+		    resultSet6.close();
                 }
                 var ps7 = RequestProtos.ParameterSet.newBuilder()  // "UPDATE CUSTOMER SET c_balance = c_balance + :ol_total WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_total").setFloat8Value(olTotal))

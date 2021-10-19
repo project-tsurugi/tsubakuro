@@ -225,11 +225,10 @@ public class NewOrder {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid));
 	var future1 = transaction.executeQuery(prepared1, ps1);
+	var resultSet1 = future1.getLeft().get();
 	try {
-	    var resultSet1 = future1.getLeft().get();
 	    if (!Objects.isNull(resultSet1)) {
 		if (!resultSet1.nextRecord()) {
-		    future1.getRight().get();
 		    throw new ExecutionException(new IOException("no record"));
 		}
 		resultSet1.nextColumn();
@@ -244,7 +243,6 @@ public class NewOrder {
 		    future1.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet1.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -254,6 +252,8 @@ public class NewOrder {
 	    profile.customerTable.newOrder++;
 	    rollback(transaction);
 	    return false;
+	} finally {
+	    resultSet1.close();
 	}
 
 	// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
@@ -261,8 +261,8 @@ public class NewOrder {
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	var future2 = transaction.executeQuery(prepared2, ps2);
+	var resultSet2 = future2.getLeft().get();
 	try {
-	    var resultSet2 = future2.getLeft().get();
 	    if (!Objects.isNull(resultSet2)) {
 		if (!resultSet2.nextRecord()) {
 		    future2.getRight().get();
@@ -276,7 +276,6 @@ public class NewOrder {
 		    future2.getRight().get();
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
-		resultSet2.close();
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -286,6 +285,8 @@ public class NewOrder {
 	    profile.districtTable.newOrder++;
 	    rollback(transaction);
 	    return false;
+	} finally {
+	    resultSet2.close();
 	}
 
 	// UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id
@@ -348,8 +349,8 @@ public class NewOrder {
 	    var ps6 = RequestProtos.ParameterSet.newBuilder()
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
 	    var future6 = transaction.executeQuery(prepared6, ps6);
+	    var resultSet6 = future6.getLeft().get();
 	    try {
-		var resultSet6 = future6.getLeft().get();
 		if (!Objects.isNull(resultSet6)) {
 		    if (!resultSet6.nextRecord()) {
 			future6.getRight().get();
@@ -365,7 +366,6 @@ public class NewOrder {
 			future6.getRight().get();
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet6.close();
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -374,6 +374,8 @@ public class NewOrder {
                 profile.retryOnStatement.newOrder++;
                 rollback(transaction);
                 return false;
+	    } finally {
+		resultSet6.close();
 	    }
 
 	    //	SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
@@ -381,8 +383,8 @@ public class NewOrder {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
 	    var future7 = transaction.executeQuery(prepared7, ps7);
+	    var resultSet7 = future7.getLeft().get();
 	    try {
-		var resultSet7 = future7.getLeft().get();
 		if (!Objects.isNull(resultSet7)) {
 		    if (!resultSet7.nextRecord()) {
 			future7.getRight().get();
@@ -400,7 +402,6 @@ public class NewOrder {
 			future7.getRight().get();
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet7.close();
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -410,6 +411,8 @@ public class NewOrder {
                 profile.stockTable.newOrder++;
                 rollback(transaction);
                 return false;
+	    } finally {
+		resultSet7.close();
 	    }
 
 	    String olDistInfo = sDistData[(int) paramsDid - 1].substring(0, 24);

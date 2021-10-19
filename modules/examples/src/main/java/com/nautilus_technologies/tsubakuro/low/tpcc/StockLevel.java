@@ -81,8 +81,8 @@ public class StockLevel {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
 	    var future1 = transaction.executeQuery(prepared1, ps1);
+	    var resultSet1 = future1.getLeft().get();
 	    try {
-		var resultSet1 = future1.getLeft().get();
 		if (!Objects.isNull(resultSet1)) {
 		    if (!resultSet1.nextRecord()) {
 			future1.getRight().get();
@@ -94,7 +94,6 @@ public class StockLevel {
 			future1.getRight().get();
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet1.close();
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -104,6 +103,8 @@ public class StockLevel {
                 profile.districtTable.stockLevel++;
                 rollback(transaction);
                 continue;
+	    } finally {
+		resultSet1.close();
 	    }
 
 	    // "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
@@ -115,8 +116,8 @@ public class StockLevel {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(paramsWid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold));
 	    var future2 = transaction.executeQuery(prepared2, ps2);
+	    var resultSet2 = future2.getLeft().get();
 	    try {
-		var resultSet2 = future2.getLeft().get();
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
 			future2.getRight().get();
@@ -128,7 +129,6 @@ public class StockLevel {
 			future2.getRight().get();
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet2.close();
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -138,6 +138,8 @@ public class StockLevel {
                 profile.stockTable.stockLevel++;
                 rollback(transaction);
                 continue;
+	    } finally {
+		resultSet2.close();
 	    }
 
 	    var commitResponse = transaction.commit().get();
