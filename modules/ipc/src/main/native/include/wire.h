@@ -609,6 +609,7 @@ public:
     }
 
     unidirectional_simple_wire* active_wire() {
+        bool has_data;
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
@@ -618,16 +619,16 @@ public:
             boost::interprocess::scoped_lock lock(m_record_);
             wait_for_record_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
+            has_data = false;
             c_record_.wait(lock,
-                           [this](){
-                               bool rv = is_eor();
+                           [this, &has_data](){
                                for (auto&& wire: unidirectional_simple_wires_) {
-                                   rv |= wire.has_record();
+                                   has_data |= wire.has_record();
                                }
-                               return rv;
+                               return has_data || is_eor();
                            });
             wait_for_record_ = false;
-        } while(!is_eor());
+        } while(has_data || !is_eor());
 
         return nullptr;
     }
