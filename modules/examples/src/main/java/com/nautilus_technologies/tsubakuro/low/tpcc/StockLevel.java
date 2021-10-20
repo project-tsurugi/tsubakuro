@@ -104,7 +104,9 @@ public class StockLevel {
                 rollback(transaction);
                 continue;
 	    } finally {
-		resultSet1.close();
+		if (!Objects.isNull(resultSet1)) {
+		    resultSet1.close();
+		}
 	    }
 
 	    // "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
@@ -139,7 +141,9 @@ public class StockLevel {
                 rollback(transaction);
                 continue;
 	    } finally {
-		resultSet2.close();
+		if (!Objects.isNull(resultSet2)) {
+		    resultSet2.close();
+		}
 	    }
 
 	    var commitResponse = transaction.commit().get();

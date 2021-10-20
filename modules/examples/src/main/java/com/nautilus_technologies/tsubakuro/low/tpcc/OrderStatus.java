@@ -178,7 +178,9 @@ public class OrderStatus {
                     rollback(transaction);
                     continue;
                 } finally {
-		    resultSet3.close();
+		    if (!Objects.isNull(resultSet3)) {
+			resultSet3.close();
+		    }
                 }
 
 		// "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
@@ -206,7 +208,9 @@ public class OrderStatus {
                     rollback(transaction);
                     continue;
                 } finally {
-		    resultSet4.close();
+		    if (!Objects.isNull(resultSet4)) {
+			resultSet4.close();
+		    }
                 }
 
 		// "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
@@ -244,7 +248,9 @@ public class OrderStatus {
                     rollback(transaction);
                     continue;
                 } finally {
-		    resultSet5.close();
+		    if (!Objects.isNull(resultSet5)) {
+			resultSet5.close();
+		    }
                 }
 
 		// "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
@@ -282,7 +288,9 @@ public class OrderStatus {
                     rollback(transaction);
                     continue;
                 } finally {
-		    resultSet6.close();
+		    if (!Objects.isNull(resultSet6)) {
+			resultSet6.close();
+		    }
                 }
 	    }
 

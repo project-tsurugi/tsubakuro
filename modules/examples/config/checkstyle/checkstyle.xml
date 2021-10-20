@@ -42,7 +42,7 @@
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
     </module>
     <module name="MethodLength">
-      <property name="max" value="200"/>
+      <property name="max" value="500"/>
       <property name="severity" value="error"/>
     </module>
     <module name="ParameterNumber">
