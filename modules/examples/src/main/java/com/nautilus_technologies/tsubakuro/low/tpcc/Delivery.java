@@ -274,6 +274,7 @@ public class Delivery {
                     return;
                 }
                 profile.retryOnCommit.delivery++;
+		transaction = null;
 		continue;
 	    }
 

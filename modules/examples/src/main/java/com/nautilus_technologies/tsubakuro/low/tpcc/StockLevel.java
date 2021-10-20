@@ -154,6 +154,7 @@ public class StockLevel {
                 return;
 	    }
 	    profile.retryOnCommit.stockLevel++;
+	    transaction = null;
 	}
     }
 }

@@ -458,6 +458,7 @@ public class NewOrder {
 		    return;
 		}
 		profile.retryOnCommit.newOrder++;
+		transaction = null;
 		continue;
 	    }
 

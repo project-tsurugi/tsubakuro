@@ -461,6 +461,7 @@ public class Payment {
                 return;
 	    }
 	    profile.retryOnCommit.payment++;
+	    transaction = null;
 	}
     }
 }

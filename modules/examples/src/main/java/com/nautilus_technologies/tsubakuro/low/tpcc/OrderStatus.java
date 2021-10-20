@@ -302,6 +302,7 @@ public class OrderStatus {
                 return;
 	    }
 	    profile.retryOnCommit.orderStatus++;
+	    transaction = null;
 	}
     }
 }
