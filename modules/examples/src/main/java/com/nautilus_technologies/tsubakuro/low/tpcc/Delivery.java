@@ -18,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class Delivery {
     Session session;
+    Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
 
@@ -109,15 +110,16 @@ public class Delivery {
 	return paramsWid;
     }
 
-    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ExecutionException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
+	transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
 	while (!stop.get()) {
-	    var transaction = session.createTransaction().get();
+	    transaction = session.createTransaction().get();
 	    profile.invocation.delivery++;
 	    long dId;
 	    for (dId = 1; dId <= Scale.DISTRICTS; dId++) {
@@ -277,9 +279,7 @@ public class Delivery {
 
 	    // break in 'for (dId = 1; dId <= Scale.DISTRICTS; dId++) {'
 	    profile.retryOnStatement.delivery++;
-	    rollback(transaction);
+	    rollback();
 	}
     }
 }
-
-

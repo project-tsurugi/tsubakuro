@@ -18,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class StockLevel {
     Session session;
+    Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
 
@@ -65,16 +66,17 @@ public class StockLevel {
 	paramsThreshold = randomGenerator.uniformWithin(10, 20);
     }
 
-    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ExecutionException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
+	transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
 	while (!stop.get()) {
 	    profile.invocation.stockLevel++;
-	    var transaction = session.createTransaction().get();
+	    transaction = session.createTransaction().get();
 
 	    // "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id"
 	    var ps1 = RequestProtos.ParameterSet.newBuilder()
@@ -101,7 +103,7 @@ public class StockLevel {
 	    } catch (ExecutionException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.districtTable.stockLevel++;
-                rollback(transaction);
+                rollback();
                 continue;
 	    } finally {
 		if (!Objects.isNull(resultSet1)) {
@@ -138,7 +140,7 @@ public class StockLevel {
 	    } catch (ExecutionException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.stockTable.stockLevel++;
-                rollback(transaction);
+                rollback();
                 continue;
 	    } finally {
 		if (!Objects.isNull(resultSet2)) {

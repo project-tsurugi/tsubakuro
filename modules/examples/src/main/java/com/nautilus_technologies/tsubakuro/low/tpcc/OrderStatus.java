@@ -18,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class OrderStatus {
     Session session;
+    Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
 
@@ -121,15 +122,16 @@ public class OrderStatus {
 	}
     }
 
-    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ExecutionException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
+	transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
 	while (!stop.get()) {
-	    var transaction = session.createTransaction().get();
+	    transaction = session.createTransaction().get();
 	    profile.invocation.orderStatus++;
 	    if (!paramsByName) {
                 cId = paramsCid;
@@ -138,7 +140,7 @@ public class OrderStatus {
                 if (cId < 0) {
                     profile.retryOnStatement.orderStatus++;
                     profile.customerTable.orderStatus++;
-                    rollback(transaction);
+                    rollback();
                     continue;
                 }
 	    }
@@ -175,7 +177,7 @@ public class OrderStatus {
                 } catch (ExecutionException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
-                    rollback(transaction);
+                    rollback();
                     continue;
                 } finally {
 		    if (!Objects.isNull(resultSet3)) {
@@ -205,7 +207,7 @@ public class OrderStatus {
                 } catch (ExecutionException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
-                    rollback(transaction);
+                    rollback();
                     continue;
                 } finally {
 		    if (!Objects.isNull(resultSet4)) {
@@ -245,7 +247,7 @@ public class OrderStatus {
                 } catch (ExecutionException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
-                    rollback(transaction);
+                    rollback();
                     continue;
                 } finally {
 		    if (!Objects.isNull(resultSet5)) {
@@ -285,7 +287,7 @@ public class OrderStatus {
                 } catch (ExecutionException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
-                    rollback(transaction);
+                    rollback();
                     continue;
                 } finally {
 		    if (!Objects.isNull(resultSet6)) {

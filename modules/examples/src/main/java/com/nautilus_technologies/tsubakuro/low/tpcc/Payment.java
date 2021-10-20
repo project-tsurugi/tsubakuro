@@ -18,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class Payment {
     Session session;
+    Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
 
@@ -181,15 +182,16 @@ public class Payment {
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
-    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ExecutionException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
+	transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
 	while (!stop.get()) {
-	    var transaction = session.createTransaction().get();
+	    transaction = session.createTransaction().get();
 	    profile.invocation.payment++;
 
 	    // UPDATE WAREHOUSE SET w_ytd = w_ytd + :h_amount WHERE w_id = :w_id
@@ -201,7 +203,7 @@ public class Payment {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result1.getResultCase())) {
 		profile.retryOnStatement.payment++;
 		profile.warehouseTable.payment++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    }
 
@@ -239,7 +241,7 @@ public class Payment {
 	    } catch (ExecutionException e) {
 		profile.retryOnStatement.payment++;
 		profile.warehouseTable.payment++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    } finally {
 		if (!Objects.isNull(resultSet2)) {
@@ -257,7 +259,7 @@ public class Payment {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 		profile.retryOnStatement.payment++;
 		profile.districtTable.payment++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    }
 
@@ -296,7 +298,7 @@ public class Payment {
 	    } catch (ExecutionException e) {
 		profile.retryOnStatement.payment++;
 		profile.districtTable.payment++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    } finally {
 		if (!Objects.isNull(resultSet4)) {
@@ -311,7 +313,7 @@ public class Payment {
 		if (cId < 0) {
 		    profile.retryOnStatement.payment++;
 		    profile.customerTable.payment++;
-		    rollback(transaction);
+		    rollback();
 		    continue;
 		}
 	    }
@@ -368,7 +370,7 @@ public class Payment {
 	    } catch (ExecutionException e) {
 		profile.retryOnStatement.payment++;
 		profile.customerTable.payment++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    } finally {
 		if (!Objects.isNull(resultSet7)) {
@@ -405,7 +407,7 @@ public class Payment {
 		} catch (ExecutionException e) {
 		    profile.retryOnStatement.payment++;
 		    profile.customerTable.payment++;
-		    rollback(transaction);
+		    rollback();
 		    continue;
 		} finally {
 		    if (!Objects.isNull(resultSet8)) {
@@ -433,7 +435,7 @@ public class Payment {
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
 		    profile.retryOnStatement.payment++;
 		    profile.customerTable.payment++;
-		    rollback(transaction);
+		    rollback();
 		    continue;
 		}
 	    } else {
@@ -448,7 +450,7 @@ public class Payment {
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result10.getResultCase())) {
 		    profile.retryOnStatement.payment++;
 		    profile.customerTable.payment++;
-		    rollback(transaction);
+		    rollback();
 		    continue;
 		}
 	    }

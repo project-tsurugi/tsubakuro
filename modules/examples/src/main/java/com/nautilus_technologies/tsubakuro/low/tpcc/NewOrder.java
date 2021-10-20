@@ -18,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class NewOrder {
     Session session;
+    Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
 
@@ -184,15 +185,16 @@ public class NewOrder {
 	paramsWillRollback = (randomGenerator.uniformWithin(1, 100) == 1);
     }
 
-    void rollback(Transaction transaction) throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ExecutionException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
+	transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
 	while (!stop.get()) {
-	    var transaction = session.createTransaction().get();
+	    transaction = session.createTransaction().get();
 	    profile.invocation.newOrder++;
 	    total = 0;
 
@@ -227,7 +229,7 @@ public class NewOrder {
 	    } catch (ExecutionException e) {
 		profile.retryOnStatement.newOrder++;
 		profile.customerTable.newOrder++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    } finally {
 		if (!Objects.isNull(resultSet1)) {
@@ -262,7 +264,7 @@ public class NewOrder {
 	    } catch (ExecutionException e) {
 		profile.retryOnStatement.newOrder++;
 		profile.districtTable.newOrder++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    } finally {
 		if (!Objects.isNull(resultSet2)) {
@@ -280,7 +282,7 @@ public class NewOrder {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
 		profile.districtTable.newOrder++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    }
 
@@ -300,7 +302,7 @@ public class NewOrder {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
 		profile.ordersTable.newOrder++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    }
 
@@ -314,7 +316,7 @@ public class NewOrder {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
 		profile.ordersTable.newOrder++;
-		rollback(transaction);
+		rollback();
 		continue;
 	    }
 
@@ -446,7 +448,7 @@ public class NewOrder {
 
 	    if (olNumber > paramsOlCnt) {  // completed 'for (olNumber = 1; olNumber <= paramsOlCnt; olNumber++) {'
 		if (paramsWillRollback) {
-		    rollback(transaction);
+		    rollback();
 		    profile.newOrderIntentionalRollback++;
 		    return;
 		}
@@ -461,7 +463,7 @@ public class NewOrder {
 
 	    // break in 'for (olNumber = 1; olNumber <= paramsOlCnt; olNumber++) {'
 	    profile.retryOnStatement.newOrder++;
-	    rollback(transaction);
+	    rollback();
 	}
     }
 }
