@@ -272,6 +272,7 @@ public class Delivery {
                     return;
                 }
                 profile.retryOnCommit.delivery++;
+		continue;
 	    }
 
 	    // break in 'for (dId = 1; dId <= Scale.DISTRICTS; dId++) {'

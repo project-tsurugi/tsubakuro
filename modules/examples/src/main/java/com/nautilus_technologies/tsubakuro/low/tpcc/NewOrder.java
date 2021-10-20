@@ -456,6 +456,7 @@ public class NewOrder {
 		    return;
 		}
 		profile.retryOnCommit.newOrder++;
+		continue;
 	    }
 
 	    // break in 'for (olNumber = 1; olNumber <= paramsOlCnt; olNumber++) {'
