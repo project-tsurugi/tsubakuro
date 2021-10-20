@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -31,6 +32,9 @@ public class FutureResultSetImpl implements Future<ResultSet> {
     public ResultSetImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.ExecuteQuery response = future.get();
+	    if (Objects.isNull(response)) {
+		return null;
+	    }
 	    return new ResultSetImpl(sessionLinkImpl.createResultSetWire(response.getName()), response.getRecordMeta());
 	} catch (IOException e) {
             throw new ExecutionException(e);
