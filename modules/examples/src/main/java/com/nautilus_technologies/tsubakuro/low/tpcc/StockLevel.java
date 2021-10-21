@@ -87,13 +87,17 @@ public class StockLevel {
 	    try {
 		if (!Objects.isNull(resultSet1)) {
 		    if (!resultSet1.nextRecord()) {
-			future1.getRight().get();
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			    throw new ExecutionException(new IOException("SQL error"));
+			}
 			throw new ExecutionException(new IOException("no record"));
 		    }
 		    resultSet1.nextColumn();
 		    oId = resultSet1.getInt8();
 		    if (resultSet1.nextRecord()) {
-			future1.getRight().get();
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			    throw new ExecutionException(new IOException("SQL error"));
+			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
 		}
@@ -124,13 +128,17 @@ public class StockLevel {
 	    try {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
-			future2.getRight().get();
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			    throw new ExecutionException(new IOException("SQL error"));
+			}
 			throw new ExecutionException(new IOException("no record"));
 		    }
 		    resultSet2.nextColumn();
 		    queryResult = resultSet2.getInt8();
 		    if (resultSet2.nextRecord()) {
-			future2.getRight().get();
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			    throw new ExecutionException(new IOException("SQL error"));
+			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
 		}

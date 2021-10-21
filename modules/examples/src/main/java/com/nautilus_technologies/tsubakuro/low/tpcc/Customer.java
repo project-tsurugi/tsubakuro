@@ -32,13 +32,17 @@ public final class Customer {
 	try {
 	    if (!Objects.isNull(resultSet1)) {
 		if (!resultSet1.nextRecord()) {
-		    future1.getRight().get();
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			throw new ExecutionException(new IOException("SQL error"));
+		    }
 		    throw new ExecutionException(new IOException("no record"));
 		}
 		resultSet1.nextColumn();
 		nameCnt = resultSet1.getInt8();
 		if (resultSet1.nextRecord()) {
-		    future1.getRight().get();
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			throw new ExecutionException(new IOException("SQL error"));
+		    }
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
 	    }
@@ -70,7 +74,9 @@ public final class Customer {
 		}
 		for (long i = 0; i < (nameCnt / 2); i++) {
 		    if (!resultSet2.nextRecord()) {
-			future2.getRight().get();
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			    throw new ExecutionException(new IOException("SQL error"));
+			}
 			throw new ExecutionException(new IOException("no record"));
 		    }
 		}

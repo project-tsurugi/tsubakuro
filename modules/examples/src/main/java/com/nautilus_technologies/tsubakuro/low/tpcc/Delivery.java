@@ -132,9 +132,11 @@ public class Delivery {
 		var resultSet1 = future1.getLeft().get();
                 try {
 		    if (!Objects.isNull(resultSet1)) {
-			if (resultSet1.nextRecord()) {
-			    future1.getRight().get();
-			    continue;
+			if (!resultSet1.nextRecord()) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
+			    continue;  // noOid is exhausted, it's OK and continue this transaction
 			}
 			resultSet1.nextColumn();
 			noOid = resultSet1.getInt8();
@@ -173,13 +175,17 @@ public class Delivery {
 		try {
 		    if (!Objects.isNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
-			    future3.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("no record"));
 			}
 			resultSet3.nextColumn();
 			cId = resultSet3.getInt8();
 			if (resultSet3.nextRecord()) {
-			    future3.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
@@ -231,13 +237,17 @@ public class Delivery {
 		try {
 		    if (!Objects.isNull(resultSet6)) {
 			if (!resultSet6.nextRecord()) {
-			    future6.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    continue;
 			}
 			resultSet6.nextColumn();
 			olTotal = resultSet6.getFloat8();
 			if (resultSet6.nextRecord()) {
-			    future6.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }

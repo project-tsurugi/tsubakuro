@@ -155,7 +155,9 @@ public class OrderStatus {
 		try {
 		    if (!Objects.isNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
-			    future3.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("no record"));
 			}
 			resultSet3.nextColumn();
@@ -167,7 +169,9 @@ public class OrderStatus {
 			resultSet3.nextColumn();
 			cLast = resultSet3.getCharacter();
 			if (resultSet3.nextRecord()) {
-			    future3.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
@@ -195,7 +199,9 @@ public class OrderStatus {
 		try {
 		    if (!Objects.isNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
-			    future4.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("no record"));
 			}
 			resultSet4.nextColumn();
@@ -225,7 +231,9 @@ public class OrderStatus {
 		try {
 		    if (!Objects.isNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
-			    future5.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("no record"));
 			}
 			resultSet5.nextColumn();
@@ -237,7 +245,9 @@ public class OrderStatus {
 			resultSet5.nextColumn();
 			oOlCnt = resultSet5.getInt8();
 			if (resultSet5.nextRecord()) {
-			    future5.getRight().get();
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
