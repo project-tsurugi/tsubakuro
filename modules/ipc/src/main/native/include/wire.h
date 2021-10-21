@@ -609,7 +609,7 @@ public:
     }
 
     unidirectional_simple_wire* active_wire() {
-        bool has_data;
+        bool has_data{};
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
