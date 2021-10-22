@@ -75,14 +75,18 @@ public class Profile {
     long ns2us(long t) {
 	return (t + 500) / 1000;
     }
+    long div(long a, long b) {
+	if (b == 0) return a;
+	return a / b;
+    }
     public void print(int threads) {
 	System.out.printf("duration(mS): %d\n", elapsed / count);
 	System.out.println("===============================================================================================");
-	System.out.printf("   new order: %12d / %8d = %6d (us)\n", ns2us(time.newOrder), completion.newOrder + newOrderIntentionalRollback, ns2us(time.newOrder / (completion.newOrder + newOrderIntentionalRollback)));
-	System.out.printf("     payment: %12d / %8d = %6d (us)\n", ns2us(time.payment), completion.payment, ns2us(time.payment / completion.payment));
-	System.out.printf("order status: %12d / %8d = %6d (us)\n", ns2us(time.orderStatus), completion.orderStatus, ns2us(time.orderStatus / completion.orderStatus));
-	System.out.printf("    delivery: %12d / %8d = %6d (us)\n", ns2us(time.delivery), completion.delivery, ns2us(time.delivery / completion.delivery));
-	System.out.printf(" stock level: %12d / %8d = %6d (us)\n", ns2us(time.stockLevel), completion.stockLevel, ns2us(time.stockLevel / completion.stockLevel));
+	System.out.printf("   new order: %12d / %8d = %6d (us)\n", ns2us(time.newOrder), completion.newOrder + newOrderIntentionalRollback, ns2us(div(time.newOrder , (completion.newOrder + newOrderIntentionalRollback))));
+	System.out.printf("     payment: %12d / %8d = %6d (us)\n", ns2us(time.payment), completion.payment, ns2us(div(time.payment, completion.payment)));
+	System.out.printf("order status: %12d / %8d = %6d (us)\n", ns2us(time.orderStatus), completion.orderStatus, ns2us(div(time.orderStatus, completion.orderStatus)));
+	System.out.printf("    delivery: %12d / %8d = %6d (us)\n", ns2us(time.delivery), completion.delivery, ns2us(div(time.delivery, completion.delivery)));
+	System.out.printf(" stock level: %12d / %8d = %6d (us)\n", ns2us(time.stockLevel), completion.stockLevel, ns2us(div(time.stockLevel, completion.stockLevel)));
 	System.out.println("===============================================================================================");
 	System.out.println("     tx type: invocation:completion(:intentional rollback) - retry on statement:retry on commit");
 	System.out.println("-----------------------------------------------------------------------------------------------");
