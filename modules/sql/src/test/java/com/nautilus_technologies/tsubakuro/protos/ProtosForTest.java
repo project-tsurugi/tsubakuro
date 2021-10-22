@@ -697,17 +697,13 @@ public final class ProtosForTest {
 	static ResponseProtos.ExecuteQuery.Builder builder() {
 	    return
 		ResponseProtos.ExecuteQuery.newBuilder()
-		.setResultSetInfo(ResponseProtos.ResultSetInfo.newBuilder()
-				  .setName("ResultSetName")
-				  .setRecordMeta(SchemaProtosChecker.builder())
-				  );
-
+		.setName("ResultSetName")
+		.setRecordMeta(SchemaProtosChecker.builder());
 	}
 	public static boolean check(ResponseProtos.ExecuteQuery dst) {
 	    return
-		ResponseProtos.ExecuteQuery.ResultCase.RESULT_SET_INFO.equals(dst.getResultCase())
-		&& dst.getResultSetInfo().getName().equals("ResultSetName")
-		&& SchemaProtosChecker.check(dst.getResultSetInfo().getRecordMeta());
+		dst.getName().equals("ResultSetName")
+		&& SchemaProtosChecker.check(dst.getRecordMeta());
 	}
 	void test() {
 	    try {

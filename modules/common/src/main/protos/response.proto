@@ -23,12 +23,6 @@ message Error {
   string detail = 2;
 }
 
-/* For record meta message sent back at the beginning of the result set. */
-message ResultSetInfo {
-  string name = 1;  /* The name of the channel to which the ResultSet set will be sent. */
-  schema.RecordMeta record_meta = 2;
-}
-
 
 /*
  * Each response message
@@ -60,10 +54,8 @@ message Prepare {
 
 /* For response to ExecuteQuery and/or ExecutePreparedQuery. */
 message ExecuteQuery {
-  oneof result {
-    ResultSetInfo result_set_info = 1;
-    Error error = 2;
-  }
+  string name = 1;  /* The name of the channel to which the ResultSet set will be sent. */
+  schema.RecordMeta record_meta = 2;
 }
 
 

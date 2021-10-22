@@ -83,7 +83,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     if (name_ == NULL) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
-    server_wire_container::resultset_wire* rs_container = container->create_resultset_wire(std::string_view(name_, len_));
+    server_wire_container::resultset_wires_container* rs_container = container->create_resultset_wires(std::string_view(name_, len_));
     env->ReleaseStringUTFChars(name, name_);
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rs_container));
 }
@@ -96,7 +96,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putRecordsRSLNative
 (JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
-    server_wire_container::resultset_wire* wire = reinterpret_cast<server_wire_container::resultset_wire*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wires_container* wires = reinterpret_cast<server_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     jbyte *src = env->GetByteArrayElements(srcj, 0);
     jsize capacity = env->GetArrayLength(srcj);
@@ -105,7 +105,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    wire->write(reinterpret_cast<const char*>(src), capacity);
+    wires->write(reinterpret_cast<const char*>(src), capacity);
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
@@ -117,9 +117,9 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_eorRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
-    server_wire_container::resultset_wire* wire = reinterpret_cast<server_wire_container::resultset_wire*>(static_cast<std::uintptr_t>(handle));
+    server_wire_container::resultset_wires_container* wires = reinterpret_cast<server_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    wire->eor();
+    wires->set_eor();
 }
 
 /*

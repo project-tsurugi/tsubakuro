@@ -7,6 +7,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
+import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
@@ -71,6 +72,10 @@ class SessionImplTest {
 	    default:
 		return null;  // dummy as it is test for session
 	    }
+	}
+
+	public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
+	    return null;  // dummy as it is test for session
 	}
 
 	public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
@@ -145,7 +150,8 @@ class SessionImplTest {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
 
 	    Throwable exception = assertThrows(IOException.class, () -> {
-		    var resultSet = transaction.executeQuery(preparedStatement, ps).get();
+		    var pair = transaction.executeQuery(preparedStatement, ps);
+		    var resultSet = pair.getLeft().get();
 		});
 	    assertEquals("already closed", exception.getMessage());
 
