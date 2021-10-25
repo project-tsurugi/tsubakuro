@@ -25,7 +25,9 @@ public class Profile {
     }
 
     public long warehouses;
+    public long threads;
     public long index;
+    public boolean fixThreadMapping;
     public Counter time;
     public Counter invocation;
     public Counter completion;
@@ -76,10 +78,12 @@ public class Profile {
 	return (t + 500) / 1000;
     }
     long div(long a, long b) {
-	if (b == 0) return a;
+	if (b == 0) {
+	    return a;
+	}
 	return a / b;
     }
-    public void print(int threads) {
+    public void print(int n) {
 	System.out.printf("duration(mS): %d\n", elapsed / count);
 	System.out.println("===============================================================================================");
 	System.out.printf("   new order: %12d / %8d = %6d (us)\n", ns2us(time.newOrder), completion.newOrder + newOrderIntentionalRollback, ns2us(div(time.newOrder , (completion.newOrder + newOrderIntentionalRollback))));
@@ -107,6 +111,6 @@ public class Profile {
 	System.out.printf(" stock level: ORDERS %6d DISTRICT %6d WAREHOUSE %6d CUSTOMER %6d STOCK %6d\n",
 			  ordersTable.stockLevel, districtTable.stockLevel, warehouseTable.stockLevel, customerTable.stockLevel, stockTable.stockLevel);
 	System.out.println("-----------------------------------------------------------------------------------------------");
-	System.out.printf("##NoTPM=%.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) threads));
+	System.out.printf("##NoTPM=%.2f\n", ((double) completion.newOrder * 60.0 * 1000.0) / ((double) elapsed / (double) n));
     }
 }

@@ -43,8 +43,13 @@ public final class Main {
 
     public static void main(String[] args) {
         int argl = args.length;
+	boolean fixThreadMapping = false;
 	if (argl > 0) {
             threads = Integer.parseInt(args[0]);
+	    if (threads < 0) {
+		threads = -threads;
+		fixThreadMapping = true;
+	    }
             if (argl > 1) {
                 duration = Integer.parseInt(args[1]);
             }
@@ -52,6 +57,13 @@ public final class Main {
 
 	try {
 	    var warehouses = warehouses();
+	    if (fixThreadMapping) {
+		if (threads != warehouses) {
+		    System.out.printf("threads %d, warehouses %d\n", threads, warehouses);
+		    return;
+		}
+		System.out.println("fixThreadMapping is true");
+	    }
 	    AtomicBoolean[] doingDelivery = new AtomicBoolean[(int) warehouses];
 	    for (int i = 0; i < warehouses; i++) {
 		doingDelivery[i] = new AtomicBoolean(false);
@@ -65,7 +77,9 @@ public final class Main {
 	    for (int i = 0; i < threads; i++) {
 		var profile = new Profile();
 		profile.warehouses = warehouses;
+		profile.threads = threads;
 		profile.index = i;
+		profile.fixThreadMapping = fixThreadMapping;
 		profiles.add(profile);
 		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }

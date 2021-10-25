@@ -61,7 +61,12 @@ public class StockLevel {
     }
 
     public void setParams() {
-	paramsWid = randomGenerator.uniformWithin(1, warehouses);  // FIXME warehouse_low, warehouse_high
+	if (profile.fixThreadMapping) {
+	    long warehouseStep = warehouses / profile.threads;
+	    paramsWid = randomGenerator.uniformWithin((profile.index * warehouseStep) + 1, (profile.index + 1) * warehouseStep);
+	} else {
+	    paramsWid = randomGenerator.uniformWithin(1, warehouses);
+	}
 	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
 	paramsThreshold = randomGenerator.uniformWithin(10, 20);
     }

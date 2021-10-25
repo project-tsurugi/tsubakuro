@@ -12,6 +12,7 @@ public class  Client extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
     AtomicBoolean[] doingDelivery;
+    boolean fixThreadMapping;
     Session session;
     RandomGenerator randomGenerator;
     Profile profile;
