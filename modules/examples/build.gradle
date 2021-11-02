@@ -19,6 +19,10 @@ run {
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
 }
 
+spotbugs {
+    excludeFilter = file("$projectDir/config/spotbugs/spotbugsExclude.xml")
+}
+
 checkstyle {
     configFile file("$projectDir/config/checkstyle/checkstyle.xml")
 }
