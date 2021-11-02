@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation 'org.msgpack:msgpack-core:0.8.19'
+    implementation 'commons-cli:commons-cli:1.4'
 
     implementation project(':sql')
     implementation project(':ipc')
@@ -17,4 +18,12 @@ application {
 
 run {
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+}
+
+spotbugs {
+    excludeFilter = file("$projectDir/config/spotbugs/spotbugsExclude.xml")
+}
+
+tasks.withType(JavaExec) {
+    jvmArgs = ['-Xms1024m', '-Xmx4096m', "-XX:+PreserveFramePointer"]
 }
