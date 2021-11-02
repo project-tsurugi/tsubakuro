@@ -331,6 +331,36 @@ class ResultSetImplTest {
     }
 
     @Test
+    void nextRecordAfterIsNull() {
+	ResultSet.RecordMeta recordMeta;
+        try {
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), ProtosForTest.SchemaProtosChecker.builder().build());
+
+	    // first record
+	    assertTrue(resultSetImpl.nextRecord());
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertTrue(resultSetImpl.nextColumn());
+	    assertTrue(resultSetImpl.isNull());
+	    assertFalse(resultSetImpl.nextColumn());
+
+	    // second record
+	    assertTrue(resultSetImpl.nextRecord());
+
+	} catch (IOException e) {
+            fail("cought IOException");
+        }
+    }
+
+    @Test
     void getColumnWithoutNextRecord() {
 	ResultSet.RecordMeta recordMeta;
         try {
