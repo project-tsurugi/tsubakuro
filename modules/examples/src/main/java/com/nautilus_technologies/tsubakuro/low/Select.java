@@ -2,6 +2,10 @@ package com.nautilus_technologies.tsubakuro.low;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
@@ -9,80 +13,116 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
-public class Select {
+public class Select extends Thread {
+    CyclicBarrier barrier;
+    AtomicBoolean stop;
     Session session;
-    PreparedStatement preparedStatement;
+    Transaction transaction;
+    RandomGenerator randomGenerator;
+    Profile profile;
+
+    PreparedStatement prepared2;
+    long warehouses;
+    long paramsWid;
+    long paramsDid;
+    long paramsCid;
     
-    public Select(Connector connector, Session session) throws IOException, ExecutionException, InterruptedException {
-	this.session = session;
-	this.session.connect(connector.connect().get());
+    public Select(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+        this.barrier = barrier;
+        this.stop = stop;
+        this.profile = profile;
+        this.session = session;
+        this.session.connect(connector.connect().get());
+        this.randomGenerator = new RandomGenerator();
+	prepare();
     }
     
-    void printResultset(ResultSet resultSet) throws IOException {
-	int count = 1;
+    void prepare()  throws IOException, ExecutionException, InterruptedException {
+        String sql2 = "SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
+        var ph2 = RequestProtos.PlaceHolder.newBuilder()
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
+        prepared2 = session.prepare(sql2, ph2).get();
+    }
+    
+    void setParams() {
+	paramsWid = randomGenerator.uniformWithin(1, profile.warehouses);
+        paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
+        paramsCid = randomGenerator.uniformWithin(1, Scale.CUSTOMERS);  // scale::customers
+    }
 
-	while (resultSet.nextRecord()) {
-	    System.out.println("---- ( " + count + " )----");
-	    count++;
-	    while (resultSet.nextColumn()) {
-		if (!resultSet.isNull()) {
-		    switch (resultSet.getRecordMeta().at()) {
-		    case INT4:
-			System.out.println(resultSet.getInt4());
-			break;
-		    case INT8:
-			System.out.println(resultSet.getInt8());
-			break;
-		    case FLOAT4:
-			System.out.println(resultSet.getFloat4());
-			break;
-		    case FLOAT8:
-			System.out.println(resultSet.getFloat8());
-			break;
-		    case CHARACTER:
-			System.out.println(resultSet.getCharacter());
-			break;
-		    default:
-			throw new IOException("the column type is invalid");
+    public void run() {
+	try {
+	    barrier.await();
+	    
+            long start = System.nanoTime();
+	    while (!stop.get()) {
+		if (Objects.isNull(transaction)) {
+		    transaction = session.createTransaction().get();
+		}
+		setParams();
+
+		// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
+		var ps2 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
+		var future2 = transaction.executeQuery(prepared2, ps2);
+		var resultSet2 = future2.getLeft().get();
+		try {
+		    if (!Objects.isNull(resultSet2)) {
+			if (!resultSet2.nextRecord()) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
+			    throw new ExecutionException(new IOException("no record"));
+			}
+			resultSet2.nextColumn();
+			var dNextOid = resultSet2.getInt8();
+			resultSet2.nextColumn();
+			var dTax = resultSet2.getFloat8();
+			if (resultSet2.nextRecord()) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+				throw new ExecutionException(new IOException("SQL error"));
+			    }
+			    throw new ExecutionException(new IOException("found multiple records"));
+			}
 		    }
-		} else {
-		    System.out.println("the column is NULL");
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			throw new ExecutionException(new IOException("SQL error"));
+		    }
+		} catch (ExecutionException e) {
+		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+			throw new IOException("error in rollback");
+		    }
+		    transaction = null;
+		    continue;
+		} finally {
+		    if (!Objects.isNull(resultSet2)) {
+			resultSet2.close();
+		    }
+		}
+
+		profile.count++;
+		if ((profile.count % 1000) == 0) {
+		    transaction.commit().get();
+		    transaction = null;
 		}
 	    }
+            profile.elapsed = System.nanoTime() - start;
+	    
+
+        } catch (IOException | ExecutionException | InterruptedException | BrokenBarrierException e) {
+            System.out.println(e);
+	} finally {
+	    try {
+		prepared2.close();
+		session.close();
+	    } catch (IOException e) {
+		System.out.println(e);
+	    }
 	}
-    }
-
-    public void prepareAndSelect() throws IOException, ExecutionException, InterruptedException {
-	String sql = "SELECT * FROM WAREHOUSE WHERE w_id = :w_id";
-	var ph = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("w_id").setType(CommonProtos.DataType.INT8));
-	preparedStatement = session.prepare(sql, ph).get();
-
-	Transaction transaction = session.createTransaction().get();
-	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(1));
-	var pair = transaction.executeQuery(preparedStatement, ps);
-	var resultSet = pair.getLeft().get();
-	printResultset(resultSet);
-	pair.getRight().get();
-
-	preparedStatement.close();
-	resultSet.close();
-	transaction.commit().get();
-	session.close();
-    }
-    public void select() throws IOException, ExecutionException, InterruptedException {
-	String sql = "SELECT * FROM WAREHOUSE";
-
-	Transaction transaction = session.createTransaction().get();
-	var pair = transaction.executeQuery(sql);
-	var resultSet = pair.getLeft().get();
-	printResultset(resultSet);
-	pair.getRight().get();
-	resultSet.close();
-	transaction.commit().get();
-	session.close();
     }
 }
