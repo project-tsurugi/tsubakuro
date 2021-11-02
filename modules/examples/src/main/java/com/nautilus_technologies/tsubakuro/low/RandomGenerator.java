@@ -5,10 +5,6 @@ import java.util.Random;
 public class RandomGenerator {
     Random random;
 
-    static {
-	var random = new Random();
-    }
-
     public RandomGenerator() {
 	this.random = new Random();
     }

@@ -5,9 +5,16 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.ParseException;
 
 public final class Main {
     static long warehouses()  throws IOException, ExecutionException, InterruptedException {
@@ -36,35 +43,63 @@ public final class Main {
     private Main() {
     }
     
+    enum Type {
+	SELECT,
+	INSERT
+    };
+
     private static String dbName = "tateyama";
-    static int pattern = 1;
-    static int duration = 30;
+    private static int pattern = 1;
+    private static int duration = 30;
+    private static Type type = Type.SELECT;
 
     public static void main(String[] args) {
-        int argl = args.length;
-        if (argl > 0) {
-            pattern = Integer.parseInt(args[0]);
-            if (argl > 1) {
-                duration = Integer.parseInt(args[1]);
-            }
-        }
+	// コマンドラインオプションの設定
+        Options options = new Options();
+
+        options.addOption(Option.builder("d").argName("duration").hasArg().desc("duration in seconds").build());
+        options.addOption(Option.builder("t").argName("SQL type").hasArg().desc("type of SQL").build());
+
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmd = null;
 
         try {
+            cmd = parser.parse(options, args);
+
+	    if (cmd.hasOption("d")) {
+		duration = Integer.parseInt(cmd.getOptionValue("d"));
+	    }
+	    if (cmd.hasOption("t")) {
+		var givenType = cmd.getOptionValue("t");
+		if (givenType.equals("select")) {
+		    type = Type.SELECT;
+		} else if (givenType.equals("insert")) {
+		    type = Type.INSERT;
+		} else {
+		    throw new ParseException("illegal type");
+		}
+	    }
+
             var warehouses = warehouses();
             CyclicBarrier barrier = new CyclicBarrier(2);
             AtomicBoolean stop = new AtomicBoolean();
 	    var profile = new Profile(warehouses);
 
-	    //	    var client = new Select(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
-	    var client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
-	    client.start();
-            barrier.await();
-            System.out.println("benchmark started, warehouse = " + warehouses);
-            Thread.sleep(duration * 1000);
-            stop.set(true);
-            System.out.println("benchmark stoped");
-	    profile.print();
-
+	    Thread client = null;
+	    if (type == Type.SELECT) {
+		client = new Select(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+	    } else if (type == Type.INSERT) {
+		client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+	    }
+	    if (!Objects.isNull(client)) {
+		client.start();
+		barrier.await();
+		System.out.println("benchmark started, warehouse = " + warehouses);
+		Thread.sleep(duration * 1000);
+		stop.set(true);
+		System.out.println("benchmark stoped");
+		profile.print();
+	    }
         } catch (IOException e) {
             System.out.println(e);
         } catch (ExecutionException e) {
@@ -73,6 +108,8 @@ public final class Main {
             System.out.println(e);
         } catch (BrokenBarrierException e) {
             System.out.println(e);
+        } catch (ParseException e) {
+            System.err.printf("cmd parser failed." + e);
         }
     }
 }

@@ -25,7 +25,6 @@ public class Select extends Thread {
     Profile profile;
 
     PreparedStatement prepared2;
-    long warehouses;
     long paramsWid;
     long paramsDid;
     long paramsCid;

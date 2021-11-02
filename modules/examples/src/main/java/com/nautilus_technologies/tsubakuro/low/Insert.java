@@ -25,7 +25,6 @@ public class Insert extends Thread {
     Profile profile;
 
     PreparedStatement prepared5;
-    long warehouses;
     long paramsWid;
     long paramsDid;
     long oid;
