@@ -11,8 +11,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Session;
 public class  Client extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
-    AtomicBoolean[] doingDelivery;
-    boolean fixThreadMapping;
+    DeferredHelper doingDelivery;
     Session session;
     RandomGenerator randomGenerator;
     Profile profile;
@@ -22,7 +21,7 @@ public class  Client extends Thread {
     OrderStatus orderStatus;
     StockLevel stockLevel;
 
-    public  Client(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop, AtomicBoolean[] doingDelivery) throws IOException, ExecutionException, InterruptedException {
+    public  Client(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop, DeferredHelper doingDelivery) throws IOException, ExecutionException, InterruptedException {
 	this.barrier = barrier;
 	this.stop = stop;
 	this.doingDelivery = doingDelivery;
@@ -59,10 +58,10 @@ public class  Client extends Thread {
 		long transactionStart = System.nanoTime();
 		if (pendingDelivery > 0) {
 		    wId = (int) delivery.warehouseId();
-		    if (!doingDelivery[wId - 1].getAndSet(true)) {
+		    if (!doingDelivery.getAndSet(wId - 1, true)) {
 			delivery.transaction(stop);
 			profile.time.delivery += (System.nanoTime() - transactionStart);
-			doingDelivery[wId - 1].set(false);
+			doingDelivery.set(wId - 1, false);
 			pendingDelivery--;
 			if (pendingDelivery > 0) {
 			    delivery.setParams();
@@ -91,10 +90,10 @@ public class  Client extends Thread {
 		    }
 		    delivery.setParams();
 		    wId = (int) delivery.warehouseId();
-		    if (!doingDelivery[wId - 1].getAndSet(true)) {
+		    if (!doingDelivery.getAndSet(wId - 1, true)) {
 			delivery.transaction(stop);
 			profile.time.delivery += (System.nanoTime() - transactionStart);
-			doingDelivery[wId - 1].set(false);
+			doingDelivery.set(wId - 1, false);
 		    } else {
 			pendingDelivery++;
 		    }

@@ -28,7 +28,6 @@ public class OrderStatus {
     PreparedStatement prepared4;
     PreparedStatement prepared5;
     PreparedStatement prepared6;
-    PreparedStatement prepared7;
 
     long warehouses;
     long paramsWid;

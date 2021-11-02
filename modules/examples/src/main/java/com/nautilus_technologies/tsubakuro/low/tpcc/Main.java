@@ -59,16 +59,12 @@ public final class Main {
 	    var warehouses = warehouses();
 	    if (fixThreadMapping) {
 		if (threads != warehouses) {
-		    System.out.printf("threads %d, warehouses %d\n", threads, warehouses);
+		    System.out.printf("threads %d, warehouses %d%n", threads, warehouses);
 		    return;
 		}
 		System.out.println("fixThreadMapping is true");
 	    }
-	    AtomicBoolean[] doingDelivery = new AtomicBoolean[(int) warehouses];
-	    for (int i = 0; i < warehouses; i++) {
-		doingDelivery[i] = new AtomicBoolean(false);
-	    }
-
+	    DeferredHelper doingDelivery = new DeferredHelper((int) warehouses);
 	    ArrayList<Client> clients = new ArrayList<>();
 	    ArrayList<Profile> profiles = new ArrayList<>();
 	    CyclicBarrier barrier = new CyclicBarrier(threads + 1);
@@ -84,7 +80,6 @@ public final class Main {
 		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }
 
-	    long start = System.currentTimeMillis();
 	    for (int i = 0; i < clients.size(); i++) {
 		clients.get(i).start();
 	    }
