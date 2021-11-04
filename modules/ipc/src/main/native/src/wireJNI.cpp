@@ -170,7 +170,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
- * Method:    msgNative
+ * Method:    getChunkNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
 JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_getChunkNative
