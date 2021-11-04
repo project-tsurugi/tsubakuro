@@ -145,6 +145,8 @@ public class Delivery {
 			}
 			resultSet1.nextColumn();
 			noOid = resultSet1.getInt8();
+			resultSet1.close();
+			resultSet1 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -193,6 +195,8 @@ public class Delivery {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet3.close();
+			resultSet3 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -255,6 +259,8 @@ public class Delivery {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet6.close();
+			resultSet6 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));

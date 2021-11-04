@@ -45,6 +45,8 @@ public final class Customer {
 		    }
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
+		resultSet1.close();
+		resultSet1 = null;
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -52,7 +54,9 @@ public final class Customer {
 	} catch (ExecutionException e) {
 	    return -1;
 	} finally {
-	    resultSet1.close();
+	    if (!Objects.isNull(resultSet1)) {
+		resultSet1.close();
+	    }
 	}
 
 	if (nameCnt == 0) {
@@ -82,6 +86,8 @@ public final class Customer {
 		}
 		resultSet2.nextColumn();
 		rv = resultSet2.getInt8();
+		resultSet2.close();
+		resultSet2 = null;
 	    }
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
@@ -90,7 +96,9 @@ public final class Customer {
 	} catch (ExecutionException e) {
 	    return -1;
 	} finally {
-	    resultSet2.close();
+	    if (!Objects.isNull(resultSet2)) {
+		resultSet2.close();
+	    }
 	}
     }
 }

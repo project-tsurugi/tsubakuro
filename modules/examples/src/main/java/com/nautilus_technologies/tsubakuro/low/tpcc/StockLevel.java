@@ -105,6 +105,8 @@ public class StockLevel {
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
+		    resultSet1.close();
+		    resultSet1 = null;
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -146,6 +148,8 @@ public class StockLevel {
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
+		    resultSet2.close();
+		    resultSet2 = null;
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));

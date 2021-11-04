@@ -178,6 +178,8 @@ public class OrderStatus {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet3.close();
+			resultSet3 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -210,6 +212,8 @@ public class OrderStatus {
 			}
 			resultSet4.nextColumn();
 			oId = resultSet4.getInt8();
+			resultSet4.close();
+			resultSet4 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -254,6 +258,8 @@ public class OrderStatus {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet5.close();
+			resultSet5 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
@@ -294,6 +300,8 @@ public class OrderStatus {
 			    }
 			    i++;
 			}
+			resultSet6.close();
+			resultSet6 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));

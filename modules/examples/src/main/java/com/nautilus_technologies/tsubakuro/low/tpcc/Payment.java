@@ -243,6 +243,8 @@ public class Payment {
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
+		    resultSet2.close();
+		    resultSet2 = null;
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -304,6 +306,8 @@ public class Payment {
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
+		    resultSet4.close();
+		    resultSet4 = null;
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -380,6 +384,8 @@ public class Payment {
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
+		    resultSet7.close();
+		    resultSet7 = null;
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
@@ -421,6 +427,8 @@ public class Payment {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet8.close();
+			resultSet8 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future8.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
