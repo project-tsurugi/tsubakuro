@@ -88,6 +88,8 @@ public class Select extends Thread {
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
+			resultSet2.close();
+			resultSet2 = null;
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
