@@ -44,14 +44,16 @@ public final class Main {
     }
     
     enum Type {
-	SELECT,
-	INSERT
+	SELECT_ONE,
+	SELECT_MULTI,
+	INSERT,
+	UPDATE,
     };
 
     private static String dbName = "tateyama";
     private static int pattern = 1;
     private static int duration = 30;
-    private static Type type = Type.SELECT;
+    private static Type type = Type.SELECT_ONE;
 
     public static void main(String[] args) {
 	// コマンドラインオプションの設定
@@ -72,9 +74,13 @@ public final class Main {
 	    if (cmd.hasOption("t")) {
 		var givenType = cmd.getOptionValue("t");
 		if (givenType.equals("select")) {
-		    type = Type.SELECT;
+		    type = Type.SELECT_ONE;
+		} else if (givenType.equals("selectm")) {
+		    type = Type.SELECT_MULTI;
 		} else if (givenType.equals("insert")) {
 		    type = Type.INSERT;
+		} else if (givenType.equals("update")) {
+		    type = Type.UPDATE;
 		} else {
 		    throw new ParseException("illegal type");
 		}
@@ -86,10 +92,22 @@ public final class Main {
 	    var profile = new Profile(warehouses);
 
 	    Thread client = null;
-	    if (type == Type.SELECT) {
-		client = new Select(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
-	    } else if (type == Type.INSERT) {
+	    switch (type) {
+	    case SELECT_ONE:
+		client = new SelectOne(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		break;
+	    case SELECT_MULTI:
+		client = new SelectMulti(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		break;
+	    case INSERT:
 		client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		break;
+	    case UPDATE:
+		client = new Update(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		break;
+	    default:
+		System.out.println("illegal type");
+		return;
 	    }
 	    if (!Objects.isNull(client)) {
 		client.start();
@@ -97,6 +115,7 @@ public final class Main {
 		System.out.println("benchmark started, warehouse = " + warehouses);
 		Thread.sleep(duration * 1000);
 		stop.set(true);
+		client.join();
 		System.out.println("benchmark stoped");
 		profile.print();
 	    }

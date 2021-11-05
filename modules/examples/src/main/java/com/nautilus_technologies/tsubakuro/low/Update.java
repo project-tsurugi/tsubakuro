@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
-public class Insert extends Thread {
+public class Update extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
     Session session;
@@ -24,12 +24,14 @@ public class Insert extends Thread {
     RandomGenerator randomGenerator;
     Profile profile;
 
-    PreparedStatement prepared5;
-    long paramsWid;
+    PreparedStatement prepared8;
     long paramsDid;
+    long olSupplyWid;
+    long sQuantity;
+    long olIid;
     long oid;
     
-    public Insert(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public Update(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
         this.barrier = barrier;
         this.stop = stop;
         this.profile = profile;
@@ -41,17 +43,19 @@ public class Insert extends Thread {
     }
 
     void prepare() throws IOException, ExecutionException, InterruptedException {
-        String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
-        var ph5 = RequestProtos.PlaceHolder.newBuilder()
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_o_id").setType(CommonProtos.DataType.INT8))
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_d_id").setType(CommonProtos.DataType.INT8))
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8));
-        prepared5 = session.prepare(sql5, ph5).get();
+	String sql8 = "UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
+	var ph8 = RequestProtos.PlaceHolder.newBuilder()
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_quantity").setType(CommonProtos.DataType.INT8))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_i_id").setType(CommonProtos.DataType.INT8))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8));
+	prepared8 = session.prepare(sql8, ph8).get();
     }
 
     void setParams() {
-	paramsWid = randomGenerator.uniformWithin(1, profile.warehouses);
         paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
+	olSupplyWid = randomGenerator.uniformWithin(1, profile.warehouses);
+	sQuantity = randomGenerator.uniformWithin(1, 10);
+	olIid = randomGenerator.nonUniform8191Within(1, Scale.ITEMS); // scale::items
     }
 
     public void run() {
@@ -72,20 +76,21 @@ public class Insert extends Thread {
 		}
 		prev = now;
 
-		// INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
-		var ps5 = RequestProtos.ParameterSet.newBuilder()
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(oid++))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
-		var future5 = transaction.executeStatement(prepared5, ps5);
-		var result5 = future5.get();
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
+		// UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
+		var ps8 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
+		var future8 = transaction.executeStatement(prepared8, ps8);
+		var result8 = future8.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
 		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 			throw new IOException("error in rollback");
 		    }
 		    transaction = null;
 		    continue;
 		}
+
 		now = System.nanoTime();
 		profile.body += (now - prev);
 		prev = now;
@@ -103,7 +108,7 @@ public class Insert extends Thread {
             System.out.println(e);
 	} finally {
 	    try {
-		prepared5.close();
+		prepared8.close();
 		session.close();
 	    } catch (IOException e) {
 		System.out.println(e);
