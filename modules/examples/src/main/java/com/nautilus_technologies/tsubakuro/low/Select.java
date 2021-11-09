@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
@@ -9,6 +10,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class Select {
@@ -63,18 +65,29 @@ public class Select {
 	preparedStatement = session.prepare(sql, ph).get();
 
 	Transaction transaction = session.createTransaction().get();
-	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1));
-	var pair = transaction.executeQuery(preparedStatement, ps);
-	var resultSet = pair.getLeft().get();
-	printResultset(resultSet);
-	pair.getRight().get();
-
-	preparedStatement.close();
-	resultSet.close();
-	transaction.commit().get();
-	session.close();
+	try {
+	    var ps = RequestProtos.ParameterSet.newBuilder()
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1));
+	    var pair = transaction.executeQuery(preparedStatement, ps);
+	    var resultSet = pair.getLeft().get();
+	    if (!Objects.isNull(resultSet)) {
+		printResultset(resultSet);
+		resultSet.close();
+	    }
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(pair.getRight().get().getResultCase())) {
+		throw new IOException("select error");
+	    }
+	    var commitResponse = transaction.commit().get();
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+		throw new IOException("commit (select) error");
+	    }
+	} catch (IOException e) {
+	    throw e;
+	} finally {
+	    preparedStatement.close();
+	    session.close();
+	}
     }
 }
