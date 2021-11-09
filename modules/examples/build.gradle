@@ -26,3 +26,17 @@ spotbugs {
 checkstyle {
     configFile file("$projectDir/config/checkstyle/checkstyle.xml")
 }
+
+tasks.register('runExample', JavaExec) {
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    mainClass = 'com.nautilus_technologies.tsubakuro.low.Main'
+}
+
+tasks.register('runTpcc', JavaExec) {
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    mainClass = 'com.nautilus_technologies.tsubakuro.low.tpcc.Main'
+}
