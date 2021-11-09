@@ -10,6 +10,9 @@ def nativeTestRootDir = "$project.projectDir/src/test/native"
 def nativeTestBuildDir = "${nativeTestRootDir}/build"
 def nativeTestIncludeDir = "${nativeTestRootDir}/include"
 
+def nativeLibDir = "$project.buildDir/native"
+
+
 task cmakeConfigure {
     inputs.files(fileTree(nativeRootDir) {
         exclude 'build/**'
@@ -67,6 +70,23 @@ task cmakeBuild {
     }
 }
 
+task nativeLib {
+    inputs.files(nativeBuildDir)
+    .withPropertyName('nativeBuildDir')
+
+    outputs.file("${nativeLibDir}/*.so")
+    .withPropertyName('nativeLibFile')
+
+    doLast {
+        copy {
+            from "${nativeBuildDir}/src"
+            into "${nativeLibDir}"
+            include '*.so'
+        }
+    }
+}
+
+
 task cmakeTestBuild {
     inputs.files(fileTree(nativeTestRootDir) {
         exclude 'build/**'
@@ -86,7 +106,7 @@ task cmakeTestBuild {
     }
 }
 
-assemble.dependsOn cmakeBuild
+assemble.dependsOn nativeLib
 test.dependsOn cmakeTestBuild
 
 cmakeConfigure.dependsOn compileJava
@@ -94,6 +114,8 @@ cmakeTestConfigure.dependsOn compileTestJava
 
 cmakeBuild.dependsOn cmakeConfigure
 cmakeTestBuild.dependsOn cmakeTestConfigure
+
+nativeLib.dependsOn cmakeBuild
 
 clean {
     delete += "$nativeBuildDir"
