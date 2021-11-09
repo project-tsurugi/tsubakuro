@@ -64,8 +64,8 @@ public class Select {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_w_id").setType(CommonProtos.DataType.INT8));
 	preparedStatement = session.prepare(sql, ph).get();
 
-	Transaction transaction = session.createTransaction().get();
 	try {
+	    Transaction transaction = session.createTransaction().get();
 	    var ps = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
