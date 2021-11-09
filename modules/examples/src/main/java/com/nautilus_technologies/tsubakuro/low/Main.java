@@ -13,9 +13,8 @@ public final class Main {
     
     public static void main(String[] args) {
 	try {
-	    //	    (new Insert(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndInsert();
-	    //	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndSelect();
-	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).select();
+	    (new Insert(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndInsert();
+	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndSelect();
 	} catch (IOException e) {
 	    System.out.println(e);
 	} catch (ExecutionException e) {

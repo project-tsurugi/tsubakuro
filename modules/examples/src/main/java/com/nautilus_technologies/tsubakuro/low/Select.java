@@ -55,32 +55,24 @@ public class Select {
     }
 
     public void prepareAndSelect() throws IOException, ExecutionException, InterruptedException {
-	String sql = "SELECT * FROM WAREHOUSE WHERE w_id = :w_id";
+	String sql = "SELECT * FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id";
 	var ph = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("w_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_d_id").setType(CommonProtos.DataType.INT8))
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_w_id").setType(CommonProtos.DataType.INT8));
 	preparedStatement = session.prepare(sql, ph).get();
 
 	Transaction transaction = session.createTransaction().get();
 	var ps = RequestProtos.ParameterSet.newBuilder()
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(1));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1));
 	var pair = transaction.executeQuery(preparedStatement, ps);
 	var resultSet = pair.getLeft().get();
 	printResultset(resultSet);
 	pair.getRight().get();
 
 	preparedStatement.close();
-	resultSet.close();
-	transaction.commit().get();
-	session.close();
-    }
-    public void select() throws IOException, ExecutionException, InterruptedException {
-	String sql = "SELECT * FROM WAREHOUSE";
-
-	Transaction transaction = session.createTransaction().get();
-	var pair = transaction.executeQuery(sql);
-	var resultSet = pair.getLeft().get();
-	printResultset(resultSet);
-	pair.getRight().get();
 	resultSet.close();
 	transaction.commit().get();
 	session.close();
