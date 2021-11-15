@@ -61,6 +61,7 @@ public class ResultSetImpl implements ResultSet {
     private RecordMetaImpl recordMeta;
     private ResultSetWire.MessagePackInputStream inputStream;
     private MessageUnpacker unpacker;
+    private long alreadyDisposed;
     private int columnIndex;
     private boolean detectNull;
     private boolean columnReady;
@@ -69,11 +70,22 @@ public class ResultSetImpl implements ResultSet {
      * Class constructor, called from FutureResultSetImpl.
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
      */
-    public ResultSetImpl(ResultSetWire resultSetWire, SchemaProtos.RecordMeta recordMeta) throws IOException {
-	this.recordMeta = new RecordMetaImpl(recordMeta);
+    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
 	this.resultSetWire = resultSetWire;
+	inputStream = resultSetWire.getMessagePackInputStream();
+	unpacker = new UnpackerConfig()
+	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
+	    .withActionOnUnmappableString(CodingErrorAction.IGNORE)
+	    .newUnpacker(inputStream);
+	this.alreadyDisposed = 0;
     }
-	
+
+    public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
+	recordMeta = new RecordMetaImpl(meta);
+	columnIndex = (int) recordMeta.fieldCount();
+	resultSetWire.connect(name);
+    }
+
     /**
      * Provide the metadata object.
      * @returns recordMeta the metadata object
@@ -123,18 +135,12 @@ public class ResultSetImpl implements ResultSet {
 	if (Objects.isNull(resultSetWire)) {
             throw new IOException("already closed");
 	}
-        if (Objects.isNull(unpacker)) {
-	    inputStream = resultSetWire.getMessagePackInputStream();
-	} else {
-	    if (columnIndex != recordMeta.fieldCount()) {
-		skipRestOfColumns();
-	    }
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
+	if (columnIndex != recordMeta.fieldCount()) {
+	    skipRestOfColumns();
 	}
-	unpacker = new UnpackerConfig()
-	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
-	    .withActionOnUnmappableString(CodingErrorAction.IGNORE)
-	    .newUnpacker(inputStream);
+	var usedDataTotal = unpacker.getTotalReadBytes();
+	inputStream.disposeUsedData(usedDataTotal - alreadyDisposed);
+	alreadyDisposed = usedDataTotal;
 	columnIndex = -1;
 	columnReady = false;
 	return unpacker.hasNext();

@@ -18,6 +18,11 @@ public interface ResultSetWire extends Closeable {
     }
 
     /**
+     * Connect this to the wire specifiec by the name.
+     */
+    void connect(String name) throws IOException;
+
+    /**
      * Provides an InputStream to retrieve the received data.
      */
     MessagePackInputStream getMessagePackInputStream();

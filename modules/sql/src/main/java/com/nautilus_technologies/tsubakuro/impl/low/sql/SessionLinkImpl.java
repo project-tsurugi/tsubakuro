@@ -153,15 +153,14 @@ public class SessionLinkImpl {
     };
 
     /**
-     * Create a ResultSetWire with the name given as an argument.
-     @param name the name of the ResultSetWire to be created
+     * Create a ResultSetWire without a name, meaning that this wire is not connected
      @return a resultSetWire
     */
-    public ResultSetWire createResultSetWire(String name) throws IOException {
+    public ResultSetWire createResultSetWire() throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
 	}
-	return wire.createResultSetWire(name);
+	return wire.createResultSetWire();
     }
 
     /**

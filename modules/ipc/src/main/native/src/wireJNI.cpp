@@ -145,19 +145,47 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
  * Method:    createNative
- * Signature: (JLjava/lang/String;)J
+ * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_createNative
-(JNIEnv *env, jclass, jlong handle, jstring name)
+(JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-    const char* name_ = env->GetStringUTFChars(name, nullptr);
-    if (name_ == nullptr) return 0;
-    jsize len_ = env->GetStringUTFLength(name);
 
     session_wire_container::resultset_wires_container* rwc;
     try {
-        rwc = swc->create_resultset_wire(std::string_view(name_, len_));
+        rwc = swc->create_resultset_wire();
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+    }
+
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rwc));
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ResultSetWireImpl
+ * Method:    connectNative
+ * Signature: (JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ResultSetWireImpl_connectNative
+(JNIEnv *env, jclass, jlong handle, jstring name)
+{
+    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
+
+    const char* name_ = env->GetStringUTFChars(name, nullptr);
+    if (name_ == nullptr) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, "name is null");
+        env->DeleteLocalRef(classj);
+    }
+    jsize len_ = env->GetStringUTFLength(name);
+
+    try {
+        rwc->connect(std::string_view(name_, len_));
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
@@ -165,7 +193,6 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_R
         env->DeleteLocalRef(classj);
     }
     env->ReleaseStringUTFChars(name, name_);
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rwc));
 }
 
 /*

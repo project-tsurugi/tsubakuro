@@ -84,7 +84,7 @@ class SessionImplTest {
 	    return r;
 	}
 
-	public ResultSetWire createResultSetWire(String name) throws IOException {
+	public ResultSetWire createResultSetWire() throws IOException {
 	    return null;  // dummy as it is test for session
 	}
 

@@ -206,7 +206,7 @@ protected:
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};  //NOLINT
     std::size_t capacity_;  //NOLINT
 
-    std::size_t pushed_{0};  //NOLINT
+    std::atomic_ulong pushed_{0};  //NOLINT
     std::size_t poped_{0};  //NOLINT
 
     std::atomic_bool wait_for_write_{};  //NOLINT
@@ -295,7 +295,7 @@ public:
     public:
         static constexpr std::size_t max_response_message_length = 256;
 
-        response() : nstored_(0) {};
+        response() = default;
         ~response() = default;
 
         /**
@@ -307,7 +307,13 @@ public:
         response& operator = (response&&) = delete;
 
         std::pair<char*, std::size_t> recv() {
-            nstored_.wait();
+            if (!(written_ > read_)) {
+                boost::interprocess::scoped_lock lock(m_restored_);
+                w_restored_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                c_restored_.wait(lock, [this](){ return written_ > read_; });
+                w_restored_ = false;
+            }
             if (read_ == 0) {
                 if (annex_ != 0) {
                     return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
@@ -326,9 +332,10 @@ public:
         void dispose() {
             if (++read_ == expected_) {
                 length_ = second_length_ = 0;
-                written_ = read_ = 0;
+                to_be_written_ = written_ = read_ = 0;
                 expected_ = 1;
                 inuse_ = false;
+                query_ = false;
                 if (annex_ != 0) {
                     managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(annex_));
                     annex_ = 0;
@@ -342,7 +349,7 @@ public:
             }
         }
         char* get_buffer(std::size_t length) {
-            if (written_++ == 0) {
+            if (to_be_written_++ == 0) {
                 if (length <= max_response_message_length) {
                     length_ = length;
                     return static_cast<char*>(buffer_);
@@ -362,15 +369,20 @@ public:
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
         void flush() {
-            nstored_.post();
+            written_++;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (w_restored_) {
+                boost::interprocess::scoped_lock lock(m_restored_);
+                c_restored_.notify_one();
+            }
         }
         void set_query_mode() {
             expected_ = 2;
+            query_ = true;
         }
         void un_receive() {
             expected_--;
             read_--;
-            nstored_.post();
         }
     private:
         static constexpr std::size_t Alignment = sizeof(std::size_t);
@@ -386,12 +398,16 @@ public:
         std::size_t length_{};
         std::size_t second_length_{};
         unsigned expected_{1};
-        unsigned written_{};
+        unsigned to_be_written_{};
+        std::atomic_uint written_{};
         unsigned read_{};
         bool inuse_{};
+        bool query_{};
 
         boost::interprocess::managed_shared_memory* managed_shm_ptr_{};
-        boost::interprocess::interprocess_semaphore nstored_;
+        boost::interprocess::interprocess_mutex m_restored_{};
+        boost::interprocess::interprocess_condition c_restored_{};
+        std::atomic_bool w_restored_{};
         char buffer_[max_response_message_length]{};  //NOLINT
         boost::interprocess::managed_shared_memory::handle_t annex_{};
         std::size_t annex_length_{};

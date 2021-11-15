@@ -11,24 +11,23 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private static native long createNative(long sessionWireHandle, String name) throws IOException;
+    private static native long createNative(long sessionWireHandle) throws IOException;
+    private static native void connectNative(long handle, String name) throws IOException;
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeUsedDataNative(long handle, long length) throws IOException;
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
+    private ByteBufferBackedInputStream byteBufferBackedInputStream;
     private long wireHandle = 0;  // for c++
 
     /**
      * Class constructor, called from FutureResultWireImpl.
      * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
-     * @param name the name of the ResultSetWireImpl to be created
      */
-    public ResultSetWireImpl(long sessionWireHandle, String name) throws IOException {
-	if (name.length() == 0) {
-	    throw new IOException("ResultSet wire name is empty");
-	}
-	wireHandle = createNative(sessionWireHandle, name);
+    public ResultSetWireImpl(long sessionWireHandle) throws IOException {
+	wireHandle = createNative(sessionWireHandle);
+	byteBufferBackedInputStream = new ByteBufferBackedInputStream();
     }
 
     /**
@@ -39,6 +38,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 	boolean eor;
 
 	ByteBufferBackedInputStream() {
+	    eor = false;
+	}
+	synchronized void connect() {
 	    buf = ResultSetWireImpl.getChunkNative(wireHandle);
 	    eor = (buf == null);
 	}
@@ -75,15 +77,25 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return len;
 	}
 	public synchronized void disposeUsedData(long length) throws IOException {
-	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
+	    if (length > 0) {
+		ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);
+	    }
 	}
+    }
+
+    /**
+     * Connect this to the wire specifiec by the name.
+     */
+    public void connect(String name) throws IOException {
+	connectNative(wireHandle, name);
+	byteBufferBackedInputStream.connect();
     }
 
     /**
      * Provides the InputStream to retrieve the received data.
      */
     public MessagePackInputStream getMessagePackInputStream() {
-	return new ByteBufferBackedInputStream();
+	return byteBufferBackedInputStream;
     }
 
     /**

@@ -112,15 +112,14 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Create a ResultSetWire with the given name.
-     @param name the name of the ResultSetWire to be created, where name must be unique within a session
+     * Create a ResultSetWire without a name, meaning that this wire is not connected
      @returns ResultSetWireImpl
     */
-    public ResultSetWire createResultSetWire(String name) throws IOException {
+    public ResultSetWire createResultSetWire() throws IOException {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
 	}
-	return new ResultSetWireImpl(wireHandle, name);
+	return new ResultSetWireImpl(wireHandle);
     }
 
     public String getDbName() {

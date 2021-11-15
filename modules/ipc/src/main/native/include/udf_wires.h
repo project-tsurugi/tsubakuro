@@ -26,8 +26,11 @@ class session_wire_container
 public:
     class resultset_wires_container {
     public:
-        resultset_wires_container(session_wire_container *envelope, std::string_view name)
-            : envelope_(envelope), managed_shm_ptr_(envelope_->managed_shared_memory_.get()), rsw_name_(name) {
+        resultset_wires_container(session_wire_container *envelope)
+            : envelope_(envelope), managed_shm_ptr_(envelope_->managed_shared_memory_.get()) {
+        }
+        void connect(std::string_view name) {
+            rsw_name_ = name;
             shm_resultset_wires_ = managed_shm_ptr_->find<shm_resultset_wires>(rsw_name_.c_str()).first;
             if (shm_resultset_wires_ == nullptr) {
                 std::string msg("cannot find a result_set wire with the specified name: ");
@@ -123,8 +126,8 @@ public:
         }
         throw std::runtime_error("the number of pending requests exceeded the number of response boxes");
     }
-    resultset_wires_container *create_resultset_wire(std::string_view name_) {
-        return new resultset_wires_container(this, name_);
+    resultset_wires_container *create_resultset_wire() {
+        return new resultset_wires_container(this);
     }
     void dispose_resultset_wire(resultset_wires_container* container) {
         container->set_closed();

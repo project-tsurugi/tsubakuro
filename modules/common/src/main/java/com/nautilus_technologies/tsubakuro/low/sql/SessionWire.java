@@ -34,5 +34,5 @@ public interface SessionWire extends Closeable {
     */
     ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException;
 
-    ResultSetWire createResultSetWire(String name) throws IOException;    
+    ResultSetWire createResultSetWire() throws IOException;
 }

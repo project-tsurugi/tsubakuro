@@ -87,7 +87,8 @@ class ResultSetTotalTest {
 	    assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
 
 	    // client side receive SchemaMeta
-	    var resultSetWire = client.createResultSetWire(responseReceived.getName());
+	    var resultSetWire = client.createResultSetWire();
+	    resultSetWire.connect(responseReceived.getName());
 	    var schemaMeta = responseReceived.getRecordMeta();
 	    assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
 

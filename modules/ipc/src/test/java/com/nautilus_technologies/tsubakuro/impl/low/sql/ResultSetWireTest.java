@@ -64,7 +64,8 @@ class ResultSetWireTest {
 	    server.eorRSL(rsHandle);
 
 	    // client create RSL
-	    var resultSetWire = client.createResultSetWire("resultset-1");
+	    var resultSetWire = client.createResultSetWire();
+	    resultSetWire.connect("resultset-1");
 
 	    // client side receive Records
 	    // first record data
@@ -140,7 +141,8 @@ class ResultSetWireTest {
 	    server.eorRSL(rsHandle);
 
 	    // client create RSL
-	    var resultSetWire = client.createResultSetWire("resultset-1");
+	    var resultSetWire = client.createResultSetWire();
+	    resultSetWire.connect("resultset-1");
 
 	    // client side receive Records
 	    // first record data
@@ -175,7 +177,8 @@ class ResultSetWireTest {
 	}
 
 	Throwable exception = assertThrows(IOException.class, () -> {
-		var resultSetWire = client.createResultSetWire("resultset-2");  // not exist
+		var resultSetWire = client.createResultSetWire();
+		resultSetWire.connect("resultset-2");  // not exist
 	    });
 	assertEquals("cannot find a result_set wire with the specified name: resultset-2", exception.getMessage());
     }
