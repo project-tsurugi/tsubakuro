@@ -36,17 +36,11 @@ public class ResultSetWireImpl implements ResultSetWire {
     }
 
     class ByteBufferBackedInput extends ByteBufferInput {
-	boolean eor;
-
 	ByteBufferBackedInput(ByteBuffer byteBuffer) {
 	    super(byteBuffer);
-	    eor = false;
 	}
 
 	public MessageBuffer next() {
-	    if (eor) {
-		return null;
-	    }
 	    var rv = super.next();
 	    if (!Objects.isNull(rv)) {
 		return rv;
@@ -57,9 +51,6 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    }
 	    super.reset(buffer);
 	    return super.next();
-	}
-	void setEor() {
-	    eor = true;
 	}
     }
 
@@ -81,7 +72,6 @@ public class ResultSetWireImpl implements ResultSetWire {
 	disposeUsedDataNative(wireHandle, length);
 	var buffer = getChunkNative(wireHandle);
 	if (Objects.isNull(buffer)) {
-	    byteBufferBackedInput.setEor();
 	    return false;
 	}
 	byteBufferBackedInput.reset(buffer);
