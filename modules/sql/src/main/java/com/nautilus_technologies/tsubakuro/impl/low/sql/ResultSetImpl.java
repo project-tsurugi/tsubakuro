@@ -3,11 +3,11 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.CodingErrorAction;
 import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePack.UnpackerConfig;
 import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.MessagePack.UnpackerConfig;
+import org.msgpack.core.buffer.ByteBufferInput;
 import org.msgpack.core.MessageFormat;
 import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -59,7 +59,6 @@ public class ResultSetImpl implements ResultSet {
 
     private ResultSetWire resultSetWire;
     private RecordMetaImpl recordMeta;
-    private ResultSetWire.MessagePackInputStream inputStream;
     private MessageUnpacker unpacker;
     private int columnIndex;
     private boolean detectNull;
@@ -124,17 +123,23 @@ public class ResultSetImpl implements ResultSet {
             throw new IOException("already closed");
 	}
         if (Objects.isNull(unpacker)) {
-	    inputStream = resultSetWire.getMessagePackInputStream();
+	    var byteBufferInput = resultSetWire.getByteBufferBackedInput();
+	    if (Objects.isNull(byteBufferInput)) {
+		return false;
+	    }
+	    unpacker = new UnpackerConfig()
+		.withActionOnMalformedString(CodingErrorAction.IGNORE)
+		.withActionOnUnmappableString(CodingErrorAction.IGNORE)
+		.newUnpacker(byteBufferInput);
 	} else {
 	    if (columnIndex != recordMeta.fieldCount()) {
 		skipRestOfColumns();
 	    }
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
+	    if (!resultSetWire.disposeUsedData(unpacker.getTotalReadBytes())) {
+		return false;
+	    }
+	    unpacker.reset(resultSetWire.getByteBufferBackedInput());
 	}
-	unpacker = new UnpackerConfig()
-	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
-	    .withActionOnUnmappableString(CodingErrorAction.IGNORE)
-	    .newUnpacker(inputStream);
 	columnIndex = -1;
 	columnReady = false;
 	return unpacker.hasNext();

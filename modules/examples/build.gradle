@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.msgpack:msgpack-core:0.8.19'
+    implementation 'org.msgpack:msgpack-core:0.8.24'
 
     implementation project(':sql')
     implementation project(':ipc')

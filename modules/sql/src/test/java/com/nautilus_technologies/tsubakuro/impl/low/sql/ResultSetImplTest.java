@@ -4,13 +4,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.MessageFormat;
+import org.msgpack.core.buffer.ByteBufferInput;
 import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -23,73 +24,50 @@ import org.junit.jupiter.api.Test;
 
 class ResultSetImplTest {
     class ResultSetWireMock implements ResultSetWire {
-	class MessagePackInputStreamMock extends MessagePackInputStream {
-	    private ByteBuffer buf;
-	    private int position;
-	    
-	    MessagePackInputStreamMock() {
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
+	private ByteBufferBackedInputMock byteBufferInput;
+	private ByteBuffer buf;
 
-		try {
-		    // first column data
-		    packer.packLong((long) 987654321);
-		    packer.packDouble((double) 12345.6789);
-		    packer.packString("This is a string for the test");
-		    packer.packLong((long) 123456789);
-		    packer.packDouble((double) 98765.4321);
-		    packer.packNil();
-
-		    // second column data
-		    packer.packLong((long) 876543219);
-		    packer.packDouble((double) 2345.67891);
-		    packer.packNil();
-		    packer.packLong((long) 234567891);
-		    packer.packDouble((double) 8765.43219);
-		    packer.packString("This is second string for the test");
-
-		    packer.flush();
-
-		} catch (IOException e) {
-		    System.out.println("error");
-		}
-		byte[] ba = outputStream.toByteArray();
-		var size = outputStream.size();
-
-		buf = ByteBuffer.allocateDirect(size);
-		buf.put(ba, 0, size);
-		buf.rewind();
-		position = 0;
+	class ByteBufferBackedInputMock extends ByteBufferInput {
+	    ByteBufferBackedInputMock(ByteBuffer byteBuffer) {
+		super(byteBuffer);
 	    }
 
-	    public int read() throws IOException {
-		if (!buf.hasRemaining()) {
-		    return -1;
+	    boolean disposeUsedData(long length) {
+		var size = buf.capacity() - (int) length;
+		if (size == 0) {
+		    return false;
 		}
-		return buf.get();
-	    }
-	    public int read(byte[] bytes, int off, int len) throws IOException {
-		if (!buf.hasRemaining()) {
-		    return -1;
-		}
-		len = Math.min(len, buf.remaining());
-		buf.get(bytes, off, len);
-		return len;
-	    }
-	    public void disposeUsedData(long length) {
-		position += length;
-		buf.position(position);
+
+		var newBuf = ByteBuffer.allocateDirect(size);
+		newBuf.put(buf.array(), (int) length, size);
+		newBuf.rewind();
+		buf = newBuf;
+		reset(newBuf);
+		return true;
 	    }
 	}
-
-	MessagePackInputStreamMock msgPackInputStreamMock;
 
 	ResultSetWireMock() {
-	    msgPackInputStreamMock = new MessagePackInputStreamMock();
+	    byteBufferInput = null;
+
+	    byte[] ba = createRecordsForTest();
+	    var length = ba.length;
+
+	    //	    buf = ByteBuffer.allocateDirect(length);
+	    buf = ByteBuffer.allocate(length);
+	    buf.put(ba, 0, length);
+	    buf.rewind();
 	}
 
-	public MessagePackInputStream getMessagePackInputStream() {
-	    return msgPackInputStreamMock;
+	public ByteBufferInput getByteBufferBackedInput() {
+	    if (Objects.isNull(byteBufferInput)) {
+		byteBufferInput = new ByteBufferBackedInputMock(buf);
+	    }
+	    return byteBufferInput;
+	}
+
+	public boolean disposeUsedData(long length) {
+	    return byteBufferInput.disposeUsedData(length);
 	}
 
 	public void close() throws IOException {
@@ -97,6 +75,35 @@ class ResultSetImplTest {
     }
 
     private ResultSetImpl resultSetImpl;
+
+    byte[] createRecordsForTest() {
+	try {
+	    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+	    MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
+
+	    // first record data
+	    packer.packLong((long) 987654321);
+	    packer.packDouble((double) 12345.6789);
+	    packer.packString("This is a string for the test");
+	    packer.packLong((long) 123456789);
+	    packer.packDouble((double) 98765.4321);
+	    packer.packNil();
+
+	    // second record data
+	    packer.packLong((long) 876543219);
+	    packer.packDouble((double) 2345.67891);
+	    packer.packNil();
+	    packer.packLong((long) 234567891);
+	    packer.packDouble((double) 8765.43219);
+	    packer.packString("This is second string for the test");
+
+	    packer.flush();
+	    return outputStream.toByteArray();
+	} catch (IOException e) {
+	    System.out.println(e);
+	}
+	return null;
+    }
 
     @Test
     void receiveRecord() {

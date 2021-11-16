@@ -93,8 +93,8 @@ class ResultSetTotalTest {
 
 	    // client side receive Records
 	    // first record data
-	    var inputStream = resultSetWire.getMessagePackInputStream();
-	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    var input = resultSetWire.getByteBufferBackedInput();
+	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(input);
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
 	    assertEquals(unpacker.unpackLong(), 987654321L);
@@ -114,10 +114,10 @@ class ResultSetTotalTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.NIL);
 	    unpacker.unpackNil();
 
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
+	    resultSetWire.disposeUsedData(unpacker.getTotalReadBytes());
 
 	    // second record data
-	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(input);
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
 	    assertEquals(unpacker.unpackLong(), 876543219L);
@@ -137,10 +137,10 @@ class ResultSetTotalTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.STRING);
 	    assertEquals(unpacker.unpackString(), "This is second string for the test");
 
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
+	    resultSetWire.disposeUsedData(unpacker.getTotalReadBytes());
 
 	    // end of record
-	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(input);
 
 	    assertFalse(unpacker.hasNext());
 

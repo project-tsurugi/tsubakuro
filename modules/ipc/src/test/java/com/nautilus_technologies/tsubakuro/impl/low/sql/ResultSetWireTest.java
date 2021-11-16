@@ -6,6 +6,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ExecutionException;
+import java.util.Objects;
 import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.MessageUnpacker;
@@ -68,8 +69,10 @@ class ResultSetWireTest {
 
 	    // client side receive Records
 	    // first record data
-	    var inputStream = resultSetWire.getMessagePackInputStream();
-	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    var input = resultSetWire.getByteBufferBackedInput();
+	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(input);
+
+	    assertTrue(unpacker.hasNext());
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
 	    assertEquals(unpacker.unpackLong(), 987654321L);
@@ -89,10 +92,11 @@ class ResultSetWireTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.NIL);
 	    unpacker.unpackNil();
 
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
+	    // next record exists
+	    assertTrue(resultSetWire.disposeUsedData(unpacker.getTotalReadBytes()));
 
 	    // second record data
-	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    assertTrue(unpacker.hasNext());
 
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.INTEGER);
 	    assertEquals(unpacker.unpackLong(), 876543219L);
@@ -112,12 +116,9 @@ class ResultSetWireTest {
 	    assertEquals(unpacker.getNextFormat().getValueType(), ValueType.STRING);
 	    assertEquals(unpacker.unpackString(), "This is second string for the test");
 
-	    inputStream.disposeUsedData(unpacker.getTotalReadBytes());
-
 	    // end of record
-	    unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    assertFalse(resultSetWire.disposeUsedData(unpacker.getTotalReadBytes()));
 
-	    assertFalse(unpacker.hasNext());
 	    // RESPONSE test end
 
 	    client.close();
@@ -144,10 +145,9 @@ class ResultSetWireTest {
 
 	    // client side receive Records
 	    // first record data
-	    var inputStream = resultSetWire.getMessagePackInputStream();
-	    var unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(inputStream);
+	    var input = resultSetWire.getByteBufferBackedInput();
 
-	    assertFalse(unpacker.hasNext());
+	    assertTrue(Objects.isNull(input));
 	    // RESPONSE test end
 
 	    client.close();

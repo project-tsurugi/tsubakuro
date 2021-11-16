@@ -4,6 +4,8 @@ import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import org.msgpack.core.buffer.ByteBufferInput;
 import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 
 /**
@@ -11,14 +13,9 @@ import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
  */
 public interface ResultSetWire extends Closeable {
     /**
-     * Receiving data sent by MessagePack is supposed to be retrieved via InputStream.
-     */
-    abstract class MessagePackInputStream extends InputStream {
-	public abstract void disposeUsedData(long length) throws IOException;
-    }
-
-    /**
      * Provides an InputStream to retrieve the received data.
      */
-    MessagePackInputStream getMessagePackInputStream();
+    ByteBufferInput getByteBufferBackedInput();
+
+    boolean disposeUsedData(long length) throws IOException;
 }
