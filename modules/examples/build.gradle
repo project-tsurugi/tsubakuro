@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation 'org.msgpack:msgpack-core:0.8.24'
+    implementation 'commons-cli:commons-cli:1.4'
 
     implementation project(':sql')
     implementation project(':ipc')
@@ -39,4 +40,12 @@ tasks.register('runTpcc', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.low.tpcc.Main'
+}
+
+tasks.register('runPm', JavaExec) {
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    mainClass = 'com.nautilus_technologies.tsubakuro.low.measurement.Main'
+    jvmArgs = ['-Xms1024m', '-Xmx4096m', "-XX:+PreserveFramePointer"]
 }
