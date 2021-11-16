@@ -72,7 +72,7 @@ public class ResultSetImpl implements ResultSet {
 	this.recordMeta = new RecordMetaImpl(recordMeta);
 	this.resultSetWire = resultSetWire;
     }
-	
+
     /**
      * Provide the metadata object.
      * @returns recordMeta the metadata object
