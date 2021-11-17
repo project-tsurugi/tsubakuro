@@ -23,6 +23,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private long wireHandle = 0;  // for c++
     private long sessionWireHandle;
     private ByteBufferBackedInput byteBufferBackedInput;
+    private boolean eor;
 
     class ByteBufferBackedInput extends ByteBufferInput {
 	ByteBufferBackedInput(ByteBuffer byteBuffer) {
@@ -34,12 +35,15 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    if (!Objects.isNull(rv)) {
 		return rv;
 	    }
-	    var buffer = getChunkNative(wireHandle);
-	    if (Objects.isNull(buffer)) {
-		return null;
+	    if (!eor) {
+		var buffer = getChunkNative(wireHandle);
+		if (Objects.isNull(buffer)) {
+		    return null;
+		}
+		super.reset(buffer);
+		return super.next();
 	    }
-	    super.reset(buffer);
-	    return super.next();
+	    return null;
 	}
     }
 
@@ -51,6 +55,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     public ResultSetWireImpl(long sessionWireHandle) throws IOException {
 	this.sessionWireHandle = sessionWireHandle;
 	this.byteBufferBackedInput = null;
+	this.eor = false;
     }
 
     /**
@@ -71,6 +76,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	if (Objects.isNull(byteBufferBackedInput)) {
 	    var buffer = getChunkNative(wireHandle);
 	    if (Objects.isNull(buffer)) {
+		eor = true;
 		return null;
 	    }
 	    byteBufferBackedInput = new ByteBufferBackedInput(buffer);
@@ -82,6 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	disposeUsedDataNative(wireHandle, length);
 	var buffer = getChunkNative(wireHandle);
 	if (Objects.isNull(buffer)) {
+	    eor = true;
 	    return false;
 	}
 	byteBufferBackedInput.reset(buffer);
