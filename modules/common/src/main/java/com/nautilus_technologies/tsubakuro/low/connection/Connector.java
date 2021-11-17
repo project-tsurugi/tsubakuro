@@ -8,7 +8,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 /**
  * Connector type.
  */
-public interface Connector extends Closeable {
+public interface Connector {
     /**
      * Connect to the sql service
      * @param name the name of the SQL server to connect
