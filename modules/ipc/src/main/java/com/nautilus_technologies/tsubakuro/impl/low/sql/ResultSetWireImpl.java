@@ -75,7 +75,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	    return len;
 	}
 	public synchronized void disposeUsedData(long length) throws IOException {
-	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);	    
+	    ResultSetWireImpl.disposeUsedDataNative(wireHandle, length);
 	}
     }
 

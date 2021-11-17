@@ -57,7 +57,7 @@ public class Insert extends Thread {
     public void run() {
 	try {
 	    barrier.await();
-	    
+
             long start = System.nanoTime();
 	    long prev = 0;
 	    long now = 0;
@@ -97,8 +97,6 @@ public class Insert extends Thread {
 		}
 	    }
             profile.elapsed = System.nanoTime() - start;
-	    
-
         } catch (IOException | ExecutionException | InterruptedException | BrokenBarrierException e) {
             System.out.println(e);
 	} finally {

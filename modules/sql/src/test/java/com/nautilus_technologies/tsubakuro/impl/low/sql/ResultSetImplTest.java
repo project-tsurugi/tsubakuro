@@ -26,7 +26,7 @@ class ResultSetImplTest {
 	class MessagePackInputStreamMock extends MessagePackInputStream {
 	    private ByteBuffer buf;
 	    private int position;
-	    
+
 	    MessagePackInputStreamMock() {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(outputStream);
