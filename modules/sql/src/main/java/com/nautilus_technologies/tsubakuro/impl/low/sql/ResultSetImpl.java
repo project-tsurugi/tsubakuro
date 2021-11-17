@@ -3,12 +3,12 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.CodingErrorAction;
 import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessagePack.UnpackerConfig;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.core.MessageFormat;
+import org.msgpack.core.MessagePack.UnpackerConfig;
+import org.msgpack.core.buffer.ByteBufferInput;
 import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
@@ -59,9 +59,8 @@ public class ResultSetImpl implements ResultSet {
 
     private ResultSetWire resultSetWire;
     private RecordMetaImpl recordMeta;
-    private ResultSetWire.MessagePackInputStream inputStream;
+    private UnpackerConfig unpackerConfig;
     private MessageUnpacker unpacker;
-    private long alreadyDisposed;
     private int columnIndex;
     private boolean detectNull;
     private boolean columnReady;
@@ -72,18 +71,16 @@ public class ResultSetImpl implements ResultSet {
      */
     public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
 	this.resultSetWire = resultSetWire;
-	inputStream = resultSetWire.getMessagePackInputStream();
-	unpacker = new UnpackerConfig()
+	unpackerConfig = new UnpackerConfig()
 	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
-	    .withActionOnUnmappableString(CodingErrorAction.IGNORE)
-	    .newUnpacker(inputStream);
-	this.alreadyDisposed = 0;
+	    .withActionOnUnmappableString(CodingErrorAction.IGNORE);
     }
 
     public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
 	recordMeta = new RecordMetaImpl(meta);
 	columnIndex = (int) recordMeta.fieldCount();
 	resultSetWire.connect(name);
+	unpacker = unpackerConfig.newUnpacker(resultSetWire.getByteBufferBackedInput());
     }
 
     /**
@@ -138,9 +135,10 @@ public class ResultSetImpl implements ResultSet {
 	if (columnIndex != recordMeta.fieldCount()) {
 	    skipRestOfColumns();
 	}
-	var usedDataTotal = unpacker.getTotalReadBytes();
-	inputStream.disposeUsedData(usedDataTotal - alreadyDisposed);
-	alreadyDisposed = usedDataTotal;
+	if (!resultSetWire.disposeUsedData(unpacker.getTotalReadBytes())) {
+	    return false;
+	}
+	unpacker.reset(resultSetWire.getByteBufferBackedInput());
 	columnIndex = -1;
 	columnReady = false;
 	return unpacker.hasNext();

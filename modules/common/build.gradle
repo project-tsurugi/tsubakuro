@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     api 'com.google.protobuf:protobuf-java:3.17.3'
+    api 'org.msgpack:msgpack-core:0.8.24'
 }
 
 sourceSets {
