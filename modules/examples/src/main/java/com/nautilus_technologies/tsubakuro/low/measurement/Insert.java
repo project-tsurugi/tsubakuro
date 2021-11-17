@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low;
+package com.nautilus_technologies.tsubakuro.low.measurement;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
-public class SelectOne extends Thread {
+public class Insert extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
     Session session;
@@ -24,28 +24,31 @@ public class SelectOne extends Thread {
     RandomGenerator randomGenerator;
     Profile profile;
 
-    PreparedStatement prepared2;
+    PreparedStatement prepared5;
     long paramsWid;
     long paramsDid;
+    long oid;
     
-    public SelectOne(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public Insert(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
         this.barrier = barrier;
         this.stop = stop;
         this.profile = profile;
         this.session = session;
         this.session.connect(connector.connect().get());
         this.randomGenerator = new RandomGenerator();
+	this.oid = Scale.ORDERS + 1;
 	prepare();
     }
-    
-    void prepare()  throws IOException, ExecutionException, InterruptedException {
-	String sql2 = "SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
-	var ph2 = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
-	prepared2 = session.prepare(sql2, ph2).get();
+
+    void prepare() throws IOException, ExecutionException, InterruptedException {
+        String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
+        var ph5 = RequestProtos.PlaceHolder.newBuilder()
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_o_id").setType(CommonProtos.DataType.INT8))
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_d_id").setType(CommonProtos.DataType.INT8))
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8));
+        prepared5 = session.prepare(sql5, ph5).get();
     }
-    
+
     void setParams() {
 	paramsWid = randomGenerator.uniformWithin(1, profile.warehouses);
         paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
@@ -68,50 +71,20 @@ public class SelectOne extends Thread {
 		    profile.commit += (now - prev);
 		}
 		prev = now;
-		
-		// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
-		var ps2 = RequestProtos.ParameterSet.newBuilder()
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
-		var future2 = transaction.executeQuery(prepared2, ps2);
-		var resultSet2 = future2.getLeft().get();
-		now = System.nanoTime();
-		profile.head += (now - prev);
-		prev = now;
-		try {
-		    if (!Objects.isNull(resultSet2)) {
-			if (!resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
-			    }
-			    throw new ExecutionException(new IOException("no record"));
-			}
-			resultSet2.nextColumn();
-			var dNextOid = resultSet2.getInt8();
-			resultSet2.nextColumn();
-			var dTax = resultSet2.getFloat8();
-			if (resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
-			    }
-			    throw new ExecutionException(new IOException("found multiple records"));
-			}
-			resultSet2.close();
-			resultSet2 = null;
-		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
-		    }
-		} catch (ExecutionException e) {
+
+		// INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
+		var ps5 = RequestProtos.ParameterSet.newBuilder()
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(oid++))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
+		var future5 = transaction.executeStatement(prepared5, ps5);
+		var result5 = future5.get();
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
 		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 			throw new IOException("error in rollback");
 		    }
 		    transaction = null;
 		    continue;
-		} finally {
-		    if (!Objects.isNull(resultSet2)) {
-			resultSet2.close();
-		    }
 		}
 		now = System.nanoTime();
 		profile.body += (now - prev);
@@ -124,12 +97,13 @@ public class SelectOne extends Thread {
 		}
 	    }
             profile.elapsed = System.nanoTime() - start;
+	    
 
         } catch (IOException | ExecutionException | InterruptedException | BrokenBarrierException e) {
             System.out.println(e);
 	} finally {
 	    try {
-		prepared2.close();
+		prepared5.close();
 		session.close();
 	    } catch (IOException e) {
 		System.out.println(e);
