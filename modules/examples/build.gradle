@@ -49,3 +49,10 @@ tasks.register('runPm', JavaExec) {
     mainClass = 'com.nautilus_technologies.tsubakuro.low.measurement.Main'
     jvmArgs = ['-Xms1024m', '-Xmx4096m', "-XX:+PreserveFramePointer"]
 }
+
+tasks.register('runWarehouse', JavaExec) {
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    mainClass = 'com.nautilus_technologies.tsubakuro.low.warehouse.Main'
+}
