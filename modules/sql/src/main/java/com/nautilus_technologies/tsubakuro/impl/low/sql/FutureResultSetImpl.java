@@ -18,7 +18,7 @@ public class FutureResultSetImpl implements Future<ResultSet> {
 
     private SessionLinkImpl sessionLinkImpl;
     private Future<ResponseProtos.ExecuteQuery> future;
-    
+
     /**
      * Class constructor, called from TransactionImpl that executed the SQL that created this result set.
      * @param future the Future<ResponseProtos.ExecuteQuery>
