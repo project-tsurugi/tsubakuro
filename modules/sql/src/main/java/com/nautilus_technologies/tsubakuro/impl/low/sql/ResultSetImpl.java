@@ -135,10 +135,13 @@ public class ResultSetImpl implements ResultSet {
 	if (columnIndex != recordMeta.fieldCount()) {
 	    skipRestOfColumns();
 	}
-	if (!resultSetWire.disposeUsedData(unpacker.getTotalReadBytes())) {
-	    return false;
+	var length = unpacker.getTotalReadBytes();
+	if (length > 0) {
+	    if (!resultSetWire.disposeUsedData(unpacker.getTotalReadBytes())) {
+		return false;
+	    }
+	    unpacker.reset(resultSetWire.getByteBufferBackedInput());
 	}
-	unpacker.reset(resultSetWire.getByteBufferBackedInput());
 	columnIndex = -1;
 	columnReady = false;
 	return unpacker.hasNext();
