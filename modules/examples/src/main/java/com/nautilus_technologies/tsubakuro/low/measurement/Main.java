@@ -46,6 +46,7 @@ public final class Main {
     enum Type {
 	SELECT_ONE,
 	SELECT_MULTI,
+	SELECT_LIMIT_ONE,
 	INSERT,
 	UPDATE,
     };
@@ -77,6 +78,8 @@ public final class Main {
 		    type = Type.SELECT_ONE;
 		} else if (givenType.equals("selectm")) {
 		    type = Type.SELECT_MULTI;
+		} else if (givenType.equals("selectl")) {
+		    type = Type.SELECT_LIMIT_ONE;
 		} else if (givenType.equals("insert")) {
 		    type = Type.INSERT;
 		} else if (givenType.equals("update")) {
@@ -98,6 +101,9 @@ public final class Main {
 		break;
 	    case SELECT_MULTI:
 		client = new SelectMulti(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		break;
+	    case SELECT_LIMIT_ONE:
+		client = new SelectLimitOne(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    case INSERT:
 		client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);

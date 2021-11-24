@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
-public class SelectMulti extends Thread {
+public class SelectLimitOne extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
     Session session;
@@ -30,7 +30,7 @@ public class SelectMulti extends Thread {
     long paramsDid;
     long paramsCid;
     
-    public SelectMulti(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public SelectLimitOne(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
         this.barrier = barrier;
         this.stop = stop;
         this.profile = profile;
@@ -83,11 +83,14 @@ public class SelectMulti extends Thread {
 		prev = now;
                 try {
                     if (!Objects.isNull(resultSet1)) {
-                        while (resultSet1.nextRecord()) {
-			    resultSet1.nextColumn();
-			    var noOid = resultSet1.getInt8();
-			    profile.records++;
-			}
+                        if (!resultSet1.nextRecord()) {
+                            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+                                throw new ExecutionException(new IOException("SQL error"));
+                            }
+                            continue;  // noOid is exhausted, it's OK and continue this transaction
+                        }
+                        resultSet1.nextColumn();
+                        var noOid = resultSet1.getInt8();
                         resultSet1.close();
                         resultSet1 = null;
                     }
