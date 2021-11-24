@@ -101,6 +101,8 @@ public class ResultSetWireImpl implements ResultSetWire {
     public void close() throws IOException {
 	closeNative(wireHandle);
 	wireHandle = 0;
-	byteBufferBackedInput.close();
+	if (!Objects.isNull(byteBufferBackedInput)) {
+	    byteBufferBackedInput.close();
+	}
     }
 }

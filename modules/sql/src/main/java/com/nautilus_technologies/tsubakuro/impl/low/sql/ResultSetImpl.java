@@ -80,7 +80,10 @@ public class ResultSetImpl implements ResultSet {
 	recordMeta = new RecordMetaImpl(meta);
 	columnIndex = (int) recordMeta.fieldCount();
 	resultSetWire.connect(name);
-	unpacker = unpackerConfig.newUnpacker(resultSetWire.getByteBufferBackedInput());
+	var byteBufferBackedInput = resultSetWire.getByteBufferBackedInput();
+	if (!Objects.isNull(byteBufferBackedInput)) {
+	    unpacker = unpackerConfig.newUnpacker(byteBufferBackedInput);
+	}
     }
 
     /**
@@ -131,6 +134,9 @@ public class ResultSetImpl implements ResultSet {
     public boolean nextRecord() throws IOException {
 	if (Objects.isNull(resultSetWire)) {
             throw new IOException("already closed");
+	}
+	if (Objects.isNull(unpacker)) {  // means the query returns no record
+	    return false;
 	}
 	if (columnIndex != recordMeta.fieldCount()) {
 	    skipRestOfColumns();
