@@ -33,6 +33,7 @@ tasks.register('runExample', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.low.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
 tasks.register('runTpcc', JavaExec) {
@@ -40,6 +41,7 @@ tasks.register('runTpcc', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.low.tpcc.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
 tasks.register('runPm', JavaExec) {
@@ -47,7 +49,7 @@ tasks.register('runPm', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.low.measurement.Main'
-    jvmArgs = ['-Xms1024m', '-Xmx4096m', "-XX:+PreserveFramePointer"]
+    jvmArgs = ['-Xms1024m', '-Xmx4096m', '-XX:+PreserveFramePointer', '--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
 tasks.register('runWarehouse', JavaExec) {
@@ -55,4 +57,5 @@ tasks.register('runWarehouse', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.low.warehouse.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
