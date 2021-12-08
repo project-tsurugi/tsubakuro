@@ -58,6 +58,13 @@ message ExecuteQuery {
   schema.RecordMeta record_meta = 2;
 }
 
+/* For response to Explain. */
+message Explain {
+  oneof result {
+    string output = 1;  /* The result output string of the explain. */
+    Error error = 2;
+  }
+}
 
 /* For response message from the SQL service. */
 message Response {
@@ -66,5 +73,6 @@ message Response {
     Begin begin = 2;
     Prepare prepare = 3;
     ExecuteQuery execute_query = 4;
+    Explain explain = 5;
   }
 }
