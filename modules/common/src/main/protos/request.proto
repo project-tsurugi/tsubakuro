@@ -97,6 +97,11 @@ message DisposePreparedStatement {
 message Disconnect {
 }
 
+/* For explain prepared sql. */
+message Explain {
+  common.PreparedStatement prepared_statement_handle = 1;
+  ParameterSet parameters = 2;
+}
 
 /* For request message to the SQL service. */
 message Request {
@@ -112,5 +117,6 @@ message Request {
     Rollback rollback = 9;
     DisposePreparedStatement dispose_prepared_statement = 10;
     Disconnect disconnect = 11;
+    Explain explain = 12;
   }
 }
