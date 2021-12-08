@@ -52,16 +52,23 @@ public class Insert extends Thread {
 	    }
 
 	    long oid = firstOid + 1;
-	    for (int i = 0; i < concurrency; i++) {
+	    int i;
+	    for (i = 0; i < concurrency; i++) {
 		// INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
 		var ps5 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(oid++))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
-		futures.add(transaction.executeStatement(prepared5, ps5));
+		try {
+		    futures.add(transaction.executeStatement(prepared5, ps5));
+		} catch (IOException e) {
+		    System.out.println(e);
+		    System.out.println("The " + (i + 1) + "th and subsequent Inserts will be cancelled");
+		    break;
+		} 
 	    }
-	    for (int i = 0; i < concurrency; i++) {
-		var result5 = futures.get(i).get();
+	    for (int j = 0; j < i; j++) {
+		var result5 = futures.get(j).get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
 		    throw new IOException("error in sql");
 		}
