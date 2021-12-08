@@ -9,6 +9,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ExplainDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;

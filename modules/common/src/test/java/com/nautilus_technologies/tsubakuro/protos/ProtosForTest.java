@@ -326,6 +326,28 @@ public final class ProtosForTest {
 	}
     }
 
+    static class ExplainChecker {
+	static RequestProtos.Explain.Builder builder() {
+	    return
+		RequestProtos.Explain.newBuilder()
+		.setPreparedStatementHandle(PreparedStatementChecker.builder())
+		.setParameters(ParameterSetChecker.builder());
+	}
+	static boolean check(RequestProtos.Explain dst) {
+	    return
+		PreparedStatementChecker.check(dst.getPreparedStatementHandle())
+		&& ParameterSetChecker.check(dst.getParameters());
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(RequestProtos.Explain.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
     static long sessionID = 123;
 
     /**
@@ -612,6 +634,34 @@ public final class ProtosForTest {
 	}
     }
 
+    public static class ExplainRequestChecker {
+	static RequestProtos.Request.Builder builder(long id) {
+	    return
+		RequestProtos.Request.newBuilder()
+		.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+		.setExplain(ExplainChecker.builder());
+	}
+	public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+	    return
+		RequestProtos.Request.newBuilder()
+		.setExplain(ExplainChecker.builder());
+	}
+	public static boolean check(RequestProtos.Request dst, long id) {
+	    return
+		(dst.getSessionHandle().getHandle() == id)
+		&& RequestProtos.Request.RequestCase.EXPLAIN.equals(dst.getRequestCase())
+		&& ExplainChecker.check(dst.getExplain());
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
 
     /**
      * Check of Response parts
@@ -744,6 +794,26 @@ public final class ProtosForTest {
 	}
     }
 
+    public static class ResMessageExplainChecker {
+	static ResponseProtos.Explain.Builder builder() {
+	    return
+		ResponseProtos.Explain.newBuilder()
+		.setOutput("ThisIsAnExecutionPlanString");
+	}
+	public static boolean check(ResponseProtos.Explain dst) {
+	    return
+		dst.getOutput().equals("ThisIsAnExecutionPlanString");
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(ResponseProtos.Explain.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
     /**
      * Check of Response level message
      * can be used by external packages
@@ -821,6 +891,27 @@ public final class ProtosForTest {
 	    return
 		ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())
 		&& ResMessageExecuteQueryChecker.check(dst.getExecuteQuery());
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
+    public static class ExplainResponseChecker {
+	public static ResponseProtos.Response.Builder builder() {
+	    return
+		ResponseProtos.Response.newBuilder()
+		.setExplain(ResMessageExplainChecker.builder());
+	}
+	public static boolean check(ResponseProtos.Response dst) {
+	    return
+		ResponseProtos.Response.ResponseCase.EXPLAIN.equals(dst.getResponseCase())
+		&& ResMessageExplainChecker.check(dst.getExplain());
 	}
 	@Test
 	void test() {

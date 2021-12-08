@@ -13,6 +13,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ExplainDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
@@ -40,6 +41,18 @@ public class SessionLinkImpl {
 	    throw new IOException("already closed");
 	}
 	return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
+    };
+
+    /**
+     * Send explain request to the SQL server via wire.send().
+     @param request the request message encoded with protocol buffer
+     @return Future<String> contains a string to explain the plan
+    */
+    public Future<String> send(RequestProtos.Explain.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
+	return new FutureExplainImpl(wire.<ResponseProtos.Explain>send(RequestProtos.Request.newBuilder().setExplain(request), new ExplainDistiller()));
     };
 
     /**

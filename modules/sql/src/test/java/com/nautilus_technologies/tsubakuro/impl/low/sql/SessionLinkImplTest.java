@@ -18,7 +18,7 @@ import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
     
 import org.junit.jupiter.api.Test;
 
-class SessionImplTest {
+class SessionLinkImplTest {
     ResponseProtos.Response nextResponse;
     
     class FutureResponseMock<V> implements Future<V> {
@@ -96,76 +96,14 @@ class SessionImplTest {
     }
 
     @Test
-    void useSessionAfterClose() {
-	SessionImpl session;
+    void explain() {
+	SessionLinkImpl sessionLink = new SessionLinkImpl(new SessionWireMock());
+
         try {
-	    session = new SessionImpl();
-	    session.connect(new SessionWireMock());
-	    session.close();
-
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    session.createTransaction();
-		});
-	    assertEquals("this session is not connected to the Database", exception.getMessage());
-	} catch (IOException e) {
-            fail("cought IOException");
-        }
-   }
-
-    @Test
-    void useTransactionAfterClose() {
-	SessionImpl session;
-        try {
-	    session = new SessionImpl();
-	    session.connect(new SessionWireMock());
-	    var transaction = session.createTransaction().get();
-	    transaction.commit();
-	    session.close();
-
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
-		});
-	    assertEquals("already closed", exception.getMessage());
-	} catch (IOException e) {
-            fail("cought IOException");
-	} catch (InterruptedException e) {
-            fail("cought InterruptedException");
-	} catch (ExecutionException e) {
-            fail("cought ExecutionException");
-        }
-    }
-
-    @Test
-    void usePreparedStatementAfterClose() {
-	SessionImpl session;
-        try {
-	    session = new SessionImpl();
-	    session.connect(new SessionWireMock());
-
-	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
-	    var ph = RequestProtos.PlaceHolder.newBuilder()
-		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
-	    var preparedStatement = session.prepare(sql, ph).get();
-	    preparedStatement.close();
-
-	    var transaction = session.createTransaction().get();
-	    var ps = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
-
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    var pair = transaction.executeQuery(preparedStatement, ps);
-		    var resultSet = pair.getLeft().get();
-		});
-	    assertEquals("already closed", exception.getMessage());
-
-	    transaction.commit();
-	    session.close();
-	} catch (IOException e) {
-            fail("cought IOException");
-	} catch (InterruptedException e) {
-            fail("cought InterruptedException");
-	} catch (ExecutionException e) {
-            fail("cought ExecutionException");
+	    var r = sessionLink.send(ProtosForTest.ExplainChecker.builder());
+	    assertEquals(ProtosForTest.ResMessageExplainChecker.builder().build().getOutput(), r.get());
+	} catch (IOException | InterruptedException | ExecutionException e) {
+            fail("cought Exception");
         }
    }
 }

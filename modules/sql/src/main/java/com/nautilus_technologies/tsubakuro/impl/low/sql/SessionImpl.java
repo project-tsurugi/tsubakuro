@@ -65,6 +65,21 @@ public class SessionImpl implements Session {
     }
 
     /**
+     * Request explain to the SQL service
+     * @param preparedStatement prepared statement for the command
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @return Future<Explain> holds a string to explain the plan
+     */
+    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return sessionLinkImpl.send(RequestProtos.Explain.newBuilder()
+				    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+				    .setParameters(parameterSet));
+    }
+
+    /**
      * Close the Session
      */
     public void close() throws IOException {
