@@ -1,4 +1,5 @@
 plugins {
+    id 'tsubakuro.java-library-conventions'
     id 'tsubakuro.jni-library-conventions'
 }
 
@@ -6,4 +7,19 @@ dependencies {
     implementation 'org.msgpack:msgpack-core:0.8.24'
 
     implementation project(':common')
+}
+
+publishing {
+    publications {
+        mavenNative(MavenPublication) {
+            artifactId = "libwire"
+            artifact "${buildDir}/native/libwire.so"
+        }
+    }
+}
+
+tasks.withType(AbstractPublishToMaven) { task ->
+    if (task.name == 'publishMavenNativePublicationToMavenLocal') {
+        task.dependsOn nativeLib
+    }
 }

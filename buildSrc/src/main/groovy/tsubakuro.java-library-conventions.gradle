@@ -4,3 +4,18 @@ plugins {
 
     id 'tsubakuro.java-conventions'
 }
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = project.name
+
+            from components.java
+
+            artifact sourcesJar {
+                classifier = 'sources'
+                extension  = 'jar'
+            }
+        }
+    }
+}

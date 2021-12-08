@@ -5,6 +5,9 @@ plugins {
     id 'com.github.spotbugs'
 }
 
+group = 'com.nautilus_technologies.tsubakuro'
+version = '0.0.1'
+
 repositories {
     mavenCentral()
 }
