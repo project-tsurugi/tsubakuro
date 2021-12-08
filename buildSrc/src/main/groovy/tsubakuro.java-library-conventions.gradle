@@ -14,7 +14,7 @@ publishing {
 
             artifact sourcesJar {
                 classifier = 'sources'
-                extension  = 'jar'
+                archiveExtension  = 'jar'
             }
         }
     }
