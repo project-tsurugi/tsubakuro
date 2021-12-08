@@ -60,7 +60,7 @@ tasks.register('runWarehouse', JavaExec) {
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
-tasks.register('runConcurrent', JavaExec) {
+tasks.register('runIc', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
