@@ -35,4 +35,12 @@ public interface Session extends Closeable {
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
     Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException;
+
+    /**
+     * Request explain to the SQL service
+     * @param preparedStatement prepared statement for the command
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @return Future<Explain> holds a string to explain the plan
+     */
+    Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException;
 }
