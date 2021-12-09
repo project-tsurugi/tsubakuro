@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation 'org.msgpack:msgpack-core:0.8.24'
+    testImplementation 'org.slf4j:slf4j-nop:1.7.32'
 
     implementation project(':common')
 }
