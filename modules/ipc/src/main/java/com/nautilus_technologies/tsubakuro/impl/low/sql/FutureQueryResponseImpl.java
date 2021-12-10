@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
@@ -21,15 +22,20 @@ public class FutureQueryResponseImpl implements Future<ResponseProtos.ExecuteQue
      * @param sessionWireImpl the wireImpl class responsible for this communication
      * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureQueryResponseImpl(SessionWireImpl sessionWireImpl, ResponseWireHandleImpl responseWireHandleImpl) {
+    FutureQueryResponseImpl(SessionWireImpl sessionWireImpl) {
 	this.sessionWireImpl = sessionWireImpl;
-	this.responseWireHandleImpl = responseWireHandleImpl;
     }
-	
+    public void setResponseHandle(ResponseWireHandleImpl handle) {
+	responseWireHandleImpl = handle;
+    }
+
     /**
      * get the message received from the SQL server.
      */
     public ResponseProtos.ExecuteQuery get() throws ExecutionException {
+	if (Objects.isNull(responseWireHandleImpl)) {
+	    throw new ExecutionException(new IOException("request has not been send out"));
+	}
 	try {
 	    var response = sessionWireImpl.receive(responseWireHandleImpl);
 	    if (ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(response.getResponseCase())) {

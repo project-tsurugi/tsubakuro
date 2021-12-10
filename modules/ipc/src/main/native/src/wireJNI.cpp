@@ -59,18 +59,9 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     auto address = env->GetByteArrayElements(array, nullptr);
-    try {
-        response_box::response *r = swc->write(reinterpret_cast<char *>(address), env->GetArrayLength(array));
-        env->ReleaseByteArrayElements(array, address, JNI_ABORT);
-        return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
-    } catch (std::runtime_error &e) {
-        env->ReleaseByteArrayElements(array, address, JNI_ABORT);
-        jclass classj = env->FindClass("Ljava/io/IOException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
-    }
-    return 0;
+    response_box::response *r = swc->write(reinterpret_cast<char *>(address), env->GetArrayLength(array));
+    env->ReleaseByteArrayElements(array, address, JNI_ABORT);
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
 }
 
 /*

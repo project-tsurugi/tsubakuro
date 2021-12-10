@@ -67,31 +67,6 @@ class SessionWireTest {
     }
 
     @Test
-    void multipleRequests() {
-	try {
-	    server = new ServerWireImpl(dbName, sessionID);
-	    client = new SessionWireImpl(dbName, sessionID);
-
-	    // client side send multiple requests, which can be stored in thre response_box
-	    Queue<Future<ResponseProtos.Begin>> queue = new ArrayDeque<>();
-            for (long i = 0; i < 16; i++) {  // 16 is from construction of response_box in test/native/include/server_wires.h
-		queue.add(client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller()));
-	    }
-
-	    // client side send one more request
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    var response = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
-		});
-	    assertEquals("the number of pending requests exceeded the number of response boxes", exception.getMessage());
-
-	    client.close();
-	    server.close();
-	} catch (IOException e) {
-	    fail("cought IOException");
-	}
-    }
-
-    @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
 		client = new SessionWireImpl(dbName, sessionID); // not exist

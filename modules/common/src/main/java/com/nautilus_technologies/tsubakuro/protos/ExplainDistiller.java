@@ -12,7 +12,7 @@ public class ExplainDistiller implements Distiller<ResponseProtos.Explain> {
 	if (!ResponseProtos.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
 	    LoggerFactory.getLogger(PrepareDistiller.class).error("response received is " + response);
 	    throw new IOException("response type is inconsistent with the request type");
-	}				  
+	}
 	return response.getExplain();
     }
 }

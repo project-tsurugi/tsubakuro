@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -24,16 +25,21 @@ public class FutureResponseImpl<V> implements Future<V> {
      * @param distiller the Distiller class that will work for the message to be received
      * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureResponseImpl(SessionWireImpl sessionWireImpl, Distiller<V> distiller, ResponseWireHandleImpl responseWireHandleImpl) {
+    FutureResponseImpl(SessionWireImpl sessionWireImpl, Distiller<V> distiller) {
 	this.sessionWireImpl = sessionWireImpl;
 	this.distiller = distiller;
-	this.responseWireHandleImpl = responseWireHandleImpl;
     }
-	
+    public void setResponseHandle(ResponseWireHandleImpl handle) {
+	responseWireHandleImpl = handle;
+    }
+
     /**
      * get the message received from the SQL server.
      */
     public V get() throws ExecutionException {
+	if (Objects.isNull(responseWireHandleImpl)) {
+	    throw new ExecutionException(new IOException("request has not been send out"));
+	}
 	try {
 	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
 	} catch (IOException e) {
