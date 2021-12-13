@@ -100,6 +100,7 @@ public:
             if (req_wire == nullptr || responses_ == nullptr) {
                 throw std::runtime_error("cannot find the session wire");
             }
+            responses_->connect(managed_shared_memory_.get());
             request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {

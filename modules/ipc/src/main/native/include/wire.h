@@ -316,12 +316,12 @@ public:
             }
             if (read_ == 0) {
                 if (annex_ != 0) {
-                    return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
+                    return std::pair<char*, std::size_t>(static_cast<char*>(client_managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
                 }
                 return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
             }
             if (second_annex_ != 0) {
-                return std::pair<char*, std::size_t>(static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
+                return std::pair<char*, std::size_t>(static_cast<char*>(client_managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
             }
             return std::pair<char*, std::size_t>(static_cast<char*>(buffer_) + length_, second_length_);  // NOLINT
         }
@@ -337,12 +337,12 @@ public:
                 inuse_ = false;
                 query_ = false;
                 if (annex_ != 0) {
-                    managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(annex_));
+                    client_managed_shm_ptr_->deallocate(client_managed_shm_ptr_->get_address_from_handle(annex_));
                     annex_ = 0;
                     annex_length_ = 0;
                 }
                 if (second_annex_ != 0) {
-                    managed_shm_ptr_->deallocate(managed_shm_ptr_->get_address_from_handle(second_annex_));
+                    client_managed_shm_ptr_->deallocate(client_managed_shm_ptr_->get_address_from_handle(second_annex_));
                     second_annex_ = 0;
                     second_annex_length_ = 0;
                 }
@@ -356,7 +356,7 @@ public:
                 }
                 annex_ = allocate_buffer(length);
                 annex_length_ = length;
-                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(annex_));
+                return static_cast<char*>(server_managed_shm_ptr_->get_address_from_handle(annex_));
             } else {
                 if (second_length_ <= (max_response_message_length - length_)) {
                     second_length_ = length;
@@ -364,7 +364,7 @@ public:
                 }
                 second_annex_ = allocate_buffer(length);
                 second_annex_length_ = length;
-                (void)static_cast<char*>(managed_shm_ptr_->get_address_from_handle(second_annex_));
+                return static_cast<char*>(server_managed_shm_ptr_->get_address_from_handle(second_annex_));
             }
             std::abort();  //  FIXME (Processing when a message located later is discarded first)
         }
@@ -387,12 +387,15 @@ public:
     private:
         static constexpr std::size_t Alignment = sizeof(std::size_t);
 
-        void set_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-            managed_shm_ptr_ = managed_shm_ptr;
+        void set_server_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+            server_managed_shm_ptr_ = managed_shm_ptr;
+        }
+        void set_client_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+            client_managed_shm_ptr_ = managed_shm_ptr;
         }
         boost::interprocess::managed_shared_memory::handle_t allocate_buffer(std::size_t length) {
-            auto buffer = static_cast<char*>(managed_shm_ptr_->allocate_aligned(length, Alignment));
-            return managed_shm_ptr_->get_handle_from_address(buffer);
+            auto buffer = static_cast<char*>(server_managed_shm_ptr_->allocate_aligned(length, Alignment));
+            return server_managed_shm_ptr_->get_handle_from_address(buffer);
         }
 
         std::size_t length_{};
@@ -404,7 +407,8 @@ public:
         bool inuse_{};
         bool query_{};
 
-        boost::interprocess::managed_shared_memory* managed_shm_ptr_{};
+        boost::interprocess::managed_shared_memory* server_managed_shm_ptr_{};
+        boost::interprocess::managed_shared_memory* client_managed_shm_ptr_{};
         boost::interprocess::interprocess_mutex m_restored_{};
         boost::interprocess::interprocess_condition c_restored_{};
         std::atomic_bool w_restored_{};
@@ -420,7 +424,7 @@ public:
      */
     explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {
         for (auto &&r: boxes_) {
-            r.set_managed_shared_memory(managed_shm_ptr);
+            r.set_server_managed_shared_memory(managed_shm_ptr);
         }
     }
     response_box() = delete;
@@ -436,6 +440,11 @@ public:
 
     std::size_t size() { return boxes_.size(); }
     response& at(std::size_t idx) { return boxes_.at(idx); }
+    void connect(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+        for (auto &&r: boxes_) {
+            r.set_client_managed_shared_memory(managed_shm_ptr);
+        }
+    }
 
 private:
     std::vector<response, boost::interprocess::allocator<response, boost::interprocess::managed_shared_memory::segment_manager>> boxes_;
