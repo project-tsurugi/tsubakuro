@@ -1,6 +1,9 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.concurrent.Future;
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.Objects;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,10 +24,11 @@ public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
     private String dbName;
     private long sessionID;
+    private Queue<QueueEntry> queue;
     
     private static native long openNative(String name) throws IOException;
-    private static native long sendNative(long sessionHandle, byte[] buffer) throws IOException;
-    private static native long sendQueryNative(long sessionHandle, byte[] buffer) throws IOException;
+    private static native long sendNative(long sessionHandle, byte[] buffer);
+    private static native long sendQueryNative(long sessionHandle, byte[] buffer);
     private static native ByteBuffer receiveNative(long responseHandle);
     private static native void unReceiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
@@ -32,6 +36,42 @@ public class SessionWireImpl implements SessionWire {
 
     static {
 	System.loadLibrary("wire");
+    }
+
+    enum RequestType {
+	STATEMENT,
+	QUERY
+    };
+
+    static class QueueEntry<V> {
+	RequestType type;
+	byte[] request;
+	FutureResponseImpl<V> futureBody;
+	FutureQueryResponseImpl futureHead;
+
+	QueueEntry(byte[] request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
+	    this.type = RequestType.QUERY;
+	    this.request = request;
+	    this.futureBody = futureBody;
+	    this.futureHead = futureHead;
+	}
+	QueueEntry(byte[] request, FutureResponseImpl<V> futureBody) {
+	    this.type = RequestType.STATEMENT;
+	    this.request = request;
+	    this.futureBody = futureBody;
+	}
+	RequestType getRequestType() {
+	    return type;
+	}
+	byte[] getRequest() {
+	    return request;
+	}
+	FutureQueryResponseImpl getFutureHead() {
+	    return futureHead;
+	}
+	FutureResponseImpl<V> getFutureBody() {
+	    return futureBody;
+	}
     }
 
     /**
@@ -43,6 +83,7 @@ public class SessionWireImpl implements SessionWire {
 	wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
 	this.dbName = dbName;
 	this.sessionID = sessionID;
+	this.queue = new ArrayDeque<>();
     }
 
     /**
@@ -63,8 +104,14 @@ public class SessionWireImpl implements SessionWire {
 	    throw new IOException("already closed");
 	}
 	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
+	var futureBody = new FutureResponseImpl<V>(this, distiller);
 	long handle = sendNative(wireHandle, req);
-	return new FutureResponseImpl<V>(this, distiller, new ResponseWireHandleImpl(handle));
+	if (handle != 0) {
+	    futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
+	} else {
+	    queue.add(new QueueEntry<V>(req, futureBody));
+	}
+	return futureBody;
     }
 
     /**
@@ -77,9 +124,16 @@ public class SessionWireImpl implements SessionWire {
 	    throw new IOException("already closed");
 	}
 	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
+	var left = new FutureQueryResponseImpl(this);
+	var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
 	long handle = sendQueryNative(wireHandle, req);
-	return Pair.of(new FutureQueryResponseImpl(this, new ResponseWireHandleImpl(handle)),
-		       new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller(), new ResponseWireHandleImpl(handle)));
+	if (handle != 0) {
+	    left.setResponseHandle(new ResponseWireHandleImpl(handle));
+	    right.setResponseHandle(new ResponseWireHandleImpl(handle));
+	} else {
+	    queue.add(new QueueEntry<ResponseProtos.ResultOnly>(req, left, right));
+	}
+	return Pair.of(left, right);
     }
 
     /**
@@ -87,7 +141,7 @@ public class SessionWireImpl implements SessionWire {
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
-    public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+    public synchronized ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
 	}
@@ -95,6 +149,25 @@ public class SessionWireImpl implements SessionWire {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
 	    releaseNative(responseHandle);
+	    var entry = queue.poll();
+	    if (!Objects.isNull(entry)) {
+		if (entry.getRequestType() == RequestType.STATEMENT) {
+		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+		    } else {
+			queue.add(entry);
+		    }
+		} else {
+		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+		    } else {
+			queue.add(entry);
+		    }
+		}
+	    }
 	    return response;
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    throw new IOException("error: SessionWireImpl.receive()", e);

@@ -125,7 +125,7 @@ public:
                 return &r;
             }
         }
-        throw std::runtime_error("the number of pending requests exceeded the number of response boxes");
+        return nullptr;
     }
     resultset_wires_container *create_resultset_wire() {
         return new resultset_wires_container(this);
