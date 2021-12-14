@@ -141,30 +141,30 @@ public class SessionWireImpl implements SessionWire {
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
      @returns ResposeProtos.Response message
     */
-    public synchronized ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+    public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
 	}
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
-	    releaseNative(responseHandle);
-	    var entry = queue.poll();
-	    if (!Objects.isNull(entry)) {
-		if (entry.getRequestType() == RequestType.STATEMENT) {
-		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+	    synchronized (this) {
+		releaseNative(responseHandle);
+		var entry = queue.peek();
+		if (!Objects.isNull(entry)) {
+		    if (entry.getRequestType() == RequestType.STATEMENT) {
+			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
 		    } else {
-			queue.add(entry);
-		    }
-		} else {
-		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-		    } else {
-			queue.add(entry);
+			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
 		    }
 		}
 	    }
