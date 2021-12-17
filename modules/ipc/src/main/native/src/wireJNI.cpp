@@ -84,13 +84,35 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
  * Method:    receiveNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_receiveNative
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_receiveNative__J
 (JNIEnv *env, jclass, jlong handle)
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
 
     auto b = r->recv();
     return env->NewDirectByteBuffer(b.first, b.second);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
+ * Method:    receiveNative
+ * Signature: (JJ)Ljava/nio/ByteBuffer;
+ */
+JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_SessionWireImpl_receiveNative__JJ
+(JNIEnv *env, jclass, jlong handle, jlong timeout)
+{
+    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
+
+    try {
+        auto b = r->recv(timeout);
+        return env->NewDirectByteBuffer(b.first, b.second);
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+        return nullptr;
+    }
 }
 
 /*

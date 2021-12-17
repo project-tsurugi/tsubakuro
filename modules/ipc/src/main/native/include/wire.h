@@ -24,6 +24,7 @@
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
+#include <boost/thread/thread_time.hpp>
 
 namespace tateyama::common::wire {
 
@@ -306,13 +307,25 @@ public:
         response& operator = (response const&) = delete;
         response& operator = (response&&) = delete;
 
-        std::pair<char*, std::size_t> recv() {
+        std::pair<char*, std::size_t> recv(long timeout = 0) {
             if (!(written_ > read_)) {
-                boost::interprocess::scoped_lock lock(m_restored_);
-                w_restored_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_restored_.wait(lock, [this](){ return written_ > read_; });
-                w_restored_ = false;
+                if (timeout == 0) {
+                    boost::interprocess::scoped_lock lock(m_restored_);
+                    w_restored_ = true;
+                    std::atomic_thread_fence(std::memory_order_acq_rel);
+                    c_restored_.wait(lock, [this](){ return written_ > read_; });
+                    w_restored_ = false;
+                } else {
+                    boost::interprocess::scoped_lock lock(m_restored_);
+                    w_restored_ = true;
+                    std::atomic_thread_fence(std::memory_order_acq_rel);
+                    if (!c_restored_.timed_wait(lock,
+                                                boost::get_system_time() + boost::posix_time::milliseconds(timeout),
+                                                [this](){ return written_ > read_; })) {
+                        throw std::runtime_error("response has not been received within the specified time");
+                    }
+                    w_restored_ = false;
+                }
             }
             if (read_ == 0) {
                 if (annex_ != 0) {

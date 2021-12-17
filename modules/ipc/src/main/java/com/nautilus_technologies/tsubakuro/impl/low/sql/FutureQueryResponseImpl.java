@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 import java.io.IOException;
@@ -48,8 +49,20 @@ public class FutureQueryResponseImpl implements Future<ResponseProtos.ExecuteQue
 	}
     }
 
-    public ResponseProtos.ExecuteQuery get(long timeout, TimeUnit unit) throws ExecutionException {
-	return get();  // FIXME need to be implemented properly, same as below
+    public ResponseProtos.ExecuteQuery get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
+	if (Objects.isNull(responseWireHandleImpl)) {
+	    throw new ExecutionException(new IOException("request has not been send out"));
+	}
+	try {
+	    var response = sessionWireImpl.receive(responseWireHandleImpl, timeout, unit);
+	    if (ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(response.getResponseCase())) {
+		return response.getExecuteQuery();
+	    }
+	    sessionWireImpl.unReceive(responseWireHandleImpl);
+	    return null;
+	} catch (IOException e) {
+	    throw new ExecutionException(e);
+	}
     }
     public boolean isDone() {
 	return isDone;
