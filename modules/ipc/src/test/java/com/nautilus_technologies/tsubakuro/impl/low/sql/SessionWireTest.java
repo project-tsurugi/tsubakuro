@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.io.Closeable;
@@ -59,6 +61,38 @@ class SessionWireTest {
 		});
 	    assertEquals("java.io.IOException: response type is inconsistent with the request type", exception.getMessage());
 	    
+	    client.close();
+	    server.close();
+	} catch (IOException e) {
+	    fail("cought IOException");
+	}
+    }
+
+    @Test
+    void timeout() {
+	try {
+	    server = new ServerWireImpl(dbName, sessionID);
+	    client = new SessionWireImpl(dbName, sessionID);
+
+	    // REQUEST test begin
+	    // client side send Request
+	    var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
+	    // server side receive Request
+	    assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+	    // REQUEST test end
+
+	    // RESPONSE test begin
+	    // server side does not send Response
+
+	    var start = System.currentTimeMillis();
+	    // client side receive Response, ends up with timeout error
+	    Throwable exception = assertThrows(TimeoutException.class, () -> {
+		    var message = futureResponse.get(1, TimeUnit.SECONDS);
+		});
+	    assertEquals("response has not been received within the specified time", exception.getMessage());
+	    var duration = System.currentTimeMillis() - start;
+	    assertTrue((750 < duration) && (duration < 1250));
+
 	    client.close();
 	    server.close();
 	} catch (IOException e) {

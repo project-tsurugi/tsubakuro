@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -37,8 +38,13 @@ public class FutureTransactionImpl implements Future<Transaction> {
         }
     }
 
-    public TransactionImpl get(long timeout, TimeUnit unit) throws ExecutionException {
-	return get();  // FIXME need to be implemented properly, same as below
+    public TransactionImpl get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
+	try {
+	    ResponseProtos.Begin response = future.get(timeout, unit);
+	    return new TransactionImpl(response.getTransactionHandle(), sessionLinkImpl);
+	} catch (InterruptedException e) {
+            throw new ExecutionException(e);
+        }
     }
     public boolean isDone() {
 	return isDone;
