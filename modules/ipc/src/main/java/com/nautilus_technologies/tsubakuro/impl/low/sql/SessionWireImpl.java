@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.Objects;
@@ -30,6 +32,7 @@ public class SessionWireImpl implements SessionWire {
     private static native long sendNative(long sessionHandle, byte[] buffer);
     private static native long sendQueryNative(long sessionHandle, byte[] buffer);
     private static native ByteBuffer receiveNative(long responseHandle);
+    private static native ByteBuffer receiveNative(long responseHandle, long timeout) throws TimeoutException;
     private static native void unReceiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
     private static native void closeNative(long sessionHandle);
@@ -148,7 +151,45 @@ public class SessionWireImpl implements SessionWire {
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
-	    synchronized (this) {
+	    synchronized (SessionWireImpl.class) {
+		releaseNative(responseHandle);
+		var entry = queue.peek();
+		if (!Objects.isNull(entry)) {
+		    if (entry.getRequestType() == RequestType.STATEMENT) {
+			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
+		    } else {
+			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
+		    }
+		}
+	    }
+	    return response;
+	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
+	    throw new IOException("error: SessionWireImpl.receive()", e);
+	}
+    }
+
+    /**
+     * Receive ResponseProtos.Response from the SQL server via the native wire.
+     @param handle the handle indicating the sent request message corresponding to the response message to be received.
+     @returns ResposeProtos.Response message
+    */
+    public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+	if (wireHandle == 0) {
+	    throw new IOException("already closed");
+	}
+	try {
+	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
+	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, unit.toMillis(timeout)));
+	    synchronized (SessionWireImpl.class) {
 		releaseNative(responseHandle);
 		var entry = queue.peek();
 		if (!Objects.isNull(entry)) {
