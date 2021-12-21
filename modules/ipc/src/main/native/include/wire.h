@@ -320,7 +320,11 @@ public:
                     w_restored_ = true;
                     std::atomic_thread_fence(std::memory_order_acq_rel);
                     if (!c_restored_.timed_wait(lock,
-                                                boost::get_system_time() + boost::posix_time::milliseconds(timeout),
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                                boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+#else
+                                                boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+#endif
                                                 [this](){ return written_ > read_; })) {
                         throw std::runtime_error("response has not been received within the specified time");
                     }

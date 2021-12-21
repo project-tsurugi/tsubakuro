@@ -188,7 +188,11 @@ public class SessionWireImpl implements SessionWire {
 	}
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, unit.toMillis(timeout)));
+	    var timeoutNano = unit.toNanos(timeout);
+	    if (timeoutNano == Long.MIN_VALUE) {
+		throw new IOException("timeout duration overflow");
+	    }
+	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, timeoutNano));
 	    synchronized (SessionWireImpl.class) {
 		releaseNative(responseHandle);
 		var entry = queue.peek();
