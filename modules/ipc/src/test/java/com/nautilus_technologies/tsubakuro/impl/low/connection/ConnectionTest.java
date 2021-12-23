@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.ServerWireImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.CommunicationChecker;
@@ -41,6 +43,33 @@ class ConnectionTest {
 	} catch (InterruptedException e) {
 	    fail("cought IOException");
 	} catch (ExecutionException e) {
+	    fail("cought IOException");
+	}
+    }
+
+    @Test
+    void timeout() {
+	ServerConnectionImpl serverConnection;
+
+	try {
+	    serverConnection = new ServerConnectionImpl(dbName);
+	    assertEquals(serverConnection.listen(), 0);
+
+	    var connector = new IpcConnectorImpl(dbName);
+	    var future = connector.connect();
+	    var id = serverConnection.listen();
+	    assertEquals(id, 1);
+
+	    var start = System.currentTimeMillis();
+	    Throwable exception = assertThrows(TimeoutException.class, () -> {
+		    var client = (SessionWireImpl) future.get(1, TimeUnit.SECONDS);
+		});
+	    assertEquals("connection response has not been accepted within the specified time", exception.getMessage());
+	    var duration = System.currentTimeMillis() - start;
+	    assertTrue((750 < duration) && (duration < 1250));
+
+	    serverConnection.close();
+	} catch (IOException e) {
 	    fail("cought IOException");
 	}
     }

@@ -780,18 +780,32 @@ public:
         }
         return rv;
     }
-    bool check(std::size_t n, bool wait = false) {
+    bool check(std::size_t n, bool wait = false, long timeout = 0) {
         if (!wait) {
             return accepted_ >= n;
         }
         if (accepted_ >= n) {
             return true;
         }
-        {
+        if (timeout == 0) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_accept_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
             c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
+            wait_for_accept_ = false;
+        } else {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            wait_for_accept_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (!c_accepted_.timed_wait(lock,
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                        boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+#else
+                                        boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+#endif
+                                        [this, n](){ return (accepted_ >= n); })) {
+                throw std::runtime_error("connection response has not been accepted within the specified time");
+            }
             wait_for_accept_ = false;
         }
         return true;
