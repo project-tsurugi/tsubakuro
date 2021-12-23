@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.connection;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
@@ -28,8 +29,12 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	}
     }
 
-    public SessionWire get(long timeout, TimeUnit unit) throws ExecutionException {
-	return get();  // FIXME need to be implemented properly, same as below
+    public SessionWire get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
+	try {
+	    return connector.getSessionWire(timeout, unit);
+	} catch (IOException e) {
+	    throw new ExecutionException(e);
+	}
     }
     public boolean isDone() {
 	return isDone || connector.checkConnection();

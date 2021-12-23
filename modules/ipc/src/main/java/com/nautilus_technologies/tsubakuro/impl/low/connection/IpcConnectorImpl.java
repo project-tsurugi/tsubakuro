@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.impl.low.connection;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
@@ -14,6 +16,7 @@ public final class IpcConnectorImpl implements Connector {
     private static native long getConnectorNative(String name) throws IOException;
     private static native long requestNative(long handle);
     private static native void waitNative(long handle, long id);
+    private static native void waitNative(long handle, long id, long timeout) throws TimeoutException;
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
 
@@ -37,6 +40,16 @@ public final class IpcConnectorImpl implements Connector {
 
     public SessionWire getSessionWire() throws IOException {
 	waitNative(handle, id);
+	close();
+	return new SessionWireImpl(name, id);
+    }
+
+    public SessionWire getSessionWire(long timeout, TimeUnit unit) throws TimeoutException, IOException {
+	var timeoutNano = unit.toNanos(timeout);
+	if (timeoutNano == Long.MIN_VALUE) {
+	    throw new IOException("timeout duration overflow");
+	}
+	waitNative(handle, id, timeoutNano);
 	close();
 	return new SessionWireImpl(name, id);
     }
