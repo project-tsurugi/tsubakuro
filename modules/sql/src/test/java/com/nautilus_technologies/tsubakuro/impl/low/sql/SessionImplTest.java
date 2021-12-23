@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -20,7 +21,8 @@ import org.junit.jupiter.api.Test;
 
 class SessionImplTest {
     ResponseProtos.Response nextResponse;
-    
+    private final long specialTimeoutValue = 9999;
+
     class FutureResponseMock<V> implements Future<V> {
 	private SessionWireMock wire;
 	private Distiller<V> distiller;
@@ -40,7 +42,10 @@ class SessionImplTest {
 		throw new ExecutionException(e);
 	    }
 	}
-	public V get(long timeout, TimeUnit unit) throws ExecutionException {
+	public V get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
+	    if (timeout == specialTimeoutValue) {
+		throw new TimeoutException("timeout for test");
+	    }
 	    return get();  // FIXME need to be implemented properly, same as below
 	}
 	public boolean isDone() {
@@ -111,6 +116,20 @@ class SessionImplTest {
             fail("cought IOException");
         }
    }
+
+    @Test
+    void sessionTimeout() {
+        SessionImpl session;
+
+	session = new SessionImpl();
+	session.connect(new SessionWireMock());
+	session.setCloseTimeout(specialTimeoutValue, TimeUnit.SECONDS);
+
+	Throwable exception = assertThrows(IOException.class, () -> {
+		session.close();
+	    });
+	assertEquals("java.util.concurrent.TimeoutException: timeout for test", exception.getMessage());
+    }
 
     @Test
     void useTransactionAfterClose() {

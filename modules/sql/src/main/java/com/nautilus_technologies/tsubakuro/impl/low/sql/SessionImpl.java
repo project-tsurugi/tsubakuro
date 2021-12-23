@@ -3,6 +3,8 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -15,6 +17,8 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
  * SessionImpl type.
  */
 public class SessionImpl implements Session {
+    private long timeout;
+    private TimeUnit unit;
     private SessionLinkImpl sessionLinkImpl;
     
     /**
@@ -80,6 +84,16 @@ public class SessionImpl implements Session {
     }
 
     /**
+     * set timeout to close(), which won't timeout if this is not performed.
+     * @param timeout time length until the close operation timeout
+     * @param unit unit of timeout
+     */
+    public void setCloseTimeout(long t, TimeUnit u) {
+	timeout = t;
+	unit = u;
+    }
+    
+    /**
      * Close the Session
      */
     public void close() throws IOException {
@@ -87,13 +101,12 @@ public class SessionImpl implements Session {
 	    throw new IOException("already closed");
 	}
 	try {
-	    var response = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder()).get();
+	    var futureResponse = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder());
+	    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
 	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
 		throw new IOException(response.getError().getDetail());
 	    }
-	} catch (InterruptedException e) {
-	    throw new IOException(e);
-	} catch (ExecutionException e) {
+	} catch (TimeoutException | InterruptedException | ExecutionException e) {
 	    throw new IOException(e);
 	}
 	sessionLinkImpl.close();
