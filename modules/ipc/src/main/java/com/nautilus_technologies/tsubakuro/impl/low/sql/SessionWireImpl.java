@@ -108,7 +108,10 @@ public class SessionWireImpl implements SessionWire {
 	}
 	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
 	var futureBody = new FutureResponseImpl<V>(this, distiller);
-	long handle = sendNative(wireHandle, req);
+	long handle;
+	synchronized (this) {
+	    handle = sendNative(wireHandle, req);
+	}
 	if (handle != 0) {
 	    futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
 	} else {
@@ -129,7 +132,10 @@ public class SessionWireImpl implements SessionWire {
 	var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
 	var left = new FutureQueryResponseImpl(this);
 	var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
-	long handle = sendQueryNative(wireHandle, req);
+	long handle;
+	synchronized (this) {
+	    handle = sendQueryNative(wireHandle, req);
+	}
 	if (handle != 0) {
 	    left.setResponseHandle(new ResponseWireHandleImpl(handle));
 	    right.setResponseHandle(new ResponseWireHandleImpl(handle));
@@ -151,21 +157,23 @@ public class SessionWireImpl implements SessionWire {
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
-	    releaseNative(responseHandle);
-	    var entry = queue.peek();
-	    if (!Objects.isNull(entry)) {
-		if (entry.getRequestType() == RequestType.STATEMENT) {
-		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			queue.poll();
-		    }
-		} else {
-		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			queue.poll();
+	    synchronized (this) {
+		releaseNative(responseHandle);
+		var entry = queue.peek();
+		if (!Objects.isNull(entry)) {
+		    if (entry.getRequestType() == RequestType.STATEMENT) {
+			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
+		    } else {
+			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
 		    }
 		}
 	    }
@@ -191,21 +199,23 @@ public class SessionWireImpl implements SessionWire {
 		throw new IOException("timeout duration overflow");
 	    }
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, timeoutNano));
-	    releaseNative(responseHandle);
-	    var entry = queue.peek();
-	    if (!Objects.isNull(entry)) {
-		if (entry.getRequestType() == RequestType.STATEMENT) {
-		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			queue.poll();
-		    }
-		} else {
-		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
-		    if (responseBoxHandle != 0) {
-			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			queue.poll();
+	    synchronized (this) {
+		releaseNative(responseHandle);
+		var entry = queue.peek();
+		if (!Objects.isNull(entry)) {
+		    if (entry.getRequestType() == RequestType.STATEMENT) {
+			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
+		    } else {
+			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+			if (responseBoxHandle != 0) {
+			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			    queue.poll();
+			}
 		    }
 		}
 	    }
