@@ -93,6 +93,9 @@ public:
     };
 
     session_wire_container(std::string_view name) : db_name_(name) {
+        if (int rv = pthread_mutex_init(&send_mutex_, nullptr); rv != 0) {
+            std::abort();
+        }
         try {
             managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, db_name_.c_str());
             auto req_wire = managed_shared_memory_->find<unidirectional_message_wire>(request_wire_name).first;
@@ -117,15 +120,24 @@ public:
     session_wire_container& operator = (session_wire_container&&) = delete;
 
     response_box::response *write(char* msg, std::size_t length) {
+        response_box::response* rv = nullptr;
+
+        if (int ret = pthread_mutex_lock(&send_mutex_); ret != 0) {
+            std::abort();
+        }
         for (std::size_t idx = 0 ; idx < responses_->size() ; idx++) {
             response_box::response& r = responses_->at(idx);
             if(!r.is_inuse()) {
                 r.set_inuse();
                 request_wire_.write(msg, message_header(idx, length));
-                return &r;
+                rv = &r;
+                break;
             }
         }
-        return nullptr;
+        if (int ret = pthread_mutex_unlock(&send_mutex_); ret != 0) {
+            std::abort();
+        }
+        return rv;
     }
     resultset_wires_container *create_resultset_wire() {
         return new resultset_wires_container(this);
@@ -140,6 +152,7 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_{};
     response_box* responses_;
+    pthread_mutex_t send_mutex_;
 };
 
 class connection_container

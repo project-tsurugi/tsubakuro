@@ -151,23 +151,21 @@ public class SessionWireImpl implements SessionWire {
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
-	    synchronized (SessionWireImpl.class) {
-		releaseNative(responseHandle);
-		var entry = queue.peek();
-		if (!Objects.isNull(entry)) {
-		    if (entry.getRequestType() == RequestType.STATEMENT) {
-			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
-			if (responseBoxHandle != 0) {
-			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    queue.poll();
-			}
-		    } else {
-			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
-			if (responseBoxHandle != 0) {
-			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    queue.poll();
-			}
+	    releaseNative(responseHandle);
+	    var entry = queue.peek();
+	    if (!Objects.isNull(entry)) {
+		if (entry.getRequestType() == RequestType.STATEMENT) {
+		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			queue.poll();
+		    }
+		} else {
+		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			queue.poll();
 		    }
 		}
 	    }
@@ -193,23 +191,21 @@ public class SessionWireImpl implements SessionWire {
 		throw new IOException("timeout duration overflow");
 	    }
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, timeoutNano));
-	    synchronized (SessionWireImpl.class) {
-		releaseNative(responseHandle);
-		var entry = queue.peek();
-		if (!Objects.isNull(entry)) {
-		    if (entry.getRequestType() == RequestType.STATEMENT) {
-			long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
-			if (responseBoxHandle != 0) {
-			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    queue.poll();
-			}
-		    } else {
-			long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
-			if (responseBoxHandle != 0) {
-			    entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-			    queue.poll();
-			}
+	    releaseNative(responseHandle);
+	    var entry = queue.peek();
+	    if (!Objects.isNull(entry)) {
+		if (entry.getRequestType() == RequestType.STATEMENT) {
+		    long responseBoxHandle = sendNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			queue.poll();
+		    }
+		} else {
+		    long responseBoxHandle = sendQueryNative(wireHandle, entry.getRequest());
+		    if (responseBoxHandle != 0) {
+			entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
+			queue.poll();
 		    }
 		}
 	    }

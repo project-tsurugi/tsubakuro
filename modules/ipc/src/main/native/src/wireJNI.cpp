@@ -127,6 +127,8 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
     r->un_receive();
 }
 
+pthread_mutex_t release_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /*
  * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_SessionWireImpl
  * Method:    releaseNative
@@ -137,7 +139,13 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
 
+    if (int ret = pthread_mutex_lock(&release_mutex); ret != 0) {
+        std::abort();
+    }
     r->dispose();
+    if (int ret = pthread_mutex_unlock(&release_mutex); ret != 0) {
+        std::abort();
+    }
 }
 
 /*
