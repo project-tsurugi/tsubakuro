@@ -499,16 +499,32 @@ public:
         /**
          * @brief provide the current chunk to MsgPack.
          */
-        std::pair<char*, std::size_t> get_chunk(char* base) {
+        std::pair<char*, std::size_t> get_chunk(char* base, long timeout = 0) {
             if (chunk_end_ < poped_) {
                 chunk_end_ = poped_;
             }
             if (!(chunk_end_ < pushed_)) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                wait_for_column_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
-                wait_for_column_ = false;
+                if (timeout == 0) {
+                    boost::interprocess::scoped_lock lock(m_mutex_);
+                    wait_for_column_ = true;
+                    std::atomic_thread_fence(std::memory_order_acq_rel);
+                    c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
+                    wait_for_column_ = false;
+                } else {
+                    boost::interprocess::scoped_lock lock(m_mutex_);
+                    wait_for_column_ = true;
+                    std::atomic_thread_fence(std::memory_order_acq_rel);
+                    if (!c_empty_.timed_wait(lock,
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                             boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+#else
+                                             boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+#endif
+                                             [this](){ return chunk_end_ < pushed_; })) {
+                        throw std::runtime_error("record has not been received within the specified time");
+                    }
+                    wait_for_column_ = false;
+                }
             }
             auto chunk_start = chunk_end_;
             if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
@@ -648,30 +664,58 @@ public:
         count_using_--;
     }
 
-    unidirectional_simple_wire* active_wire() {
+    unidirectional_simple_wire* active_wire(long timeout = 0) {
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
                     return &wire;
                 }
             }
-            boost::interprocess::scoped_lock lock(m_record_);
-            wait_for_record_ = true;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            unidirectional_simple_wire* active_wire = nullptr;
-            c_record_.wait(lock,
-                           [this, &active_wire](){
-                               for (auto&& wire: unidirectional_simple_wires_) {
-                                   if (wire.has_record()) {
-                                       active_wire = &wire;
-                                       return true;
+            if (timeout == 0) {
+                boost::interprocess::scoped_lock lock(m_record_);
+                wait_for_record_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                unidirectional_simple_wire* active_wire = nullptr;
+                c_record_.wait(lock,
+                               [this, &active_wire](){
+                                   for (auto&& wire: unidirectional_simple_wires_) {
+                                       if (wire.has_record()) {
+                                           active_wire = &wire;
+                                           return true;
+                                       }
                                    }
-                               }
-                               return is_eor();
-                           });
-            wait_for_record_ = false;
-            if (active_wire != nullptr) {
-                return active_wire;
+                                   return is_eor();
+                               });
+                wait_for_record_ = false;
+                if (active_wire != nullptr) {
+                    return active_wire;
+                }
+            } else {
+                boost::interprocess::scoped_lock lock(m_record_);
+                wait_for_record_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                unidirectional_simple_wire* active_wire = nullptr;
+                if (!c_record_.timed_wait(lock,
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                                boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+#else
+                                                boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+#endif
+                                          [this, &active_wire](){
+                                              for (auto&& wire: unidirectional_simple_wires_) {
+                                                  if (wire.has_record()) {
+                                                      active_wire = &wire;
+                                                      return true;
+                                                  }
+                                              }
+                                              return is_eor();
+                                          })) {
+                    throw std::runtime_error("record has not been received within the specified time");
+                }
+                wait_for_record_ = false;
+                if (active_wire != nullptr) {
+                    return active_wire;
+                }
             }
         } while(!is_eor());
 
