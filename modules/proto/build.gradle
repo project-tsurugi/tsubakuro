@@ -29,3 +29,7 @@ protobuf {
 
 checkstyleMain.enabled = false
 spotbugsMain.enabled = false
+
+tasks.withType(com.google.protobuf.gradle.GenerateProtoTask){
+    sourcesJar.dependsOn(generateProto)
+}
