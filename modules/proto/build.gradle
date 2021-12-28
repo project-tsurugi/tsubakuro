@@ -1,0 +1,31 @@
+plugins {
+    id 'tsubakuro.java-library-conventions'
+
+    id 'com.google.protobuf' version '0.8.16'
+}
+
+dependencies {
+    api 'com.google.protobuf:protobuf-java:3.17.3'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir('build/generated/source/proto/main/java')
+        }
+        proto {
+            srcDir("src/main/protos")
+        }
+    }
+}
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        // Download from repositories
+        artifact = "com.google.protobuf:protoc:3.8.0"
+    }
+}
+
+checkstyleMain.enabled = false
+spotbugsMain.enabled = false
