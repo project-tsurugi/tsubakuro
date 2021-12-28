@@ -1,5 +1,6 @@
 rootProject.name = 'tsubakuro'
 
+include 'proto'
 include 'common'
 include 'sql'
 include 'ipc'
