@@ -311,6 +311,10 @@ public class OrderStatus {
                     profile.ordersTable.orderStatus++;
                     rollback();
                     continue;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    System.out.println(e + ": ol_o_id = " + oId + ", ol_d_id = " + paramsDid + ", ol_w_id = " + paramsWid);
+                    rollback();
+                    continue;
                 } finally {
 		    if (!Objects.isNull(resultSet6)) {
 			resultSet6.close();
