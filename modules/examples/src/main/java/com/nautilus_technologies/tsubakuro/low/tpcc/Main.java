@@ -59,8 +59,8 @@ public final class Main {
 	    var warehouses = warehouses();
 	    if (fixThreadMapping) {
 		if (threads != warehouses) {
-		    System.out.printf("threads (%d) is greater than warehouses (%d)%n", threads, warehouses);
 		    if (threads > warehouses) {
+			System.out.printf("threads (%d) is greater than warehouses (%d)%n", threads, warehouses);
 			return;
 		    }
 		    warehouses = (warehouses / threads) * threads;
