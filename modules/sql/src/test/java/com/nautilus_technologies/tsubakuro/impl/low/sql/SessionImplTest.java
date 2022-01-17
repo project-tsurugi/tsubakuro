@@ -71,6 +71,9 @@ class SessionImplTest {
 	    case DISPOSE_PREPARED_STATEMENT:
 		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);
+	    case ROLLBACK:
+		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+		return new FutureResponseMock<V>(this, distiller);
 	    case DISCONNECT:
 		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);

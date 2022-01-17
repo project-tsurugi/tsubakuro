@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.HashSet;
 import java.util.Set;
@@ -206,16 +207,20 @@ public class SessionLinkImpl {
     boolean remove(PreparedStatementImpl preparedStatement) {
 	return preparedStatements.remove(preparedStatement);
     }
-
-    /**
-     * Close the SessionLinkImpl
-     */
-    public void close() throws IOException {
-	if (!transactions.isEmpty()) {
-	    var iterator = transactions.iterator();
-	    while (iterator.hasNext()) {
-		iterator.next().rollback();
+    void discardRemainingResources(long timeout, TimeUnit unit) throws IOException {
+	try {
+	    if (!transactions.isEmpty()) {
+		var iterator = transactions.iterator();
+		while (iterator.hasNext()) {
+		    var futureResponse = iterator.next().rollback();
+		    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+			throw new IOException(response.getError().getDetail());
+		    }
+		}
 	    }
+	} catch (TimeoutException | InterruptedException | ExecutionException e) {
+	    throw new IOException(e);
 	}
 	if (!preparedStatements.isEmpty()) {
 	    var iterator = preparedStatements.iterator();
@@ -223,6 +228,12 @@ public class SessionLinkImpl {
 		iterator.next().close();
 	    }
 	}
+    }
+
+    /**
+     * Close the SessionLinkImpl
+     */
+    public void close() throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
 	}
