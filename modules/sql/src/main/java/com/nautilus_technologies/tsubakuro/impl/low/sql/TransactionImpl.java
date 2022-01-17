@@ -27,6 +27,7 @@ public class TransactionImpl implements Transaction {
     public TransactionImpl(CommonProtos.Transaction transaction, SessionLinkImpl sessionLinkImpl) {
 	this.sessionLinkImpl = sessionLinkImpl;
 	this.transaction = transaction;
+	this.sessionLinkImpl.add(this);
     }
 
     /**
@@ -134,6 +135,7 @@ public class TransactionImpl implements Transaction {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
+	sessionLinkImpl.remove(this);
 	sessionLinkImpl = null;
     }
 }

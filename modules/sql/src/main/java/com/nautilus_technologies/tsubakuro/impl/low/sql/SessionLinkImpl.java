@@ -4,6 +4,8 @@ import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.Set;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -22,13 +24,17 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
  */
 public class SessionLinkImpl {
     private SessionWire wire;
-    
+    private Set<TransactionImpl> transactions;
+    private Set<PreparedStatementImpl> preparedStatements;
+
     /**
      * Class constructor, called from SessionImpl
      * @param sessionWire the wire that connects to the Database
      */
     public SessionLinkImpl(SessionWire wire) {
 	this.wire = wire;
+	this.transactions = new HashSet<TransactionImpl>();
+	this.preparedStatements = new HashSet<PreparedStatementImpl>();
     }
 
     /**
@@ -177,9 +183,46 @@ public class SessionLinkImpl {
     }
 
     /**
+     * Add TransactionImpl to transactions
+     */
+    boolean add(TransactionImpl transaction) {
+	return transactions.add(transaction);
+    }
+    /**
+     * Remove TransactionImpl from transactions
+     */
+    boolean remove(TransactionImpl transaction) {
+	return transactions.remove(transaction);
+    }
+    /**
+     * Add PreparedStatementImpl to preparedStatements
+     */
+    boolean add(PreparedStatementImpl preparedStatement) {
+	return preparedStatements.add(preparedStatement);
+    }
+    /**
+     * Remove PreparedStatementImpl from preparedStatements
+     */
+    boolean remove(PreparedStatementImpl preparedStatement) {
+	return preparedStatements.remove(preparedStatement);
+    }
+
+    /**
      * Close the SessionLinkImpl
      */
     public void close() throws IOException {
+	if (!transactions.isEmpty()) {
+	    var iterator = transactions.iterator();
+	    while (iterator.hasNext()) {
+		iterator.next().rollback();
+	    }
+	}
+	if (!preparedStatements.isEmpty()) {
+	    var iterator = preparedStatements.iterator();
+	    while (iterator.hasNext()) {
+		iterator.next().close();
+	    }
+	}
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
 	}

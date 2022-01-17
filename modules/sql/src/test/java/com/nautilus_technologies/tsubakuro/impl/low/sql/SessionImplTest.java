@@ -155,6 +155,28 @@ class SessionImplTest {
     }
 
     @Test
+    void useTransactionAfterSessionClose() {
+	SessionImpl session;
+        try {
+	    session = new SessionImpl();
+	    session.connect(new SessionWireMock());
+	    var transaction = session.createTransaction().get();
+	    session.close();
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+		});
+	    assertEquals("already closed", exception.getMessage());
+	} catch (IOException e) {
+            fail("cought IOException");
+	} catch (InterruptedException e) {
+            fail("cought InterruptedException");
+	} catch (ExecutionException e) {
+            fail("cought ExecutionException");
+        }
+    }
+
+    @Test
     void usePreparedStatementAfterClose() {
 	SessionImpl session;
         try {
@@ -179,6 +201,32 @@ class SessionImplTest {
 
 	    transaction.commit();
 	    session.close();
+	} catch (IOException e) {
+            fail("cought IOException");
+	} catch (InterruptedException e) {
+            fail("cought InterruptedException");
+	} catch (ExecutionException e) {
+            fail("cought ExecutionException");
+        }
+   }
+
+    @Test
+    void usePreparedStatementAfterSessionClose() {
+	SessionImpl session;
+        try {
+	    session = new SessionImpl();
+	    session.connect(new SessionWireMock());
+
+	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
+	    var ph = RequestProtos.PlaceHolder.newBuilder()
+		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+	    var preparedStatement = session.prepare(sql, ph).get();
+	    session.close();
+
+	    Throwable exception = assertThrows(IOException.class, () -> {
+		    var handle = ((PreparedStatementImpl) preparedStatement).getHandle();
+		});
+	    assertEquals("already closed", exception.getMessage());
 	} catch (IOException e) {
             fail("cought IOException");
 	} catch (InterruptedException e) {

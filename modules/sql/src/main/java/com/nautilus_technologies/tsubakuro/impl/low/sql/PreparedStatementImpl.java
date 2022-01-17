@@ -23,6 +23,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 	this.timeout = 0;
 	this.handle = handle;
 	this.sessionLinkImpl = sessionLinkImpl;
+	this.sessionLinkImpl.add(this);
     }
 
     public CommonProtos.PreparedStatement getHandle() throws IOException {
@@ -48,11 +49,16 @@ public class PreparedStatementImpl implements PreparedStatement {
     public void close() throws IOException {
 	if (Objects.nonNull(handle)) {
 	    try {
+		if (Objects.isNull(sessionLinkImpl)) {
+		    throw new IOException("already closed");
+		}
 		var futureResponse = sessionLinkImpl.send(RequestProtos.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
 		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
 		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
 		    throw new IOException(response.getError().getDetail());
 		}
+		sessionLinkImpl.remove(this);
+		sessionLinkImpl = null;
 	    } catch (TimeoutException | InterruptedException | ExecutionException e) {
 		throw new IOException(e);
 	    }
