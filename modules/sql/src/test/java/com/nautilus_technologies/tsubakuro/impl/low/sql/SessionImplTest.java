@@ -235,13 +235,23 @@ class SessionImplTest {
 	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
 	    var ph = RequestProtos.PlaceHolder.newBuilder()
 		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
-	    var preparedStatement = session.prepare(sql, ph).get();
+	    var ps1 = session.prepare(sql, ph).get();
+	    var ps2 = session.prepare(sql, ph).get();
+	    var ps3 = session.prepare(sql, ph).get();
+	    var ps4 = session.prepare(sql, ph).get();
+
+	    ps2.close();
+	    ps4.close();
 	    session.close();
 
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    var handle = ((PreparedStatementImpl) preparedStatement).getHandle();
+	    Throwable e1 = assertThrows(IOException.class, () -> {
+		    var handle = ((PreparedStatementImpl) ps1).getHandle();
 		});
-	    assertEquals("already closed", exception.getMessage());
+	    assertEquals("already closed", e1.getMessage());
+	    Throwable e2 = assertThrows(IOException.class, () -> {
+		    var handle = ((PreparedStatementImpl) ps2).getHandle();
+		});
+	    assertEquals("already closed", e2.getMessage());
 	} catch (IOException e) {
             fail("cought IOException");
 	} catch (InterruptedException e) {

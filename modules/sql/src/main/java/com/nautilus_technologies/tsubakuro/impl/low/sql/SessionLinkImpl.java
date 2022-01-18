@@ -211,7 +211,7 @@ public class SessionLinkImpl {
 	try {
 	    while (!transactions.isEmpty()) {
 		var iterator = transactions.iterator();
-		var futureResponse = iterator.next().rollback();
+		var futureResponse = iterator.next().rollback();  // FIXME need to consider rollback is suitable here
 		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
 		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
 		    throw new IOException(response.getError().getDetail());
