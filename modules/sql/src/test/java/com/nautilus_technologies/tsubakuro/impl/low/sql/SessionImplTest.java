@@ -71,6 +71,9 @@ class SessionImplTest {
 	    case DISPOSE_PREPARED_STATEMENT:
 		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);
+	    case ROLLBACK:
+		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+		return new FutureResponseMock<V>(this, distiller);
 	    case DISCONNECT:
 		nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
 		return new FutureResponseMock<V>(this, distiller);
@@ -155,6 +158,40 @@ class SessionImplTest {
     }
 
     @Test
+    void useTransactionAfterSessionClose() {
+	SessionImpl session;
+        try {
+	    session = new SessionImpl();
+	    session.connect(new SessionWireMock());
+	    var t1 = session.createTransaction().get();
+	    var t2 = session.createTransaction().get();
+	    var t3 = session.createTransaction().get();
+	    var t4 = session.createTransaction().get();
+
+	    t2.commit();
+	    t4.commit();
+
+	    session.close();
+
+	    Throwable e1 = assertThrows(IOException.class, () -> {
+		    t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+		});
+	    assertEquals("already closed", e1.getMessage());
+
+	    Throwable e2 = assertThrows(IOException.class, () -> {
+		    t2.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+		});
+	    assertEquals("already closed", e2.getMessage());
+	} catch (IOException e) {
+            fail("cought IOException");
+	} catch (InterruptedException e) {
+            fail("cought InterruptedException");
+	} catch (ExecutionException e) {
+            fail("cought ExecutionException");
+        }
+    }
+
+    @Test
     void usePreparedStatementAfterClose() {
 	SessionImpl session;
         try {
@@ -179,6 +216,42 @@ class SessionImplTest {
 
 	    transaction.commit();
 	    session.close();
+	} catch (IOException e) {
+            fail("cought IOException");
+	} catch (InterruptedException e) {
+            fail("cought InterruptedException");
+	} catch (ExecutionException e) {
+            fail("cought ExecutionException");
+        }
+   }
+
+    @Test
+    void usePreparedStatementAfterSessionClose() {
+	SessionImpl session;
+        try {
+	    session = new SessionImpl();
+	    session.connect(new SessionWireMock());
+
+	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
+	    var ph = RequestProtos.PlaceHolder.newBuilder()
+		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+	    var ps1 = session.prepare(sql, ph).get();
+	    var ps2 = session.prepare(sql, ph).get();
+	    var ps3 = session.prepare(sql, ph).get();
+	    var ps4 = session.prepare(sql, ph).get();
+
+	    ps2.close();
+	    ps4.close();
+	    session.close();
+
+	    Throwable e1 = assertThrows(IOException.class, () -> {
+		    var handle = ((PreparedStatementImpl) ps1).getHandle();
+		});
+	    assertEquals("already closed", e1.getMessage());
+	    Throwable e2 = assertThrows(IOException.class, () -> {
+		    var handle = ((PreparedStatementImpl) ps2).getHandle();
+		});
+	    assertEquals("already closed", e2.getMessage());
 	} catch (IOException e) {
             fail("cought IOException");
 	} catch (InterruptedException e) {

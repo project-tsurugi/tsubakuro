@@ -3,7 +3,10 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.Set;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -22,13 +25,17 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
  */
 public class SessionLinkImpl {
     private SessionWire wire;
-    
+    private Set<TransactionImpl> transactions;
+    private Set<PreparedStatementImpl> preparedStatements;
+
     /**
      * Class constructor, called from SessionImpl
      * @param sessionWire the wire that connects to the Database
      */
     public SessionLinkImpl(SessionWire wire) {
 	this.wire = wire;
+	this.transactions = new HashSet<TransactionImpl>();
+	this.preparedStatements = new HashSet<PreparedStatementImpl>();
     }
 
     /**
@@ -174,6 +181,49 @@ public class SessionLinkImpl {
 	    throw new IOException("already closed");
 	}
 	return wire.createResultSetWire();
+    }
+
+    /**
+     * Add TransactionImpl to transactions
+     */
+    boolean add(TransactionImpl transaction) {
+	return transactions.add(transaction);
+    }
+    /**
+     * Remove TransactionImpl from transactions
+     */
+    boolean remove(TransactionImpl transaction) {
+	return transactions.remove(transaction);
+    }
+    /**
+     * Add PreparedStatementImpl to preparedStatements
+     */
+    boolean add(PreparedStatementImpl preparedStatement) {
+	return preparedStatements.add(preparedStatement);
+    }
+    /**
+     * Remove PreparedStatementImpl from preparedStatements
+     */
+    boolean remove(PreparedStatementImpl preparedStatement) {
+	return preparedStatements.remove(preparedStatement);
+    }
+    void discardRemainingResources(long timeout, TimeUnit unit) throws IOException {
+	try {
+	    while (!transactions.isEmpty()) {
+		var iterator = transactions.iterator();
+		var futureResponse = iterator.next().rollback();  // FIXME need to consider rollback is suitable here
+		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+		    throw new IOException(response.getError().getDetail());
+		}
+	    }
+	} catch (TimeoutException | InterruptedException | ExecutionException e) {
+	    throw new IOException(e);
+	}
+	while (!preparedStatements.isEmpty()) {
+	    var iterator = preparedStatements.iterator();
+	    iterator.next().close();
+	}
     }
 
     /**

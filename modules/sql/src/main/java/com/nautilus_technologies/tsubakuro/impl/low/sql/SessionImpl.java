@@ -101,6 +101,8 @@ public class SessionImpl implements Session {
 	    throw new IOException("already closed");
 	}
 	try {
+	    sessionLinkImpl.discardRemainingResources(timeout, unit);
+
 	    var futureResponse = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder());
 	    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
 	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
