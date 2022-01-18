@@ -163,13 +163,25 @@ class SessionImplTest {
         try {
 	    session = new SessionImpl();
 	    session.connect(new SessionWireMock());
-	    var transaction = session.createTransaction().get();
+	    var t1 = session.createTransaction().get();
+	    var t2 = session.createTransaction().get();
+	    var t3 = session.createTransaction().get();
+	    var t4 = session.createTransaction().get();
+
+	    t2.commit();
+	    t4.commit();
+
 	    session.close();
 
-	    Throwable exception = assertThrows(IOException.class, () -> {
-		    transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+	    Throwable e1 = assertThrows(IOException.class, () -> {
+		    t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
 		});
-	    assertEquals("already closed", exception.getMessage());
+	    assertEquals("already closed", e1.getMessage());
+
+	    Throwable e2 = assertThrows(IOException.class, () -> {
+		    t2.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+		});
+	    assertEquals("already closed", e2.getMessage());
 	} catch (IOException e) {
             fail("cought IOException");
 	} catch (InterruptedException e) {

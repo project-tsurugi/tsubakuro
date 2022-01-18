@@ -209,24 +209,20 @@ public class SessionLinkImpl {
     }
     void discardRemainingResources(long timeout, TimeUnit unit) throws IOException {
 	try {
-	    if (!transactions.isEmpty()) {
+	    while (!transactions.isEmpty()) {
 		var iterator = transactions.iterator();
-		while (iterator.hasNext()) {
-		    var futureResponse = iterator.next().rollback();
-		    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-			throw new IOException(response.getError().getDetail());
-		    }
+		var futureResponse = iterator.next().rollback();
+		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+		    throw new IOException(response.getError().getDetail());
 		}
 	    }
 	} catch (TimeoutException | InterruptedException | ExecutionException e) {
 	    throw new IOException(e);
 	}
-	if (!preparedStatements.isEmpty()) {
+	while (!preparedStatements.isEmpty()) {
 	    var iterator = preparedStatements.iterator();
-	    while (iterator.hasNext()) {
-		iterator.next().close();
-	    }
+	    iterator.next().close();
 	}
     }
 
