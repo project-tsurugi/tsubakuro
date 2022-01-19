@@ -48,23 +48,20 @@ public class PreparedStatementImpl implements PreparedStatement {
      */
     public void close() throws IOException {
 	if (Objects.nonNull(handle)) {
-	    try {
-		if (Objects.isNull(sessionLinkImpl)) {
-		    throw new IOException("already closed");
+	    if (Objects.nonNull(sessionLinkImpl)) {
+		try {
+		    var futureResponse = sessionLinkImpl.send(RequestProtos.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
+		    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+			throw new IOException(response.getError().getDetail());
+		    }
+		    sessionLinkImpl.remove(this);
+		    sessionLinkImpl = null;
+		} catch (TimeoutException | InterruptedException | ExecutionException e) {
+		    throw new IOException(e);
 		}
-		var futureResponse = sessionLinkImpl.send(RequestProtos.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
-		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-		    throw new IOException(response.getError().getDetail());
-		}
-		sessionLinkImpl.remove(this);
-		sessionLinkImpl = null;
-	    } catch (TimeoutException | InterruptedException | ExecutionException e) {
-		throw new IOException(e);
 	    }
 	    handle = null;
-	} else {
-	    throw new IOException("already closed");
 	}
     }
 }

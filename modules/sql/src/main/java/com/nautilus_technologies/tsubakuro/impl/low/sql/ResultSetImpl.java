@@ -310,7 +310,9 @@ public class ResultSetImpl implements ResultSet {
      * Close the ResultSetImpl
      */
     public void close() throws IOException {
-	resultSetWire.close();
-	resultSetWire = null;
+	if (Objects.nonNull(resultSetWire)) {
+	    resultSetWire.close();
+	    resultSetWire = null;
+	}
     }
 }

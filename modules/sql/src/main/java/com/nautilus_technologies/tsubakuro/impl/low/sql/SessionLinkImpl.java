@@ -208,21 +208,15 @@ public class SessionLinkImpl {
 	return preparedStatements.remove(preparedStatement);
     }
     void discardRemainingResources(long timeout, TimeUnit unit) throws IOException {
-	try {
-	    while (!transactions.isEmpty()) {
-		var iterator = transactions.iterator();
-		var futureResponse = iterator.next().rollback();  // FIXME need to consider rollback is suitable here
-		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-		    throw new IOException(response.getError().getDetail());
-		}
-	    }
-	} catch (TimeoutException | InterruptedException | ExecutionException e) {
-	    throw new IOException(e);
+	while (!transactions.isEmpty()) {
+	    var transaction = transactions.iterator().next();
+	    transaction.setCloseTimeout(timeout, unit);
+	    transaction.close();
 	}
 	while (!preparedStatements.isEmpty()) {
-	    var iterator = preparedStatements.iterator();
-	    iterator.next().close();
+	    var preparedStatement = preparedStatements.iterator().next();
+	    preparedStatement.setCloseTimeout(timeout, unit);
+	    preparedStatement.close();
 	}
     }
 
@@ -230,10 +224,9 @@ public class SessionLinkImpl {
      * Close the SessionLinkImpl
      */
     public void close() throws IOException {
-	if (Objects.isNull(wire)) {
-	    throw new IOException("already closed");
+	if (Objects.nonNull(wire)) {
+	    wire.close();
+	    wire = null;
 	}
-	wire.close();
-	wire = null;
     }
 }

@@ -2,6 +2,9 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.Objects;
 import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -16,9 +19,12 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
  * Transaction type.
  */
 public class TransactionImpl implements Transaction {
-    SessionLinkImpl sessionLinkImpl;
-    CommonProtos.Transaction transaction;
-    
+    private SessionLinkImpl sessionLinkImpl;
+    private CommonProtos.Transaction transaction;
+    private boolean cleanuped;
+    private long timeout;
+    private TimeUnit unit;
+
     /**
      * Class constructor, called from  FutureTransactionImpl.
      @param wire the wire responsible for the communication conducted by this session
@@ -28,6 +34,8 @@ public class TransactionImpl implements Transaction {
 	this.sessionLinkImpl = sessionLinkImpl;
 	this.transaction = transaction;
 	this.sessionLinkImpl.add(this);
+	this.cleanuped = false;
+	this.timeout = 0;
     }
 
     /**
@@ -110,6 +118,7 @@ public class TransactionImpl implements Transaction {
 	}
 	var rv = sessionLinkImpl.send(RequestProtos.Commit.newBuilder()
 				.setTransactionHandle(transaction));
+	cleanuped = true;
 	close();
 	return rv;
     }
@@ -124,18 +133,41 @@ public class TransactionImpl implements Transaction {
 	}
 	var rv = sessionLinkImpl.send(RequestProtos.Rollback.newBuilder()
 				  .setTransactionHandle(transaction));
+	cleanuped = true;
 	close();
 	return rv;
+    }
+
+    /**
+     * set timeout to close(), which won't timeout if this is not performed.
+     * This is used when the transaction is to be closed without commit or rollback.
+     * @param timeout time length until the close operation timeout
+     * @param unit unit of timeout
+     */
+    public void setCloseTimeout(long t, TimeUnit u) {
+        timeout = t;
+        unit = u;
     }
 
     /**
      * Close the Transaction
      */
     public void close() throws IOException {
-	if (Objects.isNull(sessionLinkImpl)) {
-	    throw new IOException("already closed");
+	if (Objects.nonNull(sessionLinkImpl)) {
+	    if (!cleanuped) {
+		try {
+		    var futureResponse = sessionLinkImpl.send(RequestProtos.Rollback.newBuilder()
+							      .setTransactionHandle(transaction));  // FIXME need to consider rollback is suitable here
+		    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+			throw new IOException(response.getError().getDetail());
+		    }
+		} catch (TimeoutException | InterruptedException | ExecutionException e) {
+		    throw new IOException(e);
+		}
+	    }
+	    sessionLinkImpl.remove(this);
+	    sessionLinkImpl = null;
 	}
-	sessionLinkImpl.remove(this);
-	sessionLinkImpl = null;
     }
 }

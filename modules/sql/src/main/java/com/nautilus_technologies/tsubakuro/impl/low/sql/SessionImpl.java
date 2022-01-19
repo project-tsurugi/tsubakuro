@@ -97,21 +97,20 @@ public class SessionImpl implements Session {
      * Close the Session
      */
     public void close() throws IOException {
-	if (Objects.isNull(sessionLinkImpl)) {
-	    throw new IOException("already closed");
-	}
-	try {
-	    sessionLinkImpl.discardRemainingResources(timeout, unit);
+	if (Objects.nonNull(sessionLinkImpl)) {
+	    try {
+		sessionLinkImpl.discardRemainingResources(timeout, unit);
 
-	    var futureResponse = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder());
-	    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-		throw new IOException(response.getError().getDetail());
+		var futureResponse = sessionLinkImpl.send(RequestProtos.Disconnect.newBuilder());
+		var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+		if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+		    throw new IOException(response.getError().getDetail());
+		}
+	    } catch (TimeoutException | InterruptedException | ExecutionException e) {
+		throw new IOException(e);
 	    }
-	} catch (TimeoutException | InterruptedException | ExecutionException e) {
-	    throw new IOException(e);
+	    sessionLinkImpl.close();
+	    sessionLinkImpl = null;
 	}
-	sessionLinkImpl.close();
-	sessionLinkImpl = null;
     }
 }
