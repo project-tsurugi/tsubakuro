@@ -32,6 +32,9 @@ public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
     public PreparedStatementImpl get() throws ExecutionException {
 	try {
 	    ResponseProtos.Prepare response = future.get();
+	    if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
+		throw new ExecutionException(new IOException("prepare error"));
+	    }
 	    return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
 	} catch (InterruptedException e) {
             throw new ExecutionException(e);
@@ -41,6 +44,9 @@ public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
     public PreparedStatementImpl get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
 	try {
 	    ResponseProtos.Prepare response = future.get(timeout, unit);
+	    if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
+		throw new ExecutionException(new IOException("prepare error"));
+	    }
 	    return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
 	} catch (InterruptedException e) {
             throw new ExecutionException(e);
