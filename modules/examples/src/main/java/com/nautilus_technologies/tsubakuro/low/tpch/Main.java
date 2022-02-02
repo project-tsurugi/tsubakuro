@@ -53,10 +53,12 @@ public final class Main {
         options.addOption(Option.builder("q").argName("query_number").hasArg().desc("Query number to be executed.").build());
         options.addOption(Option.builder("e").argName("query_string").hasArg().desc("Execute this query.").build());
         options.addOption(Option.builder("f").argName("file_contains_query").hasArg().desc("Execute the query descrived in the file specified.").build());
+        options.addOption(Option.builder("v").argName("query_validation").desc("Set query validation mode.").build());
+        options.addOption(Option.builder("o").argName("reqd_only_transaction").desc("Use read only transaction.").build());
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
-
+	
         try {
             cmd = parser.parse(options, args);
 
@@ -64,10 +66,28 @@ public final class Main {
 		System.out.println(cmd.getOptionValue("q"));
             }
 
+	    boolean readOnly = false;
+	    if (cmd.hasOption("o")) {
+		readOnly = true;
+		System.out.println("use read only transaction");
+	    }
+
 	    var scales = scale();
 	    System.out.println("benchmark started, scale = " + scales);
+
+	    var session = new SessionImpl();
+	    session.connect(new IpcConnectorImpl(dbName).connect().get());
+
+	    var query = new Q19(session);
+	    long start = System.currentTimeMillis();
+	    query.run(readOnly, cmd.hasOption("v"));
+	    long elapsed = System.currentTimeMillis() - start;
+	    System.out.println("elapsed: " + elapsed + " mS");
+	    session.close();
+
 	} catch (IOException | ExecutionException | InterruptedException e) {
 	    System.out.println(e);
+	    e.printStackTrace();
         } catch (ParseException e) {
             System.err.printf("cmd parser failed." + e);
         }
