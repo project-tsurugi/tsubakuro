@@ -66,6 +66,13 @@ public final class Main {
 
 	    var scales = scale();
 	    System.out.println("benchmark started, scale = " + scales);
+
+	    var query = new Q19(new IpcConnectorImpl(dbName), new SessionImpl());
+	    long start = System.currentTimeMillis();
+	    query.run(true);
+	    long elapsed = System.currentTimeMillis() - start;
+	    System.out.println("elapsed: " + elapsed + " mS");
+
 	} catch (IOException | ExecutionException | InterruptedException e) {
 	    System.out.println(e);
         } catch (ParseException e) {
