@@ -101,9 +101,10 @@ public class Q19 {
 	    if (Objects.nonNull(resultSet)) {
 		if (resultSet.nextRecord()) {
 		    resultSet.nextColumn();
-		    var result = resultSet.getInt8();
-		    if (qvalidation) {
-			System.out.println("REVENUE " + result);
+		    if (!resultSet.isNull()) {
+			System.out.println("REVENUE " + resultSet.getInt8());
+		    } else {
+			System.out.println("REVENUE is null");
 		    }
 		} else {
 		    throw new ExecutionException(new IOException("no record"));

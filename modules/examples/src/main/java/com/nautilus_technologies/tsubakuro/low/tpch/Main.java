@@ -62,10 +62,6 @@ public final class Main {
         try {
             cmd = parser.parse(options, args);
 
-            if (cmd.hasOption("q")) {
-		System.out.println(cmd.getOptionValue("q"));
-            }
-
 	    boolean readOnly = false;
 	    if (cmd.hasOption("o")) {
 		readOnly = true;
@@ -78,13 +74,31 @@ public final class Main {
 	    var session = new SessionImpl();
 	    session.connect(new IpcConnectorImpl(dbName).connect().get());
 
-	    var query = new Q19(session);
-	    long start = System.currentTimeMillis();
-	    query.run(readOnly, cmd.hasOption("v"));
-	    long elapsed = System.currentTimeMillis() - start;
-	    System.out.println("elapsed: " + elapsed + " mS");
-	    session.close();
-
+            if (cmd.hasOption("q")) {
+		var queryNum = cmd.getOptionValue("q");
+		if (queryNum.equals("6")) {
+		    var query = new Q6(session);
+		    long start = System.currentTimeMillis();
+		    query.run(readOnly, cmd.hasOption("v"));
+		    long elapsed = System.currentTimeMillis() - start;
+		    System.out.println("elapsed: " + elapsed + " mS");
+		} else if (queryNum.equals("14")) {
+		    var query = new Q14(session);
+		    long start = System.currentTimeMillis();
+		    query.run(readOnly, cmd.hasOption("v"));
+		    long elapsed = System.currentTimeMillis() - start;
+		    System.out.println("elapsed: " + elapsed + " mS");
+		} else if (queryNum.equals("19")) {
+		    var query = new Q19(session);
+		    long start = System.currentTimeMillis();
+		    query.run(readOnly, cmd.hasOption("v"));
+		    long elapsed = System.currentTimeMillis() - start;
+		    System.out.println("elapsed: " + elapsed + " mS");
+		}
+		session.close();
+	    } else {
+		System.out.println("no such query " + cmd.getOptionValue("q"));
+	    }
 	} catch (IOException | ExecutionException | InterruptedException e) {
 	    System.out.println(e);
 	    e.printStackTrace();
