@@ -37,10 +37,7 @@
     <!-- <module name="AvoidStarImport"> <property name="allowStaticMemberImports" value="true"/> </module> -->
     <module name="IllegalImport"/>
     <module name="RedundantImport"/>
-    <module name="UnusedImports">
-      <property name="severity" value="ignore"/>
-      <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
-    </module>
+    <module name="UnusedImports"/>
     <module name="MethodLength">
       <property name="severity" value="error"/>
     </module>
