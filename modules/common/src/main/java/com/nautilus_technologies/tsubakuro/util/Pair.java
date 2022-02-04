@@ -1,6 +1,5 @@
 package com.nautilus_technologies.tsubakuro.util;
 
-import java.util.Objects;
 import java.util.Optional;
 
 public final class Pair<L, R> {

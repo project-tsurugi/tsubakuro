@@ -3,19 +3,12 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Objects;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ExecutionException;
-import org.msgpack.core.MessagePack;
 import org.msgpack.core.MessagePacker;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.core.MessageFormat;
 import org.msgpack.value.ValueType;
 
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.protos.ExecuteQueryDistiller;
-import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 import org.junit.jupiter.api.Test;

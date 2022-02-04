@@ -7,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 /**
  * FutureResponseImpl type.

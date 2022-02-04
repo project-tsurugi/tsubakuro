@@ -8,7 +8,6 @@ import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 /**
  * FutureResultSetImpl type.
