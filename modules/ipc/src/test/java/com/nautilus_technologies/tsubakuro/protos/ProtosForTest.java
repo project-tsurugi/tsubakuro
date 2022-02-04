@@ -2,8 +2,6 @@ package com.nautilus_technologies.tsubakuro.protos;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.jupiter.api.Test;
-
 public final class ProtosForTest {
     private ProtosForTest() {
 	// for checkstyle
