@@ -46,6 +46,8 @@ public final class Main {
     static String dbName = "tateyama";
 
     public static void main(String[] args) {
+	var profile = new Profile();
+
         // コマンドラインオプションの設定
         Options options = new Options();
 
@@ -62,14 +64,16 @@ public final class Main {
         try {
             cmd = parser.parse(options, args);
 
-	    boolean readOnly = false;
 	    if (cmd.hasOption("o")) {
-		readOnly = true;
+		profile.readOnly = true;
 		System.out.println("use read only transaction");
 	    }
+	    if (cmd.hasOption("v")) {
+		profile.queryValidation = true;
+	    }
 
-	    var scales = scale();
-	    System.out.println("benchmark started, scale = " + scales);
+	    profile.scales = scale();
+	    System.out.println("benchmark started, scale = " + profile.scales);
 
 	    var session = new SessionImpl();
 	    session.connect(new IpcConnectorImpl(dbName).connect().get());
@@ -78,24 +82,24 @@ public final class Main {
 		var queryNum = cmd.getOptionValue("q");
 		if (queryNum.equals("2_1")) {
 		    var query = new Q2(session);
-		    long elapsed = query.run21(readOnly, cmd.hasOption("v"));
-		    System.out.println("elapsed: " + elapsed + " mS");
+		    query.run21(profile);
+		    System.out.println("elapsed: " + profile.q21 + " mS");
 		} else if (queryNum.equals("2")) {
 		    var query = new Q2(session);
-		    long elapsed = query.run2(readOnly, cmd.hasOption("v"));
-		    System.out.println("elapsed: " + elapsed + " mS");
+		    query.run2(profile);
+		    System.out.println("elapsed: " + profile.q22 + " mS");
 		} else if (queryNum.equals("6")) {
 		    var query = new Q6(session);
-		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
-		    System.out.println("elapsed: " + elapsed + " mS");
+		    query.run(profile);
+		    System.out.println("elapsed: " + profile.q6 + " mS");
 		} else if (queryNum.equals("14")) {
 		    var query = new Q14(session);
-		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
-		    System.out.println("elapsed: " + elapsed + " mS");
+		    query.run(profile);
+		    System.out.println("elapsed: " + profile.q14 + " mS");
 		} else if (queryNum.equals("19")) {
 		    var query = new Q19(session);
-		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
-		    System.out.println("elapsed: " + elapsed + " mS");
+		    query.run(profile);
+		    System.out.println("elapsed: " + profile.q19 + " mS");
 		}
 		session.close();
 	    } else {

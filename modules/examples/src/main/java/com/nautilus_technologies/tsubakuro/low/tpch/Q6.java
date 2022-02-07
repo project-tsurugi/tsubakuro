@@ -45,12 +45,12 @@ public class Q6 {
 	prepared = session.prepare(sql, ph).get();
     }
 
-    public long run(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(readOnly).get();
+	var transaction = session.createTransaction(profile.readOnly).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
-	if (qvalidation) {
+	if (profile.queryValidation) {
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("datefrom").setCharacterValue("1994-01-01")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("dateto").setCharacterValue("1995-01-01")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("discount").setInt8Value(6)).
@@ -96,6 +96,6 @@ public class Q6 {
 		resultSet.close();
 	    }
 	}
-	return System.currentTimeMillis() - start;
+	profile.q6 = System.currentTimeMillis() - start;
     }
 }
