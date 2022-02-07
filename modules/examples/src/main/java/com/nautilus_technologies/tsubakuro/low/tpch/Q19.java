@@ -34,33 +34,33 @@ public class Q19 {
 	    + "AND (( "
 	    + "P_BRAND = :brand1 "
 	    //                         "AND P_CONTAINER IN ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG') "
-	    + "AND ( P_CONTAINER = 'SM CASE' OR  P_CONTAINER = 'SM BOX' OR P_CONTAINER = 'SM PACK' OR P_CONTAINER = 'SM PKG' ) "
+	    + "AND ( P_CONTAINER = 'SM CASE   ' OR  P_CONTAINER = 'SM BOX    ' OR P_CONTAINER = 'SM PACK   ' OR P_CONTAINER = 'SM PKG    ' ) "
 	    + "AND L_QUANTITY >= :quantity1 AND L_QUANTITY <= :quantity1 + 10 "
 	    //                         "AND P_SIZE BETWEEN 1 AND 5 "
 	    + "AND P_SIZE >= 1 AND P_SIZE <= 5 "
 	    //                         "AND L_SHIPMODE IN ('AIR', 'AIR REG') "
-	    + "AND ( L_SHIPMODE = 'AIR' OR  L_SHIPMODE = 'AIR REG' ) "
-	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON' "
+	    + "AND ( L_SHIPMODE = 'AIR       ' OR  L_SHIPMODE = 'AIR REG   ' ) "
+	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON        ' "
 	    + ") OR ( "
 	    + "P_BRAND = :brand2 "
 	    //                         "AND P_CONTAINER IN ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK') "
-	    + "AND ( P_CONTAINER = 'MED BAG' OR  P_CONTAINER = 'MED BOX' OR P_CONTAINER = 'MED PKG' OR P_CONTAINER = 'MED PACK' ) "
+	    + "AND ( P_CONTAINER = 'MED BAG   ' OR  P_CONTAINER = 'MED BOX   ' OR P_CONTAINER = 'MED PKG   ' OR P_CONTAINER = 'MED PACK  ' ) "
 	    + "AND L_QUANTITY >= :quantity2 AND L_QUANTITY <= :quantity2 + 10 "
 	    //                         "AND P_SIZE BETWEEN 1 AND 10 "
 	    + "AND P_SIZE >= 1 AND P_SIZE <= 10 "
 	    //                         "AND L_SHIPMODE IN ('AIR', 'AIR REG') "
-	    + "AND ( L_SHIPMODE = 'AIR' OR  L_SHIPMODE = 'AIR REG' ) "
-	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON' "
+	    + "AND ( L_SHIPMODE = 'AIR       ' OR  L_SHIPMODE = 'AIR REG   ' ) "
+	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON        ' "
 	    + ") OR ( "
 	    + "P_BRAND = :brand3 "
 	    //                         "AND P_CONTAINER IN ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG') "
-	    + "AND ( P_CONTAINER = 'LG CASE' OR  P_CONTAINER = 'LG BOX' OR P_CONTAINER = 'LG PACK' OR P_CONTAINER = 'LG PKG' ) "
+	    + "AND ( P_CONTAINER = 'LG CASE   ' OR  P_CONTAINER = 'LG BOX    ' OR P_CONTAINER = 'LG PACK   ' OR P_CONTAINER = 'LG PKG    ' ) "
 	    + "AND L_QUANTITY >= :quantity3 AND L_QUANTITY <= :quantity3 + 10 "
 	    //                         "AND P_SIZE BETWEEN 1 AND 15 "
 	    + "AND P_SIZE >= 1 AND P_SIZE <= 15 "
 	    //                         "AND L_SHIPMODE IN ('AIR', 'AIR REG') "
-	    + "AND ( L_SHIPMODE = 'AIR' OR  L_SHIPMODE = 'AIR REG' ) "
-	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON' "
+	    + "AND ( L_SHIPMODE = 'AIR       ' OR  L_SHIPMODE = 'AIR REG   ' ) "
+	    + "AND L_SHIPINSTRUCT = 'DELIVER IN PERSON        ' "
 	    + "))";
 
 	var ph = RequestProtos.PlaceHolder.newBuilder()
@@ -79,16 +79,16 @@ public class Q19 {
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
 	if (qvalidation) {
-	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand1").setCharacterValue("Brand#12")).
-		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand2").setCharacterValue("Brand#23")).
-		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand3").setCharacterValue("Brand#34")).
+	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand1").setCharacterValue("Brand#12  ")).
+		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand2").setCharacterValue("Brand#23  ")).
+		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand3").setCharacterValue("Brand#34  ")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity1").setInt8Value(1)).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity2").setInt8Value(10)).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity3").setInt8Value(20));
         } else {
-	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand1").setCharacterValue("Brand#43")).
-		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand2").setCharacterValue("Brand#41")).
-		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand3").setCharacterValue("Brand#35")).
+	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand1").setCharacterValue("Brand#43  ")).
+		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand2").setCharacterValue("Brand#41  ")).
+		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand3").setCharacterValue("Brand#35  ")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity1").setInt8Value(5)).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity2").setInt8Value(11)).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity3").setInt8Value(21));

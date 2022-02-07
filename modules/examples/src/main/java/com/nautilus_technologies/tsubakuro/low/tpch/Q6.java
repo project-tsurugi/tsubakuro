@@ -69,7 +69,8 @@ public class Q6 {
 		if (resultSet.nextRecord()) {
 		    resultSet.nextColumn();
 		    if (!resultSet.isNull()) {
-			System.out.println("REVENUE " + resultSet.getInt8());
+			System.out.println("REVENUE");
+			System.out.println(resultSet.getInt8());
 		    } else {
 			System.out.println("REVENUE is null");
 		    }

@@ -32,7 +32,7 @@ public class Q14 {
 	    + "FROM LINEITEM, PART "
 	    + "WHERE "
 	    + "L_PARTKEY = P_PARTKEY "
-	    + "AND P_TYPE1 = 'PROMO' "
+	    + "AND P_TYPE1 = 'PROMO     ' "
 	    + "AND L_SHIPDATE >= :datefrom "
 	    + "AND L_SHIPDATE < :dateto";
 
@@ -104,7 +104,8 @@ public class Q14 {
 		    resultSetB.nextColumn();
 		    if (!resultSetB.isNull()) {
 			b = resultSetB.getInt8();
-			System.out.println("PROMO_REVENUE " + t + " / " + b + " = " + (100.0 * (double) t) / (double) b + " (%)");
+			System.out.println("PROMO_REVENUE");
+			System.out.println(t + " / " + b + " = " + (100.0 * (double) t) / (double) b + " (%)");
 		    } else {
 			System.out.println("REVENUE is null");
 		    }
