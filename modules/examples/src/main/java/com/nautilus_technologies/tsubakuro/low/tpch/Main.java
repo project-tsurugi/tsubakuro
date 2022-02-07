@@ -76,23 +76,25 @@ public final class Main {
 
             if (cmd.hasOption("q")) {
 		var queryNum = cmd.getOptionValue("q");
-		if (queryNum.equals("6")) {
+		if (queryNum.equals("2_1")) {
+		    var query = new Q2(session);
+		    long elapsed = query.run21(readOnly, cmd.hasOption("v"));
+		    System.out.println("elapsed: " + elapsed + " mS");
+		} else if (queryNum.equals("2")) {
+		    var query = new Q2(session);
+		    long elapsed = query.run2(readOnly, cmd.hasOption("v"));
+		    System.out.println("elapsed: " + elapsed + " mS");
+		} else if (queryNum.equals("6")) {
 		    var query = new Q6(session);
-		    long start = System.currentTimeMillis();
-		    query.run(readOnly, cmd.hasOption("v"));
-		    long elapsed = System.currentTimeMillis() - start;
+		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
 		    System.out.println("elapsed: " + elapsed + " mS");
 		} else if (queryNum.equals("14")) {
 		    var query = new Q14(session);
-		    long start = System.currentTimeMillis();
-		    query.run(readOnly, cmd.hasOption("v"));
-		    long elapsed = System.currentTimeMillis() - start;
+		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
 		    System.out.println("elapsed: " + elapsed + " mS");
 		} else if (queryNum.equals("19")) {
 		    var query = new Q19(session);
-		    long start = System.currentTimeMillis();
-		    query.run(readOnly, cmd.hasOption("v"));
-		    long elapsed = System.currentTimeMillis() - start;
+		    long elapsed = query.run(readOnly, cmd.hasOption("v"));
 		    System.out.println("elapsed: " + elapsed + " mS");
 		}
 		session.close();

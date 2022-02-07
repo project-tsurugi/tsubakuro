@@ -45,7 +45,8 @@ public class Q6 {
 	prepared = session.prepare(sql, ph).get();
     }
 
-    public void run(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public long run(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+	long start = System.currentTimeMillis();
 	var transaction = session.createTransaction(readOnly).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
@@ -95,5 +96,6 @@ public class Q6 {
 		resultSet.close();
 	    }
 	}
+	return System.currentTimeMillis() - start;
     }
 }
