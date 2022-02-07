@@ -163,30 +163,30 @@ public class Q2 {
 	}
     }
 
-    public long run21(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public void run21(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(readOnly).get();
+	var transaction = session.createTransaction(profile.readOnly).get();
 
-	q21(qvalidation, transaction);
+	q21(profile.queryValidation, transaction);
 	
 	var commitResponse = transaction.commit().get();
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
 	    throw new IOException("commit error");
 	}
-	return System.currentTimeMillis() - start;
+	profile.q21 = System.currentTimeMillis() - start;
     }
 
-    public long run2(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public void run2(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(readOnly).get();
+	var transaction = session.createTransaction(profile.readOnly).get();
 
-	q21(qvalidation, transaction);
-	q22(qvalidation, transaction);
+	q21(profile.queryValidation, transaction);
+	q22(profile.queryValidation, transaction);
 	
 	var commitResponse = transaction.commit().get();
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
 	    throw new IOException("commit error");
 	}
-	return System.currentTimeMillis() - start;
+	profile.q22 = System.currentTimeMillis() - start;
     }
 }

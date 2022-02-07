@@ -74,12 +74,12 @@ public class Q19 {
 	prepared = session.prepare(sql, ph).get();
     }
 
-    public long run(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(readOnly).get();
+	var transaction = session.createTransaction(profile.readOnly).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
-	if (qvalidation) {
+	if (profile.queryValidation) {
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand1").setCharacterValue("Brand#12  ")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand2").setCharacterValue("Brand#23  ")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("brand3").setCharacterValue("Brand#34  ")).
@@ -128,6 +128,6 @@ public class Q19 {
 		resultSet.close();
 	    }
 	}
-	return System.currentTimeMillis() - start;
+	profile.q19 = System.currentTimeMillis() - start;
     }
 }

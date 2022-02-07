@@ -53,12 +53,12 @@ public class Q14 {
 	preparedB = session.prepare(sqlB, ph).get();
     }
 
-    public long run(boolean readOnly, boolean qvalidation) throws IOException, ExecutionException, InterruptedException {
+    public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(readOnly).get();
+	var transaction = session.createTransaction(profile.readOnly).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
-	if (qvalidation) {
+	if (profile.queryValidation) {
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("datefrom").setCharacterValue("1995-09-01")).
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("dateto").setCharacterValue("1995-10-01"));
         } else {
@@ -135,6 +135,6 @@ public class Q14 {
 	} catch (ExecutionException e) {
 	    throw new IOException(e);
 	}
-	return System.currentTimeMillis() - start;
+	profile.q14 = System.currentTimeMillis() - start;
     }
 }
