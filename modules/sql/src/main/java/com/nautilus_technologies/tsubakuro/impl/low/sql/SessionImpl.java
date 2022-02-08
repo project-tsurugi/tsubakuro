@@ -42,7 +42,10 @@ public class SessionImpl implements Session {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
-	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder().setReadOnly(readOnly)), sessionLinkImpl);
+	return new FutureTransactionImpl(sessionLinkImpl.send(
+			RequestProtos.Begin.newBuilder()
+					.setOption(RequestProtos.TransactionOption.newBuilder().setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY))
+	), sessionLinkImpl);
     }
 
     /**

@@ -111,11 +111,11 @@ public final class ProtosForTest {
 	public static RequestProtos.Begin.Builder builder() {
 	    return
 		RequestProtos.Begin.newBuilder()
-		.setReadOnly(true);
+				.setOption(RequestProtos.TransactionOption.newBuilder().setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY));
 	}
 	public static boolean check(RequestProtos.Begin dst) {
 	    return
-		(dst.getReadOnly() == true);
+		(dst.getOption().getOperationKind().equals(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY));
 	}
 	void test() {
 	    try {

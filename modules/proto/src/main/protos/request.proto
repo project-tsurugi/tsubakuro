@@ -37,13 +37,36 @@ message ParameterSet {
   repeated Parameter parameters = 1;
 }
 
+/* For transaction type and options. */
+message TransactionOption {
+
+  enum OperationKind {
+    OPERATION_KIND_UNSPECIFIED = 0;
+    OPERATION_KIND_READ_ONLY = 1;
+  }
+
+  enum TransactionType {
+    TRANSACTION_TYPE_UNSPECIFIED = 0;
+    TRANSACTION_TYPE_SHORT = 1;
+    TRANSACTION_TYPE_LONG = 2;
+  }
+
+  message WritePreserve {
+    string name = 1;
+  }
+
+  OperationKind operation_kind = 1;
+  TransactionType type = 2;
+  repeated WritePreserve write_preserves = 3;
+}
+
 /*
  * Each request message
  */
 
 /* For begin request. */
 message Begin {
-  bool read_only = 1;
+  TransactionOption option = 1;
 }
 
 /* For prepare request. */
