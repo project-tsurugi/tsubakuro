@@ -69,9 +69,9 @@ public class Q2 {
 	    
 	    var ps = RequestProtos.ParameterSet.newBuilder();
 	    if (qvalidation) {
-		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE"));
+		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE                   "));
 	    } else {
-		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("ASIA"));
+		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("ASIA                     "));
 	    }
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey));
 
@@ -84,8 +84,6 @@ public class Q2 {
 			resultSet.nextColumn();
 			if (!resultSet.isNull()) {
 			    q2intermediate[partkey] = resultSet.getInt8();
-			} else {
-			    throw new ExecutionException(new IOException("column is null"));
 			}
 		    } else {
 			throw new ExecutionException(new IOException("no record"));
@@ -109,15 +107,14 @@ public class Q2 {
 
     void q22(boolean qvalidation, Transaction transaction) throws IOException, ExecutionException, InterruptedException {
 	for (int partkey = 1; partkey <= PARTKEY_SIZE; partkey++) {
-	    
 	    var ps = RequestProtos.ParameterSet.newBuilder();
 	    if (qvalidation) {
 		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("type").setCharacterValue("BRASS"))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE"))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE                   "))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("size").setInt8Value(15));
 	    } else {
 		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("type").setCharacterValue("STEEL"))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE"))
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("ASIA                     "))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("size").setInt8Value(16));
 	    }
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey))

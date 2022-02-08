@@ -32,7 +32,7 @@ public class Q14 {
 	    + "FROM LINEITEM, PART "
 	    + "WHERE "
 	    + "L_PARTKEY = P_PARTKEY "
-	    + "AND P_TYPE1 = 'PROMO     ' "
+	    + "AND P_TYPE1 = 'PROMO' "
 	    + "AND L_SHIPDATE >= :datefrom "
 	    + "AND L_SHIPDATE < :dateto";
 
