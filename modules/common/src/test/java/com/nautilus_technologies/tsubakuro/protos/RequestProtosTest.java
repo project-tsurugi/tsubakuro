@@ -67,7 +67,9 @@ class RequestProtosTest {
     void begin() {
 	RequestProtos.Request src = RequestProtos.Request.newBuilder()
 	    .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(123))
-	    .setBegin(RequestProtos.Begin.newBuilder().setReadOnly(true))
+	    .setBegin(RequestProtos.Begin.newBuilder()
+			.setOption(RequestProtos.TransactionOption.newBuilder().setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY))
+		)
 	    .build();
 
 	byte[] data = src.toByteArray();
