@@ -100,10 +100,10 @@ public final class Main {
 		    var query = new Q19(session);
 		    query.run(profile);
 		    System.out.println("elapsed: " + profile.q19 + " mS");
+		} else {
+		    System.out.println("no such query " + cmd.getOptionValue("q"));
 		}
 		session.close();
-	    } else {
-		System.out.println("no such query " + cmd.getOptionValue("q"));
 	    }
 	} catch (IOException | ExecutionException | InterruptedException e) {
 	    System.out.println(e);
