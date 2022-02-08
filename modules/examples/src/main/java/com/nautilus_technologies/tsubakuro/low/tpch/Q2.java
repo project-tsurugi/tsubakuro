@@ -67,7 +67,8 @@ public class Q2 {
     }
 
     void q21(boolean qvalidation, Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	for (int partkey = 1; partkey <= PARTKEY_SIZE; partkey++) {
+	//	for (int partkey = 1; partkey <= PARTKEY_SIZE; partkey++) {
+	for (int partkey = 185358; partkey <= 185358; partkey++) {
 	    
 	    var ps = RequestProtos.ParameterSet.newBuilder();
 	    if (qvalidation) {
@@ -86,6 +87,9 @@ public class Q2 {
 			resultSet.nextColumn();
 			if (!resultSet.isNull()) {
 			    q2intermediate.put(partkey, resultSet.getInt8());
+			    System.out.println("found in q2_1 : " + partkey + " : " + q2intermediate.get(partkey));
+			} else {
+			    System.out.println("not found in q2_1 : " + partkey);
 			}
 		    } else {
 			throw new ExecutionException(new IOException("no record"));
@@ -93,7 +97,6 @@ public class Q2 {
 		} else {
 		    throw new ExecutionException(new IOException("no resultSet"));
 		}
-
 	    } catch (ExecutionException e) {
 		throw new IOException(e);
 	    } finally {
@@ -149,7 +152,6 @@ public class Q2 {
 		} else {
 		    throw new ExecutionException(new IOException("no resultSet"));
 		}
-
 	    } catch (ExecutionException e) {
 		throw new IOException(e);
 	    } finally {
