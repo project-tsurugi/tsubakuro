@@ -162,7 +162,7 @@ public class Q2 {
 
     public void run21(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.readOnly).get();
+	var transaction = session.createTransaction(profile.transactionOption).get();
 
 	q21(profile.queryValidation, transaction);
 	
@@ -175,7 +175,7 @@ public class Q2 {
 
     public void run2(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.readOnly).get();
+	var transaction = session.createTransaction(profile.transactionOption).get();
 
 	q21(profile.queryValidation, transaction);
 	q22(profile.queryValidation, transaction);

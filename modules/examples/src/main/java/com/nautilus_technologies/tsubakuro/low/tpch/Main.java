@@ -8,6 +8,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
+import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Option;
@@ -65,7 +66,7 @@ public final class Main {
             cmd = parser.parse(options, args);
 
 	    if (cmd.hasOption("o")) {
-		profile.readOnly = true;
+		profile.transactionOption.setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY);
 		System.out.println("use read only transaction");
 	    }
 	    if (cmd.hasOption("v")) {

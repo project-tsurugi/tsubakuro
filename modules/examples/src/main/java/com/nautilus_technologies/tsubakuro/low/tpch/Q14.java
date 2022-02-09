@@ -55,7 +55,7 @@ public class Q14 {
 
     public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.readOnly).get();
+	var transaction = session.createTransaction(profile.transactionOption).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
 	if (profile.queryValidation) {
