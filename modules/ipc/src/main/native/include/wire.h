@@ -540,6 +540,11 @@ public:
         void dispose(std::size_t length) {
             poped_ += length;
             chunk_end_ = 0;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (wait_for_write_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_full_.notify_one();
+            }
         }
         /**
          * @brief check this wire has record
