@@ -19,6 +19,7 @@ public interface Session extends CloseableIpc {
      * @param readOnly specify whether the new transaction is read-only or not
      * @return the transaction
      */
+    @Deprecated
     Future<Transaction> createTransaction(boolean readOnly) throws IOException;
 
     /**
@@ -26,6 +27,13 @@ public interface Session extends CloseableIpc {
      * @return the transaction
      */
     Future<Transaction> createTransaction() throws IOException;
+
+    /**
+     * Begin the new transaction
+     * @param option specify the transaction type
+     * @return the transaction
+     */
+    Future<Transaction> createTransaction(RequestProtos.TransactionOption.Builder option) throws IOException;
 
     /**
      * Request prepare to the SQL service
