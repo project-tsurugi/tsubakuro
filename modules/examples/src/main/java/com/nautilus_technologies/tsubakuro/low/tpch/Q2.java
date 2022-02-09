@@ -6,6 +6,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
 import java.util.Date;
 import java.util.Locale;
+import java.util.HashMap;
+import java.util.Map;
 import java.text.SimpleDateFormat;
 import com.nautilus_technologies.tsubakuro.low.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
@@ -21,11 +23,11 @@ public class Q2 {
     PreparedStatement prepared1;
     PreparedStatement prepared2;
     static final int PARTKEY_SIZE = 200000;
-    long[] q2intermediate;
+    Map<Integer, Long> q2intermediate;
     
     public Q2(Session session) throws IOException, ExecutionException, InterruptedException {
         this.session = session;
-	this.q2intermediate = new long[PARTKEY_SIZE + 1];
+	this.q2intermediate = new HashMap<>();
 	prepare();
     }
 
@@ -83,13 +85,10 @@ public class Q2 {
 		    if (resultSet.nextRecord()) {
 			resultSet.nextColumn();
 			if (!resultSet.isNull()) {
-			    q2intermediate[partkey] = resultSet.getInt8();
+			    q2intermediate.put(partkey, resultSet.getInt8());
 			}
 		    } else {
 			throw new ExecutionException(new IOException("no record"));
-		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} else {
 		    throw new ExecutionException(new IOException("no resultSet"));
@@ -101,12 +100,16 @@ public class Q2 {
 		if (!Objects.isNull(resultSet)) {
 		    resultSet.close();
 		}
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+		    throw new ExecutionException(new IOException("SQL error"));
+		}
 	    }
 	}
     }
 
     void q22(boolean qvalidation, Transaction transaction) throws IOException, ExecutionException, InterruptedException {
-	for (int partkey = 1; partkey <= PARTKEY_SIZE; partkey++) {
+	for (Map.Entry<Integer, Long> entry : q2intermediate.entrySet()) {
+	    int partkey = entry.getKey();
 	    var ps = RequestProtos.ParameterSet.newBuilder();
 	    if (qvalidation) {
 		ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("type").setCharacterValue("BRASS"))
@@ -118,7 +121,7 @@ public class Q2 {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("size").setInt8Value(16));
 	    }
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(q2intermediate[partkey]));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(entry.getValue()));
 
 	    var future = transaction.executeQuery(prepared2, ps);
 	    var resultSet = future.getLeft().get();
@@ -143,9 +146,6 @@ public class Q2 {
 
 			System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
-		    }
 		} else {
 		    throw new ExecutionException(new IOException("no resultSet"));
 		}
@@ -155,6 +155,9 @@ public class Q2 {
 	    } finally {
 		if (!Objects.isNull(resultSet)) {
 		    resultSet.close();
+		}
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    }
 	}
