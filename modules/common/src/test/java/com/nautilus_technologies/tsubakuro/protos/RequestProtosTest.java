@@ -62,6 +62,31 @@ class RequestProtosTest {
 	}
     }
 
+    @Test
+    void transactionOption() {
+	RequestProtos.TransactionOption src = RequestProtos.TransactionOption.newBuilder()
+	    .setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
+	    .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
+	    .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"))
+	    .build();
+
+	byte[] data = src.toByteArray();
+	
+	try {
+	    RequestProtos.TransactionOption dst = RequestProtos.TransactionOption.parseFrom(data);
+
+	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
+	
+	    assertAll(
+		      () -> assertEquals(dst.getOperationKind(), RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE),
+		      () -> assertEquals(dst.getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT),
+		      () -> assertEquals(r1.getName(), "table_for_preserve"),
+		      () -> assertEquals(dst.getWritePreservesList().size(), 1));
+	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
+	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	}
+    }
+
 
     @Test
     void begin() {
@@ -79,6 +104,8 @@ class RequestProtosTest {
 
 	    assertAll(
 		      () -> assertEquals(dst.getSessionHandle().getHandle(), 123),
+		      () -> assertEquals(dst.getBegin().getOption().getOperationKind(), RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY),
+		      () -> assertEquals(dst.getBegin().getOption().getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_UNSPECIFIED),
 		      () -> assertTrue(RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");
