@@ -109,6 +109,33 @@ public final class ProtosForTest {
 	}
     }
 
+    static class TransactionOptionChecker {
+	static RequestProtos.TransactionOption.Builder builder() {
+	    return
+		RequestProtos.TransactionOption.newBuilder()
+		.setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
+		.setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
+		.addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"));
+	}
+	static boolean check(RequestProtos.TransactionOption dst) {
+	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
+
+	    return
+		dst.getOperationKind().equals(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
+		&& dst.getType().equals(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
+		&& r1.getName().equals("table_for_preserve")
+		&& (dst.getWritePreservesList().size() == 1);
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(RequestProtos.TransactionOption.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
 
     /**
      * Check of each Request
@@ -117,11 +144,11 @@ public final class ProtosForTest {
 	public static RequestProtos.Begin.Builder builder() {
 	    return
 		RequestProtos.Begin.newBuilder()
-		.setReadOnly(true);
+		.setOption(TransactionOptionChecker.builder());
 	}
 	public static boolean check(RequestProtos.Begin dst) {
 	    return
-		(dst.getReadOnly() == true);
+		TransactionOptionChecker.check(dst.getOption());
 	}
 	@Test
 	void test() {
@@ -326,8 +353,8 @@ public final class ProtosForTest {
 	}
     }
 
-    static class ExplainChecker {
-	static RequestProtos.Explain.Builder builder() {
+    public static class ExplainChecker {
+	public static RequestProtos.Explain.Builder builder() {
 	    return
 		RequestProtos.Explain.newBuilder()
 		.setPreparedStatementHandle(PreparedStatementChecker.builder())
@@ -795,7 +822,7 @@ public final class ProtosForTest {
     }
 
     public static class ResMessageExplainChecker {
-	static ResponseProtos.Explain.Builder builder() {
+	public static ResponseProtos.Explain.Builder builder() {
 	    return
 		ResponseProtos.Explain.newBuilder()
 		.setOutput("ThisIsAnExecutionPlanString");

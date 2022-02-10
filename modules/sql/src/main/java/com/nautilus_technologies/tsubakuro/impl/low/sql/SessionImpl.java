@@ -38,11 +38,21 @@ public class SessionImpl implements Session {
      * @param readOnly specify whether the new transaction is read-only or not
      * @return the transaction
      */
+    @Deprecated
     public Future<Transaction> createTransaction(boolean readOnly) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
-	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder().setReadOnly(readOnly)), sessionLinkImpl);
+	return new FutureTransactionImpl(sessionLinkImpl.send(
+							      RequestProtos.Begin.newBuilder()
+							      .setOption(RequestProtos.TransactionOption.newBuilder()
+									 .setOperationKind(readOnly
+											   ? RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY
+											   : RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE
+											   )
+									 )
+							      )
+					 , sessionLinkImpl);
     }
 
     /**
@@ -50,7 +60,21 @@ public class SessionImpl implements Session {
      * @return the transaction
      */
     public Future<Transaction> createTransaction() throws IOException {
-	return createTransaction(false);
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder()), sessionLinkImpl);
+    }
+
+    /**
+     * Begin a new transaction by specifying the transaction type
+     * @return the transaction
+     */
+    public Future<Transaction> createTransaction(RequestProtos.TransactionOption.Builder option) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder().setOption(option)), sessionLinkImpl);
     }
 
     /**
