@@ -58,6 +58,7 @@ public final class Main {
         options.addOption(Option.builder("f").argName("file_contains_query").hasArg().desc("Execute the query descrived in the file specified.").build());
         options.addOption(Option.builder("v").argName("query_validation").desc("Set query validation mode.").build());
         options.addOption(Option.builder("o").argName("reqd_only_transaction").desc("Use read only transaction.").build());
+        options.addOption(Option.builder("b").argName("batch(long)_transaction").desc("Use long transaction.").build());
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -68,6 +69,10 @@ public final class Main {
 	    if (cmd.hasOption("o")) {
 		profile.transactionOption.setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY);
 		System.out.println("use read only transaction");
+	    }
+	    if (cmd.hasOption("b")) {
+		profile.transactionOption.setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_LONG);
+		System.out.println("use long transaction type");
 	    }
 	    if (cmd.hasOption("v")) {
 		profile.queryValidation = true;
