@@ -39,17 +39,11 @@ message ParameterSet {
 
 /* For transaction type and options. */
 message TransactionOption {
-
-  enum OperationKind {
-    OPERATION_KIND_UNSPECIFIED = 0;
-    OPERATION_KIND_READ_ONLY = 1;
-    OPERATION_KIND_READ_WRITE = 2;
-  }
-
   enum TransactionType {
     TRANSACTION_TYPE_UNSPECIFIED = 0;
     TRANSACTION_TYPE_SHORT = 1;
     TRANSACTION_TYPE_LONG = 2;
+    TRANSACTION_TYPE_READ_ONLY = 3;
   }
 
   message WritePreserve {
