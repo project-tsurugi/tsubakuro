@@ -65,7 +65,6 @@ class RequestProtosTest {
     @Test
     void transactionOption() {
 	RequestProtos.TransactionOption src = RequestProtos.TransactionOption.newBuilder()
-	    .setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
 	    .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
 	    .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"))
 	    .build();
@@ -78,7 +77,6 @@ class RequestProtosTest {
 	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
 	
 	    assertAll(
-		      () -> assertEquals(dst.getOperationKind(), RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE),
 		      () -> assertEquals(dst.getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT),
 		      () -> assertEquals(r1.getName(), "table_for_preserve"),
 		      () -> assertEquals(dst.getWritePreservesList().size(), 1));
@@ -93,8 +91,8 @@ class RequestProtosTest {
 	RequestProtos.Request src = RequestProtos.Request.newBuilder()
 	    .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(123))
 	    .setBegin(RequestProtos.Begin.newBuilder()
-			.setOption(RequestProtos.TransactionOption.newBuilder().setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY))
-		)
+		      .setOption(RequestProtos.TransactionOption.newBuilder().setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_READ_ONLY))
+		      )
 	    .build();
 
 	byte[] data = src.toByteArray();
@@ -104,8 +102,7 @@ class RequestProtosTest {
 
 	    assertAll(
 		      () -> assertEquals(dst.getSessionHandle().getHandle(), 123),
-		      () -> assertEquals(dst.getBegin().getOption().getOperationKind(), RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY),
-		      () -> assertEquals(dst.getBegin().getOption().getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_UNSPECIFIED),
+		      () -> assertEquals(dst.getBegin().getOption().getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_READ_ONLY),
 		      () -> assertTrue(RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())));
 	} catch (com.google.protobuf.InvalidProtocolBufferException e) {
 	    fail("cought com.google.protobuf.InvalidProtocolBufferException");

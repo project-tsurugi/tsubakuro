@@ -46,10 +46,10 @@ public class SessionImpl implements Session {
 	return new FutureTransactionImpl(sessionLinkImpl.send(
 							      RequestProtos.Begin.newBuilder()
 							      .setOption(RequestProtos.TransactionOption.newBuilder()
-									 .setOperationKind(readOnly
-											   ? RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY
-											   : RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE
-											   )
+									 .setType(readOnly
+										  ? RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_READ_ONLY
+										  : RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT
+										  )
 									 )
 							      )
 					 , sessionLinkImpl);

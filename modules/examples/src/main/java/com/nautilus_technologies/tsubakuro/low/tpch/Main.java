@@ -67,7 +67,7 @@ public final class Main {
             cmd = parser.parse(options, args);
 
 	    if (cmd.hasOption("o")) {
-		profile.transactionOption.setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_ONLY);
+		profile.transactionOption.setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_READ_ONLY);
 		System.out.println("use read only transaction");
 	    }
 	    if (cmd.hasOption("b")) {

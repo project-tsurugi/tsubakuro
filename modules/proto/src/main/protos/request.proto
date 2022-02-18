@@ -50,9 +50,8 @@ message TransactionOption {
     string name = 1;
   }
 
-  OperationKind operation_kind = 1;
-  TransactionType type = 2;
-  repeated WritePreserve write_preserves = 3;
+  TransactionType type = 1;
+  repeated WritePreserve write_preserves = 2;
 }
 
 /*

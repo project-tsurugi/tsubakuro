@@ -113,7 +113,6 @@ public final class ProtosForTest {
 	static RequestProtos.TransactionOption.Builder builder() {
 	    return
 		RequestProtos.TransactionOption.newBuilder()
-		.setOperationKind(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
 		.setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
 		.addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"));
 	}
@@ -121,8 +120,7 @@ public final class ProtosForTest {
 	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
 
 	    return
-		dst.getOperationKind().equals(RequestProtos.TransactionOption.OperationKind.OPERATION_KIND_READ_WRITE)
-		&& dst.getType().equals(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
+		dst.getType().equals(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
 		&& r1.getName().equals("table_for_preserve")
 		&& (dst.getWritePreservesList().size() == 1);
 	}
