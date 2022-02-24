@@ -156,7 +156,7 @@ public class NewOrder {
 
     static String timeStamp() {
 	Date date = new Date();
-	SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM dd yyyy", new Locale("US"));
+	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd (EEE) HH:mm:ss", new Locale("US"));
 	return dateFormat.format(date);
     }
 
