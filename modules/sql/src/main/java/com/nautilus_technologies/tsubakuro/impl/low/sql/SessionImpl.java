@@ -60,10 +60,7 @@ public class SessionImpl implements Session {
      * @return the transaction
      */
     public Future<Transaction> createTransaction() throws IOException {
-	if (Objects.isNull(sessionLinkImpl)) {
-	    throw new IOException("this session is not connected to the Database");
-	}
-	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder()), sessionLinkImpl);
+	return createTransaction(RequestProtos.TransactionOption.newBuilder());
     }
 
     /**
@@ -132,9 +129,10 @@ public class SessionImpl implements Session {
 		}
 	    } catch (TimeoutException | InterruptedException | ExecutionException e) {
 		throw new IOException(e);
+	    } finally {
+		sessionLinkImpl.close();
+		sessionLinkImpl = null;
 	    }
-	    sessionLinkImpl.close();
-	    sessionLinkImpl = null;
 	}
     }
 }
