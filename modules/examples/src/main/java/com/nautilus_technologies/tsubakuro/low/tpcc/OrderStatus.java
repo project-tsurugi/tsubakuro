@@ -15,6 +15,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
+import com.nautilus_technologies.tsubakuro.protos.StatusProtos;
 
 public class OrderStatus {
     Session session;
@@ -157,7 +158,7 @@ public class OrderStatus {
 		var future3 = transaction.executeQuery(prepared3, ps3);
 		var resultSet3 = future3.getLeft().get();
 		try {
-		    if (!Objects.isNull(resultSet3)) {
+		    if (Objects.nonNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
@@ -190,7 +191,7 @@ public class OrderStatus {
                     rollback();
                     continue;
                 } finally {
-		    if (!Objects.isNull(resultSet3)) {
+		    if (Objects.nonNull(resultSet3)) {
 			resultSet3.close();
 		    }
                 }
@@ -203,7 +204,7 @@ public class OrderStatus {
 		var future4 = transaction.executeQuery(prepared4, ps4);
 		var resultSet4 = future4.getLeft().get();
 		try {
-		    if (!Objects.isNull(resultSet4)) {
+		    if (Objects.nonNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
@@ -215,7 +216,11 @@ public class OrderStatus {
 			resultSet4.close();
 			resultSet4 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+		    var status4 = future4.getRight().get();
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
+			if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
+			    System.out.println("inconsistent_index");
+			}
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -224,7 +229,7 @@ public class OrderStatus {
                     rollback();
                     continue;
                 } finally {
-		    if (!Objects.isNull(resultSet4)) {
+		    if (Objects.nonNull(resultSet4)) {
 			resultSet4.close();
 		    }
                 }
@@ -237,7 +242,7 @@ public class OrderStatus {
 		var future5 = transaction.executeQuery(prepared5, ps5);
 		var resultSet5 = future5.getLeft().get();
 		try {
-		    if (!Objects.isNull(resultSet5)) {
+		    if (Objects.nonNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
@@ -270,7 +275,7 @@ public class OrderStatus {
                     rollback();
                     continue;
                 } finally {
-		    if (!Objects.isNull(resultSet5)) {
+		    if (Objects.nonNull(resultSet5)) {
 			resultSet5.close();
 		    }
                 }
@@ -283,7 +288,7 @@ public class OrderStatus {
 		var future6 = transaction.executeQuery(prepared6, ps6);
 		var resultSet6 = future6.getLeft().get();
 		try {
-		    if (!Objects.isNull(resultSet6)) {
+		    if (Objects.nonNull(resultSet6)) {
 			int i = 0;
 			while (resultSet6.nextRecord()) {
 			    resultSet6.nextColumn();
@@ -316,7 +321,7 @@ public class OrderStatus {
                     rollback();
                     continue;
                 } finally {
-		    if (!Objects.isNull(resultSet6)) {
+		    if (Objects.nonNull(resultSet6)) {
 			resultSet6.close();
 		    }
                 }
