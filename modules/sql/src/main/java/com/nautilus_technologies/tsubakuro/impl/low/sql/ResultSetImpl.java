@@ -25,17 +25,11 @@ public class ResultSetImpl implements ResultSet {
 	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
 	    this.recordMeta = recordMeta;
 	}
-        public CommonProtos.DataType at(int index) throws IOException {
+        public CommonProtos.DataType type(int index) throws IOException {
 	    if (index < 0 || fieldCount() <= index) {
 		throw new IOException("index is out of the range");
 	    }
 	    return recordMeta.getColumnsList().get(index).getType();
-	}
-        public CommonProtos.DataType at() throws IOException {
-	    if (!columnReady) {
-		throw new IOException("the column is not ready to be read");
-	    }
-	    return recordMeta.getColumnsList().get(columnIndex).getType();
 	}
         public boolean nullable(int index) throws IOException {
 	    if (index < 0 || fieldCount() <= index) {
@@ -43,14 +37,29 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	    return recordMeta.getColumnsList().get(index).getNullable();
 	}
+        public long fieldCount() {
+	    return recordMeta.getColumnsList().size();
+	}
+	@Deprecated
+        public CommonProtos.DataType at(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
+	    return recordMeta.getColumnsList().get(index).getType();
+	}
+	@Deprecated
+        public CommonProtos.DataType at() throws IOException {
+	    if (!columnReady) {
+		throw new IOException("the column is not ready to be read");
+	    }
+	    return recordMeta.getColumnsList().get(columnIndex).getType();
+	}
+	@Deprecated
         public boolean nullable() throws IOException {
 	    if (!columnReady) {
 		throw new IOException("the column is not ready to be read");
 	    }
 	    return recordMeta.getColumnsList().get(columnIndex).getNullable();
-	}
-        public long fieldCount() {
-	    return recordMeta.getColumnsList().size();
 	}
     }
 
@@ -170,6 +179,28 @@ public class ResultSetImpl implements ResultSet {
 	    return true;
 	}
 	return false;
+    }
+
+    /**
+     * Get the current field type
+     * @return current field type
+     */
+    public CommonProtos.DataType type() throws IOException {
+	if (!columnReady) {
+	    throw new IOException("the column is not ready to be read");
+	}
+	return recordMeta.at(columnIndex);
+    }
+
+    /**
+     * Get the nullability for the current field
+     * @return true if the current field is nullable
+     */
+    public boolean nullable() throws IOException {
+	if (!columnReady) {
+	    throw new IOException("the column is not ready to be read");
+	}
+	return recordMeta.nullable(columnIndex);
     }
 
     /**

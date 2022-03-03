@@ -30,7 +30,7 @@ public class Select {
 	    count++;
 	    while (resultSet.nextColumn()) {
 		if (!resultSet.isNull()) {
-		    switch (resultSet.getRecordMeta().at()) {
+		    switch (resultSet.type()) {
 		    case INT4:
 			System.out.println(resultSet.getInt4());
 			break;

@@ -17,13 +17,7 @@ public interface ResultSet extends Closeable {
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field type
          */
-        CommonProtos.DataType at(int index) throws IOException;
-
-        /**
-         * Get the current field type
-         * @return current field type
-         */
-        CommonProtos.DataType at() throws IOException;
+        CommonProtos.DataType type(int index) throws IOException;
 
         /**
          * Get the nullability for the field
@@ -33,16 +27,32 @@ public interface ResultSet extends Closeable {
         boolean nullable(int index) throws IOException;
 
         /**
-         * Get the nullability for the field
-         * @return true if the current field is nullable
-         */
-        boolean nullable() throws IOException;
-
-        /**
          * Get the number of fields in the record
          * @return the number of the fields
          */
         long fieldCount();
+
+        /**
+         * Get the field type
+         * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
+         * @return field type
+         */
+	@Deprecated
+        CommonProtos.DataType at(int index) throws IOException;
+
+        /**
+         * Get the current field type
+         * @return current field type
+         */
+	@Deprecated
+        CommonProtos.DataType at() throws IOException;
+
+        /**
+         * Get the nullability for the field
+         * @return true if the current field is nullable
+         */
+	@Deprecated
+        boolean nullable() throws IOException;
     }
 
     /**
@@ -78,4 +88,16 @@ public interface ResultSet extends Closeable {
      * @return true if the next column exists
      */
     boolean nextColumn();
+
+    /**
+     * Get the current field type
+     * @return current field type
+     */
+    CommonProtos.DataType type() throws IOException;
+
+    /**
+     * Get the nullability for the current field
+     * @return true if the current field is nullable
+     */
+    boolean nullable() throws IOException;
 }
