@@ -280,7 +280,7 @@ public class ResultSetImpl implements ResultSet {
 	}
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
-	if (type != ValueType.FLOAT && format != MessageFormat.FLOAT32) {
+	if (!(type == ValueType.FLOAT && format == MessageFormat.FLOAT32)) {
 	    if (type == ValueType.NIL) {
 		throw new IOException("the column is Null");
 	    }
@@ -302,7 +302,7 @@ public class ResultSetImpl implements ResultSet {
 	}
 	MessageFormat format = unpacker.getNextFormat();
 	ValueType type = format.getValueType();
-	if (type != ValueType.FLOAT && format != MessageFormat.FLOAT64) {
+	if (!(type == ValueType.FLOAT && format == MessageFormat.FLOAT64)) {
 	    if (type == ValueType.NIL) {
 		throw new IOException("the column is Null");
 	    }
