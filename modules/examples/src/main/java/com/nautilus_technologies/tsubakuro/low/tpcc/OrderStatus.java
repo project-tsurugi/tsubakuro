@@ -219,7 +219,10 @@ public class OrderStatus {
 		    var status4 = future4.getRight().get();
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
 			if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
-			    System.out.println("inconsistent_index");
+			    if (profile.inconsistentIndexCount == 0) {
+				System.out.println("inconsistent_index");
+			    }
+			    profile.inconsistentIndexCount++;
 			}
 			throw new ExecutionException(new IOException("SQL error"));
 		    }

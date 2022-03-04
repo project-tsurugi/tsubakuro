@@ -42,6 +42,7 @@ public class Profile {
     public long newOrderIntentionalRollback;
     public long elapsed;
     public long count;
+    public long inconsistentIndexCount;  // for temporary use
 
     public Profile() {
 	time = new Counter();
@@ -57,6 +58,7 @@ public class Profile {
 	stockTable = new Counter();
 	newOrderIntentionalRollback = 0;
 	count = 0;
+	inconsistentIndexCount = 0;  // for temporary use
     }
     public void add(Profile profile) {
 	time.add(profile.time);
@@ -73,6 +75,7 @@ public class Profile {
 	newOrderIntentionalRollback += profile.newOrderIntentionalRollback;
 	elapsed += profile.elapsed;
 	count++;
+	inconsistentIndexCount += profile.inconsistentIndexCount;  // for temporary use
     }
     long ns2us(long t) {
 	return (t + 500) / 1000;
@@ -84,6 +87,9 @@ public class Profile {
 	return a / b;
     }
     public void print(int n) {
+	if (inconsistentIndexCount > 0) {  // for temporary use
+	    System.out.printf("retry due to inconsistent_index: %d% times%n%n", inconsistentIndexCount);
+	}
 	System.out.printf("duration(mS): %d%n", elapsed / count);
 	System.out.println("===============================================================================================");
 	System.out.printf("   new order: %12d / %8d = %6d (us)%n", ns2us(time.newOrder), completion.newOrder + newOrderIntentionalRollback, ns2us(div(time.newOrder , (completion.newOrder + newOrderIntentionalRollback))));
