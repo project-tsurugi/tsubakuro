@@ -6,53 +6,61 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
 
 /**
- * FutureResponseImpl type.
+ * FutureQueryResponseImpl type.
  */
-public class FutureResponseImpl<V> implements Future<V> {
+public class FutureQueryResponseImpl implements Future<ResponseProtos.ExecuteQuery> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    private SessionWireImpl sessionWireImpl;
-    private Distiller<V> distiller;
-    private ResponseWireHandleImpl responseWireHandleImpl;
+    private SessionWire sessionWireImpl;
+    private ResponseWireHandle responseWireHandleImpl;
 
     /**
-     * Class constructor, called from SessionWireImpl that is connected to the SQL server.
+     * Class constructor, called from SessionWire that is connected to the SQL server.
      * @param sessionWireImpl the wireImpl class responsible for this communication
-     * @param distiller the Distiller class that will work for the message to be received
      * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureResponseImpl(SessionWireImpl sessionWireImpl, Distiller<V> distiller) {
+    FutureQueryResponseImpl(SessionWire sessionWireImpl) {
 	this.sessionWireImpl = sessionWireImpl;
-	this.distiller = distiller;
     }
-    public void setResponseHandle(ResponseWireHandleImpl handle) {
+    public void setResponseHandle(ResponseWireHandle handle) {
 	responseWireHandleImpl = handle;
     }
 
     /**
      * get the message received from the SQL server.
      */
-    public V get() throws ExecutionException {
+    public ResponseProtos.ExecuteQuery get() throws ExecutionException {
 	if (Objects.isNull(responseWireHandleImpl)) {
 	    throw new ExecutionException(new IOException("request has not been send out"));
 	}
 	try {
-	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
+	    var response = sessionWireImpl.receive(responseWireHandleImpl);
+	    if (ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(response.getResponseCase())) {
+		return response.getExecuteQuery();
+	    }
+	    sessionWireImpl.unReceive(responseWireHandleImpl);
+	    return null;
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}
     }
 
-    public V get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
+    public ResponseProtos.ExecuteQuery get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
 	if (Objects.isNull(responseWireHandleImpl)) {
 	    throw new ExecutionException(new IOException("request has not been send out"));
 	}
 	try {
-	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
+	    var response = sessionWireImpl.receive(responseWireHandleImpl, timeout, unit);
+	    if (ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(response.getResponseCase())) {
+		return response.getExecuteQuery();
+	    }
+	    sessionWireImpl.unReceive(responseWireHandleImpl);
+	    return null;
 	} catch (IOException e) {
 	    throw new ExecutionException(e);
 	}

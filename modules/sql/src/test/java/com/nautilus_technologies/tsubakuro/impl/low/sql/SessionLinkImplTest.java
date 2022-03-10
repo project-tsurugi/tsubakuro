@@ -90,6 +90,15 @@ class SessionLinkImplTest {
 	    return null;  // dummy as it is test for session
 	}
 
+	public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+	    var r = nextResponse;
+	    nextResponse = null;
+	    return r;
+	}
+
+	public void unReceive(ResponseWireHandle responseWireHandle) {
+	}
+
 	public void close() throws IOException {
 	}
     }

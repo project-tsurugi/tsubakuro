@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 import java.io.Closeable;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -33,6 +35,13 @@ public interface SessionWire extends Closeable {
      @return ResponseProtos.Response the response message received from the SQL server
     */
     ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException;
+
+    ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
+
+    /**
+     * Treat the latest response message received as not having been read
+     */
+    void unReceive(ResponseWireHandle handle) throws IOException;
 
     ResultSetWire createResultSetWire() throws IOException;
 }
