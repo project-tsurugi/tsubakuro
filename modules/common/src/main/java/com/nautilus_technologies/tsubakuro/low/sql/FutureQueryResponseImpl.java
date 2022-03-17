@@ -24,7 +24,7 @@ public class FutureQueryResponseImpl implements Future<ResponseProtos.ExecuteQue
      * @param sessionWireImpl the wireImpl class responsible for this communication
      * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureQueryResponseImpl(SessionWire sessionWireImpl) {
+    public FutureQueryResponseImpl(SessionWire sessionWireImpl) {
 	this.sessionWireImpl = sessionWireImpl;
     }
     public void setResponseHandle(ResponseWireHandle handle) {

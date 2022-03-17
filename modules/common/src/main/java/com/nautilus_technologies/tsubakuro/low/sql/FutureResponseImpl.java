@@ -26,7 +26,7 @@ public class FutureResponseImpl<V> implements Future<V> {
      * @param distiller the Distiller class that will work for the message to be received
      * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
-    FutureResponseImpl(SessionWire sessionWireImpl, Distiller<V> distiller) {
+    public FutureResponseImpl(SessionWire sessionWireImpl, Distiller<V> distiller) {
 	this.sessionWireImpl = sessionWireImpl;
 	this.distiller = distiller;
     }

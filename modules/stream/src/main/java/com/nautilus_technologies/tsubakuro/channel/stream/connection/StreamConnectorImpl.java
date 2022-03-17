@@ -1,0 +1,34 @@
+package com.nautilus_technologies.tsubakuro.channel.stream.connection;
+
+import java.util.concurrent.Future;
+import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
+
+/**
+ * StreamConnectorImpl type.
+ */
+public final class StreamConnectorImpl implements Connector {
+    String hostname;
+    int port;
+    
+    public StreamConnectorImpl(String hostname, int port) {
+	this.hostname = hostname;
+	this.port = port;
+    }
+    
+    public Future<SessionWire> connect() throws IOException {
+	var streamWire = new StreamWire(hostname, port);
+	streamWire.connect();
+	streamWire.hello();
+	return new FutureSessionWireImpl(this, streamWire);
+    }
+
+    public Future<StreamWire> connect(String name) throws IOException {
+	var streamWire = new StreamWire(hostname, port);
+	streamWire.connect();
+	streamWire.hello(name);
+	return new FutureResultSetStreamWireImpl(streamWire);
+    }
+}
