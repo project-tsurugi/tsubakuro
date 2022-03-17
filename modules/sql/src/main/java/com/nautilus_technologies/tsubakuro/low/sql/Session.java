@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 
 /**

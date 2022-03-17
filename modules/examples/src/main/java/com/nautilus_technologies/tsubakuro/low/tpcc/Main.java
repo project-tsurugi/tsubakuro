@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 

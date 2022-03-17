@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql;
+package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 

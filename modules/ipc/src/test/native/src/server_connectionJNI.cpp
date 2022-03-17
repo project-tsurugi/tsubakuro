@@ -1,17 +1,17 @@
 #include <iostream>
 
 #include <jni.h>
-#include "com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl.h"
+#include "com_nautilus_technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl.h"
 #include "server_wires.h"
 
 using namespace tateyama::common::wire;
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl
  * Method:    createNative
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_ServerConnectionImpl_createNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl_createNative
 (JNIEnv *env, jclass, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
@@ -26,11 +26,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_conne
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl
  * Method:    listenNative
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_ServerConnectionImpl_listenNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl_listenNative
 (JNIEnv *, jclass, jlong handle)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
@@ -38,11 +38,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_conne
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl
  * Method:    acceptNative
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_ServerConnectionImpl_acceptNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl_acceptNative
 (JNIEnv *, jclass, jlong handle, jlong id)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
@@ -50,11 +50,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connec
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_connection_ServerConnectionImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl
  * Method:    closeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_connection_ServerConnectionImpl_closeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_connection_ServerConnectionImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));

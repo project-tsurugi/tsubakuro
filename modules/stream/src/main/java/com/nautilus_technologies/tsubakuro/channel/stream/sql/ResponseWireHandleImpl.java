@@ -1,6 +1,6 @@
 package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle;
 
 /**
  * ResponseWireHandleImpl type, where the type of the handle that this class stores is StreamWire.

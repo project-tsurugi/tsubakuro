@@ -1,8 +1,8 @@
-package com.nautilus_technologies.tsubakuro.impl.low.connection;
+package com.nautilus_technologies.tsubakuro.channel.ipc.connection;
 
 import java.io.Closeable;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ServerWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ServerWireImpl;
 
 /**
  * ServerConnectionImpl type.

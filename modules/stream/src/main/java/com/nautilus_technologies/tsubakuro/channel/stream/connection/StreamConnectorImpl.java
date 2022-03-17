@@ -2,8 +2,8 @@ package com.nautilus_technologies.tsubakuro.channel.stream.connection;
 
 import java.util.concurrent.Future;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
 /**

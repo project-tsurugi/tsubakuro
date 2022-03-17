@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.connection;
+package com.nautilus_technologies.tsubakuro.channel.ipc.connection;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -6,9 +6,9 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ServerWireImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.CommunicationChecker;
+import com.nautilus_technologies.tsubakuro.channel.ipc.sql.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ServerWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.ipc.sql.CommunicationChecker;
 
 import org.junit.jupiter.api.Test;
 

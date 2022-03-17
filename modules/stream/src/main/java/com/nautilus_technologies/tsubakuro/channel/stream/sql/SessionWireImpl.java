@@ -8,17 +8,18 @@ import java.util.Queue;
 import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureResponseImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureQueryResponseImpl;
+
 import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
 
 /**

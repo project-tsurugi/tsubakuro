@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql;
+package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -9,8 +9,11 @@ import java.util.Objects;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;

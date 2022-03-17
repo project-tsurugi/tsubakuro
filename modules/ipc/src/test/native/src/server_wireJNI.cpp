@@ -1,12 +1,12 @@
 #include <iostream>
 
 #include <jni.h>
-#include "com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl.h"
+#include "com_nautilus_technologies_tsubakuro_channel_ipc_sql_ServerWireImpl.h"
 #include "server_wires.h"
 
 using namespace tateyama::common::wire;
 
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_createNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_createNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
 {
     const char* name_ = env->GetStringUTFChars(name, NULL);
@@ -18,7 +18,7 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
     return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_getNative
+JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_getNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -43,7 +43,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_
     return dstj;
 }
 
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_putNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -61,7 +61,7 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_closeNative
 ([[maybe_unused]] JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -70,11 +70,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ServerWireImpl
  * Method:    createRSLNative
  * Signature: (JLjava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_createRSLNative
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_createRSLNative
 (JNIEnv *env, jclass, jlong handle, jstring name)
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -89,11 +89,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_S
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ServerWireImpl
  * Method:    putRecordsRSLNative
  * Signature: (J[B)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_putRecordsRSLNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_putRecordsRSLNative
 (JNIEnv *env, jclass, jlong handle, jbyteArray srcj)
 {
     server_wire_container::resultset_wires_container* wires = reinterpret_cast<server_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -110,11 +110,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ServerWireImpl
  * Method:    commitRSLNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_eorRSLNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_eorRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
     server_wire_container::resultset_wires_container* wires = reinterpret_cast<server_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -123,11 +123,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_Se
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_impl_low_sql_ServerWireImpl
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ServerWireImpl
  * Method:    closeRSLNative
  * Signature: (J)J
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_impl_low_sql_ServerWireImpl_closeRSLNative
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ServerWireImpl_closeRSLNative
 (JNIEnv *, jclass, jlong handle)
 {
     server_wire_container::resultset_wire* container = reinterpret_cast<server_wire_container::resultset_wire*>(static_cast<std::uintptr_t>(handle));

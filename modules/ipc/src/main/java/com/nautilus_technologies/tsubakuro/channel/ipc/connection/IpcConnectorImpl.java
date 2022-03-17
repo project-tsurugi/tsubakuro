@@ -1,12 +1,12 @@
-package com.nautilus_technologies.tsubakuro.impl.low.connection;
+package com.nautilus_technologies.tsubakuro.channel.ipc.connection;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.ipc.sql.SessionWireImpl;
 
 /**
  * IpcConnectorImpl type.

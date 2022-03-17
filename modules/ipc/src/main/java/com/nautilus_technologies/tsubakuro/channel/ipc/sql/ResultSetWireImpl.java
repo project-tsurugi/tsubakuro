@@ -1,11 +1,11 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql;
+package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.msgpack.core.buffer.MessageBuffer;
 import org.msgpack.core.buffer.ByteBufferInput;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 
 /**
  * ResultSetWireImpl type.

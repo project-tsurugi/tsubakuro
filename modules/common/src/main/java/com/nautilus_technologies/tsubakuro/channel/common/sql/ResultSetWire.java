@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.sql;
+package com.nautilus_technologies.tsubakuro.channel.common.sql;
 
 import java.io.Closeable;
 import java.io.IOException;

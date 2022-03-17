@@ -1,8 +1,8 @@
-package com.nautilus_technologies.tsubakuro.low.connection;
+package com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.util.concurrent.Future;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 
 /**
  * Connector type.
