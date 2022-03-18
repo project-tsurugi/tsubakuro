@@ -40,14 +40,14 @@ public class Q6 {
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("dateto").setType(CommonProtos.DataType.CHARACTER))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("datefrom").setType(CommonProtos.DataType.CHARACTER))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("discount").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("quantity").setType(CommonProtos.DataType.INT8));
-
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("quantity").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared = session.prepare(sql, ph).get();
     }
 
     public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.transactionOption).get();
+	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
 	if (profile.queryValidation) {
@@ -62,7 +62,7 @@ public class Q6 {
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity").setInt8Value(25));
         }
 
-	var future = transaction.executeQuery(prepared, ps);
+	var future = transaction.executeQuery(prepared, ps.build());
 	var resultSet = future.getLeft().get();
 
 	try {

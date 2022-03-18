@@ -46,7 +46,8 @@ public class StockLevel {
 	String sql1 = "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared1 = session.prepare(sql1, ph1).get();
 
 	String sql2 = "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity";
@@ -56,7 +57,8 @@ public class StockLevel {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_o_id_high").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_o_id_low").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_quantity").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_quantity").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared2 = session.prepare(sql2, ph2).get();
     }
 
@@ -86,7 +88,8 @@ public class StockLevel {
 	    // "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id"
 	    var ps1 = RequestProtos.ParameterSet.newBuilder()
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
+		.build();
 	    var future1 = transaction.executeQuery(prepared1, ps1);
 	    var resultSet1 = future1.getLeft().get();
 	    try {
@@ -129,7 +132,8 @@ public class StockLevel {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id_high").setInt8Value(oId))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_o_id_low").setInt8Value(oId - OID_RANGE))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(paramsWid))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold));
+                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold))
+		.build();
 	    var future2 = transaction.executeQuery(prepared2, ps2);
 	    var resultSet2 = future2.getLeft().get();
 	    try {

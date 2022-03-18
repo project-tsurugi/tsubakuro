@@ -44,7 +44,8 @@ public class SelectMulti extends Thread {
 	String sql1 = "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id";
         var ph1 = RequestProtos.PlaceHolder.newBuilder()
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_d_id").setType(CommonProtos.DataType.INT8))
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8));
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8))
+	    .build();
         prepared1 = session.prepare(sql1, ph1).get();
     }
     
@@ -75,7 +76,8 @@ public class SelectMulti extends Thread {
                 // "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
                 var ps1 = RequestProtos.ParameterSet.newBuilder()
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
-                    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
+                    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
+		    .build();
                 var future1 = transaction.executeQuery(prepared1, ps1);
                 var resultSet1 = future1.getLeft().get();
 		now = System.nanoTime();

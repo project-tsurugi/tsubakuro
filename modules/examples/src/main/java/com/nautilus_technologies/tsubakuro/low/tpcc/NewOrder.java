@@ -88,20 +88,23 @@ public class NewOrder {
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("w_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("c_d_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("c_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("c_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared1 = session.prepare(sql1, ph1).get();
 
 	String sql2 = "SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ph2 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared2 = session.prepare(sql2, ph2).get();
 
 	String sql3 = "UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ph3 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_next_o_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared3 = session.prepare(sql3, ph3).get();
 
 	String sql4 = "INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (:o_id, :o_d_id, :o_w_id, :o_c_id, :o_entry_d, :o_ol_cnt, :o_all_local)";
@@ -112,32 +115,37 @@ public class NewOrder {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_c_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_entry_d").setType(CommonProtos.DataType.CHARACTER))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_ol_cnt").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_all_local").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_all_local").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared4 = session.prepare(sql4, ph4).get();
 
 	String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
 	var ph5 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_o_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_d_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared5 = session.prepare(sql5, ph5).get();
 
 	String sql6 = "SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id";
 	var ph6 = RequestProtos.PlaceHolder.newBuilder()
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("i_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("i_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared6 = session.prepare(sql6, ph6).get();
 
 	String sql7 = "SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
 	var ph7 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_i_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared7 = session.prepare(sql7, ph7).get();
 
 	String sql8 = "UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
 	var ph8 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_quantity").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_i_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared8 = session.prepare(sql8, ph8).get();
 
 	String sql9 = "INSERT INTO ORDER_LINE (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)VALUES (:ol_o_id, :ol_d_id, :ol_w_id, :ol_number, :ol_i_id, :ol_supply_w_id, :ol_quantity, :ol_amount, :ol_dist_info)";
@@ -150,7 +158,8 @@ public class NewOrder {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_supply_w_id").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_quantity").setType(CommonProtos.DataType.INT8))
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_amount").setType(CommonProtos.DataType.FLOAT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_dist_info").setType(CommonProtos.DataType.CHARACTER));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("ol_dist_info").setType(CommonProtos.DataType.CHARACTER))
+	    .build();
 	prepared9 = session.prepare(sql9, ph9).get();
     }
 
@@ -207,7 +216,8 @@ public class NewOrder {
 	    var ps1 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid))
+		.build();
 	    var future1 = transaction.executeQuery(prepared1, ps1);
 	    var resultSet1 = future1.getLeft().get();
 	    try {
@@ -252,7 +262,8 @@ public class NewOrder {
 	    // SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
 	    var ps2 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
+		.build();
 	    var future2 = transaction.executeQuery(prepared2, ps2);
 	    var resultSet2 = future2.getLeft().get();
 	    try {
@@ -294,7 +305,8 @@ public class NewOrder {
 	    var ps3 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_next_o_id").setInt8Value(dNextOid + 1))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
+		.build();
 	    var future3 = transaction.executeStatement(prepared3, ps3);
 	    var result3 = future3.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
@@ -314,7 +326,8 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(paramsCid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_entry_d").setCharacterValue(paramsEntryD))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setInt8Value(paramsOlCnt))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(paramsAllLocal));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(paramsAllLocal))
+		.build();
 	    var future4 = transaction.executeStatement(prepared4, ps4);
 	    var result4 = future4.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
@@ -328,7 +341,8 @@ public class NewOrder {
 	    var ps5 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(oid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
+		.build();
 	    var future5 = transaction.executeStatement(prepared5, ps5);
 	    var result5 = future5.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
@@ -346,7 +360,8 @@ public class NewOrder {
 
 		// SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id
 		var ps6 = RequestProtos.ParameterSet.newBuilder()
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid))
+		    .build();
 		var future6 = transaction.executeQuery(prepared6, ps6);
 		var resultSet6 = future6.getLeft().get();
 		try {
@@ -386,7 +401,8 @@ public class NewOrder {
 		// SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
 		var ps7 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
+		    .build();
 		var future7 = transaction.executeQuery(prepared7, ps7);
 		var resultSet7 = future7.getLeft().get();
 		try {
@@ -445,7 +461,8 @@ public class NewOrder {
 		var ps8 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
+		    .build();
 		var future8 = transaction.executeStatement(prepared8, ps8);
 		var result8 = future8.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
@@ -467,7 +484,8 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_supply_w_id").setInt8Value(olSupplyWid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_quantity").setInt8Value(olQuantity))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_amount").setFloat8Value(olAmount))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo))
+		    .build();
 		var future9 = transaction.executeStatement(prepared9, ps9);
 		var result9 = future9.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {

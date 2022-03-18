@@ -42,7 +42,8 @@ public class SelectOne extends Thread {
 	String sql2 = "SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ph2 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_id").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared2 = session.prepare(sql2, ph2).get();
     }
     
@@ -72,7 +73,8 @@ public class SelectOne extends Thread {
 		// SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
 		var ps2 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
+		    .build();
 		var future2 = transaction.executeQuery(prepared2, ps2);
 		var resultSet2 = future2.getLeft().get();
 		now = System.nanoTime();

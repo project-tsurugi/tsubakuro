@@ -22,6 +22,10 @@ run {
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
 }
 
+compileJava {
+    options.compilerArgs << '-Xlint:deprecation'
+}
+
 spotbugs {
     excludeFilter = file("$projectDir/config/spotbugs/spotbugsExclude.xml")
 }

@@ -76,11 +76,21 @@ public class TransactionImpl implements Transaction {
      @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
      */
+    @Deprecated
     public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
     	return sessionLinkImpl.send(RequestProtos.ExecutePreparedStatement.newBuilder()
+				.setTransactionHandle(transaction)
+				.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+				.setParameters(parameterSet));
+    }
+    public Future<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("already closed");
+	}
+	return sessionLinkImpl.send(RequestProtos.ExecutePreparedStatement.newBuilder()
 				.setTransactionHandle(transaction)
 				.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 				.setParameters(parameterSet));
@@ -93,7 +103,21 @@ public class TransactionImpl implements Transaction {
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
      and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
      */
+    @Deprecated
     public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("already closed");
+	}
+	var pair = sessionLinkImpl.send(RequestProtos.ExecutePreparedQuery.newBuilder()
+					.setTransactionHandle(transaction)
+					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+					.setParameters(parameterSet));
+	if (!Objects.isNull(pair.getLeft())) {
+	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	}
+	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+    }
+    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}

@@ -69,14 +69,14 @@ public class Q19 {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("brand2").setType(CommonProtos.DataType.CHARACTER))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("quantity2").setType(CommonProtos.DataType.INT8))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("brand3").setType(CommonProtos.DataType.CHARACTER))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("quantity3").setType(CommonProtos.DataType.INT8));
-
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("quantity3").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared = session.prepare(sql, ph).get();
     }
 
     public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.transactionOption).get();
+	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
 	if (profile.queryValidation) {
@@ -95,7 +95,7 @@ public class Q19 {
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity3").setInt8Value(21));
         }
 
-	var future = transaction.executeQuery(prepared, ps);
+	var future = transaction.executeQuery(prepared, ps.build());
 	var resultSet = future.getLeft().get();
 
 	try {

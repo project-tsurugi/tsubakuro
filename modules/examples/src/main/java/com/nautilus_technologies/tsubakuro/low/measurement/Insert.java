@@ -45,7 +45,8 @@ public class Insert extends Thread {
         var ph5 = RequestProtos.PlaceHolder.newBuilder()
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_o_id").setType(CommonProtos.DataType.INT8))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_d_id").setType(CommonProtos.DataType.INT8))
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8));
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("no_w_id").setType(CommonProtos.DataType.INT8))
+            .build();
         prepared5 = session.prepare(sql5, ph5).get();
     }
 
@@ -76,7 +77,8 @@ public class Insert extends Thread {
 		var ps5 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(oid++))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
-		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid));
+		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
+		    .build();
 		var future5 = transaction.executeStatement(prepared5, ps5);
 		var result5 = future5.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
