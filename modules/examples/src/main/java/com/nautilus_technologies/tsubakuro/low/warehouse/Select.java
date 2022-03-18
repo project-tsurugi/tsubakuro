@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.warehouse;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;

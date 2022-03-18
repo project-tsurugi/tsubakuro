@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.concurrent.Future;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 
 /**
@@ -33,7 +34,9 @@ public interface Session extends CloseableIpc {
      * @param option specify the transaction type
      * @return the transaction
      */
+    @Deprecated
     Future<Transaction> createTransaction(RequestProtos.TransactionOption.Builder option) throws IOException;
+    Future<Transaction> createTransaction(RequestProtos.TransactionOption option) throws IOException;
 
     /**
      * Request prepare to the SQL service
@@ -41,7 +44,9 @@ public interface Session extends CloseableIpc {
      * @param placeHolder the set of place holder name and type of its variable encoded with protocol buffer
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
+    @Deprecated
     Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException;
+    Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException;
 
     /**
      * Request explain to the SQL service
@@ -49,5 +54,7 @@ public interface Session extends CloseableIpc {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<Explain> holds a string to explain the plan
      */
+    @Deprecated
     Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException;
+    Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
 }

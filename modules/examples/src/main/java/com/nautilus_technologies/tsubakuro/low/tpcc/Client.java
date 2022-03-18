@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 
 public class  Client extends Thread {

@@ -4,6 +4,7 @@ include 'proto'
 include 'common'
 include 'sql'
 include 'ipc'
+include 'stream'
 include 'examples'
 
 rootProject.children.each { project ->

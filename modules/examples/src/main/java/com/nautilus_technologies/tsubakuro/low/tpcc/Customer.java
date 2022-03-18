@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.tpcc;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.Objects;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -25,7 +25,8 @@ public final class Customer {
 	var ps1 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast))
+	    .build();
 	var future1 = transaction.executeQuery(prepared1, ps1);
 	long nameCnt = 0;
 	var resultSet1 = future1.getLeft().get();
@@ -67,7 +68,8 @@ public final class Customer {
 	var ps2 = RequestProtos.ParameterSet.newBuilder()
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
-	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast));
+	    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast))
+	    .build();
 	var future2 = transaction.executeQuery(prepared2, ps2);
 	long rv = -1;
 	var resultSet2 = future2.getLeft().get();

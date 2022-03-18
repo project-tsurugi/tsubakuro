@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.concurrent;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.Objects;
-import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import org.apache.commons.cli.Options;
@@ -15,7 +15,7 @@ import org.apache.commons.cli.ParseException;
 
 public final class Main {
     static long orderId()  throws IOException, ExecutionException, InterruptedException {
-        var connector = new IpcConnectorImpl(dbName);
+        var connector = new ConnectorImpl(dbName);
         var session = new SessionImpl();
         session.connect(connector.connect().get());
 
@@ -63,7 +63,7 @@ public final class Main {
 		concurrency = Integer.parseInt(cmd.getOptionValue("c"));
 	    }
 
-	    var client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), concurrency, orderId());
+	    var client = new Insert(new ConnectorImpl(dbName), new SessionImpl(), concurrency, orderId());
 	    if (!Objects.isNull(client)) {
 		client.start();
 		client.join();

@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.HashMap;
 import java.util.Map;
 import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -42,7 +42,8 @@ public class Q2 {
 	    + "AND PS_PARTKEY = :partkey ";
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("region").setType(CommonProtos.DataType.CHARACTER))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("partkey").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("partkey").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared1 = session.prepare(sql1, ph1).get();
 
 	String sql2 = "SELECT S_ACCTBAL, S_NAME, N_NAME, P_MFGR, S_ADDRESS, S_PHONE, S_COMMENT "
@@ -62,7 +63,8 @@ public class Q2 {
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("size").setType(CommonProtos.DataType.INT8))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("type").setType(CommonProtos.DataType.CHARACTER))
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("region").setType(CommonProtos.DataType.CHARACTER))
-	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("mincost").setType(CommonProtos.DataType.INT8));
+	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("mincost").setType(CommonProtos.DataType.INT8))
+	    .build();
 	prepared2 = session.prepare(sql2, ph2).get();
     }
 
@@ -77,7 +79,7 @@ public class Q2 {
 	    }
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey));
 
-	    var future = transaction.executeQuery(prepared1, ps);
+	    var future = transaction.executeQuery(prepared1, ps.build());
 	    var resultSet = future.getLeft().get();
 
 	    try {
@@ -123,7 +125,7 @@ public class Q2 {
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(entry.getValue()));
 
-	    var future = transaction.executeQuery(prepared2, ps);
+	    var future = transaction.executeQuery(prepared2, ps.build());
 	    var resultSet = future.getLeft().get();
 
 	    try {
@@ -165,7 +167,7 @@ public class Q2 {
 
     public void run21(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.transactionOption).get();
+	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
 	q21(profile.queryValidation, transaction);
 	
@@ -178,7 +180,7 @@ public class Q2 {
 
     public void run2(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.transactionOption).get();
+	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
 	q21(profile.queryValidation, transaction);
 	q22(profile.queryValidation, transaction);

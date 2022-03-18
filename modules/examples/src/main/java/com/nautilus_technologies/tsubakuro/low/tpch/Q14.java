@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Date;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.low.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
@@ -38,8 +38,8 @@ public class Q14 {
 
 	var ph = RequestProtos.PlaceHolder.newBuilder()
             .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("dateto").setType(CommonProtos.DataType.CHARACTER))
-            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("datefrom").setType(CommonProtos.DataType.CHARACTER));
-
+            .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("datefrom").setType(CommonProtos.DataType.CHARACTER))
+	    .build();
 	preparedT = session.prepare(sqlT, ph).get();
 
 	String sqlB = "SELECT "
@@ -55,7 +55,7 @@ public class Q14 {
 
     public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
 	long start = System.currentTimeMillis();
-	var transaction = session.createTransaction(profile.transactionOption).get();
+	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
 	var ps = RequestProtos.ParameterSet.newBuilder();
 	if (profile.queryValidation) {
@@ -68,7 +68,7 @@ public class Q14 {
 
 	long t, b;
 
-	var futureT = transaction.executeQuery(preparedT, ps);
+	var futureT = transaction.executeQuery(preparedT, ps.build());
 	var resultSetT = futureT.getLeft().get();
 	try {
 	    if (Objects.nonNull(resultSetT)) {
@@ -97,7 +97,7 @@ public class Q14 {
 	    }
 	}
 
-	var futureB = transaction.executeQuery(preparedB, ps);
+	var futureB = transaction.executeQuery(preparedB, ps.build());
 	var resultSetB = futureB.getLeft().get();
 	try {
 	    if (Objects.nonNull(resultSetB)) {

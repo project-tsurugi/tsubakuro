@@ -9,7 +9,7 @@ import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
@@ -60,14 +60,21 @@ public class SessionImpl implements Session {
      * @return the transaction
      */
     public Future<Transaction> createTransaction() throws IOException {
-	return createTransaction(RequestProtos.TransactionOption.newBuilder());
+	return createTransaction(RequestProtos.TransactionOption.newBuilder().build());
     }
 
     /**
      * Begin a new transaction by specifying the transaction type
      * @return the transaction
      */
+    @Deprecated
     public Future<Transaction> createTransaction(RequestProtos.TransactionOption.Builder option) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return new FutureTransactionImpl(sessionLinkImpl.send(RequestProtos.Begin.newBuilder().setOption(option)), sessionLinkImpl);
+    }
+    public Future<Transaction> createTransaction(RequestProtos.TransactionOption option) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -80,7 +87,16 @@ public class SessionImpl implements Session {
      * @param placeHolder the set of place holder name and type of its variable encoded with protocol buffer
      * @return Future<PreparedStatement> holds the result of the SQL service
      */
+    @Deprecated
     public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return sessionLinkImpl.send(RequestProtos.Prepare.newBuilder()
+				.setSql(sql)
+				.setHostVariables(placeHolder));
+    }
+    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -95,7 +111,16 @@ public class SessionImpl implements Session {
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @return Future<Explain> holds a string to explain the plan
      */
+    @Deprecated
     public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("this session is not connected to the Database");
+	}
+	return sessionLinkImpl.send(RequestProtos.Explain.newBuilder()
+				    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+				    .setParameters(parameterSet));
+    }
+    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}

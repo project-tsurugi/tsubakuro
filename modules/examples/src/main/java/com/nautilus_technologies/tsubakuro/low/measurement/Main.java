@@ -6,7 +6,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
-import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import org.apache.commons.cli.Options;
@@ -18,7 +18,7 @@ import org.apache.commons.cli.ParseException;
 
 public final class Main {
     static long warehouses()  throws IOException, ExecutionException, InterruptedException {
-        var connector = new IpcConnectorImpl(dbName);
+        var connector = new ConnectorImpl(dbName);
         var session = new SessionImpl();
         session.connect(connector.connect().get());
 
@@ -97,19 +97,19 @@ public final class Main {
 	    Thread client = null;
 	    switch (type) {
 	    case SELECT_ONE:
-		client = new SelectOne(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		client = new SelectOne(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    case SELECT_MULTI:
-		client = new SelectMulti(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		client = new SelectMulti(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    case SELECT_LIMIT_ONE:
-		client = new SelectLimitOne(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		client = new SelectLimitOne(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    case INSERT:
-		client = new Insert(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		client = new Insert(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    case UPDATE:
-		client = new Update(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
+		client = new Update(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop);
 		break;
 	    default:
 		System.out.println("illegal type");

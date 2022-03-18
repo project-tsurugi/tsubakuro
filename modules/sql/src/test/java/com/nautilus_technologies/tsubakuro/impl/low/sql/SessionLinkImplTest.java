@@ -8,8 +8,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.low.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -88,6 +89,15 @@ class SessionLinkImplTest {
 
 	public ResultSetWire createResultSetWire() throws IOException {
 	    return null;  // dummy as it is test for session
+	}
+
+	public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+	    var r = nextResponse;
+	    nextResponse = null;
+	    return r;
+	}
+
+	public void unReceive(ResponseWireHandle responseWireHandle) {
 	}
 
 	public void close() throws IOException {

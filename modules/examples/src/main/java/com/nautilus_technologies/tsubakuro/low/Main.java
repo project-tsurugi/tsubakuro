@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.low;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
-import com.nautilus_technologies.tsubakuro.impl.low.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 
 public final class Main {
@@ -13,8 +13,8 @@ public final class Main {
     
     public static void main(String[] args) {
 	try {
-	    (new Insert(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndInsert();
-	    (new Select(new IpcConnectorImpl(dbName), new SessionImpl())).prepareAndSelect();
+	    (new Insert(new ConnectorImpl(dbName), new SessionImpl())).prepareAndInsert();
+	    (new Select(new ConnectorImpl(dbName), new SessionImpl())).prepareAndSelect();
 	} catch (IOException e) {
 	    System.out.println(e);
 	} catch (ExecutionException e) {
