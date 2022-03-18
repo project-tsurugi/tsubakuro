@@ -10,8 +10,9 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
  * StreamConnectorImpl type.
  */
 public final class StreamConnectorImpl implements Connector {
-    String hostname;
-    int port;
+    public static final int DEFAULT_PORT = 12345; 
+    private String hostname;
+    private int port;
     
     public StreamConnectorImpl(String hostname, int port) {
 	this.hostname = hostname;

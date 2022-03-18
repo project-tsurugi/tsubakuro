@@ -7,4 +7,5 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-nop:1.7.32'
 
     implementation project(':common')
+    api project(':ipc')
 }
