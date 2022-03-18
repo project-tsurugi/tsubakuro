@@ -6,13 +6,13 @@ import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 public final class Main {
     static long warehouses()  throws IOException, ExecutionException, InterruptedException {
-	var connector = new IpcConnectorImpl(dbName);
+	var connector = new ConnectorImpl(dbName);
 	var session = new SessionImpl();
 	session.connect(connector.connect().get());
 
@@ -81,7 +81,7 @@ public final class Main {
 		profile.index = i;
 		profile.fixThreadMapping = fixThreadMapping;
 		profiles.add(profile);
-		clients.add(new Client(new IpcConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
+		clients.add(new Client(new ConnectorImpl(dbName), new SessionImpl(), profile, barrier, stop, doingDelivery));
 	    }
 
 	    for (int i = 0; i < clients.size(); i++) {

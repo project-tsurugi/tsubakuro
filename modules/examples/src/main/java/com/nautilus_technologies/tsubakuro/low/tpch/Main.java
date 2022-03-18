@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -19,7 +19,7 @@ import org.apache.commons.cli.ParseException;
 
 public final class Main {
     static long scale()  throws IOException, ExecutionException, InterruptedException {
-	var connector = new IpcConnectorImpl(dbName);
+	var connector = new ConnectorImpl(dbName);
 	var session = new SessionImpl();
 	session.connect(connector.connect().get());
 
@@ -82,7 +82,7 @@ public final class Main {
 	    System.out.println("benchmark started, scale = " + profile.scales);
 
 	    var session = new SessionImpl();
-	    session.connect(new IpcConnectorImpl(dbName).connect().get());
+	    session.connect(new ConnectorImpl(dbName).connect().get());
 
             if (cmd.hasOption("q")) {
 		var queryNum = cmd.getOptionValue("q");
