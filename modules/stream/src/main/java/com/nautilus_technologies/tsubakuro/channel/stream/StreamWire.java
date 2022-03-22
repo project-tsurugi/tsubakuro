@@ -10,8 +10,6 @@ import java.net.Socket;
 public class StreamWire {
     public byte[] bytes;
 
-    private String hostname;
-    private int port;
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
@@ -24,17 +22,12 @@ public class StreamWire {
     private static final byte SESSION = 1;
     private static final byte RESULT_SET = 2;
 
-    public StreamWire(String hostname, int port) {
-	this.hostname = hostname;
-	this.port = port;
-	this.valid = false;
-	this.closed = false;
-    }
-
-    public void connect() throws IOException {
+    public StreamWire(String hostname, int port) throws IOException {
     	socket = new Socket(hostname, port);
 	outStream = new DataOutputStream(socket.getOutputStream());
 	inStream = new DataInputStream(socket.getInputStream());
+	this.valid = false;
+	this.closed = false;
     }
 
     public void hello() throws IOException {
@@ -90,7 +83,6 @@ public class StreamWire {
     }
 
     public boolean receive() throws IOException {
-	int length;
 	if (valid) {
 	    System.err.println("previous data is alive");
 	}
@@ -99,9 +91,9 @@ public class StreamWire {
 	    info = inStream.readByte();
 
 	    // length受信
-	    length = 0;
+	    int length = 0;
 	    for (int i = 0; i < 4; i++) {
-		int inData = inStream.readByte();
+		int inData = inStream.readByte() & 0xff;
 		length |= inData << (i * 8);
 	    }
 	    if (length > 0) {

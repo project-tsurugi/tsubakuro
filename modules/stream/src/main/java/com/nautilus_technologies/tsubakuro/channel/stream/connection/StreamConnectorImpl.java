@@ -21,14 +21,12 @@ public final class StreamConnectorImpl implements Connector {
     
     public Future<SessionWire> connect() throws IOException {
 	var streamWire = new StreamWire(hostname, port);
-	streamWire.connect();
 	streamWire.hello();
 	return new FutureSessionWireImpl(this, streamWire);
     }
 
     public Future<StreamWire> connect(String name) throws IOException {
 	var streamWire = new StreamWire(hostname, port);
-	streamWire.connect();
 	streamWire.hello(name);
 	return new FutureResultSetStreamWireImpl(streamWire);
     }

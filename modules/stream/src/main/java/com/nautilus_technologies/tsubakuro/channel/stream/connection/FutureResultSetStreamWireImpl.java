@@ -37,7 +37,9 @@ public class FutureResultSetStreamWireImpl implements Future<StreamWire> {
     public StreamWire get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
 	try {
 	    streamWire.receive();
-	    if (streamWire.getInfo() == streamWire.STATUS_OK) {
+	    var rc = streamWire.getInfo();
+	    streamWire.release();
+	    if (rc == streamWire.STATUS_OK) {
 		return streamWire;
 	    }
 	    return null;
