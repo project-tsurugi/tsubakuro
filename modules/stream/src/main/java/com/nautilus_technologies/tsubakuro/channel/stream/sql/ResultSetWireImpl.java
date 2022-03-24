@@ -64,8 +64,8 @@ public class ResultSetWireImpl implements ResultSetWire {
 	slot = resultSetBox.lookFor();
 	streamWire.hello(name, slot);
 	var response = resultSetBox.receive(slot);
-	if (response.getInfo() != StreamWire.RESPONSE_RESULT_SET_HELLO_OK) {
-	    throw new IOException("ResultSetWire connect error: " + name);
+	if (response.getInfo() == StreamWire.RESPONSE_RESULT_SET_HELLO_NG) {
+	    throw new IOException("ResultSetWire connect error at slot " + slot + " name = " + name);
 	}
     }
 
@@ -102,6 +102,13 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
+	while (true) {
+	    var entry = resultSetBox.receive(slot);
+	    if (Objects.isNull(entry.getPayload())) {
+		break;
+	    }
+	}
+	resultSetBox.release(slot);
 	// Do not close the streamWire
 	if (Objects.nonNull(byteBufferBackedInput)) {
 	    byteBufferBackedInput.close();

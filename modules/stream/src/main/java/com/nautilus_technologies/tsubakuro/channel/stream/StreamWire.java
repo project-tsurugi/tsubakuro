@@ -89,7 +89,7 @@ public class StreamWire {
             outStream.writeByte(length >> 8);
             outStream.writeByte(length >> 16);
             outStream.writeByte(length >> 24);
-                        
+
             if (length > 0) {
                 // payload送信
                 outStream.write(data, 0, length);
