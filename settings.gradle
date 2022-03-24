@@ -5,6 +5,7 @@ include 'common'
 include 'sql'
 include 'ipc'
 include 'stream'
+include 'connector'
 include 'examples'
 
 rootProject.children.each { project ->

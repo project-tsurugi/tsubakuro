@@ -12,6 +12,7 @@ dependencies {
     implementation project(':common')
     implementation project(':ipc')
     implementation project(':stream')
+    implementation project(':connector')
 }
 
 application {

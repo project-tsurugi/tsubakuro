@@ -7,17 +7,15 @@ import org.msgpack.core.buffer.MessageBuffer;
 import org.msgpack.core.buffer.ByteBufferInput;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
-import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
 
 /**
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private StreamWire streamWire;
-    private StreamConnectorImpl streamConnector;
-    private String sessionName;
+    private ResultSetBox resultSetBox;
+    private int slot;
     private ByteBufferBackedInput byteBufferBackedInput;
-    //    private boolean eor;
 
     class ByteBufferBackedInput extends ByteBufferInput {
 	ByteBufferBackedInput(ByteBuffer byteBuffer) {
@@ -30,20 +28,17 @@ public class ResultSetWireImpl implements ResultSetWire {
 		return rv;
 	    }
 	    try {
-		if (!streamWire.receive()) {
+		var receivedData = resultSetBox.receive(slot);
+		var buffer = receivedData.getPayload();
+		if (Objects.isNull(buffer)) {
 		    return null;
 		}
+		super.reset(ByteBuffer.wrap(buffer));
 	    } catch (IOException e) {
 		System.err.println(e);
 		e.printStackTrace();
 		return null;
 	    }
-	    var buffer = streamWire.getBytes();
-	    streamWire.release();
-	    if (Objects.isNull(buffer)) {
-		return null;
-	    }
-	    super.reset(ByteBuffer.wrap(buffer));
 	    return super.next();
 	}
     }
@@ -53,9 +48,9 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
      * @param name the name of the ResultSetWireImpl to be created
      */
-    public ResultSetWireImpl(StreamConnectorImpl streamConnector, String sessionName) throws IOException {
-	this.streamConnector = streamConnector;
-	this.sessionName = sessionName;
+    public ResultSetWireImpl(StreamWire streamWire) throws IOException {
+	this.streamWire = streamWire;
+	this.resultSetBox = streamWire.getResultSetBox();
 	this.byteBufferBackedInput = null;
     }
 
@@ -66,10 +61,11 @@ public class ResultSetWireImpl implements ResultSetWire {
 	if (name.length() == 0) {
 	    throw new IOException("ResultSet wire name is empty");
 	}
-	try {
-	    streamWire = streamConnector.connect(sessionName + "-" + name).get();
-	} catch (Exception e) {
-	    throw new IOException(e);
+	slot = resultSetBox.lookFor();
+	streamWire.hello(name, slot);
+	var response = resultSetBox.receive(slot);
+	if (response.getInfo() != StreamWire.RESPONSE_RESULT_SET_HELLO_OK) {
+	    throw new IOException("ResultSetWire connect error: " + name);
 	}
     }
 
@@ -82,8 +78,8 @@ public class ResultSetWireImpl implements ResultSetWire {
 		if (!streamWire.receive()) {
 		    return null;
 		}
-		var buffer = streamWire.getBytes();
-		streamWire.release();
+		var receivedData = resultSetBox.receive(slot);
+		var buffer = receivedData.getPayload();
 		if (Objects.isNull(buffer)) {
 		    return null;
 		}
@@ -106,13 +102,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
-	if (Objects.nonNull(streamWire)) {
-	    while (streamWire.receive()) {
-		streamWire.release();
-	    }
-	    streamWire.close();
-	    streamWire = null;
-	}
+	// Do not close the streamWire
 	if (Objects.nonNull(byteBufferBackedInput)) {
 	    byteBufferBackedInput.close();
 	}

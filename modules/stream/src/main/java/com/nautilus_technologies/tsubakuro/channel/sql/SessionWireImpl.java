@@ -20,16 +20,12 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
-import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
-
 /**
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements SessionWire {
     private StreamWire streamWire;
-    private String sessionName;
     private long sessionID;
-    private StreamConnectorImpl streamConnector;
     private ResponseBox responseBox;
     private Queue<QueueEntry> queue;
     
@@ -74,12 +70,10 @@ public class SessionWireImpl implements SessionWire {
      * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      */
-    public SessionWireImpl(StreamWire streamWire, String sessionName, StreamConnectorImpl streamConnector) throws IOException {
+    public SessionWireImpl(StreamWire streamWire, String sessionName) throws IOException {
 	this.streamWire = streamWire;
-	this.sessionName = sessionName;
 	this.sessionID = Integer.parseInt(sessionName);
-	this.streamConnector = streamConnector;
-	this.responseBox = new ResponseBox(streamWire);
+	this.responseBox = streamWire.getResponseBox();
 	this.queue = new ArrayDeque<>();
     }
 
@@ -209,12 +203,12 @@ public class SessionWireImpl implements SessionWire {
 	if (Objects.isNull(streamWire)) {
 	    throw new IOException("already closed");
 	}
-	return new ResultSetWireImpl(streamConnector, sessionName);
+	return new ResultSetWireImpl(streamWire);
     }
 
-    public String getSessionName() {
-    	return sessionName;
-    }
+    //    public String getSessionName() {
+    //    	return sessionName;
+    //    }
     //    public String getDbName() {
     //	return dbName;
     //    }
