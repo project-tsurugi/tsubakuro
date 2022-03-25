@@ -9,7 +9,7 @@ public final class Main {
     private Main() {
     }
     
-    private static String dbName = "tateyama";
+    private static String dbName = "localhost:";
     
     public static void main(String[] args) {
 	try {
