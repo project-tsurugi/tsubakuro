@@ -60,65 +60,65 @@ public class StreamWire {
     }
 
     public void send(byte i) throws IOException {  // SESSION_HELLO
+	byte[] data = new byte[6];
+
+	data[0] = i;  // info
+	data[1] = 0;  // slot
+	data[2] = 0;
+	data[3] = 0;
+	data[4] = 0;
+	data[5] = 0;
+
         synchronized (this) {
-            // info送信
-            outStream.writeByte(i);
-
-            // slot送信
-            outStream.writeByte(0);
-
-            // length送信
-            outStream.writeByte(0);
-            outStream.writeByte(0);
-            outStream.writeByte(0);
-            outStream.writeByte(0);
+	    outStream.write(data, 0, data.length);
         }
     }
-    public void send(int s, byte[] data) throws IOException {  // SESSION_PAYLOAD
-        int length = (int) data.length;
+    public void send(int s, byte[] payload) throws IOException {  // SESSION_PAYLOAD
+        int length = (int) payload.length;
+	byte[] data = new byte[6];
 
+	data[0] = REQUEST_SESSION_PAYLOAD;
+	data[1] = strip(s);  // slot
+	data[2] = strip(length);
+	data[3] = strip(length >> 8);
+	data[4] = strip(length >> 16);
+	data[5] = strip(length >> 24);
+	
         synchronized (this) {
-            // info送信
-            outStream.writeByte(REQUEST_SESSION_PAYLOAD);
-
-            // slot送信
-            outStream.writeByte(s);
-
-            // length送信
-            outStream.writeByte(length);
-            outStream.writeByte(length >> 8);
-            outStream.writeByte(length >> 16);
-            outStream.writeByte(length >> 24);
+	    outStream.write(data, 0, data.length);
 
             if (length > 0) {
                 // payload送信
-                outStream.write(data, 0, length);
+                outStream.write(payload, 0, length);
             }
         }
     }
-    public void send(byte i, int s, String data) throws IOException {  // RESULT_SET_HELLO
-        int length = (int) data.length();
+    public void send(byte i, int s, String payload) throws IOException {  // RESULT_SET_HELLO
+        int length = (int) payload.length();
 
-        synchronized (this) {
-            // info送信
-            outStream.writeByte(i);
+	byte[] data = new byte[6];
 
-            // slot送信
-            outStream.writeByte(s);
+	data[0] = i;  // info
+	data[1] = strip(s);  // slot
+	data[2] = strip(length);
+	data[3] = strip(length >> 8);
+	data[4] = strip(length >> 16);
+	data[5] = strip(length >> 24);
 
-            // length送信
-            outStream.writeByte(length);
-            outStream.writeByte(length >> 8);
-            outStream.writeByte(length >> 16);
-            outStream.writeByte(length >> 24);
+	synchronized (this) {
+	    outStream.write(data, 0, data.length);
 
             if (length > 0) {
                 // payload送信
-                outStream.writeBytes(data);
+                outStream.writeBytes(payload);
             }
         }
     }
 
+    byte strip(int i) {
+	return (byte) (i & 0xff);
+    }
+    
     public boolean receive() throws IOException {
         if (valid) {
             System.err.println("previous data is alive");
