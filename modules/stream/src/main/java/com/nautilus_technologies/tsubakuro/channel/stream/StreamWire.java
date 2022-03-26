@@ -24,14 +24,14 @@ public class StreamWire {
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
-    private static final byte REQUEST_RESULT_SET_HELLO = 3;
+    private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
     public static final byte RESPONSE_SESSION_HELLO_OK = 3;
     public static final byte RESPONSE_SESSION_HELLO_NG = 4;
-    public static final byte RESPONSE_RESULT_SET_HELLO_OK = 5;
-    public static final byte RESPONSE_RESULT_SET_HELLO_NG = 6;
+    public static final byte RESPONSE_RESULT_SET_HELLO = 5;
+    public static final byte RESPONSE_RESULT_SET_BYE = 6;
 
     public StreamWire(String hostname, int port) throws IOException {
 	socket = new Socket(hostname, port);
@@ -44,10 +44,7 @@ public class StreamWire {
     }
 
     public void hello() throws IOException {
-        send(REQUEST_SESSION_HELLO);
-    }
-    public void hello(String name, int s) throws IOException {
-        send(REQUEST_RESULT_SET_HELLO, s, name);
+        send(REQUEST_SESSION_HELLO, 0);
     }
     public boolean pull() throws IOException {
         return receive();
@@ -58,12 +55,15 @@ public class StreamWire {
     public ResultSetBox getResultSetBox() {
         return resultSetBox;
     }
+    public void sendResutSetByeOk(int slot) throws IOException {
+	send(REQUEST_RESULT_SET_BYE_OK, slot);
+    }
 
-    public void send(byte i) throws IOException {  // SESSION_HELLO
+    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
 	byte[] data = new byte[6];
 
 	data[0] = i;  // info
-	data[1] = 0;  // slot
+	data[1] = (byte) s;  // slot
 	data[2] = 0;
 	data[3] = 0;
 	data[4] = 0;
@@ -83,7 +83,7 @@ public class StreamWire {
 	data[3] = strip(length >> 8);
 	data[4] = strip(length >> 16);
 	data[5] = strip(length >> 24);
-	
+
         synchronized (this) {
 	    outStream.write(data, 0, data.length);
 
@@ -93,32 +93,10 @@ public class StreamWire {
             }
         }
     }
-    public void send(byte i, int s, String payload) throws IOException {  // RESULT_SET_HELLO
-        int length = (int) payload.length();
-
-	byte[] data = new byte[6];
-
-	data[0] = i;  // info
-	data[1] = strip(s);  // slot
-	data[2] = strip(length);
-	data[3] = strip(length >> 8);
-	data[4] = strip(length >> 16);
-	data[5] = strip(length >> 24);
-
-	synchronized (this) {
-	    outStream.write(data, 0, data.length);
-
-            if (length > 0) {
-                // payload送信
-                outStream.writeBytes(payload);
-            }
-        }
-    }
-
     byte strip(int i) {
 	return (byte) (i & 0xff);
     }
-    
+
     public boolean receive() throws IOException {
         if (valid) {
             System.err.println("previous data is alive");
@@ -156,8 +134,14 @@ public class StreamWire {
                 responseBox.push(slot, bytes);
             } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
                 resultSetBox.push(slot, writer, bytes);
-            } else if ((info == RESPONSE_RESULT_SET_HELLO_OK) || (info == RESPONSE_RESULT_SET_HELLO_NG)) {
-                resultSetBox.push(slot, info);
+            } else if (info == RESPONSE_RESULT_SET_HELLO) {
+		try {
+		    resultSetBox.pushHello(new String(bytes, "UTF-8"), slot);
+		} catch (UnsupportedEncodingException e) {
+		    throw new IOException(e);
+		}
+            } else if (info == RESPONSE_RESULT_SET_BYE) {
+                resultSetBox.pushBye(slot);
             } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
                 valid = true;
             } else {
