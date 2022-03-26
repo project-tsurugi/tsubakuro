@@ -17,7 +17,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private int slot;
     private ByteBufferBackedInput byteBufferBackedInput;
 
-    class ByteBufferBackedInput extends ByteBufferInput {
+    private class ByteBufferBackedInput extends ByteBufferInput {
 	ByteBufferBackedInput(ByteBuffer byteBuffer) {
 	    super(byteBuffer);
 	}
@@ -62,12 +62,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 	if (name.length() == 0) {
 	    throw new IOException("ResultSet wire name is empty");
 	}
-	slot = resultSetBox.lookFor();
-	streamWire.hello(name, slot);
-	var response = resultSetBox.receive(slot);
-	if (response.getInfo() == StreamWire.RESPONSE_RESULT_SET_HELLO_NG) {
-	    throw new IOException("ResultSetWire connect error at slot " + slot + " name = " + name);
-	}
+	slot = resultSetBox.hello(name);
     }
 
     /**
@@ -76,9 +71,6 @@ public class ResultSetWireImpl implements ResultSetWire {
     public ByteBufferInput getByteBufferBackedInput() {
 	if (Objects.isNull(byteBufferBackedInput)) {
 	    try {
-		if (!streamWire.receive()) {
-		    return null;
-		}
 		var receivedData = resultSetBox.receive(slot);
 		var buffer = receivedData.getPayload();
 		if (Objects.isNull(buffer)) {
@@ -96,6 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     public boolean disposeUsedData(long length) throws IOException {
 	// FIXME
+	// When multiple writer is implemented, this becomes necessary.
 	return true;
     }
 
@@ -109,8 +102,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 		break;
 	    }
 	}
-	resultSetBox.release(slot);
-	// Do not close the streamWire
+	streamWire.sendResutSetByeOk(slot);
 	if (Objects.nonNull(byteBufferBackedInput)) {
 	    byteBufferBackedInput.close();
 	}
