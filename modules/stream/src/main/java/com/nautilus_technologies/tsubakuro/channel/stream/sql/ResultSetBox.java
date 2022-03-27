@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
@@ -62,21 +63,17 @@ public class ResultSetBox {
 
     public byte hello(String name) throws IOException {
 	while (true) {
-	    if (map.containsKey(name)) {
-		var slot = (byte) map.get(name).intValue();
+	    var value = map.get(name);
+	    if (Objects.nonNull(value)) {
 		map.remove(name);
-		return  slot;
+		return (byte) value.intValue();
 	    }
 	    streamWire.pull();
 	}
     }
 
     public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
-	if (map.containsKey(name)) {
-	    map.replace(name, slot);
-	} else {
-	    map.put(name, slot);
-	}
+	map.put(name, slot);
 	eor[slot] = false;
 	queues[slot].clear();
     }
