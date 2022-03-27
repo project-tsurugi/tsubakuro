@@ -17,6 +17,7 @@ public class StreamWire {
     private DataInputStream inStream;
     private ResponseBox responseBox;
     private ResultSetBox resultSetBox;
+    private byte[] header;
 
     private byte info;
     private boolean valid;
@@ -39,6 +40,7 @@ public class StreamWire {
         inStream = new DataInputStream(socket.getInputStream());
         responseBox = new ResponseBox(this);
         resultSetBox = new ResultSetBox(this);
+	this.header = new byte[6];
         this.valid = false;
         this.closed = false;
     }
@@ -60,32 +62,29 @@ public class StreamWire {
     }
 
     public void send(byte i) throws IOException {  // SESSION_HELLO
-	byte[] data = new byte[6];
-
-	data[0] = i;  // info
-	data[1] = 0;  // slot
-	data[2] = 0;
-	data[3] = 0;
-	data[4] = 0;
-	data[5] = 0;
+	header[0] = i;  // info
+	header[1] = 0;  // slot
+	header[2] = 0;
+	header[3] = 0;
+	header[4] = 0;
+	header[5] = 0;
 
         synchronized (this) {
-	    outStream.write(data, 0, data.length);
+	    outStream.write(header, 0, header.length);
         }
     }
     public void send(int s, byte[] payload) throws IOException {  // SESSION_PAYLOAD
         int length = (int) payload.length;
-	byte[] data = new byte[6];
 
-	data[0] = REQUEST_SESSION_PAYLOAD;
-	data[1] = strip(s);  // slot
-	data[2] = strip(length);
-	data[3] = strip(length >> 8);
-	data[4] = strip(length >> 16);
-	data[5] = strip(length >> 24);
+	header[0] = REQUEST_SESSION_PAYLOAD;
+	header[1] = strip(s);  // slot
+	header[2] = strip(length);
+	header[3] = strip(length >> 8);
+	header[4] = strip(length >> 16);
+	header[5] = strip(length >> 24);
 	
         synchronized (this) {
-	    outStream.write(data, 0, data.length);
+	    outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信
@@ -96,17 +95,15 @@ public class StreamWire {
     public void send(byte i, int s, String payload) throws IOException {  // RESULT_SET_HELLO
         int length = (int) payload.length();
 
-	byte[] data = new byte[6];
-
-	data[0] = i;  // info
-	data[1] = strip(s);  // slot
-	data[2] = strip(length);
-	data[3] = strip(length >> 8);
-	data[4] = strip(length >> 16);
-	data[5] = strip(length >> 24);
+	header[0] = i;  // info
+	header[1] = strip(s);  // slot
+	header[2] = strip(length);
+	header[3] = strip(length >> 8);
+	header[4] = strip(length >> 16);
+	header[5] = strip(length >> 24);
 
 	synchronized (this) {
-	    outStream.write(data, 0, data.length);
+	    outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信
