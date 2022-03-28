@@ -210,13 +210,13 @@ class SessionImplTest {
 
 	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
 	    var ph = RequestProtos.PlaceHolder.newBuilder()
-		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
 	    var preparedStatement = session.prepare(sql, ph).get();
 	    preparedStatement.close();
 
 	    var transaction = session.createTransaction().get();
 	    var ps = RequestProtos.ParameterSet.newBuilder()
-		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999));
+		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999)).build();
 
 	    Throwable exception = assertThrows(IOException.class, () -> {
 		    var pair = transaction.executeQuery(preparedStatement, ps);
@@ -244,7 +244,7 @@ class SessionImplTest {
 
 	    String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
 	    var ph = RequestProtos.PlaceHolder.newBuilder()
-		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8));
+		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
 	    var ps1 = session.prepare(sql, ph).get();
 	    var ps2 = session.prepare(sql, ph).get();
 	    var ps3 = session.prepare(sql, ph).get();

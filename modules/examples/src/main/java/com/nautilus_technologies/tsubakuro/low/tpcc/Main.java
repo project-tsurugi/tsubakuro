@@ -37,7 +37,7 @@ public final class Main {
     private Main() {
     }
 
-    static String dbName = "tateyama";
+    static String dbName = "localhost:";
     static int threads = 8;
     static int duration = 30;
 

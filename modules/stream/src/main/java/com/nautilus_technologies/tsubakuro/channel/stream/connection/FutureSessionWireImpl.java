@@ -16,11 +16,9 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
     private boolean isDone = false;
     private boolean isCancelled = false;
 
-    StreamConnectorImpl streamConnector;
     StreamWire streamWire;
     
-    FutureSessionWireImpl(StreamConnectorImpl streamConnector, StreamWire streamWire) {
-	this.streamConnector = streamConnector;
+    FutureSessionWireImpl(StreamWire streamWire) {
 	this.streamWire = streamWire;
     }
 
@@ -30,8 +28,8 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	    var rc = streamWire.getInfo();
 	    var rv = streamWire.getString();
 	    streamWire.release();
-	    if (rc == streamWire.STATUS_OK) {
-		return new SessionWireImpl(streamWire, rv, streamConnector);
+	    if (rc == streamWire.RESPONSE_SESSION_HELLO_OK) {
+		return new SessionWireImpl(streamWire, rv);
 	    }
 	    return null;
 	} catch (IOException e) {
@@ -42,8 +40,11 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
     public SessionWire get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
 	try {
 	    streamWire.receive();
-	    if (streamWire.getInfo() == streamWire.STATUS_OK) {
-		return new SessionWireImpl(streamWire, streamWire.getString(), streamConnector);
+	    var rc = streamWire.getInfo();
+	    var rv = streamWire.getString();
+	    streamWire.release();
+	    if (rc == streamWire.RESPONSE_SESSION_HELLO_OK) {
+		return new SessionWireImpl(streamWire, rv);
 	    }
 	    return null;
 	} catch (Exception e) {

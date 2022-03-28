@@ -30,26 +30,26 @@ public class ResponseBox {
 	}
     }
 
-    public byte[] receive(int index) throws IOException {
+    public byte[] receive(int slot) throws IOException {
 	while (true) {
-	    streamWire.receive();
-	    var slot = streamWire.getInfo();
-	    if (Objects.isNull(firstResponse[slot])) {
-		firstResponse[slot] = streamWire.getBytes();
+	    if (used[slot] == 0) {
+		if (Objects.nonNull(firstResponse[slot])) {
+		    return firstResponse[slot];
+		}
 	    } else {
-		secondResponse[slot] = streamWire.getBytes();
+		if (Objects.nonNull(secondResponse[slot])) {
+		    return secondResponse[slot];
+		}
 	    }
-	    streamWire.release();
+	    streamWire.pull();
+	}
+    }
 
-	    if (used[index] == 0) {
-		if (Objects.nonNull(firstResponse[index])) {
-		    return firstResponse[index];
-		}
-	    } else {
-		if (Objects.nonNull(secondResponse[index])) {
-		    return secondResponse[index];
-		}
-	    }
+    public void push(int slot, byte[] payload) {
+	if (Objects.isNull(firstResponse[slot])) {
+	    firstResponse[slot] = payload;
+	} else {
+	    secondResponse[slot] = payload;
 	}
     }
 
@@ -65,35 +65,35 @@ public class ResponseBox {
 	}
     }
 
-    public void unreceive(int index) {
-	if (expected[index] == 0) {
+    public void unreceive(int slot) {
+	if (expected[slot] == 0) {
 	    System.err.println("unused slot");
 	}
-	if (expected[index] != 2) {
+	if (expected[slot] != 2) {
 	    System.err.println("not a slot for query");
 	}
-	if (used[index] == 0) {
+	if (used[slot] == 0) {
 	    System.err.println("unused slot");
 	}
-	expected[index]--;
-	used[index]--;
+	expected[slot]--;
+	used[slot]--;
     }
 
-    public void release(int index) {
-	if (used[index] == 0) {
-	    used[index]++;
-	    if (expected[index] == used[index]) {
-		expected[index] = 0;
-		used[index] = 0;
-		firstResponse[index] = null;
+    public void release(int slot) {
+	if (used[slot] == 0) {
+	    used[slot]++;
+	    if (expected[slot] == used[slot]) {
+		expected[slot] = 0;
+		used[slot] = 0;
+		firstResponse[slot] = null;
 	    }
 	} else {
-	    used[index]++;
-	    if (expected[index] == used[index]) {
-		expected[index] = 0;
-		used[index] = 0;
-		firstResponse[index] = null;
-		secondResponse[index] = null;
+	    used[slot]++;
+	    if (expected[slot] == used[slot]) {
+		expected[slot] = 0;
+		used[slot] = 0;
+		firstResponse[slot] = null;
+		secondResponse[slot] = null;
 	    }
 	}
     }
