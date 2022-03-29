@@ -1,8 +1,8 @@
 package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
 import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
@@ -33,16 +33,35 @@ public class ResultSetBox {
 	}
     }
 
+    private static class ResultSetNameEntry {
+	private String name;
+	private byte slot;
+
+	ResultSetNameEntry(String name, byte slot) {
+	    this.name = name;
+	    this.slot = slot;
+	}
+	public String getName() {
+	    return name;
+	}
+	public byte getSlot() {
+	    return slot;
+	}
+    }
+
     private StreamWire streamWire;
     private MessageQueue[] queues;
     private boolean[] eor;
-    private Map<String, Integer> map;
+    private List<ResultSetNameEntry> list;
+    private String nameSaved;
+    private byte slotSaved;
 
     public ResultSetBox(StreamWire streamWire) {
 	this.streamWire = streamWire;
 	this.queues = new MessageQueue[SIZE];
 	this.eor = new boolean[SIZE];
-	this.map = new HashMap<>();
+	this.list = new ArrayList<>();
+	this.nameSaved = null;
 	for (int i = 0; i < SIZE; i++) {
 	    eor[i] = false;
 	    queues[i] = new MessageQueue();
@@ -63,17 +82,30 @@ public class ResultSetBox {
 
     public byte hello(String name) throws IOException {
 	while (true) {
-	    var value = map.get(name);
-	    if (Objects.nonNull(value)) {
-		map.remove(name);
-		return (byte) value.intValue();
+	    if (Objects.nonNull(nameSaved)) {
+		if (name.equals(nameSaved)) {
+		    nameSaved = null;
+		    return slotSaved;
+		}
+	    }
+	    for (int i = 0; i < list.size(); i++) {
+		var entry = list.get(i);
+		if (name.equals(entry.getName())) {
+		    list.remove(i);
+		    return (byte) entry.getSlot();
+		}
 	    }
 	    streamWire.pull();
 	}
     }
 
-    public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
-	map.put(name, slot);
+    public void pushHello(String name, byte slot) {  // for RESPONSE_RESULT_SET_HELLO
+	if (Objects.isNull(nameSaved)) {
+	    nameSaved = name;
+	    slotSaved = slot;
+	} else {
+	    list.add(new ResultSetNameEntry(name, slot));
+	}
 	eor[slot] = false;
 	queues[slot].clear();
     }
