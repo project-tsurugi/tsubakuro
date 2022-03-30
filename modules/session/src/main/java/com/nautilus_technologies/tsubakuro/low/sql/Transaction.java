@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Path;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -50,6 +51,24 @@ public interface Transaction extends Closeable {
     Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
     @Deprecated
     Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException;
+
+    /**
+     * Request dump execution to the SQL service
+     * @param preparedStatement prepared statement used in the dump operation
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @param path the file path where dumped files are placed
+     * @return Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> left contains file names that have been dumped are returned one after another, right indicate whether the command is processed successfully or not
+     */
+    Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path path) throws IOException;
+
+    /**
+     * Request load execution to the SQL service
+     * @param preparedStatement prepared statement used in the dump operation
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @param path the file path where dumped files are placed
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet,	Path path) throws IOException;
 
     /**
      * Request commit to the SQL service
