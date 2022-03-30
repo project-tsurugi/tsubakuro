@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.Session;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
