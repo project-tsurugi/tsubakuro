@@ -7,7 +7,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 public final class Main {
