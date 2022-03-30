@@ -90,6 +90,31 @@ public class SessionLinkImpl {
     };
 
     /**
+     * Send execute dump request to via wire.send()
+     @param request the request message encoded with protocol buffer
+     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
+     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
+    */
+    public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteDump.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
+	return wire.sendQuery(RequestProtos.Request.newBuilder().setExecuteDump(request));
+    };
+
+    /**
+     * Send execute load request to via wire.send()
+     @param request the request message encoded with protocol buffer
+     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+    */
+    public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteLoad.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
+    };
+
+    /**
      * Send execute sql query request to via wire.send()
      @param request the request message encoded with protocol buffer
      @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,

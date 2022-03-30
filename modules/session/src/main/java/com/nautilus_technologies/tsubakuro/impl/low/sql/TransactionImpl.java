@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.nio.file.Path;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
@@ -160,6 +161,46 @@ public class TransactionImpl implements Transaction {
 	cleanuped = true;
 	close();
 	return rv;
+    }
+
+    /**
+     * Request dump execution to the SQL service
+     * @param preparedStatement prepared statement used in the dump operation
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @param path the file path where dumped files are placed
+     * @return Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> left contains file names that have been dumped are returned one after another, right indicate whether the command is processed successfully or not
+     */
+    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path path) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("already closed");
+	}
+	var pair = sessionLinkImpl.send(RequestProtos.ExecuteDump.newBuilder()
+					.setTransactionHandle(transaction)
+					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+					.setParameters(parameterSet)
+					.setPath(path.toString()));
+	if (!Objects.isNull(pair.getLeft())) {
+	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	}
+	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+    }
+
+    /**
+     * Request load execution to the SQL service
+     * @param preparedStatement prepared statement used in the dump operation
+     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
+     * @param path the file path where dumped files are placed
+     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     */
+    public Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet,	Path path) throws IOException {
+	if (Objects.isNull(sessionLinkImpl)) {
+	    throw new IOException("already closed");
+	}
+	return sessionLinkImpl.send(RequestProtos.ExecuteLoad.newBuilder()
+				    .setTransactionHandle(transaction)
+				    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+				    .setParameters(parameterSet)
+				    .setPath(path.toString()));
     }
 
     /**

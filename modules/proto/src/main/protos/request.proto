@@ -95,6 +95,22 @@ message ExecutePreparedQuery {
   ParameterSet parameters = 3;
 }
 
+/* For execute dump request. */
+message ExecuteDump {
+  common.Transaction transaction_handle = 1;
+  common.PreparedStatement prepared_statement_handle = 2;
+  ParameterSet parameters = 3;
+  string path = 4;
+}
+
+/* For execute load request. */
+message ExecuteLoad {
+  common.Transaction transaction_handle = 1;
+  common.PreparedStatement prepared_statement_handle = 2;
+  ParameterSet parameters = 3;
+  string path = 4;
+}
+
 /* For commit request. */
 message Commit {
   common.Transaction transaction_handle = 1;
@@ -135,5 +151,7 @@ message Request {
     DisposePreparedStatement dispose_prepared_statement = 10;
     Disconnect disconnect = 11;
     Explain explain = 12;
+    ExecuteDump execute_dump = 13;
+    ExecuteLoad execute_load = 14;
   }
 }
