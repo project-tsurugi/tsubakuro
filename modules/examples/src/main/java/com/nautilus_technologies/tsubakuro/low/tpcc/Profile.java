@@ -88,7 +88,7 @@ public class Profile {
     }
     public void print(int n) {
 	if (inconsistentIndexCount > 0) {  // for temporary use
-	    System.out.printf("retry due to inconsistent_index: %d% times%n%n", inconsistentIndexCount);
+	    System.out.printf("retry due to inconsistent_index: %d times%n%n", inconsistentIndexCount);
 	}
 	System.out.printf("duration(mS): %d%n", elapsed / count);
 	System.out.println("===============================================================================================");
