@@ -70,9 +70,9 @@ public class SessionWireImpl implements SessionWire {
      * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      */
-    public SessionWireImpl(StreamWire streamWire, String sessionName) throws IOException {
+    public SessionWireImpl(StreamWire streamWire, long sessionID) throws IOException {
 	this.streamWire = streamWire;
-	this.sessionID = Integer.parseInt(sessionName);
+	this.sessionID = sessionID;
 	this.responseBox = streamWire.getResponseBox();
 	this.queue = new ArrayDeque<>();
     }
