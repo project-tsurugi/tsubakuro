@@ -94,10 +94,22 @@ public class SessionLinkImpl {
     };
 
     /**
+     * Send execute load request to via wire.send()
+     @param request the request message encoded with protocol buffer
+     @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+    */
+    public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteLoad.Builder request) throws IOException {
+	if (Objects.isNull(wire)) {
+	    throw new IOException("already closed");
+	}
+	return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
+    };
+
+    /**
      * Send execute dump request to via wire.send()
      @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
-     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
+     @return a Pair of a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
     */
     public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteDump.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
@@ -214,7 +226,7 @@ public class SessionLinkImpl {
     /**
      * Send beginBackup request to the backup service via wire.send().
      @param request the request message encoded with protocol buffer
-     @return Future<Backup> FutureBackupImpl object
+     @return a Future of FutureBackupImpl object
     */
     public Future<Backup> send() throws IOException {
 	if (Objects.isNull(wire)) {
