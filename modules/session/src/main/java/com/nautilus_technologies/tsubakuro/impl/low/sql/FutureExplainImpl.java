@@ -18,7 +18,7 @@ public class FutureExplainImpl implements Future<String> {
     
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
-     * @param future the Future<ResponseProtos.Explain>
+     * @param future the Future of ResponseProtos.Explain
      */
     public FutureExplainImpl(Future<ResponseProtos.Explain> future) {
 	this.future = future;

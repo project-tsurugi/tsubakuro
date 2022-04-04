@@ -174,7 +174,9 @@ public class TransactionImpl implements Transaction {
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @param path the file path where dumped files are placed
-     * @return Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> left contains file names that have been dumped are returned one after another, right indicate whether the command is processed successfully or not
+     * @return a Pair of a Future of ResultSet processing result of the SQL service
+     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @throws IOException error occurred in execute dump by the SQL service
      */
     public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path path) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
@@ -196,7 +198,8 @@ public class TransactionImpl implements Transaction {
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @param path the file path where dumped files are placed
-     * @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in execute load by the SQL service
      */
     public Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet,	Path path) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {

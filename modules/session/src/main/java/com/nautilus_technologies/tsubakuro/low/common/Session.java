@@ -68,7 +68,8 @@ public interface Session extends CloseableIpc {
 
     /**
      * Begin the new backup session
-     * @return the backup session
+     * @return a Future of a backup session
+     * @throws IOException error occurs during the backup session initiation process
      */
     Future<Backup> beginBackup() throws IOException;
 }

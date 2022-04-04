@@ -15,8 +15,6 @@ public class FutureBackupImpl implements Future<Backup> {
 
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
-     * @param future the Future<ResponseProtos.Prepare>
-     * @param sessionLinkImpl the caller of this constructor
      */
     public FutureBackupImpl() {
     }

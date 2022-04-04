@@ -20,7 +20,7 @@ public class FutureTransactionImpl implements Future<Transaction> {
     
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
-     * @param future the Future<ResponseProtos.Prepare>
+     * @param future the Future of ResponseProtos.Prepare
      * @param sessionLinkImpl the caller of this constructor
      */
     public FutureTransactionImpl(Future<ResponseProtos.Begin> future, SessionLinkImpl sessionLinkImpl) {
