@@ -107,6 +107,6 @@ class SessionWireTest {
         Throwable exception = assertThrows(IOException.class, () -> {
 		client = new SessionWireImpl(new StreamWire(HOST, PORT), sessionID);
 	    });
-	assertEquals("接続を拒否されました (Connection refused)", exception.getMessage());
+	assertTrue(exception.getMessage().contains("Connection refused"));
     }
 }
