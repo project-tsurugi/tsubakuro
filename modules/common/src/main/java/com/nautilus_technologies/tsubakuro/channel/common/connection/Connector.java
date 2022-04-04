@@ -10,8 +10,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 public interface Connector {
     /**
      * Connect to the sql service
-     * @param name the name of the SQL server to connect
-     * @return the session
+     * @return future session wire
+     * @throws IOException connection error
      */
     Future<SessionWire> connect() throws IOException;
 }

@@ -35,8 +35,8 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     /**
      * set timeout to close(), which won't timeout if this is not performed.
-     * @param timeout time length until the close operation timeout
-     * @param unit unit of timeout
+     * @param t time length until the close operation timeout
+     * @param u unit of timeout
      */
     public void setCloseTimeout(long t, TimeUnit u) {
 	timeout = t;

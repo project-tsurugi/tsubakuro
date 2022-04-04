@@ -74,6 +74,7 @@ public class ResultSetImpl implements ResultSet {
     /**
      * Class constructor, called from FutureResultSetImpl.
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
+     * @throws IOException error occurred in class constructor
      */
     public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
 	this.resultSetWire = resultSetWire;
@@ -94,7 +95,7 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Provide the metadata object.
-     * @returns recordMeta the metadata object
+     * @return recordMeta the metadata object
      */
     public RecordMeta getRecordMeta() {
 	return recordMeta;
@@ -136,6 +137,7 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Move the read target to the next record.
+     * @throws IOException error occurred in record receive
      */
     public boolean nextRecord() throws IOException {
 	if (Objects.isNull(resultSetWire)) {
@@ -205,7 +207,8 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Check if the current column is null.
-     * @returns true if the current column is null.
+     * @return true if the current column is null.
+     * @throws IOException error occurred in column check
      */
     public boolean isNull() throws IOException {
 	if (!columnReady) {
@@ -225,7 +228,8 @@ public class ResultSetImpl implements ResultSet {
     }
     /**
      * Get the value of the current column as an Int4.
-     * @returns the value of current column in Int4
+     * @return the value of current column in Int4
+     * @throws IOException error occurred in retrieving column data
      */
     public int getInt4() throws IOException {
 	if (detectNull) {
@@ -247,7 +251,8 @@ public class ResultSetImpl implements ResultSet {
     }
     /**
      * Get the value of the current column as an Int8.
-     * @returns the value of current column in Int8
+     * @return the value of current column in Int8
+     * @throws IOException error occurred in retrieving column data
      */
     public long getInt8() throws IOException {
 	if (detectNull) {
@@ -269,7 +274,8 @@ public class ResultSetImpl implements ResultSet {
     }
     /**
      * Get the value of the current column as an Float4.
-     * @returns the value of current column in Float4
+     * @return the value of current column in Float4
+     * @throws IOException error occurred in retrieving column data
      */
     public float getFloat4() throws IOException {
 	if (detectNull) {
@@ -291,7 +297,8 @@ public class ResultSetImpl implements ResultSet {
     }
     /**
      * Get the value of the current column as an Float8.
-     * @returns the value of current column in Float8
+     * @return the value of current column in Float8
+     * @throws IOException error occurred in retrieving column data
      */
     public double getFloat8() throws IOException {
 	if (detectNull) {
@@ -313,7 +320,8 @@ public class ResultSetImpl implements ResultSet {
     }
     /**
      * Get the value of the current column as an Character string.
-     * @returns the value of current column in Character string.
+     * @return the value of current column in Character string.
+     * @throws IOException error occurred in retrieving column data
      */
     public String getCharacter() throws IOException {
 	if (detectNull) {
@@ -336,6 +344,7 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Close the ResultSetImpl
+     * @throws IOException error occurred in close of the resultSet
      */
     public void close() throws IOException {
 	if (Objects.nonNull(resultSetWire)) {

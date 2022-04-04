@@ -45,10 +45,9 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Class constructor, called from FutureResultWireImpl.
-     * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
-     * @param name the name of the ResultSetWireImpl to be created
+     * @param streamWire the stream object of the sessionWire
      */
-    public ResultSetWireImpl(StreamWire streamWire) throws IOException {
+    public ResultSetWireImpl(StreamWire streamWire) {
 	this.streamWire = streamWire;
 	this.resultSetBox = streamWire.getResultSetBox();
 	this.byteBufferBackedInput = null;
@@ -56,6 +55,8 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Connect this to the wire specifiec by the name.
+     * @param name the result set name specified by the SQL server.
+     * @throws IOException connection error
      */
     public void connect(String name) throws IOException {
 	if (name.length() == 0) {

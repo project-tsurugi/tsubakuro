@@ -12,5 +12,5 @@ public interface CloseableIpc extends Closeable {
      * @param timeout time length until the close operation timeout
      * @param unit unit of timeout
      */
-    void setCloseTimeout(long t, TimeUnit u);
+    void setCloseTimeout(long timeout, TimeUnit unit);
 }

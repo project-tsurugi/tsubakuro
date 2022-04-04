@@ -85,10 +85,10 @@ public class SessionImpl implements Session {
      * Request prepare to the SQL service
      * @param sql sql text for the command
      * @param placeHolder the set of place holder name and type of its variable encoded with protocol buffer
-     * @return Future<PreparedStatement> holds the result of the SQL service
+     * @return a Future holding the result of the SQL service
+     * @throws IOException error occurred in PREPARE
      */
-    @Deprecated
-    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException {
+    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -96,7 +96,8 @@ public class SessionImpl implements Session {
 				.setSql(sql)
 				.setHostVariables(placeHolder));
     }
-    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder placeHolder) throws IOException {
+    @Deprecated
+    public Future<PreparedStatement> prepare(String sql, RequestProtos.PlaceHolder.Builder placeHolder) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -109,10 +110,10 @@ public class SessionImpl implements Session {
      * Request explain to the SQL service
      * @param preparedStatement prepared statement for the command
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return Future<Explain> holds a string to explain the plan
+     * @return a Future holding a string to explain the plan
+     * @throws IOException error occurred in EXPLAIN
      */
-    @Deprecated
-    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -120,7 +121,8 @@ public class SessionImpl implements Session {
 				    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 				    .setParameters(parameterSet));
     }
-    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    @Deprecated
+    public Future<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("this session is not connected to the Database");
 	}
@@ -131,8 +133,8 @@ public class SessionImpl implements Session {
 
     /**
      * set timeout to close(), which won't timeout if this is not performed.
-     * @param timeout time length until the close operation timeout
-     * @param unit unit of timeout
+     * @param t time length until the close operation timeout
+     * @param u unit of timeout
      */
     public void setCloseTimeout(long t, TimeUnit u) {
 	timeout = t;

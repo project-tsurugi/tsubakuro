@@ -23,12 +23,16 @@ public class FutureResponseImpl<V> implements Future<V> {
      * Class constructor, called from SessionWire that is connected to the SQL server.
      * @param sessionWireImpl the wireImpl class responsible for this communication
      * @param distiller the Distiller class that will work for the message to be received
-     * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
     public FutureResponseImpl(SessionWire sessionWireImpl, Distiller<V> distiller) {
 	this.sessionWireImpl = sessionWireImpl;
 	this.distiller = distiller;
     }
+
+    /**
+     * Set responseWireHandle throuth which responses from the SQL server will be sent to this object.
+     * @param handle the handle indicating the responseWire by which a response message is to be transferred
+     */
     public void setResponseHandle(ResponseWireHandle handle) {
 	responseWireHandleImpl = handle;
     }

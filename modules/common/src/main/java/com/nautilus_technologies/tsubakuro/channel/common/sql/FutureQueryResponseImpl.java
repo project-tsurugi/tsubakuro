@@ -21,11 +21,15 @@ public class FutureQueryResponseImpl implements Future<ResponseProtos.ExecuteQue
     /**
      * Class constructor, called from SessionWire that is connected to the SQL server.
      * @param sessionWireImpl the wireImpl class responsible for this communication
-     * @param responseWireHandleImpl the handle indicating the responseWire by which a response message is to be transferred
      */
     public FutureQueryResponseImpl(SessionWire sessionWireImpl) {
 	this.sessionWireImpl = sessionWireImpl;
     }
+
+    /**
+     * Set responseWireHandle throuth which responses from the SQL server will be sent to this object.
+     * @param handle the handle indicating the responseWire by which a response message is to be transferred
+     */
     public void setResponseHandle(ResponseWireHandle handle) {
 	responseWireHandleImpl = handle;
     }

@@ -48,9 +48,8 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Class constructor, called from FutureResultWireImpl.
      * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
-     * @param name the name of the ResultSetWireImpl to be created
      */
-    public ResultSetWireImpl(long sessionWireHandle) throws IOException {
+    public ResultSetWireImpl(long sessionWireHandle) {
 	this.sessionWireHandle = sessionWireHandle;
 	this.byteBufferBackedInput = null;
 	this.eor = false;
@@ -58,6 +57,8 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Connect this to the wire specifiec by the name.
+     * @param name the result set name specified by the SQL server.
+     * @throws IOException connection error
      */
     public void connect(String name) throws IOException {
 	if (name.length() == 0) {
@@ -69,6 +70,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Provides the Input to retrieve the received data.
+     * @return ByteBufferInput contains the record data from the SQL server.
      */
     public ByteBufferInput getByteBufferBackedInput() {
 	if (Objects.isNull(byteBufferBackedInput)) {

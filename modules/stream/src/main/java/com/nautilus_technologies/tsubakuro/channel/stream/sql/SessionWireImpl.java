@@ -67,10 +67,10 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
-     * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
+     * @param streamWire the stream object by which this SessionWireImpl is connected to the SQL server
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      */
-    public SessionWireImpl(StreamWire streamWire, long sessionID) throws IOException {
+    public SessionWireImpl(StreamWire streamWire, long sessionID) {
 	this.streamWire = streamWire;
 	this.sessionID = sessionID;
 	this.responseBox = streamWire.getResponseBox();
@@ -88,7 +88,7 @@ public class SessionWireImpl implements SessionWire {
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
-     @returns a Future response message corresponding the request
+     @return a Future response message corresponding the request
     */
     public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
 	if (Objects.isNull(streamWire)) {
@@ -109,7 +109,7 @@ public class SessionWireImpl implements SessionWire {
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
      @param request the RequestProtos.Request message
-     @returns a couple of Future response message corresponding the request
+     @return a couple of Future response message corresponding the request
     */
     public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
 	if (Objects.isNull(streamWire)) {
@@ -132,7 +132,7 @@ public class SessionWireImpl implements SessionWire {
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     @returns ResposeProtos.Response message
+     @return ResposeProtos.Response message
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	if (Objects.isNull(streamWire)) {
@@ -171,7 +171,7 @@ public class SessionWireImpl implements SessionWire {
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
      @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     @returns ResposeProtos.Response message
+     @return ResposeProtos.Response message
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
 	if (Objects.isNull(streamWire)) {
@@ -197,7 +197,7 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
-     @returns ResultSetWireImpl
+     @return ResultSetWireImpl
     */
     public ResultSetWire createResultSetWire() throws IOException {
 	if (Objects.isNull(streamWire)) {
@@ -205,11 +205,4 @@ public class SessionWireImpl implements SessionWire {
 	}
 	return new ResultSetWireImpl(streamWire);
     }
-
-    //    public String getSessionName() {
-    //    	return sessionName;
-    //    }
-    //    public String getDbName() {
-    //	return dbName;
-    //    }
 }

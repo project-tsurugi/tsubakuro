@@ -27,7 +27,7 @@ public class SessionLinkImpl {
 
     /**
      * Class constructor, called from SessionImpl
-     * @param sessionWire the wire that connects to the Database
+     * @param wire the wire that connects to the Database
      */
     public SessionLinkImpl(SessionWire wire) {
 	this.wire = wire;
@@ -37,9 +37,10 @@ public class SessionLinkImpl {
 
     /**
      * Send prepare request to the SQL server via wire.send().
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.Prepare> contains prepared statement handle
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.Prepare contains prepared statement handle
+     * @throws IOException error occurred in sending request message
+     */
     public Future<PreparedStatement> send(RequestProtos.Prepare.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -49,9 +50,10 @@ public class SessionLinkImpl {
 
     /**
      * Send explain request to the SQL server via wire.send().
-     @param request the request message encoded with protocol buffer
-     @return Future<String> contains a string to explain the plan
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of String contains a string to explain the plan
+     * @throws IOException error occurred in sending request message
+     */
     public Future<String> send(RequestProtos.Explain.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -61,9 +63,10 @@ public class SessionLinkImpl {
 
     /**
      * Send execute sql statement request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -73,9 +76,10 @@ public class SessionLinkImpl {
 
     /**
      * Send execute prepared statement request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -85,10 +89,11 @@ public class SessionLinkImpl {
 
     /**
      * Send execute sql query request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
-     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Pair of a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @throws IOException error occurred in sending request message
+     */
     public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteQuery.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -98,10 +103,11 @@ public class SessionLinkImpl {
 
     /**
      * Send execute prepared query request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ExecuteQuery> contains the name of result set wire and record metadata,
-     and Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not.
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @throws IOException error occurred in sending request message
+     */
     public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> send(RequestProtos.ExecutePreparedQuery.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -111,9 +117,10 @@ public class SessionLinkImpl {
 
     /**
      * Send begin request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.Begin> contains transaction handle
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.Begin contains transaction handle
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.Begin> send(RequestProtos.Begin.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -123,9 +130,10 @@ public class SessionLinkImpl {
 
     /**
      * Send commit request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Commit.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -135,9 +143,10 @@ public class SessionLinkImpl {
 
     /**
      * Send rollback request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Rollback.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -147,9 +156,10 @@ public class SessionLinkImpl {
 
     /**
      * Send disposePreparedStatement request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -159,9 +169,10 @@ public class SessionLinkImpl {
 
     /**
      * Send Disconnect request to via wire.send()
-     @param request the request message encoded with protocol buffer
-     @return Future<ResponseProtos.ResultOnly> indicate whether the command is processed successfully or not
-    */
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @throws IOException error occurred in sending request message
+     */
     public Future<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect.Builder request) throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -171,8 +182,9 @@ public class SessionLinkImpl {
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
-     @return a resultSetWire
-    */
+     * @return a resultSetWire
+     * @throws IOException error occurred in resultSetWire creation
+     */
     public ResultSetWire createResultSetWire() throws IOException {
 	if (Objects.isNull(wire)) {
 	    throw new IOException("already closed");
@@ -219,6 +231,7 @@ public class SessionLinkImpl {
 
     /**
      * Close the SessionLinkImpl
+     * @throws IOException error occurred in close of the sessionLink
      */
     public void close() throws IOException {
 	if (Objects.nonNull(wire)) {

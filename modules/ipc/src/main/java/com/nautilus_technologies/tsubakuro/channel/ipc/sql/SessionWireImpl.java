@@ -82,6 +82,7 @@ public class SessionWireImpl implements SessionWire {
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
+     * @throws IOException error occurred in openNative()
      */
     public SessionWireImpl(String dbName, long sessionID) throws IOException {
 	wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
@@ -100,9 +101,10 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
-     @param request the RequestProtos.Request message
-     @returns a Future response message corresponding the request
-    */
+     * @param request the RequestProtos.Request message
+     * @return a Future response message corresponding the request
+     * @throws IOException error occurred in sendNative()
+     */
     public <V> Future<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
@@ -123,9 +125,9 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Send RequestProtos.Request to the SQL server via the native wire.
-     @param request the RequestProtos.Request message
-     @returns a couple of Future response message corresponding the request
-    */
+     * @param request the RequestProtos.Request message
+     * @return a couple of Future response message corresponding the request
+     */
     public Pair<Future<ResponseProtos.ExecuteQuery>, Future<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
 	if (wireHandle == 0) {
 	    throw new IOException("already closed");
@@ -148,8 +150,8 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
-     @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     @returns ResposeProtos.Response message
+     * @param handle the handle indicating the sent request message corresponding to the response message to be received.
+     * @return ResposeProtos.Response message
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
 	if (wireHandle == 0) {
@@ -186,8 +188,8 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Receive ResponseProtos.Response from the SQL server via the native wire.
-     @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     @returns ResposeProtos.Response message
+     * @param handle the handle indicating the sent request message corresponding to the response message to be received.
+     * @return response message of ResposeProtos.Response type
     */
     public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
 	if (wireHandle == 0) {
@@ -228,7 +230,7 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * UnReceive one ResponseProtos.Response
-     @param handle the handle to the response box
+     * @param handle the handle to the response box
     */
     public void unReceive(ResponseWireHandle handle) throws IOException {
 	if (wireHandle == 0) {
@@ -239,7 +241,7 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
-     @returns ResultSetWireImpl
+     * @return ResultSetWireImpl
     */
     public ResultSetWire createResultSetWire() throws IOException {
 	if (wireHandle == 0) {

@@ -59,6 +59,7 @@ public final class IpcConnectorImpl implements Connector {
 
     /**
      * Close the wire
+     * @throws IOException close error
      */
     public void close() throws IOException {
 	if (handle != 0) {
