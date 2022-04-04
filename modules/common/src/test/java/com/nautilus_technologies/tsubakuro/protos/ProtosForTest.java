@@ -284,14 +284,14 @@ public final class ProtosForTest {
 		.setTransactionHandle(TransactionChecker.builder())
 		.setPreparedStatementHandle(PreparedStatementChecker.builder())
 		.setParameters(ParameterSetChecker.builder())
-		.setPath(PATH);
+		.setDirectory(PATH);
 	}
 	static boolean check(RequestProtos.ExecuteDump dst) {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle())
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
 		&& ParameterSetChecker.check(dst.getParameters())
-		&& dst.getPath().equals(PATH);
+		&& dst.getDirectory().equals(PATH);
 	}
 	@Test
 	void test() {
@@ -311,14 +311,14 @@ public final class ProtosForTest {
 		.setTransactionHandle(TransactionChecker.builder())
 		.setPreparedStatementHandle(PreparedStatementChecker.builder())
 		.setParameters(ParameterSetChecker.builder())
-		.setPath(PATH);
+		.addFile(PATH);
 	}
 	static boolean check(RequestProtos.ExecuteLoad dst) {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle())
 		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
 		&& ParameterSetChecker.check(dst.getParameters())
-		&& dst.getPath().equals(PATH);
+		&& dst.getFileList().get(0).equals(PATH);
 	}
 	@Test
 	void test() {

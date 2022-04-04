@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.Objects;
+import java.util.Collection;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -173,12 +174,12 @@ public class TransactionImpl implements Transaction {
      * Request dump execution to the SQL service
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param path the file path where dumped files are placed
+     * @param directory the directory path where dumped files are placed
      * @return a Pair of a Future of ResultSet processing result of the SQL service
      and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
      * @throws IOException error occurred in execute dump by the SQL service
      */
-    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path path) throws IOException {
+    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
@@ -186,7 +187,7 @@ public class TransactionImpl implements Transaction {
 					.setTransactionHandle(transaction)
 					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 					.setParameters(parameterSet)
-					.setPath(path.toString()));
+					.setDirectory(directory.toString()));
 	if (!Objects.isNull(pair.getLeft())) {
 	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
 	}
@@ -197,19 +198,22 @@ public class TransactionImpl implements Transaction {
      * Request load execution to the SQL service
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param path the file path where dumped files are placed
+     * @param files the collection of file path to be loaded
      * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in execute load by the SQL service
      */
-    public Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet,	Path path) throws IOException {
+    public Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Collection<? extends Path> files) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
-	return sessionLinkImpl.send(RequestProtos.ExecuteLoad.newBuilder()
-				    .setTransactionHandle(transaction)
-				    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-				    .setParameters(parameterSet)
-				    .setPath(path.toString()));
+	var message = RequestProtos.ExecuteLoad.newBuilder()
+	    .setTransactionHandle(transaction)
+	    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+	    .setParameters(parameterSet);
+	for (Path file : files) {
+	    message.addFile(file.toString());
+	}
+	return sessionLinkImpl.send(message);
     }
 
     /**

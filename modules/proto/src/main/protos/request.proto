@@ -100,7 +100,7 @@ message ExecuteDump {
   common.Transaction transaction_handle = 1;
   common.PreparedStatement prepared_statement_handle = 2;
   ParameterSet parameters = 3;
-  string path = 4;
+  string directory = 4;
 }
 
 /* For execute load request. */
@@ -108,7 +108,7 @@ message ExecuteLoad {
   common.Transaction transaction_handle = 1;
   common.PreparedStatement prepared_statement_handle = 2;
   ParameterSet parameters = 3;
-  string path = 4;
+  repeated string file = 4;
 }
 
 /* For commit request. */
