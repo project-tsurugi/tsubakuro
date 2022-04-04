@@ -39,7 +39,7 @@ class SessionImplTest {
 	public ResultSetWire createResultSetWire() throws IOException {
 	    return null;  // dummy as it is test for session
 	}
-	
+
 	public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
 	    return null;  // dummy as it is test for session
 	}
