@@ -180,18 +180,22 @@ public class TransactionImpl implements Transaction {
      * @throws IOException error occurred in execute dump by the SQL service
      */
     public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException {
-	if (Objects.isNull(sessionLinkImpl)) {
-	    throw new IOException("already closed");
+	//	if (Objects.isNull(sessionLinkImpl)) {
+	//	    throw new IOException("already closed");
+	//	}
+	//	//	var pair = sessionLinkImpl.send(RequestProtos.ExecuteDump.newBuilder()
+	//					.setTransactionHandle(transaction)
+	//					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+	//					.setParameters(parameterSet)
+	//					.setDirectory(directory.toString()));
+	//	if (!Objects.isNull(pair.getLeft())) {
+	//	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	//	}
+	//	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+	if (directory.toString().contains("NG")) {
+	    return Pair.of(new FutureResultSetMock(false), new FutureResponseMock(false));
 	}
-	var pair = sessionLinkImpl.send(RequestProtos.ExecuteDump.newBuilder()
-					.setTransactionHandle(transaction)
-					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-					.setParameters(parameterSet)
-					.setDirectory(directory.toString()));
-	if (!Objects.isNull(pair.getLeft())) {
-	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
-	}
-	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+	return Pair.of(new FutureResultSetMock(true), new FutureResponseMock(true));
     }
 
     /**
@@ -203,17 +207,18 @@ public class TransactionImpl implements Transaction {
      * @throws IOException error occurred in execute load by the SQL service
      */
     public Future<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Collection<? extends Path> files) throws IOException {
-	if (Objects.isNull(sessionLinkImpl)) {
-	    throw new IOException("already closed");
-	}
-	var message = RequestProtos.ExecuteLoad.newBuilder()
-	    .setTransactionHandle(transaction)
-	    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-	    .setParameters(parameterSet);
-	for (Path file : files) {
-	    message.addFile(file.toString());
-	}
-	return sessionLinkImpl.send(message);
+	//	if (Objects.isNull(sessionLinkImpl)) {
+	//	    throw new IOException("already closed");
+	//	}
+	//	var message = RequestProtos.ExecuteLoad.newBuilder()
+	//	    .setTransactionHandle(transaction)
+	//	    .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
+	//	    .setParameters(parameterSet);
+	//	for (Path file : files) {
+	//	    message.addFile(file.toString());
+	//	}
+	//	return sessionLinkImpl.send(message);
+	return new FutureResponseMock(files);
     }
 
     /**
