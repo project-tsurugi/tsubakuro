@@ -18,7 +18,7 @@ public class Select {
 	this.session.connect(connector.connect().get());
     }
     
-    void printResultset(ResultSet resultSet) throws IOException {
+    void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
 	int count = 1;
 
 	while (resultSet.nextRecord()) {

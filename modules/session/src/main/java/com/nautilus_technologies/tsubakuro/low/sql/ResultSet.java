@@ -69,9 +69,10 @@ public interface ResultSet extends Closeable {
     /**
      * Move the current pointer to the next record
      * @return true if the next record exists
+     * @throws InterruptedException timeout occurred in record receive
      * @throws IOException error occurred in record receive
      */
-    boolean nextRecord() throws IOException;
+    boolean nextRecord() throws InterruptedException, IOException;
 
     /**
      * Check whether the current column is null or not
