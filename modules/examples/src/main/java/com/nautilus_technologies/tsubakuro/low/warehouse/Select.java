@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.Session;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
@@ -18,7 +18,7 @@ public class Select {
 	this.session.connect(connector.connect().get());
     }
     
-    void printResultset(ResultSet resultSet) throws IOException {
+    void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
 	int count = 1;
 
 	while (resultSet.nextRecord()) {

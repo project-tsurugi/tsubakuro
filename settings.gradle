@@ -2,7 +2,7 @@ rootProject.name = 'tsubakuro'
 
 include 'proto'
 include 'common'
-include 'sql'
+include 'session'
 include 'ipc'
 include 'stream'
 include 'connector'

@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.sql.Session;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -22,7 +22,7 @@ public class Select {
 	this.session.connect(connector.connect().get());
     }
     
-    void printResultset(ResultSet resultSet) throws IOException {
+    void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
 	int count = 1;
 
 	while (resultSet.nextRecord()) {
@@ -85,7 +85,7 @@ public class Select {
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
 		throw new IOException("commit (select) error");
 	    }
-	} catch (IOException e) {
+	} catch (InterruptedException | IOException e) {
 	    throw e;
 	} finally {
 	    preparedStatement.close();

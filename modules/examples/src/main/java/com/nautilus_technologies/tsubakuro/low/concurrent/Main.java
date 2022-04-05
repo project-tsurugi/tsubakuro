@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.SessionImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.Option;

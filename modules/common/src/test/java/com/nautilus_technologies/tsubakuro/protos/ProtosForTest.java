@@ -110,18 +110,19 @@ public final class ProtosForTest {
     }
 
     static class TransactionOptionChecker {
+	static final String TABLES = "table_for_preserve";
 	static RequestProtos.TransactionOption.Builder builder() {
 	    return
 		RequestProtos.TransactionOption.newBuilder()
 		.setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
-		.addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"));
+		.addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName(TABLES));
 	}
 	static boolean check(RequestProtos.TransactionOption dst) {
 	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
 
 	    return
 		dst.getType().equals(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
-		&& r1.getName().equals("table_for_preserve")
+		&& r1.getName().equals(TABLES)
 		&& (dst.getWritePreservesList().size() == 1);
 	}
 	@Test
@@ -159,15 +160,16 @@ public final class ProtosForTest {
     }
 
     static class PrepareChecker {
+	static final String SQL = "SELECT a, b, c FROM t WHERE d = 321";
 	static RequestProtos.Prepare.Builder builder() {
 	    return
 		RequestProtos.Prepare.newBuilder()
-		.setSql("SELECT a, b, c FROM t WHERE d = 321")
+		.setSql(SQL)
 		.setHostVariables(PlaceHolderChecker.builder());
 	}
 	static boolean check(RequestProtos.Prepare dst) {
 	    return
-		dst.getSql().equals("SELECT a, b, c FROM t WHERE d = 321")
+		dst.getSql().equals(SQL)
 		&& PlaceHolderChecker.check(dst.getHostVariables());
 	}
 	@Test
@@ -181,16 +183,17 @@ public final class ProtosForTest {
     }
 
     static class ExecuteStatementChecker {
+	static final String SQL = "UPDATE t SET a = a + 1 WHERE d = 654";
 	static RequestProtos.ExecuteStatement.Builder builder() {
 	    return
 		RequestProtos.ExecuteStatement.newBuilder()
 		.setTransactionHandle(TransactionChecker.builder())
-		.setSql("UPDATE t SET a = a + 1 WHERE d = 654");
+		.setSql(SQL);
 	}
 	static boolean check(RequestProtos.ExecuteStatement dst) {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle())
-		&& dst.getSql().equals("UPDATE t SET a = a + 1 WHERE d = 654");
+		&& dst.getSql().equals(SQL);
 	}
 	@Test
 	void test() {
@@ -203,16 +206,17 @@ public final class ProtosForTest {
     }
 
     static class ExecuteQueryChecker {
+	static final String SQL = "SELECT x, y, z FROM t WHERE d = 987";
 	static RequestProtos.ExecuteQuery.Builder builder() {
 	    return
 		RequestProtos.ExecuteQuery.newBuilder()
 		.setTransactionHandle(TransactionChecker.builder())
-		.setSql("SELECT x, y, z FROM t WHERE d = 987");
+		.setSql(SQL);
 	}
 	static boolean check(RequestProtos.ExecuteQuery dst) {
 	    return
 		TransactionChecker.check(dst.getTransactionHandle())
-		&& dst.getSql().equals("SELECT x, y, z FROM t WHERE d = 987");
+		&& dst.getSql().equals(SQL);
 	}
 	@Test
 	void test() {
@@ -266,6 +270,60 @@ public final class ProtosForTest {
 	void test() {
 	    try {
 		assertTrue(check(RequestProtos.ExecutePreparedQuery.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
+    static class ExecuteDumpChecker {
+	static final String PATH = "/This/Is/A/Path/String";
+	static RequestProtos.ExecuteDump.Builder builder() {
+	    return
+		RequestProtos.ExecuteDump.newBuilder()
+		.setTransactionHandle(TransactionChecker.builder())
+		.setPreparedStatementHandle(PreparedStatementChecker.builder())
+		.setParameters(ParameterSetChecker.builder())
+		.setDirectory(PATH);
+	}
+	static boolean check(RequestProtos.ExecuteDump dst) {
+	    return
+		TransactionChecker.check(dst.getTransactionHandle())
+		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
+		&& ParameterSetChecker.check(dst.getParameters())
+		&& dst.getDirectory().equals(PATH);
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(RequestProtos.ExecuteDump.parseFrom(builder().build().toByteArray())));
+	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+		fail("cought com.google.protobuf.InvalidProtocolBufferException");
+	    }
+	}
+    }
+
+    static class ExecuteLoadChecker {
+	static final String PATH = "/This/Is/A/Path/String";
+	static RequestProtos.ExecuteLoad.Builder builder() {
+	    return
+		RequestProtos.ExecuteLoad.newBuilder()
+		.setTransactionHandle(TransactionChecker.builder())
+		.setPreparedStatementHandle(PreparedStatementChecker.builder())
+		.setParameters(ParameterSetChecker.builder())
+		.addFile(PATH);
+	}
+	static boolean check(RequestProtos.ExecuteLoad dst) {
+	    return
+		TransactionChecker.check(dst.getTransactionHandle())
+		&& PreparedStatementChecker.check(dst.getPreparedStatementHandle())
+		&& ParameterSetChecker.check(dst.getParameters())
+		&& dst.getFileList().get(0).equals(PATH);
+	}
+	@Test
+	void test() {
+	    try {
+		assertTrue(check(RequestProtos.ExecuteLoad.parseFrom(builder().build().toByteArray())));
 	    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
 		fail("cought com.google.protobuf.InvalidProtocolBufferException");
 	    }
@@ -710,16 +768,17 @@ public final class ProtosForTest {
 	}
     }
     static class ErrorChecker {
+	static final String ERROR = "This is a error for test purpose";
 	static ResponseProtos.Error.Builder builder() {
 	    return
 		ResponseProtos.Error.newBuilder()
 		.setStatus(StatusProtos.Status.NOT_FOUND)
-		.setDetail("This is a error for test purpose");
+		.setDetail(ERROR);
 	}
 	static boolean check(ResponseProtos.Error dst) {
 	    return
 		dst.getStatus().equals(StatusProtos.Status.NOT_FOUND)
-		&& dst.getDetail().equals("This is a error for test purpose");
+		&& dst.getDetail().equals(ERROR);
 	}
 	@Test
 	void test() {
@@ -798,15 +857,16 @@ public final class ProtosForTest {
     }
 
     public static class ResMessageExecuteQueryChecker {
+	static final String RESYKTSET_NAME = "ResultSetName";
 	static ResponseProtos.ExecuteQuery.Builder builder() {
 	    return
 		ResponseProtos.ExecuteQuery.newBuilder()
-		.setName("ResultSetName")
+		.setName(RESYKTSET_NAME)
 		.setRecordMeta(SchemaProtosChecker.builder());
 	}
 	public static boolean check(ResponseProtos.ExecuteQuery dst) {
 	    return
-		dst.getName().equals("ResultSetName")
+		dst.getName().equals(RESYKTSET_NAME)
 		&& SchemaProtosChecker.check(dst.getRecordMeta());
 	}
 	@Test
@@ -820,14 +880,15 @@ public final class ProtosForTest {
     }
 
     public static class ResMessageExplainChecker {
+	static final String EXPLAIN = "ThisIsAnExecutionPlanString";
 	public static ResponseProtos.Explain.Builder builder() {
 	    return
 		ResponseProtos.Explain.newBuilder()
-		.setOutput("ThisIsAnExecutionPlanString");
+		.setOutput(EXPLAIN);
 	}
 	public static boolean check(ResponseProtos.Explain dst) {
 	    return
-		dst.getOutput().equals("ThisIsAnExecutionPlanString");
+		dst.getOutput().equals(EXPLAIN);
 	}
 	@Test
 	void test() {
