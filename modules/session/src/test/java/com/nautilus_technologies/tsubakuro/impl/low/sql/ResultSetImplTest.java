@@ -110,16 +110,22 @@ class ResultSetImplTest {
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "v1");
 	    assertEquals(resultSetImpl.getInt8(), 987654321L);
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "v2");
 	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "v3");
 	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "");  // no name
 	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "");  // no name
 	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
 	    assertTrue(resultSetImpl.nextColumn());
+	    assertEquals(resultSetImpl.name(), "");  // no name
 	    assertTrue(resultSetImpl.isNull());
 	    assertFalse(resultSetImpl.nextColumn());
 
