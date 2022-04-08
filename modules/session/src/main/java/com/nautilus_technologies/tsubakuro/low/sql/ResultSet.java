@@ -21,6 +21,14 @@ public interface ResultSet extends Closeable {
         CommonProtos.DataType type(int index) throws IOException;
 
         /**
+         * Get the field name
+         * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
+         * @return field name
+	 * @throws IOException error occurred in investigating the column type
+         */
+        String name(int index) throws IOException;
+
+        /**
          * Get the nullability for the field
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return true if the field is nullable
@@ -104,6 +112,13 @@ public interface ResultSet extends Closeable {
      * @throws IOException error occurred in investigating column data type
      */
     CommonProtos.DataType type() throws IOException;
+
+    /**
+     * Get the current field name
+     * @return current field name
+     * @throws IOException error occurred in investigating the column type
+     */
+    String name() throws IOException;
 
     /**
      * Get the nullability for the current field

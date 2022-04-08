@@ -31,6 +31,12 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	    return recordMeta.getColumnsList().get(index).getType();
 	}
+        public String name(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
+	    return recordMeta.getColumnsList().get(index).getName();
+	}
         public boolean nullable(int index) throws IOException {
 	    if (index < 0 || fieldCount() <= index) {
 		throw new IOException("index is out of the range");
@@ -191,7 +197,18 @@ public class ResultSetImpl implements ResultSet {
 	if (!columnReady) {
 	    throw new IOException("the column is not ready to be read");
 	}
-	return recordMeta.at(columnIndex);
+	return recordMeta.type(columnIndex);
+    }
+
+    /**
+     * Get the current field type
+     * @return current field type
+     */
+    public String name() throws IOException {
+	if (!columnReady) {
+	    throw new IOException("the column is not ready to be read");
+	}
+	return recordMeta.name(columnIndex);
     }
 
     /**

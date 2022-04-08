@@ -21,6 +21,12 @@ public class ResultSetMock implements ResultSet {
 	    }
 	    return CommonProtos.DataType.CHARACTER;
 	}
+        public String name(int index) throws IOException {
+	    if (index < 0 || fieldCount() <= index) {
+		throw new IOException("index is out of the range");
+	    }
+	    return "name is not supported";
+	}
         public boolean nullable(int index) throws IOException {
 	    if (index != 0) {
 		throw new IOException("index is out of the range");
@@ -152,6 +158,17 @@ public class ResultSetMock implements ResultSet {
 	    throw new IOException("the column is not ready to be read");
 	}
 	return recordMeta.at(columnIndex);
+    }
+
+    /**
+     * Get the current field type
+     * @return current field type
+     */
+    public String name() throws IOException {
+	if (!columnReady) {
+	    throw new IOException("the column is not ready to be read");
+	}
+	return recordMeta.name(columnIndex);
     }
 
     /**
