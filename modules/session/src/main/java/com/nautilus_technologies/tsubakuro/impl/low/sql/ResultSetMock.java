@@ -33,7 +33,7 @@ public class ResultSetMock implements ResultSet {
 	    }
 	    return false;
 	}
-        public long fieldCount() {
+        public int fieldCount() {
 	    return 1;
 	}
 	@Deprecated

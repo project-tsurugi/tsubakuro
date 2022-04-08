@@ -40,7 +40,7 @@ public interface ResultSet extends Closeable {
          * Get the number of fields in the record
          * @return the number of the fields
          */
-        long fieldCount();
+        int fieldCount();
 
         /**
          * Get the field type

@@ -43,7 +43,7 @@ public class ResultSetImpl implements ResultSet {
 	    }
 	    return recordMeta.getColumnsList().get(index).getNullable();
 	}
-        public long fieldCount() {
+        public int fieldCount() {
 	    return recordMeta.getColumnsList().size();
 	}
 	@Deprecated
