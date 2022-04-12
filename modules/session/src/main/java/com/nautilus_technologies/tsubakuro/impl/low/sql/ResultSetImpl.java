@@ -76,6 +76,7 @@ public class ResultSetImpl implements ResultSet {
     private int columnIndex;
     private boolean detectNull;
     private boolean columnReady;
+    private boolean recordReady;
     
     /**
      * Class constructor, called from FutureResultSetImpl.
@@ -164,6 +165,7 @@ public class ResultSetImpl implements ResultSet {
 	}
 	columnIndex = -1;
 	columnReady = false;
+	recordReady = false;
 	return unpacker.hasNext();
     }
 
@@ -184,8 +186,11 @@ public class ResultSetImpl implements ResultSet {
 	columnIndex++;
 	if (columnIndex < recordMeta.fieldCount()) {
 	    columnReady = true;
+	    recordReady = true;
 	    return true;
 	}
+	columnReady = false;
+	recordReady = false;
 	return false;
     }
 
@@ -194,7 +199,7 @@ public class ResultSetImpl implements ResultSet {
      * @return current field type
      */
     public CommonProtos.DataType type() throws IOException {
-	if (!columnReady) {
+	if (!recordReady) {
 	    throw new IOException("the column is not ready to be read");
 	}
 	return recordMeta.type(columnIndex);
@@ -205,7 +210,7 @@ public class ResultSetImpl implements ResultSet {
      * @return current field type
      */
     public String name() throws IOException {
-	if (!columnReady) {
+	if (!recordReady) {
 	    throw new IOException("the column is not ready to be read");
 	}
 	return recordMeta.name(columnIndex);
@@ -216,7 +221,7 @@ public class ResultSetImpl implements ResultSet {
      * @return true if the current field is nullable
      */
     public boolean nullable() throws IOException {
-	if (!columnReady) {
+	if (!recordReady) {
 	    throw new IOException("the column is not ready to be read");
 	}
 	return recordMeta.nullable(columnIndex);
