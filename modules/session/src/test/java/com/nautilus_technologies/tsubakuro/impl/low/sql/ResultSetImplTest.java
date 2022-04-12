@@ -11,6 +11,7 @@ import org.msgpack.core.buffer.ByteBufferInput;
 
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
@@ -109,25 +110,98 @@ class ResultSetImplTest {
 
 	    // first column data
 	    assertTrue(resultSetImpl.nextRecord());
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.name();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.type();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.nullable();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
+
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "v1");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.INT8);
+	    assertEquals(resultSetImpl.nullable(), false);
 	    assertEquals(resultSetImpl.getInt8(), 987654321L);
+	    assertEquals(resultSetImpl.name(), "v1");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.INT8);
+	    assertEquals(resultSetImpl.nullable(), false);
+
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "v2");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.FLOAT8);
+	    assertEquals(resultSetImpl.nullable(), false);
 	    assertEquals(resultSetImpl.getFloat8(), (double) 12345.6789);
+	    assertEquals(resultSetImpl.name(), "v2");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.FLOAT8);
+	    assertEquals(resultSetImpl.nullable(), false);
+
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "v3");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.CHARACTER);
+	    assertEquals(resultSetImpl.nullable(), true);
 	    assertEquals(resultSetImpl.getCharacter(), "This is a string for the test");
+	    assertEquals(resultSetImpl.name(), "v3");
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.CHARACTER);
+	    assertEquals(resultSetImpl.nullable(), true);
+
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.INT8);
+	    assertEquals(resultSetImpl.nullable(), false);
 	    assertEquals(resultSetImpl.getInt8(), (long) 123456789L);
+	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.INT8);
+	    assertEquals(resultSetImpl.nullable(), false);
+
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.FLOAT8);
+	    assertEquals(resultSetImpl.nullable(), false);
 	    assertEquals(resultSetImpl.getFloat8(), (double) 98765.4321);
+	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.FLOAT8);
+	    assertEquals(resultSetImpl.nullable(), false);
+	    
 	    assertTrue(resultSetImpl.nextColumn());
 	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.CHARACTER);
+	    assertEquals(resultSetImpl.nullable(), true);
 	    assertTrue(resultSetImpl.isNull());
+	    assertEquals(resultSetImpl.name(), "");  // no name
+	    assertEquals(resultSetImpl.type(), CommonProtos.DataType.CHARACTER);
+	    assertEquals(resultSetImpl.nullable(), true);
+
 	    assertFalse(resultSetImpl.nextColumn());
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.name();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.type();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
+	    {
+		Throwable exception = assertThrows(IOException.class, () -> {
+			var n = resultSetImpl.nullable();
+		    });
+		assertEquals("the column is not ready to be read", exception.getMessage());
+	    }
 
 	    // second column data
 	    assertTrue(resultSetImpl.nextRecord());
