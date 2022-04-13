@@ -18,10 +18,7 @@ public class FutureResultSetMock implements Future<ResultSet> {
     }
 
     public ResultSet get() throws ExecutionException {
-	if (isOk) {
-	    return new ResultSetMock();
-	}
-	return null;
+	return new ResultSetMock(isOk);
     }
 
     public ResultSet get(long timeout, TimeUnit unit) throws ExecutionException {

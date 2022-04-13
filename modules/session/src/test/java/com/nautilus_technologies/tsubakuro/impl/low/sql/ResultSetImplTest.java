@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.concurrent.Future;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
@@ -11,6 +12,7 @@ import org.msgpack.core.buffer.ByteBufferInput;
 
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
@@ -105,7 +107,7 @@ class ResultSetImplTest {
     void receiveRecord() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -231,7 +233,7 @@ class ResultSetImplTest {
     void receiveAndRecordWithSkip() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -275,7 +277,7 @@ class ResultSetImplTest {
     void receiveAndRecordWithSkip2() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -317,7 +319,7 @@ class ResultSetImplTest {
     void getColumnWithoutNextColumn() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -339,7 +341,7 @@ class ResultSetImplTest {
     void getColumnInDifferntType() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -360,7 +362,7 @@ class ResultSetImplTest {
     void getColumnThatIsNull() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -392,7 +394,7 @@ class ResultSetImplTest {
     void getColumnThatIsNullPattern2() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -423,7 +425,7 @@ class ResultSetImplTest {
     void nextRecordAfterIsNull() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first record
@@ -454,7 +456,7 @@ class ResultSetImplTest {
     void getColumnWithoutNextRecord() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data
@@ -489,7 +491,7 @@ class ResultSetImplTest {
     void useAfterClose() {
 	ResultSet.RecordMeta recordMeta;
         try {
-	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+	    resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), (Future<ResponseProtos.ResultOnly>) null);
 	    resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
 
 	    // first column data

@@ -1,5 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.concurrent.Future;
 import java.util.Objects;
 import java.io.IOException;
 import java.nio.charset.CodingErrorAction;
@@ -9,6 +10,7 @@ import org.msgpack.core.MessagePack.UnpackerConfig;
 import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
@@ -24,6 +26,9 @@ public class ResultSetImpl implements ResultSet {
 
 	RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
 	    this.recordMeta = recordMeta;
+	}
+	RecordMetaImpl() {
+	    this.recordMeta = null;
 	}
         public CommonProtos.DataType type(int index) throws IOException {
 	    if (index < 0 || fieldCount() <= index) {
@@ -44,6 +49,9 @@ public class ResultSetImpl implements ResultSet {
 	    return recordMeta.getColumnsList().get(index).getNullable();
 	}
         public int fieldCount() {
+	    if (Objects.isNull(recordMeta)) {
+		return 0;
+	    }
 	    return recordMeta.getColumnsList().size();
 	}
 	@Deprecated
@@ -77,17 +85,23 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     private boolean recordReady;
-    
+    private Future<ResponseProtos.ResultOnly> futureResponse;
+
     /**
      * Class constructor, called from FutureResultSetImpl.
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
      * @throws IOException error occurred in class constructor
      */
-    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
+    public ResultSetImpl(ResultSetWire resultSetWire, Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
 	this.resultSetWire = resultSetWire;
+	this.futureResponse = futureResponse;
 	unpackerConfig = new UnpackerConfig()
 	    .withActionOnMalformedString(CodingErrorAction.IGNORE)
 	    .withActionOnUnmappableString(CodingErrorAction.IGNORE);
+    }
+
+    public ResultSetImpl(Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
+	recordMeta = new RecordMetaImpl();
     }
 
     public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
@@ -362,6 +376,14 @@ public class ResultSetImpl implements ResultSet {
 	}
 	columnReady = false;
 	return unpacker.unpackString();
+    }
+
+    /**
+     * Get a Future of the response returned from the SQL service
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     */
+    public Future<ResponseProtos.ResultOnly> getResponse() {
+	return futureResponse;
     }
 
     /**

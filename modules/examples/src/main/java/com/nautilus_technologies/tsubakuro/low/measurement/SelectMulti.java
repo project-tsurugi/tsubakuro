@@ -79,7 +79,7 @@ public class SelectMulti extends Thread {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
 		    .build();
                 var future1 = transaction.executeQuery(prepared1, ps1);
-                var resultSet1 = future1.getLeft().get();
+                var resultSet1 = future1.get();
 		now = System.nanoTime();
 		profile.head += (now - prev);
 		prev = now;
@@ -90,10 +90,8 @@ public class SelectMulti extends Thread {
 			    var noOid = resultSet1.getInt8();
 			    profile.records++;
 			}
-                        resultSet1.close();
-                        resultSet1 = null;
                     }
-                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new ExecutionException(new IOException("SQL error"));
                     }
                 } catch (ExecutionException e) {
@@ -105,6 +103,7 @@ public class SelectMulti extends Thread {
                 } finally {
                     if (!Objects.isNull(resultSet1)) {
                         resultSet1.close();
+			resultSet1 = null;
                     }
                 }
 		now = System.nanoTime();

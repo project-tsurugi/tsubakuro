@@ -72,13 +72,12 @@ public class Select {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1))
 		.build();
-	    var pair = transaction.executeQuery(preparedStatement, ps);
-	    var resultSet = pair.getLeft().get();
+	    var resultSet = transaction.executeQuery(preparedStatement, ps).get();
 	    if (!Objects.isNull(resultSet)) {
 		printResultset(resultSet);
 		resultSet.close();
 	    }
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(pair.getRight().get().getResultCase())) {
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
 		throw new IOException("select error");
 	    }
 	    var commitResponse = transaction.commit().get();

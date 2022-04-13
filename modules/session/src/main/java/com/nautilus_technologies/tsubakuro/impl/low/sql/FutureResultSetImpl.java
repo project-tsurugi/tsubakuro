@@ -25,9 +25,18 @@ public class FutureResultSetImpl implements Future<ResultSet> {
      * @param future the Future<ResponseProtos.ExecuteQuery>
      * @param sessionLinkImpl the sessionLink to which the transaction that created this object belongs
      */
-    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLinkImpl) throws IOException {
+    FutureResultSetImpl(Future<ResponseProtos.ExecuteQuery> future, SessionLinkImpl sessionLinkImpl, Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
 	this.future = future;
-	this.resultSetImpl = new ResultSetImpl(sessionLinkImpl.createResultSetWire());
+	this.resultSetImpl = new ResultSetImpl(sessionLinkImpl.createResultSetWire(), futureResponse);
+    }
+
+    /**
+     * Class constructor used when an error occured in SQL server.
+     * @param future the Future<ResponseProtos.ResultOnly>
+     * @param sessionLinkImpl the sessionLink to which the transaction that created this object belongs
+     */
+    FutureResultSetImpl(Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
+	this.resultSetImpl = new ResultSetImpl(futureResponse);
     }
 
     public ResultSetImpl get() throws ExecutionException {

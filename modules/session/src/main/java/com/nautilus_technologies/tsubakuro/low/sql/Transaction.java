@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
@@ -24,11 +23,10 @@ public interface Transaction extends Closeable {
     /**
      * Request executeQuery to the SQL service
      * @param sql sql text for the command
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResultSet which is a processing result of the SQL service
      * @throws IOException error occurred in execute query by the SQL service
     */
-    Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(String sql) throws IOException;
+    Future<ResultSet> executeQuery(String sql) throws IOException;
 
     /**
      * Request executeStatement to the SQL service
@@ -45,24 +43,22 @@ public interface Transaction extends Closeable {
      * Request executeQuery to the SQL service
      * @param preparedStatement prepared statement for the command
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResultSet which is a processing result of the SQL service
      * @throws IOException error occurred in execute query by the SQL service
      */
-    Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
+    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException;
     @Deprecated
-    Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException;
+    Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException;
 
     /**
      * Request dump execution to the SQL service
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @param directory the directory path where dumped files are placed
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in execute dump by the SQL service
      */
-    Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException;
+    Future<ResultSet> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException;
 
     /**
      * Request load execution to the SQL service

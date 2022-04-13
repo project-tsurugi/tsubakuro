@@ -80,7 +80,7 @@ public class Q2 {
 	    ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey));
 
 	    var future = transaction.executeQuery(prepared1, ps.build());
-	    var resultSet = future.getLeft().get();
+	    var resultSet = future.get();
 
 	    try {
 		if (Objects.nonNull(resultSet)) {
@@ -102,7 +102,7 @@ public class Q2 {
 		if (!Objects.isNull(resultSet)) {
 		    resultSet.close();
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    }
@@ -126,7 +126,7 @@ public class Q2 {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(entry.getValue()));
 
 	    var future = transaction.executeQuery(prepared2, ps.build());
-	    var resultSet = future.getLeft().get();
+	    var resultSet = future.get();
 
 	    try {
 		if (Objects.nonNull(resultSet)) {
@@ -158,7 +158,7 @@ public class Q2 {
 		if (!Objects.isNull(resultSet)) {
 		    resultSet.close();
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    }

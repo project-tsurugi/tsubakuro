@@ -76,14 +76,14 @@ public class SelectOne extends Thread {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		    .build();
 		var future2 = transaction.executeQuery(prepared2, ps2);
-		var resultSet2 = future2.getLeft().get();
+		var resultSet2 = future2.get();
 		now = System.nanoTime();
 		profile.head += (now - prev);
 		prev = now;
 		try {
 		    if (!Objects.isNull(resultSet2)) {
 			if (!resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -93,15 +93,13 @@ public class SelectOne extends Thread {
 			resultSet2.nextColumn();
 			var dTax = resultSet2.getFloat8();
 			if (resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet2.close();
-			resultSet2 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {
@@ -113,6 +111,7 @@ public class SelectOne extends Thread {
 		} finally {
 		    if (!Objects.isNull(resultSet2)) {
 			resultSet2.close();
+			resultSet2 = null;
 		    }
 		}
 		now = System.nanoTime();

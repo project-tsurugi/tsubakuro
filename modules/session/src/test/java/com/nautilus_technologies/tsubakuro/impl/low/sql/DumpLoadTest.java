@@ -205,11 +205,10 @@ class DumpLoadTest {
 	    Future<Transaction> fTransaction = session.createTransaction(opts);
 
 	    try (Transaction transaction = fTransaction.get()) {
-		var pair = transaction.executeDump(preparedStatement, 
+		Future<ResultSet> fResults = transaction.executeDump(preparedStatement,
 						   RequestProtos.ParameterSet.newBuilder().build(),
 						   target);
-		Future<ResultSet> fResults = pair.getLeft();
-		
+
 		var results = fResults.get();
 		assertTrue(Objects.nonNull(results));
 
@@ -226,7 +225,7 @@ class DumpLoadTest {
 		assertEquals(columnCount, 1);
 		assertEquals(recordCount, 1);
 
-		assertTrue(ProtosForTest.ResultOnlyChecker.check(pair.getRight().get()));
+		assertTrue(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
 
 		transaction.commit();
 		session.close();
@@ -260,14 +259,12 @@ class DumpLoadTest {
 	    Future<Transaction> fTransaction = session.createTransaction(opts);
 
 	    try (Transaction transaction = fTransaction.get()) {
-		var pair = transaction.executeDump(preparedStatement, 
+		Future<ResultSet> fResults = transaction.executeDump(preparedStatement,
 						   RequestProtos.ParameterSet.newBuilder().build(),
 						   target);
-		Future<ResultSet> fResults = pair.getLeft();
-		
 		var results = fResults.get();
-		assertTrue(Objects.isNull(results));
-		assertFalse(ProtosForTest.ResultOnlyChecker.check(pair.getRight().get()));
+		assertTrue(Objects.nonNull(results));
+		assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
 
 		transaction.commit();
 		session.close();

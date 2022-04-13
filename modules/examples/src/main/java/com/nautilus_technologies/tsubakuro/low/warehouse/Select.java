@@ -56,10 +56,9 @@ public class Select {
 	String sql = "SELECT * FROM WAREHOUSE";
 
 	Transaction transaction = session.createTransaction().get();
-	var pair = transaction.executeQuery(sql);
-	var resultSet = pair.getLeft().get();
+	var resultSet = transaction.executeQuery(sql).get();
 	printResultset(resultSet);
-	pair.getRight().get();
+	resultSet.getResponse().get();
 	resultSet.close();
 	transaction.commit().get();
 	session.close();

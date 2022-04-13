@@ -228,11 +228,11 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid))
 		.build();
 	    var future2 = transaction.executeQuery(prepared2, ps2);
-	    var resultSet2 = future2.getLeft().get();
+	    var resultSet2 = future2.get();
 	    try {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -250,15 +250,13 @@ public class Payment {
 		    resultSet2.nextColumn();
 		    wZip = resultSet2.getCharacter();
 		    if (resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet2.close();
-		    resultSet2 = null;
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -269,6 +267,7 @@ public class Payment {
 	    } finally {
 		if (!Objects.isNull(resultSet2)) {
 		    resultSet2.close();
+		    resultSet2 = null;
 		}
 	    }
 
@@ -293,11 +292,11 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
 	    var future4 = transaction.executeQuery(prepared4, ps4);
-	    var resultSet4 = future4.getLeft().get();
+	    var resultSet4 = future4.get();
 	    try {
 		if (!Objects.isNull(resultSet4)) {
 		    if (!resultSet4.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -315,15 +314,13 @@ public class Payment {
 		    resultSet4.nextColumn();
 		    dName = resultSet4.getCharacter();
 		    if (resultSet4.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet4.close();
-		    resultSet4 = null;
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -334,6 +331,7 @@ public class Payment {
 	    } finally {
 		if (!Objects.isNull(resultSet4)) {
 		    resultSet4.close();
+		    resultSet4 = null;
 		}
 	    }
 
@@ -356,11 +354,11 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		.build();
 	    var future7 = transaction.executeQuery(prepared7, ps7);
-	    var resultSet7 = future7.getLeft().get();
+	    var resultSet7 = future7.get();
 	    try {
 		if (!Objects.isNull(resultSet7)) {
 		    if (!resultSet7.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -394,15 +392,13 @@ public class Payment {
 		    resultSet7.nextColumn();
 		    cSince = resultSet7.getCharacter();  // c_since(13)
 		    if (resultSet7.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet7.close();
-		    resultSet7 = null;
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -413,6 +409,7 @@ public class Payment {
 	    } finally {
 		if (!Objects.isNull(resultSet7)) {
 		    resultSet7.close();
+		    resultSet7 = null;
 		}
 	    }
 
@@ -426,11 +423,11 @@ public class Payment {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		    .build();
 		var future8 = transaction.executeQuery(prepared8, ps8);
-		var resultSet8 = future8.getLeft().get();
+		var resultSet8 = future8.get();
 		try {
 		    if (!Objects.isNull(resultSet8)) {
 			if (!resultSet8.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future8.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -438,15 +435,13 @@ public class Payment {
 			resultSet8.nextColumn();
 			cData = resultSet8.getCharacter();
 			if (resultSet8.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future8.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet8.close();
-			resultSet8 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future8.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {
@@ -457,6 +452,7 @@ public class Payment {
 		} finally {
 		    if (!Objects.isNull(resultSet8)) {
 			resultSet8.close();
+			resultSet8 = null;
 		    }
 		}
 

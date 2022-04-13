@@ -21,7 +21,7 @@ public final class Main {
 
         var transaction = session.createTransaction().get();
         var future = transaction.executeQuery("SELECT no_o_id FROM NEW_ORDER WHERE no_w_id = 1 AND no_d_id = 1 ORDER by no_o_id DESC");
-        var resultSet = future.getLeft().get();
+        var resultSet = future.get();
         long count = 0;
         if (resultSet.nextRecord()) {
             if (resultSet.nextColumn()) {
@@ -29,7 +29,7 @@ public final class Main {
             }
         }
         resultSet.close();
-	var r = future.getRight().get();
+	var r = resultSet.getResponse().get();
         if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(r.getResultCase())) {
             throw new IOException("select error");
         }

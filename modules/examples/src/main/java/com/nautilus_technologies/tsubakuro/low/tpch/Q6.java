@@ -63,7 +63,7 @@ public class Q6 {
         }
 
 	var future = transaction.executeQuery(prepared, ps.build());
-	var resultSet = future.getLeft().get();
+	var resultSet = future.get();
 
 	try {
 	    if (Objects.nonNull(resultSet)) {
@@ -78,7 +78,7 @@ public class Q6 {
 		} else {
 		    throw new ExecutionException(new IOException("no record"));
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } else {

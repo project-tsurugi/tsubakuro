@@ -24,7 +24,7 @@ public final class Main {
 
         var transaction = session.createTransaction().get();
         var future = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE");
-        var resultSet = future.getLeft().get();
+        var resultSet = future.get();
         long count = 0;
         if (resultSet.nextRecord()) {
             if (resultSet.nextColumn()) {
@@ -32,7 +32,7 @@ public final class Main {
             }
         }
         resultSet.close();
-        if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future.getRight().get().getResultCase())) {
+        if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
             throw new IOException("select error");
         }
         transaction.commit().get();
