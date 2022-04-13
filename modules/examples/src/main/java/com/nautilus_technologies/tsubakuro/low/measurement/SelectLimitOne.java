@@ -86,7 +86,7 @@ public class SelectLimitOne extends Thread {
                 try {
                     if (!Objects.isNull(resultSet1)) {
                         if (!resultSet1.nextRecord()) {
-                            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+                            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                                 throw new ExecutionException(new IOException("SQL error"));
                             }
                             continue;  // noOid is exhausted, it's OK and continue this transaction
@@ -94,7 +94,7 @@ public class SelectLimitOne extends Thread {
                         resultSet1.nextColumn();
                         var noOid = resultSet1.getInt8();
                     }
-                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new ExecutionException(new IOException("SQL error"));
                     }
                 } catch (ExecutionException e) {

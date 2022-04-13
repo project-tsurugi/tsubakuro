@@ -36,7 +36,6 @@ public class FutureResultSetImpl implements Future<ResultSet> {
      * @param sessionLinkImpl the sessionLink to which the transaction that created this object belongs
      */
     FutureResultSetImpl(Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
-	this.future = future;
 	this.resultSetImpl = new ResultSetImpl(futureResponse);
     }
 

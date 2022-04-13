@@ -58,7 +58,7 @@ public class Select {
 	Transaction transaction = session.createTransaction().get();
 	var resultSet = transaction.executeQuery(sql).get();
 	printResultset(resultSet);
-	resultSet.getFutureResponse().get();
+	resultSet.getResponse().get();
 	resultSet.close();
 	transaction.commit().get();
 	session.close();

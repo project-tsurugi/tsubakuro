@@ -167,7 +167,7 @@ public class OrderStatus {
 		try {
 		    if (Objects.nonNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -181,13 +181,13 @@ public class OrderStatus {
 			resultSet3.nextColumn();
 			cLast = resultSet3.getCharacter();
 			if (resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -213,7 +213,7 @@ public class OrderStatus {
 		try {
 		    if (Objects.nonNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -221,7 +221,7 @@ public class OrderStatus {
 			resultSet4.nextColumn();
 			oId = resultSet4.getInt8();
 		    }
-		    var status4 = resultSet4.getFutureResponse().get();
+		    var status4 = resultSet4.getResponse().get();
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
 			if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
 			    if (profile.inconsistentIndexCount == 0) {
@@ -254,7 +254,7 @@ public class OrderStatus {
 		try {
 		    if (Objects.nonNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -268,13 +268,13 @@ public class OrderStatus {
 			resultSet5.nextColumn();
 			oOlCnt = resultSet5.getInt8();
 			if (resultSet5.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -316,7 +316,7 @@ public class OrderStatus {
 			    i++;
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {

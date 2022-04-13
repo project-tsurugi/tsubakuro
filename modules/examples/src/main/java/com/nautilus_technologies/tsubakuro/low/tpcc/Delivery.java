@@ -146,7 +146,7 @@ public class Delivery {
                 try {
 		    if (!Objects.isNull(resultSet1)) {
 			if (!resultSet1.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    continue;  // noOid is exhausted, it's OK and continue this transaction
@@ -154,7 +154,7 @@ public class Delivery {
 			resultSet1.nextColumn();
 			noOid = resultSet1.getInt8();
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -191,7 +191,7 @@ public class Delivery {
 		try {
 		    if (!Objects.isNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -199,13 +199,13 @@ public class Delivery {
 			resultSet3.nextColumn();
 			cId = resultSet3.getInt8();
 			if (resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -257,7 +257,7 @@ public class Delivery {
 		try {
 		    if (!Objects.isNull(resultSet6)) {
 			if (!resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    continue;
@@ -265,13 +265,13 @@ public class Delivery {
 			resultSet6.nextColumn();
 			olTotal = resultSet6.getFloat8();
 			if (resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {

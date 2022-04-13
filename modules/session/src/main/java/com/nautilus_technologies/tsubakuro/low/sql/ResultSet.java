@@ -133,5 +133,5 @@ public interface ResultSet extends Closeable {
      * Get a Future of the response returned from the SQL service
      * @return a Future of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
-    Future<ResponseProtos.ResultOnly> getFutureResponse();
+    Future<ResponseProtos.ResultOnly> getResponse();
 }

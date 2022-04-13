@@ -225,7 +225,7 @@ class DumpLoadTest {
 		assertEquals(columnCount, 1);
 		assertEquals(recordCount, 1);
 
-		assertTrue(ProtosForTest.ResultOnlyChecker.check(results.getFutureResponse().get()));
+		assertTrue(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
 
 		transaction.commit();
 		session.close();
@@ -264,7 +264,7 @@ class DumpLoadTest {
 						   target);
 		var results = fResults.get();
 		assertTrue(Objects.nonNull(results));
-		assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getFutureResponse().get()));
+		assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
 
 		transaction.commit();
 		session.close();

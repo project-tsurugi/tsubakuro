@@ -101,7 +101,6 @@ public class ResultSetImpl implements ResultSet {
     }
 
     public ResultSetImpl(Future<ResponseProtos.ResultOnly> futureResponse) throws IOException {
-	this.resultSetWire = resultSetWire;
 	recordMeta = new RecordMetaImpl();
     }
 
@@ -383,7 +382,7 @@ public class ResultSetImpl implements ResultSet {
      * Get a Future of the response returned from the SQL service
      * @return a Future of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
-    public Future<ResponseProtos.ResultOnly> getFutureResponse() {
+    public Future<ResponseProtos.ResultOnly> getResponse() {
 	return futureResponse;
     }
 

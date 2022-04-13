@@ -77,7 +77,7 @@ public class Select {
 		printResultset(resultSet);
 		resultSet.close();
 	    }
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getFutureResponse().get().getResultCase())) {
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
 		throw new IOException("select error");
 	    }
 	    var commitResponse = transaction.commit().get();

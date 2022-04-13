@@ -223,7 +223,7 @@ public class NewOrder {
 	    try {
 		if (!Objects.isNull(resultSet1)) {
 		    if (!resultSet1.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -237,13 +237,13 @@ public class NewOrder {
 		    resultSet1.nextColumn();
 		    cCredit = resultSet1.getCharacter();
 		    if (resultSet1.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -268,7 +268,7 @@ public class NewOrder {
 	    try {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -278,13 +278,13 @@ public class NewOrder {
 		    resultSet2.nextColumn();
 		    dTax = resultSet2.getFloat8();
 		    if (resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -365,7 +365,7 @@ public class NewOrder {
 		try {
 		    if (!Objects.isNull(resultSet6)) {
 			if (!resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -377,13 +377,13 @@ public class NewOrder {
 			resultSet6.nextColumn();
 			iData = resultSet6.getCharacter();
 			if (resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {
@@ -405,7 +405,7 @@ public class NewOrder {
 		try {
 		    if (!Objects.isNull(resultSet7)) {
 			if (!resultSet7.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -419,13 +419,13 @@ public class NewOrder {
 			    sDistData[i] = resultSet7.getCharacter();
 			}
 			if (resultSet7.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {

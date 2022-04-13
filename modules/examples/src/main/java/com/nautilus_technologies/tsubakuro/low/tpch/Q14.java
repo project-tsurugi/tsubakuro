@@ -83,7 +83,7 @@ public class Q14 {
 		} else {
 		    throw new ExecutionException(new IOException("no record"));
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetT.getFutureResponse().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetT.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } else {
@@ -113,7 +113,7 @@ public class Q14 {
 		} else {
 		    throw new ExecutionException(new IOException("no record"));
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetB.getFutureResponse().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetB.getResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } else {

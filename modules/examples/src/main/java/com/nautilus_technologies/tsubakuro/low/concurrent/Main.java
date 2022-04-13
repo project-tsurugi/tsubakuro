@@ -29,7 +29,7 @@ public final class Main {
             }
         }
         resultSet.close();
-	var r = resultSet.getFutureResponse().get();
+	var r = resultSet.getResponse().get();
         if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(r.getResultCase())) {
             throw new IOException("select error");
         }

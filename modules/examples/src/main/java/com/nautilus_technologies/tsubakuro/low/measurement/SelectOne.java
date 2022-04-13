@@ -83,7 +83,7 @@ public class SelectOne extends Thread {
 		try {
 		    if (!Objects.isNull(resultSet2)) {
 			if (!resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -93,13 +93,13 @@ public class SelectOne extends Thread {
 			resultSet2.nextColumn();
 			var dTax = resultSet2.getFloat8();
 			if (resultSet2.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {

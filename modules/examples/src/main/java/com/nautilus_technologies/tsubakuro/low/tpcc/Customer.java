@@ -33,7 +33,7 @@ public final class Customer {
 	try {
 	    if (!Objects.isNull(resultSet1)) {
 		if (!resultSet1.nextRecord()) {
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		    throw new ExecutionException(new IOException("no record"));
@@ -41,13 +41,13 @@ public final class Customer {
 		resultSet1.nextColumn();
 		nameCnt = resultSet1.getInt8();
 		if (resultSet1.nextRecord()) {
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		    throw new ExecutionException(new IOException("found multiple records"));
 		}
 	    }
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
 	    }
 	} catch (ExecutionException e) {
@@ -79,7 +79,7 @@ public final class Customer {
 		}
 		for (long i = 0; i < (nameCnt / 2); i++) {
 		    if (!resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -88,7 +88,7 @@ public final class Customer {
 		resultSet2.nextColumn();
 		rv = resultSet2.getInt8();
 	    }
-	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
+	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
 		throw new ExecutionException(new IOException("SQL error"));
 	    }
 	    return rv;

@@ -245,7 +245,7 @@ public class ResultSetMock implements ResultSet {
 	throw new IOException("someshing wrong");
     }
 
-    public Future<ResponseProtos.ResultOnly> getFutureResponse() {
+    public Future<ResponseProtos.ResultOnly> getResponse() {
 	return futureResponse;
     }
 

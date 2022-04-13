@@ -91,7 +91,7 @@ public class SelectMulti extends Thread {
 			    profile.records++;
 			}
                     }
-                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
+                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new ExecutionException(new IOException("SQL error"));
                     }
                 } catch (ExecutionException e) {
