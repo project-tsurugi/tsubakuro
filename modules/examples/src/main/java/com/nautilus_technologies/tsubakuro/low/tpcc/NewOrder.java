@@ -219,11 +219,11 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid))
 		.build();
 	    var future1 = transaction.executeQuery(prepared1, ps1);
-	    var resultSet1 = future1.getLeft().get();
+	    var resultSet1 = future1.get();
 	    try {
 		if (!Objects.isNull(resultSet1)) {
 		    if (!resultSet1.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -237,15 +237,13 @@ public class NewOrder {
 		    resultSet1.nextColumn();
 		    cCredit = resultSet1.getCharacter();
 		    if (resultSet1.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet1.close();		    
-		    resultSet1 = null;
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -256,6 +254,7 @@ public class NewOrder {
 	    } finally {
 		if (!Objects.isNull(resultSet1)) {
 		    resultSet1.close();
+		    resultSet1 = null;
 		}
 	    }
 
@@ -265,11 +264,11 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
 	    var future2 = transaction.executeQuery(prepared2, ps2);
-	    var resultSet2 = future2.getLeft().get();
+	    var resultSet2 = future2.get();
 	    try {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("no record"));
@@ -279,15 +278,13 @@ public class NewOrder {
 		    resultSet2.nextColumn();
 		    dTax = resultSet2.getFloat8();
 		    if (resultSet2.nextRecord()) {
-			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
 			    throw new ExecutionException(new IOException("SQL error"));
 			}
 			throw new ExecutionException(new IOException("found multiple records"));
 		    }
-		    resultSet2.close();
-		    resultSet2 = null;
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future2.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getFutureResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } catch (ExecutionException e) {
@@ -298,6 +295,7 @@ public class NewOrder {
 	    } finally {
 		if (!Objects.isNull(resultSet2)) {
 		    resultSet2.close();
+		    resultSet2 = null;
 		}
 	    }
 
@@ -363,11 +361,11 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid))
 		    .build();
 		var future6 = transaction.executeQuery(prepared6, ps6);
-		var resultSet6 = future6.getLeft().get();
+		var resultSet6 = future6.get();
 		try {
 		    if (!Objects.isNull(resultSet6)) {
 			if (!resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -379,15 +377,13 @@ public class NewOrder {
 			resultSet6.nextColumn();
 			iData = resultSet6.getCharacter();
 			if (resultSet6.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet6.close();
-			resultSet6 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {
@@ -395,6 +391,7 @@ public class NewOrder {
 		} finally {
 		    if (!Objects.isNull(resultSet6)) {
 			resultSet6.close();
+			resultSet6 = null;
 		    }
 		}
 
@@ -404,11 +401,11 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
 		    .build();
 		var future7 = transaction.executeQuery(prepared7, ps7);
-		var resultSet7 = future7.getLeft().get();
+		var resultSet7 = future7.get();
 		try {
 		    if (!Objects.isNull(resultSet7)) {
 			if (!resultSet7.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -422,15 +419,13 @@ public class NewOrder {
 			    sDistData[i] = resultSet7.getCharacter();
 			}
 			if (resultSet7.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet7.close();
-			resultSet7 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future7.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getFutureResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
 		} catch (ExecutionException e) {
@@ -439,6 +434,7 @@ public class NewOrder {
 		} finally {
 		    if (!Objects.isNull(resultSet7)) {
 			resultSet7.close();
+			resultSet7 = null;
 		    }
 		}
 

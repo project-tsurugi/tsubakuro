@@ -79,24 +79,22 @@ public class SelectLimitOne extends Thread {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
                     .build();
                 var future1 = transaction.executeQuery(prepared1, ps1);
-                var resultSet1 = future1.getLeft().get();
+                var resultSet1 = future1.get();
 		now = System.nanoTime();
 		profile.head += (now - prev);
 		prev = now;
                 try {
                     if (!Objects.isNull(resultSet1)) {
                         if (!resultSet1.nextRecord()) {
-                            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+                            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
                                 throw new ExecutionException(new IOException("SQL error"));
                             }
                             continue;  // noOid is exhausted, it's OK and continue this transaction
                         }
                         resultSet1.nextColumn();
                         var noOid = resultSet1.getInt8();
-                        resultSet1.close();
-                        resultSet1 = null;
                     }
-                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future1.getRight().get().getResultCase())) {
+                    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getFutureResponse().get().getResultCase())) {
                         throw new ExecutionException(new IOException("SQL error"));
                     }
                 } catch (ExecutionException e) {
@@ -108,6 +106,7 @@ public class SelectLimitOne extends Thread {
                 } finally {
                     if (!Objects.isNull(resultSet1)) {
                         resultSet1.close();
+			resultSet1 = null;
                     }
                 }
 		now = System.nanoTime();

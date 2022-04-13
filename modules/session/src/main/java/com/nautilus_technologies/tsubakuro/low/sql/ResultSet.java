@@ -1,7 +1,9 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
+import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 /**
@@ -126,4 +128,10 @@ public interface ResultSet extends Closeable {
      * @throws IOException error occurred in checking column data
      */
     boolean nullable() throws IOException;
+
+    /**
+     * Get a Future of the response returned from the SQL service
+     * @return a Future of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     */
+    Future<ResponseProtos.ResultOnly> getFutureResponse();
 }

@@ -220,8 +220,7 @@ class SessionImplTest {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999)).build();
 
 	    Throwable exception = assertThrows(IOException.class, () -> {
-		    var pair = transaction.executeQuery(preparedStatement, ps);
-		    var resultSet = pair.getLeft().get();
+		    var resultSet = transaction.executeQuery(preparedStatement, ps).get();
 		});
 	    assertEquals("already closed", exception.getMessage());
 

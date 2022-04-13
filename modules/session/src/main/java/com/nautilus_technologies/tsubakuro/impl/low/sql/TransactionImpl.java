@@ -8,7 +8,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
 import java.nio.file.Path;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -58,11 +57,10 @@ public class TransactionImpl implements Transaction {
     /**
      * Request executeQuery to the SQL service
      * @param sql sql text for the command
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResultSet which is a processing result of the SQL service
      * @throws IOException error occurred in execute query by the SQL service
      */
-    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(String sql) throws IOException {
+    public Future<ResultSet> executeQuery(String sql) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
@@ -70,9 +68,9 @@ public class TransactionImpl implements Transaction {
 					.setTransactionHandle(transaction)
 					.setSql(sql));
 	if (!Objects.isNull(pair.getLeft())) {
-	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	    return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
 	}
-	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+	return new FutureResultSetImpl(pair.getRight());
     };
 
     /**
@@ -106,11 +104,10 @@ public class TransactionImpl implements Transaction {
      * Request executeQuery to the SQL service
      * @param preparedStatement prepared statement for the command
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResultSet which is a processing result of the SQL service
      * @throws IOException error occurred in execute query by the SQL service
      */
-    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
@@ -119,12 +116,12 @@ public class TransactionImpl implements Transaction {
 					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 					.setParameters(parameterSet));
 	if (!Objects.isNull(pair.getLeft())) {
-	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	    return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
 	}
-	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+	return new FutureResultSetImpl(pair.getRight());
     }
     @Deprecated
-    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
+    public Future<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
 	if (Objects.isNull(sessionLinkImpl)) {
 	    throw new IOException("already closed");
 	}
@@ -133,9 +130,9 @@ public class TransactionImpl implements Transaction {
 					.setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
 					.setParameters(parameterSet));
 	if (!Objects.isNull(pair.getLeft())) {
-	    return Pair.of(new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl), pair.getRight());
+	    return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
 	}
-	return Pair.of((FutureResultSetImpl) null, pair.getRight());
+	return new FutureResultSetImpl(pair.getRight());
     }
 
     /**
@@ -175,11 +172,10 @@ public class TransactionImpl implements Transaction {
      * @param preparedStatement prepared statement used in the dump operation
      * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
      * @param directory the directory path where dumped files are placed
-     * @return a Pair of a Future of ResultSet processing result of the SQL service
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of ResultSet which is a processing result of the SQL service
      * @throws IOException error occurred in execute dump by the SQL service
      */
-    public Pair<Future<ResultSet>, Future<ResponseProtos.ResultOnly>> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException {
+    public Future<ResultSet> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException {
 	//	if (Objects.isNull(sessionLinkImpl)) {
 	//	    throw new IOException("already closed");
 	//	}
@@ -193,9 +189,9 @@ public class TransactionImpl implements Transaction {
 	//	}
 	//	return Pair.of((FutureResultSetImpl) null, pair.getRight());
 	if (directory.toString().contains("NG")) {
-	    return Pair.of(new FutureResultSetMock(false), new FutureResponseMock(false));
+	    return new FutureResultSetMock(false);
 	}
-	return Pair.of(new FutureResultSetMock(true), new FutureResponseMock(true));
+	return new FutureResultSetMock(true);
     }
 
     /**

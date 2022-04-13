@@ -1,7 +1,9 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
+import java.util.concurrent.Future;
 import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
@@ -61,13 +63,15 @@ public class ResultSetMock implements ResultSet {
     private int columnIndex;
     private int numRecords;
     private boolean columnReady;
+    private Future<ResponseProtos.ResultOnly> futureResponse;
     
     /**
      * Class constructor, called from FutureResultSetMock.
      */
-    public ResultSetMock() {
+    public ResultSetMock(boolean isOk) {
 	this.recordMeta = new RecordMetaImpl();
 	this.numRecords = 0;
+	this.futureResponse = new FutureResponseMock(isOk);
     }
 
     public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
@@ -239,6 +243,10 @@ public class ResultSetMock implements ResultSet {
 	    return FILE_NAME;
 	}
 	throw new IOException("someshing wrong");
+    }
+
+    public Future<ResponseProtos.ResultOnly> getFutureResponse() {
+	return futureResponse;
     }
 
     /**

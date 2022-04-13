@@ -163,11 +163,11 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		    .build();
 		var future3 = transaction.executeQuery(prepared3, ps3);
-		var resultSet3 = future3.getLeft().get();
+		var resultSet3 = future3.get();
 		try {
 		    if (Objects.nonNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -181,15 +181,13 @@ public class OrderStatus {
 			resultSet3.nextColumn();
 			cLast = resultSet3.getCharacter();
 			if (resultSet3.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet3.close();
-			resultSet3 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future3.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getFutureResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -200,6 +198,7 @@ public class OrderStatus {
                 } finally {
 		    if (Objects.nonNull(resultSet3)) {
 			resultSet3.close();
+			resultSet3 = null;
 		    }
                 }
 
@@ -210,21 +209,19 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId))
 		    .build();
 		var future4 = transaction.executeQuery(prepared4, ps4);
-		var resultSet4 = future4.getLeft().get();
+		var resultSet4 = future4.get();
 		try {
 		    if (Objects.nonNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future4.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
 			}
 			resultSet4.nextColumn();
 			oId = resultSet4.getInt8();
-			resultSet4.close();
-			resultSet4 = null;
 		    }
-		    var status4 = future4.getRight().get();
+		    var status4 = resultSet4.getFutureResponse().get();
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
 			if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
 			    if (profile.inconsistentIndexCount == 0) {
@@ -242,6 +239,7 @@ public class OrderStatus {
                 } finally {
 		    if (Objects.nonNull(resultSet4)) {
 			resultSet4.close();
+			resultSet4 = null;
 		    }
                 }
 
@@ -252,11 +250,11 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId))
 		    .build();
 		var future5 = transaction.executeQuery(prepared5, ps5);
-		var resultSet5 = future5.getLeft().get();
+		var resultSet5 = future5.get();
 		try {
 		    if (Objects.nonNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("no record"));
@@ -270,15 +268,13 @@ public class OrderStatus {
 			resultSet5.nextColumn();
 			oOlCnt = resultSet5.getInt8();
 			if (resultSet5.nextRecord()) {
-			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
+			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
 				throw new ExecutionException(new IOException("SQL error"));
 			    }
 			    throw new ExecutionException(new IOException("found multiple records"));
 			}
-			resultSet5.close();
-			resultSet5 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future5.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getFutureResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -289,6 +285,7 @@ public class OrderStatus {
                 } finally {
 		    if (Objects.nonNull(resultSet5)) {
 			resultSet5.close();
+			resultSet5 = null;
 		    }
                 }
 
@@ -299,7 +296,7 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
 		    .build();
 		var future6 = transaction.executeQuery(prepared6, ps6);
-		var resultSet6 = future6.getLeft().get();
+		var resultSet6 = future6.get();
 		try {
 		    if (Objects.nonNull(resultSet6)) {
 			int i = 0;
@@ -318,10 +315,8 @@ public class OrderStatus {
 			    }
 			    i++;
 			}
-			resultSet6.close();
-			resultSet6 = null;
 		    }
-		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(future6.getRight().get().getResultCase())) {
+		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getFutureResponse().get().getResultCase())) {
 			throw new ExecutionException(new IOException("SQL error"));
 		    }
                 } catch (ExecutionException e) {
@@ -336,6 +331,7 @@ public class OrderStatus {
                 } finally {
 		    if (Objects.nonNull(resultSet6)) {
 			resultSet6.close();
+			resultSet6 = null;
 		    }
                 }
 	    }

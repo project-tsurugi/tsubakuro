@@ -69,7 +69,7 @@ public class Q14 {
 	long t, b;
 
 	var futureT = transaction.executeQuery(preparedT, ps.build());
-	var resultSetT = futureT.getLeft().get();
+	var resultSetT = futureT.get();
 	try {
 	    if (Objects.nonNull(resultSetT)) {
 		if (resultSetT.nextRecord()) {
@@ -83,7 +83,7 @@ public class Q14 {
 		} else {
 		    throw new ExecutionException(new IOException("no record"));
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(futureT.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetT.getFutureResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } else {
@@ -98,7 +98,7 @@ public class Q14 {
 	}
 
 	var futureB = transaction.executeQuery(preparedB, ps.build());
-	var resultSetB = futureB.getLeft().get();
+	var resultSetB = futureB.get();
 	try {
 	    if (Objects.nonNull(resultSetB)) {
 		if (resultSetB.nextRecord()) {
@@ -113,7 +113,7 @@ public class Q14 {
 		} else {
 		    throw new ExecutionException(new IOException("no record"));
 		}
-		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(futureB.getRight().get().getResultCase())) {
+		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetB.getFutureResponse().get().getResultCase())) {
 		    throw new ExecutionException(new IOException("SQL error"));
 		}
 	    } else {
