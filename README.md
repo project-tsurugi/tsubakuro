@@ -34,7 +34,7 @@ Build and deploy the java and native libraries into Maven Local Repository.
 ### install only java libraries
 Build and deploy only the java libraries into Maven Local Repository.
 ```
-./gradlew PublishMavenJavaPublicationToMavenLocal -x ipc:cmakeBuild
+./gradlew PublishMavenJavaPublicationToMavenLocal
 ```
 
 ### generate all(aggregated) Javadoc
