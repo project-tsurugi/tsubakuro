@@ -4,6 +4,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.SessionWireImpl;
@@ -32,6 +33,8 @@ public final class IpcConnectorImpl implements Connector {
     }
     
     public Future<SessionWire> connect() throws IOException {
+        LoggerFactory.getLogger(IpcConnectorImpl.class).debug("will connect to " + name);
+
 	handle = getConnectorNative(name);
 	id = requestNative(handle);
 	return new FutureSessionWireImpl(this);

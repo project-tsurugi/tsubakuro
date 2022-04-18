@@ -8,6 +8,8 @@ import java.util.Queue;
 import java.util.Objects;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -37,6 +39,8 @@ public class SessionWireImpl implements SessionWire {
     private static native void unReceiveNative(long responseHandle);
     private static native void releaseNative(long responseHandle);
     private static native void closeNative(long sessionHandle);
+
+    final Logger logger = LoggerFactory.getLogger(SessionWireImpl.class);
 
     static {
 	System.loadLibrary("wire");
@@ -89,6 +93,7 @@ public class SessionWireImpl implements SessionWire {
 	this.dbName = dbName;
 	this.sessionID = sessionID;
 	this.queue = new ArrayDeque<>();
+        logger.debug("begin Session via stream, id = " + sessionID);
     }
 
     /**
@@ -115,6 +120,7 @@ public class SessionWireImpl implements SessionWire {
 	synchronized (this) {
 	    handle = sendNative(wireHandle, req);
 	}
+	logger.debug("send " + request + ", handle = " + handle);
 	if (handle != 0) {
 	    futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
 	} else {
@@ -139,6 +145,7 @@ public class SessionWireImpl implements SessionWire {
 	synchronized (this) {
 	    handle = sendQueryNative(wireHandle, req);
 	}
+	logger.debug("send " + request + ", handle = " + handle);
 	if (handle != 0) {
 	    left.setResponseHandle(new ResponseWireHandleImpl(handle));
 	    right.setResponseHandle(new ResponseWireHandleImpl(handle));
@@ -160,6 +167,7 @@ public class SessionWireImpl implements SessionWire {
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
+	    logger.debug("receive " + response + ", hancle = " + handle);
 	    synchronized (this) {
 		releaseNative(responseHandle);
 		var entry = queue.peek();

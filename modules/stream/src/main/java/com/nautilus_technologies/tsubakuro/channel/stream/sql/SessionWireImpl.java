@@ -7,6 +7,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.Objects;
 import java.io.IOException;
+import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -75,6 +76,7 @@ public class SessionWireImpl implements SessionWire {
 	this.sessionID = sessionID;
 	this.responseBox = streamWire.getResponseBox();
 	this.queue = new ArrayDeque<>();
+	LoggerFactory.getLogger(SessionWireImpl.class).debug("begin Session via stream, id = " + sessionID);
     }
 
     /**
