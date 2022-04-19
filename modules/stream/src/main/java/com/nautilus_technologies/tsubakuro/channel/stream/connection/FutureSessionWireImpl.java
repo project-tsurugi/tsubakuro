@@ -29,7 +29,7 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	    var rv = streamWire.getString();
 	    streamWire.release();
 	    if (rc == streamWire.RESPONSE_SESSION_HELLO_OK) {
-		return new SessionWireImpl(streamWire, Integer.parseInt(rv));
+		return new SessionWireImpl(streamWire, Long.parseLong(rv));
 	    }
 	    return null;
 	} catch (IOException e) {
@@ -44,7 +44,7 @@ public class FutureSessionWireImpl implements Future<SessionWire> {
 	    var rv = streamWire.getString();
 	    streamWire.release();
 	    if (rc == streamWire.RESPONSE_SESSION_HELLO_OK) {
-		return new SessionWireImpl(streamWire, Integer.parseInt(rv));
+		return new SessionWireImpl(streamWire, Long.parseLong(rv));
 	    }
 	    return null;
 	} catch (Exception e) {
