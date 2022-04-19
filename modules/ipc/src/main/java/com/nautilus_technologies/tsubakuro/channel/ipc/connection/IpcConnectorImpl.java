@@ -33,7 +33,7 @@ public final class IpcConnectorImpl implements Connector {
     }
     
     public Future<SessionWire> connect() throws IOException {
-        LoggerFactory.getLogger(IpcConnectorImpl.class).debug("will connect to " + name);
+        LoggerFactory.getLogger(IpcConnectorImpl.class).trace("will connect to " + name);
 
 	handle = getConnectorNative(name);
 	id = requestNative(handle);

@@ -21,7 +21,7 @@ public final class StreamConnectorImpl implements Connector {
     }
 
     public Future<SessionWire> connect() throws IOException {
-	LoggerFactory.getLogger(StreamConnectorImpl.class).debug("will connect to " + hostname + ":" + port);
+	LoggerFactory.getLogger(StreamConnectorImpl.class).trace("will connect to " + hostname + ":" + port);
 
 	var streamWire = new StreamWire(hostname, port);
 	streamWire.hello();

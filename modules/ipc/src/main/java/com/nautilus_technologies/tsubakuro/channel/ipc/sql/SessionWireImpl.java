@@ -93,7 +93,7 @@ public class SessionWireImpl implements SessionWire {
 	this.dbName = dbName;
 	this.sessionID = sessionID;
 	this.queue = new ArrayDeque<>();
-        logger.debug("begin Session via stream, id = " + sessionID);
+        logger.trace("begin Session via stream, id = " + sessionID);
     }
 
     /**
@@ -120,7 +120,7 @@ public class SessionWireImpl implements SessionWire {
 	synchronized (this) {
 	    handle = sendNative(wireHandle, req);
 	}
-	logger.debug("send " + request + ", handle = " + handle);
+	logger.trace("send " + request + ", handle = " + handle);
 	if (handle != 0) {
 	    futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
 	} else {
@@ -145,7 +145,7 @@ public class SessionWireImpl implements SessionWire {
 	synchronized (this) {
 	    handle = sendQueryNative(wireHandle, req);
 	}
-	logger.debug("send " + request + ", handle = " + handle);
+	logger.trace("send " + request + ", handle = " + handle);
 	if (handle != 0) {
 	    left.setResponseHandle(new ResponseWireHandleImpl(handle));
 	    right.setResponseHandle(new ResponseWireHandleImpl(handle));
@@ -167,7 +167,7 @@ public class SessionWireImpl implements SessionWire {
 	try {
 	    var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
 	    var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
-	    logger.debug("receive " + response + ", hancle = " + handle);
+	    logger.trace("receive " + response + ", hancle = " + handle);
 	    synchronized (this) {
 		releaseNative(responseHandle);
 		var entry = queue.peek();

@@ -76,7 +76,7 @@ public class SessionWireImpl implements SessionWire {
 	this.sessionID = sessionID;
 	this.responseBox = streamWire.getResponseBox();
 	this.queue = new ArrayDeque<>();
-	LoggerFactory.getLogger(SessionWireImpl.class).debug("begin Session via stream, id = " + sessionID);
+	LoggerFactory.getLogger(SessionWireImpl.class).trace("begin Session via stream, id = " + sessionID);
     }
 
     /**

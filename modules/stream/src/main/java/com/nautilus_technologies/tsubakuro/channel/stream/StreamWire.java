@@ -76,7 +76,7 @@ public class StreamWire {
         synchronized (this) {
 	    outStream.write(header, 0, header.length);
         }
-	logger.debug("send SESSION_HELLO");
+	logger.trace("send SESSION_HELLO");
     }
     public void send(int s, byte[] payload) throws IOException {  // SESSION_PAYLOAD
         int length = (int) payload.length;
@@ -96,7 +96,7 @@ public class StreamWire {
                 outStream.write(payload, 0, length);
             }
         }
-	logger.debug("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
+	logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
     }
     public void send(byte i, int s, String payload) throws IOException {  // RESULT_SET_HELLO
         int length = (int) payload.length();
@@ -116,7 +116,7 @@ public class StreamWire {
                 outStream.writeBytes(payload);
             }
         }
-	logger.debug("send RESULT_SET_HELLO, name = " + payload + ", slot = " + s);
+	logger.trace("send RESULT_SET_HELLO, name = " + payload + ", slot = " + s);
     }
 
     byte strip(int i) {
@@ -157,16 +157,16 @@ public class StreamWire {
                 bytes = null;
             }
             if (info == RESPONSE_SESSION_PAYLOAD) {
-		logger.debug("receive SESSION_PAYLOAD, length = " + length + ", slot = ", slot);
+		logger.trace("receive SESSION_PAYLOAD, length = " + length + ", slot = ", slot);
                 responseBox.push(slot, bytes);
             } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
-		logger.debug("receive RESULT_SET_PAYLOAD, length = " + length + ", slot = ", slot, ", writer = ", writer);
+		logger.trace("receive RESULT_SET_PAYLOAD, length = " + length + ", slot = ", slot, ", writer = ", writer);
                 resultSetBox.push(slot, writer, bytes);
             } else if ((info == RESPONSE_RESULT_SET_HELLO_OK) || (info == RESPONSE_RESULT_SET_HELLO_NG)) {
-		logger.debug("receive RESULT_SET_HELLO_" + ((info == RESPONSE_RESULT_SET_HELLO_OK) ? "OK" : "NG") + ", slot = ", slot);
+		logger.trace("receive RESULT_SET_HELLO_" + ((info == RESPONSE_RESULT_SET_HELLO_OK) ? "OK" : "NG") + ", slot = ", slot);
                 resultSetBox.push(slot, info);
             } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
-		logger.debug("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+		logger.trace("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
                 valid = true;
             } else {
                 throw new IOException("invalid info in the response");
