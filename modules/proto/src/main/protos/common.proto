@@ -22,6 +22,7 @@ message Transaction {
 /* For prepared statement handle. */
 message PreparedStatement {
   uint64 handle = 1;
+  bool has_result_records = 2;
 }
 
 /* For data types that the 'tsurugi' supports. */
