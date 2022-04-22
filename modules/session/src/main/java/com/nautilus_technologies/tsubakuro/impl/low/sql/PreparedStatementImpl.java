@@ -34,6 +34,10 @@ public class PreparedStatementImpl implements PreparedStatement {
 	return handle;
     }
 
+    public boolean hasResultRecords() {
+        return handle.getHasResultRecords();
+    }
+
     /**
      * set timeout to close(), which won't timeout if this is not performed.
      * @param t time length until the close operation timeout

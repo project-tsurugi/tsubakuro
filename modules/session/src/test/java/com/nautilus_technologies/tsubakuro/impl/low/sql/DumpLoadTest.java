@@ -36,6 +36,9 @@ class DumpLoadTest {
 	public CommonProtos.PreparedStatement getHandle() throws IOException {
 	    return null;
 	}
+	public boolean hasResultRecords() {
+	    return false;
+	}
 	public void setCloseTimeout(long t, TimeUnit u) {
 	}
 
