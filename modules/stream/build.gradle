@@ -3,6 +3,8 @@ plugins {
 }
 
 dependencies {
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
     api 'org.slf4j:slf4j-api:1.7.32'
     implementation 'org.msgpack:msgpack-core:0.8.24'
     testImplementation 'org.slf4j:slf4j-nop:1.7.32'
