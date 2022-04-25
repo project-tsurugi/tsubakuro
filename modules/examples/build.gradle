@@ -82,3 +82,11 @@ tasks.register('runTpch', JavaExec) {
     mainClass = 'com.nautilus_technologies.tsubakuro.low.tpch.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
+
+tasks.register('runDumpLoad', JavaExec) {
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    mainClass = 'com.nautilus_technologies.tsubakuro.low.dumpload.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+}
