@@ -47,12 +47,13 @@ public class ServerStreamWire {
         }
     }
 
-    public void sendRecordHelloOk(int s) throws IOException {
+    public void sendRecordHello(int s, String name) throws IOException {
 	byte[] header = new byte[6];
-        int length = 0;
-	//	System.out.println("sendRecordHelloOk, slot = " + s);
+	byte[] payload = name.getBytes("UTF-8");
+	int length = payload.length;
+	//	System.out.println("sendRecordByeOk, slot = " + s);
 
-	header[0] = StreamWire.RESPONSE_RESULT_SET_HELLO_OK;  // info
+	header[0] = StreamWire.RESPONSE_RESULT_SET_HELLO;  // info
 	header[1] = strip(s);  // slot
 	header[2] = strip(length);
 	header[3] = strip(length >> 8);
@@ -61,7 +62,8 @@ public class ServerStreamWire {
 
 	synchronized (this) {
 	    outStream.write(header, 0, header.length);
-        }
+	    outStream.write(payload, 0, length);
+	}
 	sendOk = true;
     }
 
