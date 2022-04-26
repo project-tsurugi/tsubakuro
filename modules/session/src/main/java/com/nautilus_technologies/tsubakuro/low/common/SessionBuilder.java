@@ -27,7 +27,7 @@ public class SessionBuilder {
 
     private final Connector connector;
 
-    private Credential credential = NullCredential.INSTANCE;
+    private Credential connectionCredential = NullCredential.INSTANCE;
 
     private SessionBuilder(Connector connector) {
         assert connector != null;
@@ -71,10 +71,9 @@ public class SessionBuilder {
      * @param credential the credential information
      * @return this
      */
-    @SuppressWarnings("hiding")
     public SessionBuilder withCredential(@Nonnull Credential credential) {
         Objects.requireNonNull(credential);
-        this.credential = credential;
+        this.connectionCredential = credential;
         return this;
     }
 
@@ -89,7 +88,7 @@ public class SessionBuilder {
      * @see #create(long, TimeUnit)
      */
     public Session create() throws IOException, ServerException, InterruptedException {
-        Future<SessionWire> fWire = connector.connect(credential);
+        Future<SessionWire> fWire = connector.connect(connectionCredential);
         try {
             return create0(fWire.get());
         } catch (ExecutionException e) {
@@ -110,7 +109,7 @@ public class SessionBuilder {
     public Session create(long timeout, @Nonnull TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
-        Future<SessionWire> fWire = connector.connect(credential);
+        Future<SessionWire> fWire = connector.connect(connectionCredential);
         try {
             return create0(fWire.get(timeout, unit));
         } catch (ExecutionException e) {
