@@ -23,7 +23,7 @@ import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
  * @see #connect(String)
  * @see #create()
  */
-public class SessionBuilder {
+public final class SessionBuilder {
 
     private final Connector connector;
 
