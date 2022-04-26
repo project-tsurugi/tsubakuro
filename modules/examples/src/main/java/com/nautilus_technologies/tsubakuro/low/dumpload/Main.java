@@ -14,20 +14,21 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 
 public final class Main {
     private Main() {
     }
 
-    //    private static String dbName = "localhost:";
-    private static String dbName = "tateyama";
+    //    private static String url = "ipc:tateyama";
+    private static String url = "tcp://localhost:12345/";
 
     public static void main(String[] args) {
         try {
             var session = new SessionImpl();
-            session.connect(new ConnectorImpl(dbName).connect().get());
+            session.connect(Connector.create(url).connect().get());
 
             Future<Transaction> fTransactionCT = session.createTransaction();
             try (Transaction transaction = fTransactionCT.get()) {

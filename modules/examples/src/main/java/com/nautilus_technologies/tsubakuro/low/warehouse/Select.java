@@ -13,9 +13,8 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 public class Select {
     Session session;
     
-    public Select(Connector connector, Session session) throws IOException, ExecutionException, InterruptedException {
-	this.session = session;
-	this.session.connect(connector.connect().get());
+    public Select(Session session) throws IOException, ExecutionException, InterruptedException {
+        this.session = session;
     }
     
     void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
