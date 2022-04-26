@@ -307,7 +307,7 @@ public:
         response& operator = (response const&) = delete;
         response& operator = (response&&) = delete;
 
-        std::pair<char*, std::size_t> recv(long timeout = 0) {
+        std::pair<char*, std::size_t> recv(std::int64_t timeout = 0) {
             if (!(written_ > read_)) {
                 if (timeout == 0) {
                     boost::interprocess::scoped_lock lock(m_restored_);
@@ -499,7 +499,7 @@ public:
         /**
          * @brief provide the current chunk to MsgPack.
          */
-        std::pair<char*, std::size_t> get_chunk(char* base, long timeout = 0) {
+        std::pair<char*, std::size_t> get_chunk(char* base, std::int64_t timeout = 0) {
             if (chunk_end_ < poped_) {
                 chunk_end_ = poped_;
             }
@@ -562,6 +562,8 @@ public:
         bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
             return handle == buffer_handle_;
         }
+        void reset_handle() { buffer_handle_ = 0; }
+        [[nodiscard]] boost::interprocess::managed_shared_memory::handle_t get_handle() const { return buffer_handle_; }
 
     private:
         void write(char* base, const char* from, std::size_t length) {
@@ -661,6 +663,7 @@ public:
     void release(unidirectional_simple_wire* wire) {
         char* buffer = wire->get_bip_address(managed_shm_ptr_);
 
+        unidirectional_simple_wires_.at(search_wire(wire)).reset_handle();
         if (reserved_ == nullptr) {
             reserved_ = buffer;
         } else {
@@ -669,7 +672,7 @@ public:
         count_using_--;
     }
 
-    unidirectional_simple_wire* active_wire(long timeout = 0) {
+    unidirectional_simple_wire* active_wire(std::int64_t timeout = 0) {
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
@@ -765,6 +768,14 @@ private:
         }
         std::abort();  // FIXME
     }
+    std::size_t search_wire(unidirectional_simple_wire* wire) {
+        for (std::size_t index = 0; index < next_index_; index++) {
+            if (unidirectional_simple_wires_.at(index).equal(wire->get_handle())) {
+                return index;
+            }
+        }
+        std::abort();  // FIXME
+    }
 
     /**
      * @brief notify the arrival of a record
@@ -829,7 +840,7 @@ public:
         }
         return rv;
     }
-    bool check(std::size_t n, bool wait = false, long timeout = 0) {
+    bool check(std::size_t n, bool wait = false, std::int64_t timeout = 0) {
         if (!wait) {
             return accepted_ >= n;
         }
