@@ -15,7 +15,7 @@ public enum SqlServiceCode implements DiagnosticCode {
     ;
     private final int codeNumber;
 
-    private SqlServiceCode(int codeNumber) {
+    SqlServiceCode(int codeNumber) {
         this.codeNumber = codeNumber;
     }
 

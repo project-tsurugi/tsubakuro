@@ -15,7 +15,7 @@ public enum DatastoreServiceCode implements DiagnosticCode {
     ;
     private final int codeNumber;
 
-    private DatastoreServiceCode(int codeNumber) {
+    DatastoreServiceCode(int codeNumber) {
         this.codeNumber = codeNumber;
     }
 
