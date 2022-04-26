@@ -25,7 +25,7 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
     
-import org.junit.jupiter.api.Test;
+// import org.junit.jupiter.api.Test;
 
 class DumpLoadTest {
     ResponseProtos.Response nextResponse;
@@ -112,7 +112,6 @@ class DumpLoadTest {
 	}
     }
     
-    @Test
     void loadOK() {
 	SessionImpl session;
         try {
@@ -151,7 +150,6 @@ class DumpLoadTest {
         }
     }
 
-    @Test
     void loadNG() {
 	SessionImpl session;
         try {
@@ -190,7 +188,6 @@ class DumpLoadTest {
         }
     }
 
-    @Test
     void dumpOK() {
 	SessionImpl session;
         try {
@@ -244,7 +241,6 @@ class DumpLoadTest {
         }
     }
 
-    @Test
     void dumpNG() {
 	SessionImpl session;
         try {

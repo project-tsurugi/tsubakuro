@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Objects;
+// import java.util.Objects;
 import java.util.ArrayDeque;
 import com.nautilus_technologies.tsubakuro.channel.stream.ServerStreamWire;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
@@ -45,12 +45,7 @@ public class ServerWireImpl implements Closeable {
 		serverStreamWire = new ServerStreamWire(serverSocket.accept());
 		//		System.out.println("==== accepted ====");
 		while (serverStreamWire.receive()) {
-		    if (serverStreamWire.getInfo() == 3) {  // StreamWire.REQUEST_RESULT_SET_HELLO = 3
-			serverStreamWire.sendRecordHelloOk(serverStreamWire.getSlot());
-			if (Objects.nonNull(sender)) {
-			    sender.notifyEvent();
-			}
-		    } else {
+		    if (serverStreamWire.getInfo() != 3) {  // StreamWire.REQUEST_RESULT_SET_BYE_OK = 3
 			receiveQueue.add(new Message(serverStreamWire.getBytes()));
 		    }
 		}
@@ -65,10 +60,14 @@ public class ServerWireImpl implements Closeable {
     }
 
     private class SendWorker extends Thread {
-	SendWorker() {
+	String name;
+
+	SendWorker(String name) {
+	    this.name = name;
 	}
 	public void run() {
 	    try {
+		serverStreamWire.sendRecordHello(0, name);
 		while (true) {
 		    if (serverStreamWire.isSnedOk()) {
 			while (!sendQueue.isEmpty()) {
@@ -153,7 +152,7 @@ public class ServerWireImpl implements Closeable {
     }
 
     public long createRSL(String name) throws IOException {
-	sender = new SendWorker();
+	sender = new SendWorker(name);
 	sender.start();
 	return 0;
     }

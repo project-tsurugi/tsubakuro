@@ -27,14 +27,14 @@ public class StreamWire {
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
-    private static final byte REQUEST_RESULT_SET_HELLO = 3;
+    private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
     public static final byte RESPONSE_SESSION_HELLO_OK = 3;
     public static final byte RESPONSE_SESSION_HELLO_NG = 4;
-    public static final byte RESPONSE_RESULT_SET_HELLO_OK = 5;
-    public static final byte RESPONSE_RESULT_SET_HELLO_NG = 6;
+    public static final byte RESPONSE_RESULT_SET_HELLO = 5;
+    public static final byte RESPONSE_RESULT_SET_BYE = 6;
 
     final Logger logger = LoggerFactory.getLogger(StreamWire.class);
 
@@ -50,10 +50,7 @@ public class StreamWire {
     }
 
     public void hello() throws IOException {
-        send(REQUEST_SESSION_HELLO);
-    }
-    public void hello(String name, int s) throws IOException {
-        send(REQUEST_RESULT_SET_HELLO, s, name);
+        send(REQUEST_SESSION_HELLO, 0);
     }
     public boolean pull() throws IOException {
         return receive();
@@ -64,10 +61,13 @@ public class StreamWire {
     public ResultSetBox getResultSetBox() {
         return resultSetBox;
     }
+    public void sendResutSetByeOk(int slot) throws IOException {
+	send(REQUEST_RESULT_SET_BYE_OK, slot);
+    }
 
-    public void send(byte i) throws IOException {  // SESSION_HELLO
+    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
 	header[0] = i;  // info
-	header[1] = 0;  // slot
+	header[1] = (byte) s;  // slot
 	header[2] = 0;
 	header[3] = 0;
 	header[4] = 0;
@@ -98,31 +98,11 @@ public class StreamWire {
         }
 	logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
     }
-    public void send(byte i, int s, String payload) throws IOException {  // RESULT_SET_HELLO
-        int length = (int) payload.length();
-
-	header[0] = i;  // info
-	header[1] = strip(s);  // slot
-	header[2] = strip(length);
-	header[3] = strip(length >> 8);
-	header[4] = strip(length >> 16);
-	header[5] = strip(length >> 24);
-
-	synchronized (this) {
-	    outStream.write(header, 0, header.length);
-
-            if (length > 0) {
-                // payload送信
-                outStream.writeBytes(payload);
-            }
-        }
-	logger.trace("send RESULT_SET_HELLO, name = " + payload + ", slot = " + s);
-    }
 
     byte strip(int i) {
 	return (byte) (i & 0xff);
     }
-    
+
     public boolean receive() throws IOException {
         if (valid) {
             System.err.println("previous data is alive");
@@ -162,9 +142,14 @@ public class StreamWire {
             } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
 		logger.trace("receive RESULT_SET_PAYLOAD, length = " + length + ", slot = ", slot, ", writer = ", writer);
                 resultSetBox.push(slot, writer, bytes);
-            } else if ((info == RESPONSE_RESULT_SET_HELLO_OK) || (info == RESPONSE_RESULT_SET_HELLO_NG)) {
-		logger.trace("receive RESULT_SET_HELLO_" + ((info == RESPONSE_RESULT_SET_HELLO_OK) ? "OK" : "NG") + ", slot = ", slot);
-                resultSetBox.push(slot, info);
+            } else if (info == RESPONSE_RESULT_SET_HELLO) {
+		try {
+		    resultSetBox.pushHello(new String(bytes, "UTF-8"), slot);
+		} catch (UnsupportedEncodingException e) {
+		    throw new IOException(e);
+		}
+            } else if (info == RESPONSE_RESULT_SET_BYE) {
+                resultSetBox.pushBye(slot);
             } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
 		logger.trace("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
                 valid = true;
