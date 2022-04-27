@@ -8,6 +8,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.List;
 import java.util.ArrayList;
 import java.nio.file.Path;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -15,11 +18,9 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-    
+
 public final class Main {
     private Main() {
     }
@@ -28,13 +29,12 @@ public final class Main {
     private static String url = "tcp://localhost:12345/";
     
     public static void main(String[] args) {
-        try {
-        
-            Session session = new SessionImpl();
-            session.connect(Connector.create(url).connect().get());
+
+        try (Session session = SessionBuilder.connect(url)
+             .withCredential(new UsernamePasswordCredential("user", "pass"))
+             .create(10, TimeUnit.SECONDS)) {
             
             try (SqlClient client = SqlClient.attach(session)) {
-                
                 Future<Transaction> fTransactionCT = client.createTransaction();
                 try (Transaction transaction = fTransactionCT.get()) {
                     // create table
@@ -101,7 +101,7 @@ public final class Main {
             } catch (IOException | InterruptedException | ExecutionException | ServerException e) {
                 e.printStackTrace();
             }
-        } catch (IOException | InterruptedException | ExecutionException e) {
+        } catch (IOException | InterruptedException | TimeoutException | ServerException e) {
             e.printStackTrace();
         }
     }
