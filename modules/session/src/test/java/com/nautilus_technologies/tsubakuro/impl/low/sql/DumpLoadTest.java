@@ -22,8 +22,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
     
 // import org.junit.jupiter.api.Test;
 

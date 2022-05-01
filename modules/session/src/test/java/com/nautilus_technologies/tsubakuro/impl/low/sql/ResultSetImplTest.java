@@ -13,8 +13,8 @@ import org.msgpack.core.buffer.ByteBufferInput;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 import org.junit.jupiter.api.Test;
 
