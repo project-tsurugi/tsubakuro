@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+//FIXME: delete tests for generated sources
 class ResponseProtosTest {
 
     @Test
@@ -14,7 +15,7 @@ class ResponseProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -36,7 +37,7 @@ class ResponseProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -59,7 +60,7 @@ class ResponseProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -82,7 +83,7 @@ class ResponseProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -103,9 +104,9 @@ class ResponseProtosTest {
 	    .setPrepare(ResponseProtos.Prepare.newBuilder()
 			.setPreparedStatementHandle(CommonProtos.PreparedStatement.newBuilder().setHandle(456)))
 	    .build();
-	
+
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -128,7 +129,7 @@ class ResponseProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 
@@ -156,7 +157,7 @@ class ResponseProtosTest {
 			     ).build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    ResponseProtos.Response dst = ResponseProtos.Response.parseFrom(data);
 	    var recordMeta = dst.getExecuteQuery().getRecordMeta();

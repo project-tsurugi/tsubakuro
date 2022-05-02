@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+//FIXME: delete tests for generated sources
 class SchemaProtosTest {
 
     @Test
@@ -15,14 +16,14 @@ class SchemaProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    SchemaProtos.RecordMeta dst = SchemaProtos.RecordMeta.parseFrom(data);
 
-	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);	
+	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
 	    SchemaProtos.RecordMeta.Column v2 = dst.getColumnsList().get(1);
 	    SchemaProtos.RecordMeta.Column v3 = dst.getColumnsList().get(2);
-	
+
 	    assertAll(
 		      () -> assertEquals(v1.getName(), "v1"),
 		      () -> assertEquals(v1.getType(), CommonProtos.DataType.INT8),
@@ -48,14 +49,14 @@ class SchemaProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    SchemaProtos.RecordMeta dst = SchemaProtos.RecordMeta.parseFrom(data);
 
-	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);	
+	    SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
 	    SchemaProtos.RecordMeta.Column v2 = dst.getColumnsList().get(1);
 	    SchemaProtos.RecordMeta.Column v3 = dst.getColumnsList().get(2);
-	
+
 	    assertAll(
 		      () -> assertEquals(v1.getName(), ""),
 		      () -> assertEquals(v1.getType(), CommonProtos.DataType.INT8),
