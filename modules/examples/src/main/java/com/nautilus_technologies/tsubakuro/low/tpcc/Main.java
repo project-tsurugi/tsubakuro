@@ -1,17 +1,18 @@
 package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import java.util.ArrayList;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 
 public final class Main {
-    static long warehouses()  throws IOException, ExecutionException, InterruptedException {
+    static long warehouses()  throws IOException, ServerException, InterruptedException {
 	var connector = new ConnectorImpl(dbName);
 	var session = new SessionImpl();
 	session.connect(connector.connect().get());
@@ -100,7 +101,7 @@ public final class Main {
 	    total.print(threads);
 	} catch (IOException e) {
 	    System.out.println(e);
-	} catch (ExecutionException e) {
+	} catch (ServerException e) {
 	    System.out.println(e);
 	} catch (InterruptedException e) {
 	    System.out.println(e);

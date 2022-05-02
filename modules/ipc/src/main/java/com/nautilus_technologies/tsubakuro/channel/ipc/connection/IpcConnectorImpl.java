@@ -1,16 +1,17 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc.connection;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * IpcConnectorImpl type.
@@ -39,7 +40,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public Future<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         handle = getConnectorNative(name);

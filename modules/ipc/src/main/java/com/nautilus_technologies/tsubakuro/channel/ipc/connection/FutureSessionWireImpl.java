@@ -1,49 +1,43 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc.connection;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureSessionWireImpl type.
  */
-public class FutureSessionWireImpl implements Future<SessionWire> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
+public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
 
     IpcConnectorImpl connector;
-    
+
     FutureSessionWireImpl(IpcConnectorImpl connector) {
-	this.connector = connector;
+        this.connector = connector;
     }
 
-    public SessionWire get() throws ExecutionException {
-	try {
-	    return connector.getSessionWire();
-	} catch (IOException e) {
-	    throw new ExecutionException(e);
-	}
+    @Override
+    public SessionWire get() throws IOException {
+        return connector.getSessionWire();
     }
 
-    public SessionWire get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
-	try {
-	    return connector.getSessionWire(timeout, unit);
-	} catch (IOException e) {
-	    throw new ExecutionException(e);
-	}
+    @Override
+    public SessionWire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
+        return connector.getSessionWire(timeout, unit);
     }
+
+    @Override
     public boolean isDone() {
-	return isDone || connector.checkConnection();
+        return connector.checkConnection();
     }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        // FIXME: cancel connection if get() have never been called
+        Lang.pass();
     }
 }

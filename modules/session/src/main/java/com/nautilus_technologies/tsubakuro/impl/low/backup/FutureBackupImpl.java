@@ -1,40 +1,40 @@
 package com.nautilus_technologies.tsubakuro.impl.low.backup;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.backup.Backup;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureBackupImpl type.
  */
-public class FutureBackupImpl implements Future<Backup> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
+public class FutureBackupImpl implements FutureResponse<Backup> {
 
-    /**
-     * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
-     */
-    public FutureBackupImpl() {
+    @Override
+    public Backup get() throws IOException, ServerException, InterruptedException {
+        // FIXME: impl
+        return new BackupImpl();
     }
 
-    public BackupImpl get() throws ExecutionException {
-	return new BackupImpl();
+    @Override
+    public Backup get(long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
+        // FIXME: impl
+        return new BackupImpl();
     }
 
-    public BackupImpl get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
-	return new BackupImpl();
-    }
+    @Override
     public boolean isDone() {
-	return isDone;
+        return true;
     }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        // FIXME: impl
+        Lang.pass();
     }
 }

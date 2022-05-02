@@ -2,13 +2,13 @@ package com.nautilus_technologies.tsubakuro.low.backup;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.backup.DatastoreClientImpl;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 
 /**
@@ -33,7 +33,7 @@ public interface DatastoreClient extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      * @throws InterruptedException if interrupted while sending request
      */
-    default Future<Backup> beginBackup() throws IOException, InterruptedException {
+    default FutureResponse<Backup> beginBackup() throws IOException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 

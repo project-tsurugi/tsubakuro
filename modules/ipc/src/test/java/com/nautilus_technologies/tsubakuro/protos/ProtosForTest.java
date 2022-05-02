@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.protos;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public final class ProtosForTest {
     private ProtosForTest() {

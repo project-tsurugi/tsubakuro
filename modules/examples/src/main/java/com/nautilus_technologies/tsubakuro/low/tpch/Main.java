@@ -1,24 +1,22 @@
 package com.nautilus_technologies.tsubakuro.low.tpch;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.ArrayList;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.Option;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
+import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+
 public final class Main {
-    static long scale()  throws IOException, ExecutionException, InterruptedException {
+    static long scale()  throws IOException, ServerException, InterruptedException {
 	var connector = new ConnectorImpl(dbName);
 	var session = new SessionImpl();
 	session.connect(connector.connect().get());
@@ -111,7 +109,7 @@ public final class Main {
 		}
 		session.close();
 	    }
-	} catch (IOException | ExecutionException | InterruptedException e) {
+	} catch (IOException | ServerException | InterruptedException e) {
 	    System.out.println(e);
 	    e.printStackTrace();
         } catch (ParseException e) {

@@ -1,58 +1,57 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.util.Collection;
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos.ResultOnly;
+import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureResponseMock type.
  */
-public class FutureResponseMock implements Future<ResponseProtos.ResultOnly> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
+// FIXME: remove mock code
+public class FutureResponseMock extends AbstractFutureResponse<ResponseProtos.ResultOnly> {
     private boolean success;
 
     public FutureResponseMock(Collection<? extends Path> files) {
-	for (Path file : files) {
-	    if (file.toString().contains("NG")) {
-		this.success = false;
-		return;
-	    }
-	}
-	this.success = true;
+        for (Path file : files) {
+            if (file.toString().contains("NG")) {
+                this.success = false;
+                return;
+            }
+        }
+        this.success = true;
     }
+
     public FutureResponseMock(boolean success) {
-	this.success = success;
+        this.success = success;
     }
 
-    public ResponseProtos.ResultOnly get() throws ExecutionException {
-	boolean ng = false;
-
-	if (success) {
-	    return ResponseProtos.ResultOnly.newBuilder()
-		.setSuccess(ResponseProtos.Success.newBuilder())
-		.build();
-	}
-	return ResponseProtos.ResultOnly.newBuilder()
-	    .setError(ResponseProtos.Error.newBuilder().setDetail("intentional fail for test purpose"))
-	    .build();
+    @Override
+    protected ResultOnly getInternal() throws IOException, ServerException, InterruptedException {
+        if (success) {
+            return ResponseProtos.ResultOnly.newBuilder()
+                    .setSuccess(ResponseProtos.Success.newBuilder())
+                    .build();
+        }
+        return ResponseProtos.ResultOnly.newBuilder()
+                .setError(ResponseProtos.Error.newBuilder().setDetail("intentional fail for test purpose"))
+                .build();
     }
 
-    public ResponseProtos.ResultOnly get(long timeout, TimeUnit unit) throws ExecutionException {
-	return get();
+    @Override
+    protected ResultOnly getInternal(long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
+        return get();
     }
-    public boolean isDone() {
-	return isDone;
-    }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        Lang.pass();
     }
 }

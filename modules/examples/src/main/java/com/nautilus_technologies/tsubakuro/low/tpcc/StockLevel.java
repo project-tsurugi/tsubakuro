@@ -1,20 +1,16 @@
 package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
-import java.util.Date;
-import java.util.Locale;
-import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class StockLevel {
     Session session;
@@ -35,14 +31,14 @@ public class StockLevel {
     long queryResult;
     static final long OID_RANGE = 20;
 
-    public StockLevel(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
+    public StockLevel(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ServerException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
 	this.warehouses = profile.warehouses;
 	this.profile = profile;
     }
 
-    public void prepare() throws IOException, ExecutionException, InterruptedException {
+    public void prepare() throws IOException, ServerException, InterruptedException {
 	String sql1 = "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("d_w_id").setType(CommonProtos.DataType.INT8))
@@ -73,14 +69,14 @@ public class StockLevel {
 	paramsThreshold = randomGenerator.uniformWithin(10, 20);
     }
 
-    void rollback() throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ServerException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
 	transaction = null;
     }
 
-    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
 	while (!stop.get()) {
 	    profile.invocation.stockLevel++;
 	    transaction = session.createTransaction().get();
@@ -96,23 +92,23 @@ public class StockLevel {
 		if (!Objects.isNull(resultSet1)) {
 		    if (!resultSet1.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("no record"));
+			throw new IOException("no record");
 		    }
 		    resultSet1.nextColumn();
 		    oId = resultSet1.getInt8();
 		    if (resultSet1.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("found multiple records"));
+			throw new IOException("found multiple records");
 		    }
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
-	    } catch (ExecutionException e) {
+	    } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.districtTable.stockLevel++;
                 rollback();
@@ -139,23 +135,23 @@ public class StockLevel {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("no record"));
+			throw new IOException("no record");
 		    }
 		    resultSet2.nextColumn();
 		    queryResult = resultSet2.getInt8();
 		    if (resultSet2.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("found multiple records"));
+			throw new IOException("found multiple records");
 		    }
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
-	    } catch (ExecutionException e) {
+	    } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.stockTable.stockLevel++;
                 rollback();
