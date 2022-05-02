@@ -85,6 +85,7 @@ public class Owner<T extends ServerResource> implements ServerResource {
             throws IOException, ServerException, InterruptedException {
         try (resource) {
             // only close the resource
+            Lang.pass();
         }
     }
 }
