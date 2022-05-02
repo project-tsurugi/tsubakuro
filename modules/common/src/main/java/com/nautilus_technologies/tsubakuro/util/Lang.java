@@ -11,11 +11,9 @@ public final class Lang {
 
     /**
      * Does nothing.
-     * @param <T> the return type
-     * @return {@code null}
      */
-    public static <T> T pass() {
-        return pass(null);
+    public static void pass() {
+        return;
     }
 
     /**
