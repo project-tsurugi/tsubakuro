@@ -1,7 +1,7 @@
 package com.nautilus_technologies.tsubakuro.low.common;
 
-import java.util.concurrent.TimeUnit;
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * CloseableIpc type.

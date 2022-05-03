@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 

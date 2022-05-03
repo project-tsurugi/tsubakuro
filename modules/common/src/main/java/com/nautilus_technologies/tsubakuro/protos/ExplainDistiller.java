@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Distiller class responsible for taking ResponseProtos.Explain from ResponseProtos.Response.
  */
+//FIXME: move to another module
 public class ExplainDistiller implements Distiller<ResponseProtos.Explain> {
+    @Override
     public ResponseProtos.Explain distill(ResponseProtos.Response response) throws IOException {
 	if (!ResponseProtos.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
 	    LoggerFactory.getLogger(PrepareDistiller.class).error("response received is " + response);

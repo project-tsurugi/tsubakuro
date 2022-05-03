@@ -2,7 +2,6 @@ package com.nautilus_technologies.tsubakuro.impl.low.backup;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 
@@ -10,6 +9,7 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.backup.Backup;
 import com.nautilus_technologies.tsubakuro.low.backup.DatastoreClient;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * An implementation of {@link DatastoreClient}.
@@ -30,7 +30,7 @@ public class DatastoreClientImpl implements DatastoreClient {
     // FIXME directly send request messages instead of delegate it via Session
 
     @Override
-    public Future<Backup> beginBackup() throws IOException, InterruptedException {
+    public FutureResponse<Backup> beginBackup() throws IOException, InterruptedException {
         return session.beginBackup();
     }
 

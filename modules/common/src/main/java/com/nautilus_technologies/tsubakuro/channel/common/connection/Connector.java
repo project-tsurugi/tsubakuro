@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * Connector type.
@@ -43,7 +43,7 @@ public interface Connector {
      * @return future session wire
      * @throws IOException connection error
      */
-    default Future<SessionWire> connect() throws IOException {
+    default FutureResponse<SessionWire> connect() throws IOException {
         return connect(NullCredential.INSTANCE);
     }
 
@@ -53,5 +53,5 @@ public interface Connector {
      * @return future session wire
      * @throws IOException connection error
      */
-    Future<SessionWire> connect(@Nonnull Credential credential) throws IOException;
+    FutureResponse<SessionWire> connect(@Nonnull Credential credential) throws IOException;
 }

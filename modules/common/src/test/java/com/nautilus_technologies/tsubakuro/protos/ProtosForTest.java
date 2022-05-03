@@ -4,11 +4,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+//FIXME: delete tests for generated sources
 public final class ProtosForTest {
     private ProtosForTest() {
 	// for checkstyle
     }
-    
+
     static class TransactionChecker {
 	static CommonProtos.Transaction.Builder builder() {
 	    return
@@ -61,7 +62,7 @@ public final class ProtosForTest {
 		.addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8));
 	}
 	static boolean check(RequestProtos.PlaceHolder dst) {
-	    RequestProtos.PlaceHolder.Variable v1 = dst.getVariablesList().get(0);	
+	    RequestProtos.PlaceHolder.Variable v1 = dst.getVariablesList().get(0);
 	    RequestProtos.PlaceHolder.Variable v2 = dst.getVariablesList().get(1);
 
 	    return
@@ -89,9 +90,9 @@ public final class ProtosForTest {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setFloat8Value(123.45));
 	}
 	static boolean check(RequestProtos.ParameterSet dst) {
-	    RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);	
+	    RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);
 	    RequestProtos.ParameterSet.Parameter v2 = dst.getParametersList().get(1);
-	
+
 	    return
 		v1.getName().equals("v1")
 		&& RequestProtos.ParameterSet.Parameter.ValueCase.INT4_VALUE.equals(v1.getValueCase())
@@ -436,7 +437,7 @@ public final class ProtosForTest {
     /**
      * Check of Request level message
      * can be used by external packages
-     */    
+     */
     public static class BeginRequestChecker {
 	static RequestProtos.Request.Builder builder(long id) {
 	    return

@@ -1,66 +1,56 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * FuturePreparedStatementImpl type.
  */
-public class FuturePreparedStatementImpl implements Future<PreparedStatement> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
+public class FuturePreparedStatementImpl extends AbstractFutureResponse<PreparedStatement> {
 
-    private Future<ResponseProtos.Prepare> future;
-    private SessionLinkImpl sessionLinkImpl;
-    
+    private final FutureResponse<ResponseProtos.Prepare> delegate;
+    private final SessionLinkImpl sessionLinkImpl;
+
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
      * @param future the Future of ResponseProtos.Prepare
      * @param sessionLinkImpl the caller of this constructor
      */
-    public FuturePreparedStatementImpl(Future<ResponseProtos.Prepare> future, SessionLinkImpl sessionLinkImpl) {
-	this.future = future;
-	this.sessionLinkImpl = sessionLinkImpl;
+    public FuturePreparedStatementImpl(FutureResponse<ResponseProtos.Prepare> future, SessionLinkImpl sessionLinkImpl) {
+        this.delegate = future;
+        this.sessionLinkImpl = sessionLinkImpl;
     }
 
-    public PreparedStatementImpl get() throws ExecutionException {
-	try {
-	    ResponseProtos.Prepare response = future.get();
-	    if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
-		throw new ExecutionException(new IOException("prepare error"));
-	    }
-	    return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
-	} catch (InterruptedException e) {
-            throw new ExecutionException(e);
-        }
+    @Override
+    protected PreparedStatement getInternal() throws IOException, ServerException, InterruptedException {
+        ResponseProtos.Prepare response = delegate.get();
+        return resolve(response);
     }
 
-    public PreparedStatementImpl get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
-	try {
-	    ResponseProtos.Prepare response = future.get(timeout, unit);
-	    if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
-		throw new ExecutionException(new IOException("prepare error"));
-	    }
-	    return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
-	} catch (InterruptedException e) {
-            throw new ExecutionException(e);
+    @Override
+    protected PreparedStatement getInternal(long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
+        ResponseProtos.Prepare response = delegate.get(timeout, unit);
+        return resolve(response);
+    }
+
+    private PreparedStatement resolve(ResponseProtos.Prepare response) throws IOException {
+        if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
+            // FIXME: throw structured exception
+            throw new IOException("prepare error");
         }
+        return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
     }
-    public boolean isDone() {
-	return isDone;
-    }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        delegate.close();
     }
 }

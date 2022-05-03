@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
+// FIXME: delete tests for generated sources
 class RequestProtosTest {
 
     @Test
@@ -14,13 +15,13 @@ class RequestProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    RequestProtos.PlaceHolder dst = RequestProtos.PlaceHolder.parseFrom(data);
 
-	    RequestProtos.PlaceHolder.Variable v1 = dst.getVariablesList().get(0);	
+	    RequestProtos.PlaceHolder.Variable v1 = dst.getVariablesList().get(0);
 	    RequestProtos.PlaceHolder.Variable v2 = dst.getVariablesList().get(1);
-	
+
 	    assertAll(
 		      () -> assertEquals(v1.getName(), "v1"),
 		      () -> assertEquals(v1.getType(), CommonProtos.DataType.INT8),
@@ -41,14 +42,14 @@ class RequestProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    RequestProtos.ParameterSet dst = RequestProtos.ParameterSet.parseFrom(data);
 
-	    RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);	
+	    RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);
 	    RequestProtos.ParameterSet.Parameter v2 = dst.getParametersList().get(1);
 	    RequestProtos.ParameterSet.Parameter v3 = dst.getParametersList().get(2);
-	
+
 	    assertAll(
 		      () -> assertEquals(v1.getName(), "v1"),
 		      () -> assertTrue(RequestProtos.ParameterSet.Parameter.ValueCase.INT4_VALUE.equals(v1.getValueCase())),
@@ -70,12 +71,12 @@ class RequestProtosTest {
 	    .build();
 
 	byte[] data = src.toByteArray();
-	
+
 	try {
 	    RequestProtos.TransactionOption dst = RequestProtos.TransactionOption.parseFrom(data);
 
 	    RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
-	
+
 	    assertAll(
 		      () -> assertEquals(dst.getType(), RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT),
 		      () -> assertEquals(r1.getName(), "table_for_preserve"),

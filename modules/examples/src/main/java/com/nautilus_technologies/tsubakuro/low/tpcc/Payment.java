@@ -1,20 +1,19 @@
 package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.Objects;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class Payment {
     Session session;
@@ -77,14 +76,14 @@ public class Payment {
     static String[] nameParts = {"BAR", "OUGHT", "ABLE", "PRI", "PRES",
                                  "ESE", "ANTI", "CALLY", "ATION", "EING"};
 
-    public Payment(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
+    public Payment(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ServerException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
 	this.warehouses = profile.warehouses;
 	this.profile = profile;
     }
 
-    public void prepare() throws IOException, ExecutionException, InterruptedException {
+    public void prepare() throws IOException, ServerException, InterruptedException {
 	String sql1 = "UPDATE WAREHOUSE SET w_ytd = w_ytd + :h_amount WHERE w_id = :w_id";
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("h_amount").setType(CommonProtos.DataType.FLOAT8))
@@ -197,14 +196,14 @@ public class Payment {
 	paramsHdata = randomGenerator.makeAlphaString(12, 24);
     }
 
-    void rollback() throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ServerException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
 	transaction = null;
     }
 
-    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
 	while (!stop.get()) {
 	    transaction = session.createTransaction().get();
 	    profile.invocation.payment++;
@@ -233,9 +232,9 @@ public class Payment {
 		if (!Objects.isNull(resultSet2)) {
 		    if (!resultSet2.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("no record"));
+			throw new IOException("no record");
 		    }
 		    resultSet2.nextColumn();
 		    wName = resultSet2.getCharacter();
@@ -251,15 +250,15 @@ public class Payment {
 		    wZip = resultSet2.getCharacter();
 		    if (resultSet2.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("found multiple records"));
+			throw new IOException("found multiple records");
 		    }
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
-	    } catch (ExecutionException e) {
+	    } catch (ServerException e) {
 		profile.retryOnStatement.payment++;
 		profile.warehouseTable.payment++;
 		rollback();
@@ -297,9 +296,9 @@ public class Payment {
 		if (!Objects.isNull(resultSet4)) {
 		    if (!resultSet4.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("no record"));
+			throw new IOException("no record");
 		    }
 		    resultSet4.nextColumn();
 		    dStreet1 = resultSet4.getCharacter();
@@ -315,15 +314,15 @@ public class Payment {
 		    dName = resultSet4.getCharacter();
 		    if (resultSet4.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("found multiple records"));
+			throw new IOException("found multiple records");
 		    }
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
-	    } catch (ExecutionException e) {
+	    } catch (ServerException e) {
 		profile.retryOnStatement.payment++;
 		profile.districtTable.payment++;
 		rollback();
@@ -359,9 +358,9 @@ public class Payment {
 		if (!Objects.isNull(resultSet7)) {
 		    if (!resultSet7.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("no record"));
+			throw new IOException("no record");
 		    }
 		    resultSet7.nextColumn();
 		    cFirst = resultSet7.getCharacter();  // c_first(0)
@@ -393,15 +392,15 @@ public class Payment {
 		    cSince = resultSet7.getCharacter();  // c_since(13)
 		    if (resultSet7.nextRecord()) {
 			if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
-			    throw new ExecutionException(new IOException("SQL error"));
+			    throw new IOException("SQL error");
 			}
-			throw new ExecutionException(new IOException("found multiple records"));
+			throw new IOException("found multiple records");
 		    }
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
-	    } catch (ExecutionException e) {
+	    } catch (ServerException e) {
 		profile.retryOnStatement.payment++;
 		profile.customerTable.payment++;
 		rollback();
@@ -428,23 +427,23 @@ public class Payment {
 		    if (!Objects.isNull(resultSet8)) {
 			if (!resultSet8.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("no record"));
+			    throw new IOException("no record");
 			}
 			resultSet8.nextColumn();
 			cData = resultSet8.getCharacter();
 			if (resultSet8.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("found multiple records"));
+			    throw new IOException("found multiple records");
 			}
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
+			throw new IOException("SQL error");
 		    }
-		} catch (ExecutionException e) {
+		} catch (ServerException e) {
 		    profile.retryOnStatement.payment++;
 		    profile.customerTable.payment++;
 		    rollback();

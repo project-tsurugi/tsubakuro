@@ -1,11 +1,12 @@
 package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 
 public class  Client extends Thread {
@@ -21,7 +22,7 @@ public class  Client extends Thread {
     OrderStatus orderStatus;
     StockLevel stockLevel;
 
-    public  Client(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop, DeferredHelper doingDelivery) throws IOException, ExecutionException, InterruptedException {
+    public  Client(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop, DeferredHelper doingDelivery) throws IOException, ServerException, InterruptedException {
 	this.barrier = barrier;
 	this.stop = stop;
 	this.doingDelivery = doingDelivery;
@@ -38,7 +39,7 @@ public class  Client extends Thread {
 	prepare();
     }
 
-    void prepare()  throws IOException, ExecutionException, InterruptedException {
+    void prepare()  throws IOException, ServerException, InterruptedException {
 	newOrder.prepare();
 	payment.prepare();
 	delivery.prepare();
@@ -109,7 +110,7 @@ public class  Client extends Thread {
 	    } catch (IOException e) {
 		System.out.println(e);
 	    }
-	} catch (IOException | ExecutionException | InterruptedException | BrokenBarrierException e) {
+	} catch (IOException | ServerException | InterruptedException | BrokenBarrierException e) {
 	    System.out.println(e);
 	    e.printStackTrace();
         }

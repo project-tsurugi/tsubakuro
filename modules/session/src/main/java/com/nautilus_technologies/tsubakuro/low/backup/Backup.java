@@ -1,9 +1,9 @@
 package com.nautilus_technologies.tsubakuro.low.backup;
 
-import java.util.Collection;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 
 /**
  * Backup type.

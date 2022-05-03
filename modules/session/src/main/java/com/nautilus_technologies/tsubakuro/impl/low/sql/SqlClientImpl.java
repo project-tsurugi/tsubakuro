@@ -2,7 +2,6 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.Future;
 
 import javax.annotation.Nonnull;
 
@@ -12,6 +11,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * An implementation of {@link SqlClient}.
@@ -32,14 +32,14 @@ public class SqlClientImpl implements SqlClient {
     // FIXME directly send request messages instead of delegate it via Session
 
     @Override
-    public Future<Transaction> createTransaction(@Nonnull RequestProtos.TransactionOption option)
+    public FutureResponse<Transaction> createTransaction(@Nonnull RequestProtos.TransactionOption option)
             throws IOException {
         Objects.requireNonNull(option);
         return session.createTransaction(option);
     }
 
     @Override
-    public Future<PreparedStatement> prepare(@Nonnull String sql, @Nonnull RequestProtos.PlaceHolder placeHolder)
+    public FutureResponse<PreparedStatement> prepare(@Nonnull String sql, @Nonnull RequestProtos.PlaceHolder placeHolder)
             throws IOException {
         Objects.requireNonNull(sql);
         Objects.requireNonNull(placeHolder);
@@ -47,7 +47,7 @@ public class SqlClientImpl implements SqlClient {
     }
 
     @Override
-    public Future<String> explain(@Nonnull PreparedStatement statement, @Nonnull RequestProtos.ParameterSet parameters)
+    public FutureResponse<String> explain(@Nonnull PreparedStatement statement, @Nonnull RequestProtos.ParameterSet parameters)
             throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);

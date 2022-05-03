@@ -1,10 +1,11 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
-import java.util.concurrent.Future;
 import java.io.Closeable;
 import java.io.IOException;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
+import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * ResultSet type.
@@ -18,7 +19,7 @@ public interface ResultSet extends Closeable {
          * Get the field type
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field type
-	 * @throws IOException error occurred in investigating the column type
+         * @throws IOException error occurred in investigating the column type
          */
         CommonProtos.DataType type(int index) throws IOException;
 
@@ -26,7 +27,7 @@ public interface ResultSet extends Closeable {
          * Get the field name
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field name
-	 * @throws IOException error occurred in investigating the column type
+         * @throws IOException error occurred in investigating the column type
          */
         String name(int index) throws IOException;
 
@@ -34,7 +35,7 @@ public interface ResultSet extends Closeable {
          * Get the nullability for the field
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return true if the field is nullable
-	 * @throws IOException error occurred in the column checking
+         * @throws IOException error occurred in the column checking
          */
         boolean nullable(int index) throws IOException;
 
@@ -48,25 +49,25 @@ public interface ResultSet extends Closeable {
          * Get the field type
          * @param index field index. Must be equal to, or greater than 0. Must be less than the field count.
          * @return field type
-	 * @throws IOException error occurred in investigating the column type
+         * @throws IOException error occurred in investigating the column type
          */
-	@Deprecated
+        @Deprecated
         CommonProtos.DataType at(int index) throws IOException;
 
         /**
          * Get the current field type
          * @return current field type
-	 * @throws IOException error occurred in investigating the column type
+         * @throws IOException error occurred in investigating the column type
          */
-	@Deprecated
+        @Deprecated
         CommonProtos.DataType at() throws IOException;
 
         /**
          * Get the nullability for the field
          * @return true if the current field is nullable
-	 * @throws IOException error occurred in the column checking
+         * @throws IOException error occurred in the column checking
          */
-	@Deprecated
+        @Deprecated
         boolean nullable() throws IOException;
     }
 
@@ -130,8 +131,9 @@ public interface ResultSet extends Closeable {
     boolean nullable() throws IOException;
 
     /**
-     * Get a Future of the response returned from the SQL service
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     * Get a FutureResponse of the response returned from the SQL service
+     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
-    Future<ResponseProtos.ResultOnly> getResponse();
+    // FIXME: raise exception until close if error, instead.
+    FutureResponse<ResponseProtos.ResultOnly> getResponse();
 }

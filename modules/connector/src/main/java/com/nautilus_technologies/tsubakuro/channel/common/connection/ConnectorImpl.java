@@ -1,14 +1,16 @@
 package com.nautilus_technologies.tsubakuro.channel.common.connection;
 
-import java.util.concurrent.Future;
 import java.io.IOException;
+
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
 import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * ConnectorImpl type.
  */
+// FIXME: remove superseded impl
 public final class ConnectorImpl implements Connector {
     private Connector connector;
 
@@ -38,7 +40,7 @@ public final class ConnectorImpl implements Connector {
     }
 
     @Override
-    public Future<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
         return connector.connect(credential);
     }
 }

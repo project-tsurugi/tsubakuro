@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -88,11 +86,8 @@ public final class SessionBuilder {
      * @see #create(long, TimeUnit)
      */
     public Session create() throws IOException, ServerException, InterruptedException {
-        Future<SessionWire> fWire = connector.connect(connectionCredential);
-        try {
+        try (var fWire = connector.connect(connectionCredential)) {
             return create0(fWire.get());
-        } catch (ExecutionException e) {
-            throw rethrow(e);
         }
     }
 
@@ -109,28 +104,12 @@ public final class SessionBuilder {
     public Session create(long timeout, @Nonnull TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
-        Future<SessionWire> fWire = connector.connect(connectionCredential);
-        try {
+        try (var fWire = connector.connect(connectionCredential)) {
             return create0(fWire.get(timeout, unit));
-        } catch (ExecutionException e) {
-            throw rethrow(e);
         }
     }
 
-    private static IOException rethrow(ExecutionException ee) throws IOException, ServerException, InterruptedException {
-        if (ee.getCause() == null) {
-            return new IOException("unhandled exception was occurred", ee);
-        }
-        try {
-            throw ee.getCause();
-        } catch (IOException | ServerException | InterruptedException | RuntimeException | Error ex) {
-            throw ex;
-        } catch (Throwable otherwise) {
-            return new IOException("unhandled exception was occurred", otherwise);
-        }
-    }
-
-    private static Session create0(SessionWire wire) throws IOException {
+    private static Session create0(SessionWire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
         var session = new SessionImpl();
         boolean green = false;

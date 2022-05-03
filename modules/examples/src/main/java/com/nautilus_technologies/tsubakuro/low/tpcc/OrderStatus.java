@@ -1,20 +1,16 @@
 package com.nautilus_technologies.tsubakuro.low.tpcc;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
-import java.util.Date;
-import java.util.Locale;
-import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.StatusProtos;
 
 public class OrderStatus {
@@ -53,7 +49,7 @@ public class OrderStatus {
     double[] olAmount;
     String[] olDeliveryD;
 
-    public OrderStatus(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ExecutionException, InterruptedException {
+    public OrderStatus(Session session, RandomGenerator randomGenerator, Profile profile) throws IOException, ServerException, InterruptedException {
 	this.session = session;
 	this.randomGenerator = randomGenerator;
 	this.warehouses = profile.warehouses;
@@ -67,7 +63,7 @@ public class OrderStatus {
 	olDeliveryD = new String[kOlMax];
     }
 
-    public void prepare() throws IOException, ExecutionException, InterruptedException {
+    public void prepare() throws IOException, ServerException, InterruptedException {
 	String sql1 = "SELECT COUNT(c_id) FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_last = :c_last";
 	var ph1 = RequestProtos.PlaceHolder.newBuilder()
 	    .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("c_w_id").setType(CommonProtos.DataType.INT8))
@@ -133,14 +129,14 @@ public class OrderStatus {
 	}
     }
 
-    void rollback() throws IOException, ExecutionException, InterruptedException {
+    void rollback() throws IOException, ServerException, InterruptedException {
 	if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
 	    throw new IOException("error in rollback");
 	}
 	transaction = null;
     }
 
-    public void transaction(AtomicBoolean stop) throws IOException, ExecutionException, InterruptedException {
+    public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
 	while (!stop.get()) {
 	    transaction = session.createTransaction().get();
 	    profile.invocation.orderStatus++;
@@ -168,9 +164,9 @@ public class OrderStatus {
 		    if (Objects.nonNull(resultSet3)) {
 			if (!resultSet3.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("no record"));
+			    throw new IOException("no record");
 			}
 			resultSet3.nextColumn();
 			cBalance = resultSet3.getFloat8();
@@ -182,15 +178,15 @@ public class OrderStatus {
 			cLast = resultSet3.getCharacter();
 			if (resultSet3.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("found multiple records"));
+			    throw new IOException("found multiple records");
 			}
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
+			throw new IOException("SQL error");
 		    }
-                } catch (ExecutionException e) {
+                } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
@@ -214,9 +210,9 @@ public class OrderStatus {
 		    if (Objects.nonNull(resultSet4)) {
 			if (!resultSet4.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("no record"));
+			    throw new IOException("no record");
 			}
 			resultSet4.nextColumn();
 			oId = resultSet4.getInt8();
@@ -229,9 +225,9 @@ public class OrderStatus {
 			    }
 			    profile.inconsistentIndexCount++;
 			}
-			throw new ExecutionException(new IOException("SQL error"));
+			throw new IOException("SQL error");
 		    }
-                } catch (ExecutionException e) {
+                } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
@@ -255,9 +251,9 @@ public class OrderStatus {
 		    if (Objects.nonNull(resultSet5)) {
 			if (!resultSet5.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("no record"));
+			    throw new IOException("no record");
 			}
 			resultSet5.nextColumn();
 			if (!resultSet5.isNull()) {
@@ -269,15 +265,15 @@ public class OrderStatus {
 			oOlCnt = resultSet5.getInt8();
 			if (resultSet5.nextRecord()) {
 			    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-				throw new ExecutionException(new IOException("SQL error"));
+				throw new IOException("SQL error");
 			    }
-			    throw new ExecutionException(new IOException("found multiple records"));
+			    throw new IOException("found multiple records");
 			}
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
+			throw new IOException("SQL error");
 		    }
-                } catch (ExecutionException e) {
+                } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
@@ -317,9 +313,9 @@ public class OrderStatus {
 			}
 		    }
 		    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
-			throw new ExecutionException(new IOException("SQL error"));
+			throw new IOException("SQL error");
 		    }
-                } catch (ExecutionException e) {
+                } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();

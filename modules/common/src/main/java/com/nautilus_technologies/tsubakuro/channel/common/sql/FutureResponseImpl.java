@@ -1,23 +1,25 @@
 package com.nautilus_technologies.tsubakuro.channel.common.sql;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
-import java.util.Objects;
 import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureResponseImpl type.
  */
-public class FutureResponseImpl<V> implements Future<V> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
-
-    private SessionWire sessionWireImpl;
-    private Distiller<V> distiller;
+public class FutureResponseImpl<V> implements FutureResponse<V> {
+    private final SessionWire sessionWireImpl;
+    private final Distiller<V> distiller;
     private ResponseWireHandle responseWireHandleImpl;
+
+    private final AtomicBoolean isDone = new AtomicBoolean(true);
 
     /**
      * Class constructor, called from SessionWire that is connected to the SQL server.
@@ -25,8 +27,8 @@ public class FutureResponseImpl<V> implements Future<V> {
      * @param distiller the Distiller class that will work for the message to be received
      */
     public FutureResponseImpl(SessionWire sessionWireImpl, Distiller<V> distiller) {
-	this.sessionWireImpl = sessionWireImpl;
-	this.distiller = distiller;
+        this.sessionWireImpl = sessionWireImpl;
+        this.distiller = distiller;
     }
 
     /**
@@ -34,42 +36,40 @@ public class FutureResponseImpl<V> implements Future<V> {
      * @param handle the handle indicating the responseWire by which a response message is to be transferred
      */
     public void setResponseHandle(ResponseWireHandle handle) {
-	responseWireHandleImpl = handle;
+        responseWireHandleImpl = handle;
     }
 
     /**
      * get the message received from the SQL server.
      */
-    public V get() throws ExecutionException {
-	if (Objects.isNull(responseWireHandleImpl)) {
-	    throw new ExecutionException(new IOException("request has not been send out"));
-	}
-	try {
-	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
-	} catch (IOException e) {
-	    throw new ExecutionException(e);
-	}
+    @Override
+    public V get() throws IOException {
+        if (Objects.isNull(responseWireHandleImpl)) {
+            throw new IOException("request has not been send out");
+        }
+        V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
+        isDone.set(true);
+        return result;
     }
 
-    public V get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
-	if (Objects.isNull(responseWireHandleImpl)) {
-	    throw new ExecutionException(new IOException("request has not been send out"));
-	}
-	try {
-	    return distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
-	} catch (IOException e) {
-	    throw new ExecutionException(e);
-	}
+    @Override
+    public V get(long timeout, TimeUnit unit) throws TimeoutException, IOException {
+        if (Objects.isNull(responseWireHandleImpl)) {
+            throw new IOException("request has not been send out");
+        }
+        V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
+        isDone.set(true);
+        return result;
     }
+
+    @Override
     public boolean isDone() {
-	return isDone;
+        return isDone.get();
     }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        // FIXME impl
+        Lang.pass();
     }
 }

@@ -1,32 +1,26 @@
 package com.nautilus_technologies.tsubakuro.low.tpch;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Objects;
-import java.util.Date;
-import java.util.Locale;
-import java.text.SimpleDateFormat;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 
 public class Q14 {
     Session session;
     PreparedStatement preparedT;
     PreparedStatement preparedB;
 
-    public Q14(Session session) throws IOException, ExecutionException, InterruptedException {
+    public Q14(Session session) throws IOException, ServerException, InterruptedException {
         this.session = session;
 	prepare();
     }
 
-    public void prepare() throws IOException, ExecutionException, InterruptedException {
+    public void prepare() throws IOException, ServerException, InterruptedException {
 	String sqlT = "SELECT "
 	    + "SUM(L_EXTENDEDPRICE * (100 - L_DISCOUNT)) AS MOLECULE "
 	    + "FROM LINEITEM, PART "
@@ -53,7 +47,7 @@ public class Q14 {
 	preparedB = session.prepare(sqlB, ph).get();
     }
 
-    public void run(Profile profile) throws IOException, ExecutionException, InterruptedException {
+    public void run(Profile profile) throws IOException, ServerException, InterruptedException {
 	long start = System.currentTimeMillis();
 	var transaction = session.createTransaction(profile.transactionOption.build()).get();
 
@@ -78,18 +72,18 @@ public class Q14 {
 			t = resultSetT.getInt8();
 		    } else {
 			System.out.println("REVENUE is null");
-			throw new ExecutionException(new IOException("column is null"));
+			throw new IOException("column is null");
 		    }
 		} else {
-		    throw new ExecutionException(new IOException("no record"));
+		    throw new IOException("no record");
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetT.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
 	    } else {
-		throw new ExecutionException(new IOException("no resultSet"));
+		throw new IOException("no resultSet");
 	    }
-	} catch (ExecutionException e) {
+	} catch (ServerException e) {
 	    throw new IOException(e);
 	} finally {
 	    if (!Objects.isNull(resultSetT)) {
@@ -111,15 +105,15 @@ public class Q14 {
 			System.out.println("REVENUE is null");
 		    }
 		} else {
-		    throw new ExecutionException(new IOException("no record"));
+		    throw new IOException("no record");
 		}
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSetB.getResponse().get().getResultCase())) {
-		    throw new ExecutionException(new IOException("SQL error"));
+		    throw new IOException("SQL error");
 		}
 	    } else {
-		throw new ExecutionException(new IOException("no resultSet"));
+		throw new IOException("no resultSet");
 	    }
-	} catch (ExecutionException e) {
+	} catch (ServerException e) {
 	    throw new IOException(e);
 	} finally {
 	    if (!Objects.isNull(resultSetB)) {
@@ -132,7 +126,7 @@ public class Q14 {
 	    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
 		throw new IOException("commit error");
 	    }
-	} catch (ExecutionException e) {
+	} catch (ServerException e) {
 	    throw new IOException(e);
 	}
 	profile.q14 = System.currentTimeMillis() - start;

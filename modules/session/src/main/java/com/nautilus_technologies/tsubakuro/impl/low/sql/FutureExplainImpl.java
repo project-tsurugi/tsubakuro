@@ -1,61 +1,51 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * FutureExplainImpl type.
  */
-public class FutureExplainImpl implements Future<String> {
-    private boolean isDone = false;
-    private boolean isCancelled = false;
+public class FutureExplainImpl extends AbstractFutureResponse<String> {
 
-    private Future<ResponseProtos.Explain> future;
-    
+    private final FutureResponse<ResponseProtos.Explain> delegate;
+
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
      * @param future the Future of ResponseProtos.Explain
      */
-    public FutureExplainImpl(Future<ResponseProtos.Explain> future) {
-	this.future = future;
+    public FutureExplainImpl(FutureResponse<ResponseProtos.Explain> future) {
+        this.delegate = future;
     }
 
-    public String get() throws ExecutionException {
-	try {
-	    ResponseProtos.Explain response = future.get();
-	    if (ResponseProtos.Explain.ResultCase.ERROR.equals(response.getResultCase())) {
-		throw new ExecutionException(new IOException(response.getError().getDetail()));
-	    }
-	    return response.getOutput();
-	} catch (InterruptedException e) {
-            throw new ExecutionException(e);
-        }
+    @Override
+    protected String getInternal() throws IOException, ServerException, InterruptedException {
+        ResponseProtos.Explain response = delegate.get();
+        return resolve(response);
     }
 
-    public String get(long timeout, TimeUnit unit) throws TimeoutException, ExecutionException {
-	try {
-	    ResponseProtos.Explain response = future.get(timeout, unit);
-	    if (ResponseProtos.Explain.ResultCase.ERROR.equals(response.getResultCase())) {
-		throw new ExecutionException(new IOException(response.getError().getDetail()));
-	    }
-	    return response.getOutput();
-	} catch (InterruptedException e) {
-            throw new ExecutionException(e);
+    @Override
+    protected String getInternal(long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
+        ResponseProtos.Explain response = delegate.get(timeout, unit);
+        return resolve(response);
+    }
+
+    private String resolve(ResponseProtos.Explain response) throws IOException {
+        if (ResponseProtos.Explain.ResultCase.ERROR.equals(response.getResultCase())) {
+            // FIXME: throw structured exception
+            throw new IOException(response.getError().getDetail());
         }
+        return response.getOutput();
     }
-    public boolean isDone() {
-	return isDone;
-    }
-    public boolean isCancelled() {
-	return isCancelled;
-    }
-    public boolean cancel(boolean mayInterruptIfRunning) {
-	isCancelled = true;
-	isDone = true;
-	return true;
+
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        delegate.close();
     }
 }
