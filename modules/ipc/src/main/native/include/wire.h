@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,6 +208,7 @@ protected:
     std::size_t capacity_;  //NOLINT
 
     std::atomic_ulong pushed_{0};  //NOLINT
+    std::size_t header_position_{0};  //NOLINT
     std::size_t poped_{0};  //NOLINT
 
     std::atomic_bool wait_for_write_{};  //NOLINT
@@ -225,14 +226,23 @@ public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
-     * @brief push a request message into the queue.
+     * @brief push a request message into the queue one by one byte.
      */
-    void write(char* base, const char* from, message_header&& header) {
-        std::size_t length = header.get_length() + message_header::size;
+    void brand_new() {
+        std::size_t length = message_header::size;
         if (length > room()) { wait_to_write(length); }
-        write_in_buffer(base, buffer_address(base, pushed_), header.get_buffer(), message_header::size);
-        write_in_buffer(base, buffer_address(base, pushed_ + message_header::size), from, header.get_length());
+        header_position_ = pushed_;
         pushed_ += length;
+    }
+    void write(char* base, const int b) {
+        std::size_t length = 1;
+        char c = b & 0xff;
+        if (length > room()) { wait_to_write(length); }
+        write_in_buffer(base, buffer_address(base, pushed_), &c, 1);
+        pushed_ += length;
+    }
+    void flush(char* base, message_header&& header) {
+        write_in_buffer(base, buffer_address(base, header_position_), header.get_buffer(), message_header::size);
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);

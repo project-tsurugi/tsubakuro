@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,8 +81,14 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(const char* from, message_header&& header) {
-            wire_->write(bip_buffer_, from, std::move(header));
+        void brand_new() {
+            wire_->brand_new();
+        }
+        void write(const int b) {
+            wire_->write(bip_buffer_, b);
+        }
+        void flush(message_header&& header) {
+            wire_->flush(bip_buffer_, std::move(header));
         }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
@@ -116,16 +122,28 @@ public:
     session_wire_container& operator = (session_wire_container const&) = delete;
     session_wire_container& operator = (session_wire_container&&) = delete;
 
-    response_box::response *write(char* msg, std::size_t length) {
+    response_box::response *get_response_box() {
         for (std::size_t idx = 0 ; idx < responses_->size() ; idx++) {
             response_box::response& r = responses_->at(idx);
             if(!r.is_inuse()) {
                 r.set_inuse();
-                request_wire_.write(msg, message_header(idx, length));
+                index_ = idx;
                 return &r;
             }
         }
         return nullptr;
+    }
+    void write(const int b) {
+        if (length_ == 0) {
+            request_wire_.brand_new();
+        }
+        request_wire_.write(b);
+        length_++;
+    }
+    void flush() {
+        request_wire_.flush(message_header(index_, length_));
+        index_ = -1;
+        length_ = 0;
     }
     resultset_wires_container *create_resultset_wire() {
         return new resultset_wires_container(this);
@@ -140,6 +158,8 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_{};
     response_box* responses_;
+    message_header::length_type length_{};
+    message_header::index_type index_{};
 };
 
 class connection_container

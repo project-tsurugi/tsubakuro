@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 tsurugi project.
+ * Copyright 2019-2022 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,33 +50,44 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sq
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_SessionWireImpl
- * Method:    sendNative
- * Signature: (J[B)J
+ * Method:    getResponseHandleNative
+ * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_sendNative
-(JNIEnv *env, jclass, jlong handle, jbyteArray array)
+JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_getResponseHandleNative
+  (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    auto address = env->GetByteArrayElements(array, nullptr);
-    response_box::response *r = swc->write(reinterpret_cast<char *>(address), env->GetArrayLength(array));
-    env->ReleaseByteArrayElements(array, address, JNI_ABORT);
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(r));
+    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(swc->get_response_box()));
 }
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_SessionWireImpl
- * Method:    sendQueryNative
- * Signature: (J[B)J
+ * Method:    sendNative
+ * Signature: (JI)V
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_sendQueryNative
-  (JNIEnv *env, jclass clazz, jlong handle, jbyteArray array)
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_sendNative
+(JNIEnv *, jclass, jlong handle, jint b)
 {
-    jlong rv = Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_sendNative(env, clazz, handle, array);
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(rv));
-    r->set_query_mode();
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    swc->write(b);
+}
 
-    return rv;
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_SessionWireImpl
+ * Method:    flushNative
+ * Signature: (JJZ)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_SessionWireImpl_flushNative
+(JNIEnv *, jclass, jlong handle, jlong responseHandle, jboolean is_query)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    swc->flush();
+
+    if (is_query) {
+        response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseHandle));
+        r->set_query_mode();
+    }
 }
 
 /*

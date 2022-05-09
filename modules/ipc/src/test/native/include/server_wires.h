@@ -58,9 +58,6 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(char* from, message_header&& header) {
-            wire_->write(bip_buffer_, from, std::move(header));
-        }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
         }
