@@ -43,10 +43,9 @@ public class FutureResultSetImpl extends AbstractFutureResponse<ResultSet> {
     @Override
     protected ResultSet getInternal() throws IOException, ServerException, InterruptedException {
         ResponseProtos.ExecuteQuery response = future.get();
-        if (Objects.isNull(response)) {
-            return null;
+        if (Objects.nonNull(response)) {
+            resultSetImpl.connect(response.getName(), response.getRecordMeta());
         }
-        resultSetImpl.connect(response.getName(), response.getRecordMeta());
         return resultSetImpl;
     }
 
@@ -54,10 +53,9 @@ public class FutureResultSetImpl extends AbstractFutureResponse<ResultSet> {
     protected ResultSet getInternal(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         ResponseProtos.ExecuteQuery response = future.get(timeout, unit);
-        if (Objects.isNull(response)) {
-            return null;
+        if (Objects.nonNull(response)) {
+            resultSetImpl.connect(response.getName(), response.getRecordMeta());
         }
-        resultSetImpl.connect(response.getName(), response.getRecordMeta());
         return resultSetImpl;
     }
 
