@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -44,20 +46,81 @@ public interface SqlClient extends ServerResource {
      * @return a FutureResponse of the transaction
      * @throws IOException error occurred in BEGIN
      */
-    default FutureResponse<Transaction> createTransaction(@Nonnull RequestProtos.TransactionOption option) throws IOException {
+    default FutureResponse<Transaction> createTransaction(
+            @Nonnull RequestProtos.TransactionOption option) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Prepares SQL statement text.
-     * @param sql the SQL text
-     * @return a FutureResponse holding the result of the SQL service
-     * @throws IOException error occurred in PREPARE
-     * @see #prepare(String, com.nautilus_technologies.tsubakuro.protos.RequestProtos.PlaceHolder)
+     * Prepares a SQL statement.
+     * @param source the SQL statement text (may includes place-holders)
+     * @param placeholders the place-holders in the statement text
+     * @return a future response of prepared statement object
+     * @throws IOException if I/O error was occurred while sending request
+     * @see #prepare(String, Collection)
+     * @see Placeholders
      */
-    default FutureResponse<PreparedStatement> prepare(@Nonnull String sql) throws IOException {
-        Objects.requireNonNull(sql);
-        return prepare(sql, RequestProtos.PlaceHolder.getDefaultInstance());
+    default FutureResponse<PreparedStatement> prepare(
+            @Nonnull String source,
+            @Nonnull RequestProtos.PlaceHolder.Variable... placeholders) throws IOException {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(placeholders);
+        return prepare(source, Arrays.asList(placeholders));
+    }
+
+    /**
+     * Prepares a SQL statement.
+     * @param source the SQL statement text (may includes place-holders)
+     * @param placeholders the place-holders in the statement text
+     * @return a future response of prepared statement object
+     * @throws IOException if I/O error was occurred while sending request
+     * @see Placeholders
+     */
+    default FutureResponse<PreparedStatement> prepare(
+            @Nonnull String source,
+            @Nonnull Collection<? extends RequestProtos.PlaceHolder.Variable> placeholders) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Retrieves execution plan of the statement.
+     * @param source the SQL statement text
+     * @return a future response of statement metadata
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<String> explain(@Nonnull String source) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Retrieves execution plan of the statement.
+     * @param statement the prepared statement
+     * @param parameters parameter list for place-holders in the prepared statement
+     * @return a future response of statement metadata
+     * @throws IOException if I/O error was occurred while sending request
+     * @see #explain(PreparedStatement, Collection)
+     * @see Parameters
+     */
+    default FutureResponse<String> explain(
+            @Nonnull PreparedStatement statement,
+            @Nonnull RequestProtos.ParameterSet.Parameter... parameters) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
+        return explain(statement, Arrays.asList(parameters));
+    }
+
+    /**
+     * Retrieves execution plan of the statement.
+     * @param statement the prepared statement
+     * @param parameters parameter list for place-holders in the prepared statement
+     * @return a future response of statement metadata
+     * @throws IOException if I/O error was occurred while sending request
+     * @see Parameters
+     */
+    default FutureResponse<String> explain(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -66,20 +129,13 @@ public interface SqlClient extends ServerResource {
      * @param placeHolder the set of place holder name and type of its variable
      * @return a FutureResponse holding the result of the SQL service
      * @throws IOException error occurred in PREPARE
+     * @deprecated use {@link #prepare(String, Collection)} instead
      */
-    default FutureResponse<PreparedStatement> prepare(@Nonnull String sql, @Nonnull RequestProtos.PlaceHolder placeHolder)
-            throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Retrieves an execution plan of the SQL statement.
-     * @param statement the target statement
-     * @return a FutureResponse holding a string to explain the plan
-     * @throws IOException error occurred in EXPLAIN
-     */
-    default FutureResponse<String> explain(@Nonnull PreparedStatement statement) throws IOException {
-        return explain(statement, RequestProtos.ParameterSet.getDefaultInstance());
+    @Deprecated
+    default FutureResponse<PreparedStatement> prepare(
+            String sql,
+            RequestProtos.PlaceHolder placeHolder) throws IOException {
+        return prepare(sql, placeHolder.getVariablesList());
     }
 
     /**
@@ -88,10 +144,13 @@ public interface SqlClient extends ServerResource {
      * @param parameters parameter set for the statement
      * @return a FutureResponse holding a string to explain the plan
      * @throws IOException error occurred in EXPLAIN
+     * @deprecated use {@link #explain(PreparedStatement, Collection)} instead
      */
-    default FutureResponse<String> explain(@Nonnull PreparedStatement statement, @Nonnull RequestProtos.ParameterSet parameters)
-            throws IOException {
-        throw new UnsupportedOperationException();
+    @Deprecated
+    default FutureResponse<String> explain(
+            PreparedStatement statement,
+            RequestProtos.ParameterSet parameters) throws IOException {
+        return explain(statement, parameters.getParametersList());
     }
 
     /**

@@ -158,7 +158,7 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		    .build();
-		var future3 = transaction.executeQuery(prepared3, ps3);
+		var future3 = transaction.executeQuery(prepared3, ps3.getParametersList());
 		var resultSet3 = future3.get();
 		try {
 		    if (Objects.nonNull(resultSet3)) {
@@ -204,7 +204,7 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_c_id").setInt8Value(cId))
 		    .build();
-		var future4 = transaction.executeQuery(prepared4, ps4);
+		var future4 = transaction.executeQuery(prepared4, ps4.getParametersList());
 		var resultSet4 = future4.get();
 		try {
 		    if (Objects.nonNull(resultSet4)) {
@@ -245,7 +245,7 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(oId))
 		    .build();
-		var future5 = transaction.executeQuery(prepared5, ps5);
+		var future5 = transaction.executeQuery(prepared5, ps5.getParametersList());
 		var resultSet5 = future5.get();
 		try {
 		    if (Objects.nonNull(resultSet5)) {
@@ -291,7 +291,7 @@ public class OrderStatus {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
 		    .build();
-		var future6 = transaction.executeQuery(prepared6, ps6);
+		var future6 = transaction.executeQuery(prepared6, ps6.getParametersList());
 		var resultSet6 = future6.get();
 		try {
 		    if (Objects.nonNull(resultSet6)) {

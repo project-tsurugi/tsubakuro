@@ -68,7 +68,7 @@ public class Select {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1))
                     .build();
-            var resultSet = transaction.executeQuery(preparedStatement, ps).get();
+            var resultSet = transaction.executeQuery(preparedStatement, ps.getParametersList()).get();
             if (!Objects.isNull(resultSet)) {
                 printResultset(resultSet);
                 resultSet.close();

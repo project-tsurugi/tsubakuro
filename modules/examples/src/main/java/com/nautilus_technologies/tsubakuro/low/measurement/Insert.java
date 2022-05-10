@@ -79,7 +79,7 @@ public class Insert extends Thread {
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
                         .build();
-                var future5 = transaction.executeStatement(prepared5, ps5);
+                var future5 = transaction.executeStatement(prepared5, ps5.getParametersList());
                 var result5 = future5.await();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
                     if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {

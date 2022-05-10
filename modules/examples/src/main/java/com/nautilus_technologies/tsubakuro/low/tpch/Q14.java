@@ -62,7 +62,7 @@ public class Q14 {
 
 	long t, b;
 
-	var futureT = transaction.executeQuery(preparedT, ps.build());
+	var futureT = transaction.executeQuery(preparedT, ps.getParametersList());
 	var resultSetT = futureT.get();
 	try {
 	    if (Objects.nonNull(resultSetT)) {
@@ -91,7 +91,7 @@ public class Q14 {
 	    }
 	}
 
-	var futureB = transaction.executeQuery(preparedB, ps.build());
+	var futureB = transaction.executeQuery(preparedB, ps.getParametersList());
 	var resultSetB = futureB.get();
 	try {
 	    if (Objects.nonNull(resultSetB)) {

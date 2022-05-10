@@ -62,7 +62,7 @@ public class Insert extends Thread {
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
                         .build();
                 try {
-                    futures.add(transaction.executeStatement(prepared5, ps5));
+                    futures.add(transaction.executeStatement(prepared5, ps5.getParametersList()));
                 } catch (IOException e) {
                     System.out.println(e);
                     System.out.println("The " + (i + 1) + "th and subsequent Inserts will be cancelled");

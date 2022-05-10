@@ -137,7 +137,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future1 = transaction.executeQuery(prepared1, ps1);
+                var future1 = transaction.executeQuery(prepared1, ps1.getParametersList());
 		var resultSet1 = future1.get();
                 try {
 		    if (!Objects.isNull(resultSet1)) {
@@ -169,7 +169,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_o_id").setInt8Value(noOid))
 		    .build();
-                var future2 = transaction.executeStatement(prepared2, ps2);
+                var future2 = transaction.executeStatement(prepared2, ps2.getParametersList());
                 var result2 = future2.get();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result2.getResultCase())) {
                     profile.ordersTable.delivery++;
@@ -182,7 +182,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future3 = transaction.executeQuery(prepared3, ps3);
+                var future3 = transaction.executeQuery(prepared3, ps3.getParametersList());
 		var resultSet3 = future3.get();
 		try {
 		    if (!Objects.isNull(resultSet3)) {
@@ -221,7 +221,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future4 = transaction.executeStatement(prepared4, ps4);
+                var future4 = transaction.executeStatement(prepared4, ps4.getParametersList());
                 var result4 = future4.get();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
                     profile.ordersTable.delivery++;
@@ -235,7 +235,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future5 = transaction.executeStatement(prepared5, ps5);
+                var future5 = transaction.executeStatement(prepared5, ps5.getParametersList());
                 var result5 = future5.get();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
                     profile.ordersTable.delivery++;
@@ -248,7 +248,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future6 = transaction.executeQuery(prepared6, ps6);
+                var future6 = transaction.executeQuery(prepared6, ps6.getParametersList());
 		var resultSet6 = future6.get();
 		try {
 		    if (!Objects.isNull(resultSet6)) {
@@ -287,7 +287,7 @@ public class Delivery {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(dId))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_w_id").setInt8Value(paramsWid))
 		    .build();
-                var future7 = transaction.executeStatement(prepared7, ps7);
+                var future7 = transaction.executeStatement(prepared7, ps7.getParametersList());
                 var result7 = future7.get();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result7.getResultCase())) {
                     profile.customerTable.delivery++;

@@ -16,6 +16,7 @@ import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
+import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
@@ -203,11 +204,9 @@ class SessionImplTest {
         preparedStatement.close();
 
         var transaction = session.createTransaction().get();
-        var ps = RequestProtos.ParameterSet.newBuilder()
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999)).build();
 
         Throwable exception = assertThrows(IOException.class, () -> {
-            var resultSet = transaction.executeQuery(preparedStatement, ps).get();
+            var resultSet = transaction.executeQuery(preparedStatement, Parameters.of("o_id", 99999999L)).await();
         });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", exception.getMessage());
