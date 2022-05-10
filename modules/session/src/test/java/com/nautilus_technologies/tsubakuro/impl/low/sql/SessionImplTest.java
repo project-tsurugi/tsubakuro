@@ -65,7 +65,7 @@ class SessionImplTest {
 
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
             switch (request.getRequestCase()) {
             case BEGIN:
                 nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
@@ -91,7 +91,7 @@ class SessionImplTest {
         }
 
         @Override
-        public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
+        public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
 

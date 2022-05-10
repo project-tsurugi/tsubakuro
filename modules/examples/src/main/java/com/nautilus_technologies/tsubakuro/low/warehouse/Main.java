@@ -11,8 +11,8 @@ public final class Main {
     private Main() {
     }
     
-    //    private static String url = "ipc:tateyama";
-    private static String url = "tcp://localhost:12345/";
+    private static String url = "ipc:tateyama";
+    //    private static String url = "tcp://localhost:12345/";
 
     public static void main(String[] args) {
         try {

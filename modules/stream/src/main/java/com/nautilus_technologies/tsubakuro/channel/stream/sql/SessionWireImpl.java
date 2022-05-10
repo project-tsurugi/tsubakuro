@@ -96,7 +96,7 @@ public class SessionWireImpl implements SessionWire {
      @return a FutureResponse response message corresponding the request
      */
     @Override
-    public <V> FutureResponse<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+    public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
@@ -118,7 +118,7 @@ public class SessionWireImpl implements SessionWire {
      @return a couple of FutureResponse response message corresponding the request
      */
     @Override
-    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(RequestProtos.Request.Builder request) throws IOException {
+    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }

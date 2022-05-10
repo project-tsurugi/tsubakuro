@@ -22,13 +22,13 @@ import com.nautilus_technologies.tsubakuro.util.Pair;
 class SessionImplTest {
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
             return null; // dummy as it is test for session
         }
 
         @Override
         public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-                RequestProtos.Request.Builder request) throws IOException {
+                long serviceID, RequestProtos.Request.Builder request) throws IOException {
             return null; // dummy as it is test for session
         }
 

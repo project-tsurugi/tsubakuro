@@ -30,6 +30,7 @@ import com.nautilus_technologies.tsubakuro.util.ServerResource;
  * SessionLinkImpl type.
  */
 public class SessionLinkImpl implements ServerResource {
+    static final long SERVICE_ID_SQL = 3;
     private SessionWire wire;
     private final Set<TransactionImpl> transactions;
     private final Set<PreparedStatementImpl> preparedStatements;
@@ -55,7 +56,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
+        return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
     };
 
     /**
@@ -68,7 +69,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return new FutureExplainImpl(wire.<ResponseProtos.Explain>send(RequestProtos.Request.newBuilder().setExplain(request), new ExplainDistiller()));
+        return new FutureExplainImpl(wire.<ResponseProtos.Explain>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExplain(request), new ExplainDistiller()));
     };
 
     /**
@@ -81,7 +82,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -94,7 +95,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecutePreparedStatement(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecutePreparedStatement(request), new ResultOnlyDistiller());
     }
 
     /**
@@ -108,7 +109,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(RequestProtos.Request.newBuilder().setExecuteQuery(request));
+        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteQuery(request));
     };
 
     /**
@@ -122,7 +123,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(RequestProtos.Request.newBuilder().setExecutePreparedQuery(request));
+        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecutePreparedQuery(request));
     };
 
     /**
@@ -135,7 +136,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.Begin>send(RequestProtos.Request.newBuilder().setBegin(request), new BeginDistiller());
+        return wire.<ResponseProtos.Begin>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setBegin(request), new BeginDistiller());
     };
 
     /**
@@ -148,7 +149,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -161,7 +162,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -174,7 +175,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -187,7 +188,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -212,7 +213,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
+        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
     };
 
     /**
@@ -226,7 +227,7 @@ public class SessionLinkImpl implements ServerResource {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(RequestProtos.Request.newBuilder().setExecuteDump(request));
+        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteDump(request));
     };
 
     /**

@@ -15,6 +15,7 @@ import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class ResultSetTotalTest {
+    static final long SERVICE_ID_SQL = 3;
     private SessionWireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
@@ -53,7 +54,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
@@ -153,7 +154,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end

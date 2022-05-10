@@ -14,6 +14,7 @@ import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class SessionWireTest {
+    static final long SERVICE_ID_SQL = 3;
     private SessionWireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
@@ -37,7 +38,7 @@ class SessionWireTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
+        var futureResponse = client.send(SERVICE_ID_SQL, ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
         // server side receive Request
         assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
@@ -64,7 +65,7 @@ class SessionWireTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.send(ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
+        var futureResponse = client.send(SERVICE_ID_SQL, ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
         // server side receive Request
         assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
         // REQUEST test end

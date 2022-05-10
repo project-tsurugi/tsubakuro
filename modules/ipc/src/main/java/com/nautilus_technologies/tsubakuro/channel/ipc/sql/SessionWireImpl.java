@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Objects;
@@ -22,6 +23,8 @@ import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
+import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 
@@ -29,6 +32,8 @@ import com.nautilus_technologies.tsubakuro.util.Pair;
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements SessionWire {
+    static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
+
     private long wireHandle = 0;  // for c++
     private final String dbName;
     private final long sessionID;
@@ -65,6 +70,28 @@ public class SessionWireImpl implements SessionWire {
         }
         public void flush(long responseHandle, boolean isQuery) {
             flushNative(wireHandle, responseHandle, isQuery);
+        }
+    }
+
+    static class ByteBufferBackedInputStream extends InputStream {
+        ByteBuffer buf;
+        ByteBufferBackedInputStream(ByteBuffer buf) {
+            this.buf = buf;
+        }
+        public int read() throws IOException {
+            if (!buf.hasRemaining()) {
+                return -1;
+            }
+            return buf.get() & 0xFF;
+        }
+        public int read(byte[] bytes, int off, int len)
+            throws IOException {
+            if (!buf.hasRemaining()) {
+                return -1;
+            }
+            len = Math.min(len, buf.remaining());
+            buf.get(bytes, off, len);
+            return len;
         }
     }
 
@@ -135,16 +162,18 @@ public class SessionWireImpl implements SessionWire {
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public <V> FutureResponse<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+    public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
         var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
         var futureBody = new FutureResponseImpl<V>(this, distiller);
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
             if (handle != 0) {
-                req.writeTo(nativeOutputStream);
+                header.writeDelimitedTo(nativeOutputStream);
+                req.writeDelimitedTo(nativeOutputStream);
                 nativeOutputStream.flush(handle, false);
                 futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
@@ -162,17 +191,19 @@ public class SessionWireImpl implements SessionWire {
      */
     @Override
     public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-            RequestProtos.Request.Builder request) throws IOException {
+            long serviceID, RequestProtos.Request.Builder request) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
         var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
         var left = new FutureQueryResponseImpl(this);
         var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
             if (handle != 0) {
-                req.writeTo(nativeOutputStream);
+                header.writeDelimitedTo(nativeOutputStream);
+                req.writeDelimitedTo(nativeOutputStream);
                 nativeOutputStream.flush(handle, true);
                 left.setResponseHandle(new ResponseWireHandleImpl(handle));
                 right.setResponseHandle(new ResponseWireHandleImpl(handle));
@@ -196,7 +227,9 @@ public class SessionWireImpl implements SessionWire {
         }
         try {
             var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-            var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle));
+            var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle));
+            FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
+            var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
             logger.trace("receive " + response + ", hancle = " + handle);
             synchronized (this) {
                 releaseNative(responseHandle);
@@ -242,7 +275,9 @@ public class SessionWireImpl implements SessionWire {
             if (timeoutNano == Long.MIN_VALUE) {
                 throw new IOException("timeout duration overflow");
             }
-            var response = ResponseProtos.Response.parseFrom(receiveNative(responseHandle, timeoutNano));
+            var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle, timeoutNano));
+            FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
+            var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
             synchronized (this) {
                 releaseNative(responseHandle);
                 var entry = queue.peek();

@@ -23,8 +23,8 @@ public interface SessionWire extends ServerResource {
      * @return FutureResponse contains prepared statement handle, where V
      * @throws IOException error occurred in request transfer
      */
-    // FIXME: send(long serviceId, byte[]) -> FutureResponse<Response>
-    <V> FutureResponse<V> send(RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException;
+    // FIXME: send(long servicdID, byte[]) -> FutureResponse<Response>
+    <V> FutureResponse<V> send(long servicdID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException;
 
     /**
      * Send a query request to the SQL server.
@@ -34,7 +34,7 @@ public interface SessionWire extends ServerResource {
      */
     // FIXME: remove this and use send()
     Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-            RequestProtos.Request.Builder request) throws IOException;
+            long servicdID, RequestProtos.Request.Builder request) throws IOException;
 
     /**
      * Receive the message corresponding to the given ResponseHandle from the SQL server

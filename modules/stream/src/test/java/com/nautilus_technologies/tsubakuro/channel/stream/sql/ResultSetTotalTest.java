@@ -16,6 +16,7 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.stream.ProtosForTest;
 
 class ResultSetTotalTest {
+    static final long SERVICE_ID_SQL = 3;
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
 
@@ -56,7 +57,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
@@ -154,7 +155,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.sendQuery(ProtosForTest.ExecuteQueryRequestChecker.builder());
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
