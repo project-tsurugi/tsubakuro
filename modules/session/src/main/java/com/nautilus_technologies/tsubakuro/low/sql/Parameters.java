@@ -176,9 +176,9 @@ public final class Parameters {
 
         var bytes = new byte[(value.length + 8 - 1) / 8];
         for (int i = 0; i < value.length; i++) {
-            int byte_offset = i / 8;
-            int bit_offset = i % 8;
-            bytes[byte_offset] |= value[i] ? (1 << bit_offset) : 0;
+            int byteOffset = i / 8;
+            int bitOffset = i % 8;
+            bytes[byteOffset] |= value[i] ? (1 << bitOffset) : 0;
         }
 
         return RequestProtos.ParameterSet.Parameter.newBuilder()
