@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package tateyama.proto.framework.request;
+
+option java_package = "com.nautilus_technologies.tateyama.proto";
+option java_outer_classname = "FrameworkRequestProtos";
+
+// common request header for clients to set and send to tateyama.
+message Header {
+  // the request message version.
+  uint64 message_version = 1;
+
+  // reserved for system use
+  reserved 2 to 10;
+
+  // the destination service ID.
+  uint64 service_id = 11;
+
+  // session ID.
+  uint64 session_id = 12;
+}

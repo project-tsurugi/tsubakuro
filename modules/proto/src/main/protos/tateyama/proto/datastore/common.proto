@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package tateyama.proto.datastore.common;
+
+option java_multiple_files = false;
+option java_package = "com.example.tateyama.proto";
+option java_outer_classname = "DatastoreCommonProtos";
+
+// Point-in-Time recovery tag.
+message Tag {
+    // the tag name.
+    string name = 1;
+
+    // the tag comment.
+    string comment = 2;
+
+    // the tag author.
+    string author = 3;
+
+    // the created timestamp in Unix time in milliseconds.
+    uint64 timestamp = 4;
+}

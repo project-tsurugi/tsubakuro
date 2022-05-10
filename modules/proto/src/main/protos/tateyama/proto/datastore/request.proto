@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package tateyama.proto.datastore.request;
+
+option java_multiple_files = false;
+option java_package = "com.example.tateyama.proto";
+option java_outer_classname = "DatastoreRequestProtos";
+
+import "tateyama/proto/datastore/common.proto";
+
+// the request message to datastore service.
+message Request {
+    // the request message version.
+    uint64 message_version = 1;
+    reserved 2 to 10;
+
+    // the request command.
+    oneof command {
+        // starts backup operation.
+        BackupBegin backup_begin = 11;
+        // completes backup operation.
+        BackupEnd backup_end = 12;
+        // extends expiration time of the backup operation.
+        BackupContinue backup_contine = 13;
+        // estimates backup operation magnitude.
+        BackupEstimate backup_estimate = 14;
+        // restores datastore from backup data.
+        RestoreBackup restore_backup = 15;
+        // restores datastore from Point-in-Time recovery tag.
+        RestoreTag restore_tag = 16;
+        // retrieves the list of registered Point-in-Time recovery tags.
+        TagList tag_list = 17;
+        // creates a new Point-in-Time recovery tag.
+        TagAdd tag_add = 18;
+        // retrieves a Point-in-Time recovery tag.
+        TagGet tag_get = 19;
+        // removes a Point-in-Time recovery tag.
+        TagRemove tag_remove = 20;
+    }
+    reserved 21 to 99;
+}
+
+// starts backup operation.
+message BackupBegin {}
+
+// completes backup operation.
+message BackupEnd {
+    // the backup ID to complete.
+    uint64 id = 1;
+}
+
+// extends expiration time of the backup operation.
+message BackupContinue {
+    // the backup ID to extends expiration time.
+    uint64 id = 1;
+
+    // the expiration time in milliseconds.
+    uint64 expiration_time = 2;
+}
+
+// estimates backup operation magnitude.
+message BackupEstimate {}
+
+// restores datastore from backup data.
+message RestoreBackup {
+    // path to backup data.
+    string path = 1;
+
+    // whether or not keeps the backup data.
+    bool keep_backup = 2;
+}
+
+// restores datastore from Point-in-Time recovery tag.
+message RestoreTag {
+    // the tag name.
+    string name = 1;
+}
+
+// retrieves the list of registered Point-in-Time recovery tags.
+message TagList {}
+
+// creates a new Point-in-Time recovery tag.
+message TagAdd {
+    // the tag name.
+    string name = 1;
+
+    // the tag comment.
+    string comment = 2;
+}
+
+// retrieves a Point-in-Time recovery tag.
+message TagGet {
+    // the tag name.
+    string name = 1;
+}
+
+// removes a Point-in-Time recovery tag.
+message TagRemove {
+    // the tag name.
+    string name = 1;
+}

@@ -1,0 +1,271 @@
+syntax = "proto3";
+
+package tateyama.proto.datastore.response;
+
+option java_multiple_files = false;
+option java_package = "com.example.tateyama.proto";
+option java_outer_classname = "DatastoreResponseProtos";
+
+import "tateyama/proto/datastore/common.proto";
+
+// empty message
+message Void {}
+
+// unknown error was occurred.
+message UnknownError {
+    // the error message.
+    string message = 1;
+}
+
+// starts backup operation.
+message BackupBegin {
+    reserved 1 to 10;
+    
+    // request is successfully completed.
+    message Success {
+        // the corresponded backup operation ID.
+        uint64 id = 11;
+    
+        // the list of files to be copied.
+        repeated string files = 12;
+    }
+    
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 12;
+    }
+}
+
+// completes backup operation.
+message BackupEnd {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 11;
+
+        // backup operation was expired.
+        Void expired = 12;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 13;
+    }
+}
+
+// extends expiration time of the backup operation.
+message BackupContinue {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 12;
+
+        // backup operation was expired.
+        Void expired = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// estimates backup operation magnitude.
+message BackupEstimate {
+    reserved 1 to 10;
+
+    // request is successfully completed.
+    message Success {
+        // the number of files to be copied.
+        uint64 number_of_files = 11;
+    
+        // the approx. number of bytes to be copied.
+        uint64 number_of_bytes = 12;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 12;
+    }
+}
+
+// restores datastore from backup data.
+message RestoreBackup {
+    reserved 1 to 10;
+
+    // request is successfully completed.
+    message NotFound {
+        string path = 1;
+    }
+    message PermissionError {
+        string path = 1;
+    }
+    message BrokenData {
+        string path = 1;
+        string detail = 2;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 12;
+
+        // target backup is not found.
+        NotFound not_found = 13;
+
+        // cannot access to target backup by permission error.
+        PermissionError permission_error = 14;
+
+        // the target 
+        BrokenData broken_data = 15;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// restores datastore from Point-in-Time recovery tag.
+message RestoreTag {
+    reserved 1 to 10;
+    
+    // the target tag is not found.
+    message NotFound {
+        string name = 1;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 11;
+
+        // target tag is not found.
+        NotFound not_found  = 12;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 13;
+    }
+}
+
+// retrieves the list of registered Point-in-Time recovery tags.
+message TagList {
+    reserved 1 to 10;
+
+    // request is successfully completed.
+    message Success {
+        // the tag list.
+        repeated common.Tag tags = 11;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 12;
+    }
+}
+
+// creates a new Point-in-Time recovery tag.
+message TagAdd {
+    reserved 1 to 10;
+    
+    // request is successfully completed.
+    message Success {
+        // the added tag.
+        common.Tag tag = 1;
+    }
+
+    // the target tag is already exists.
+    message AlreadyExists {
+        // the tag name.
+        string name = 1;
+    }
+
+    // the target tag name is too long.
+    message TooLongName {
+        string name = 1;
+        uint64 max_characters = 2;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // the target tag is already exists.
+        AlreadyExists already_exists = 12;
+
+        // the target tag name is too long.
+        TooLongName too_long_name = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 14;
+    }
+}
+
+// retrieves a Point-in-Time recovery tag.
+message TagGet {
+    reserved 1 to 10;
+    
+    // request is successfully completed.
+    message Success {
+        // the got tag.
+        common.Tag tag = 1;
+    }
+
+    // target tag is not found.
+    message NotFound {
+        // the tag name.
+        string name = 1;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 12;
+
+        // target tag is not found.
+        NotFound not_found = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// removes a Point-in-Time recovery tag.
+message TagRemove {
+    reserved 1 to 10;
+
+    // request is successfully completed.
+    message Success {
+        // the tag name.
+        string name = 1;
+    }
+
+    // target tag is not found.
+    message NotFound {
+        // the tag name.
+        string name = 1;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 12;
+
+        // target tag is not found.
+        NotFound not_found = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}

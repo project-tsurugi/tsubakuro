@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package tateyama.proto.diagnostics;
+
+option java_package = "com.nautilus_technologies.tateyama.proto";
+option java_outer_classname = "DiagnosticsProtos";
+
+// diagnostic code.
+enum Code {
+    // unknown error.
+    UNKNOWN = 0;
+
+    // system is something wrong.
+    SYSTEM_ERROR = 1;
+
+    // operation is not supported.
+    UNSUPPORTED_OPERATION = 2;
+
+    // operation was requested in illegal or inappropriate time.
+    ILLEGAL_STATE = 6;
+
+    // authentication was failed.
+    AUTHENTICATION_ERROR = 11;
+
+    // request is not permitted.
+    PERMISSION_ERROR = 12;
+
+    // I/O error was occurred.
+    IO_ERROR = 21;
+
+    // out of memory.
+    OUT_OF_MEMORY = 22;
+
+    // the current session is already closed.
+    SESSION_CLOSED = 31;
+
+    // the current session is expired.
+    SESSION_EXPIRED = 32;
+
+    // the destination service was not found.
+    SERVICE_NOT_FOUND = 33;
+
+    // the service is unavailable (maintenance mode, going to shutdown, during backup, etc.).
+    SERVICE_UNAVAILABLE = 34;
+
+    // request header or payload is not valid.
+    INVALID_REQUEST = 41;
+}
+
+// diagnostic record.
+message Record {
+    reserved 1 to 10;
+
+    // diagnostic code.
+    Code code = 11;
+
+    // diagnostic message.
+    string message = 12;
+}

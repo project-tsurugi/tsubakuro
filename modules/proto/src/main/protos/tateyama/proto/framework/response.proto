@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package tateyama.proto.framework.response;
+
+option java_package = "com.nautilus_technologies.tateyama.proto";
+option java_outer_classname = "FrameworkResponseProtos";
+
+// common response header for client to receive
+message Header {
+  // reserved for system use
+  reserved 1 to 10;
+
+  // the response payload type.
+  enum PayloadType {
+    // unknown response (may be response is broken).
+    UNKNOWN = 0;
+
+    // server diagnostic type (tateyama.proto.diagnostics.Record).
+    SERVER_DIAGNOSTICS = 1;
+
+    // the requested service result.
+    SERVICE_RESULT = 2;
+  };
+
+  // session ID.
+  uint64 session_id = 11;
+
+  // the response payload type.
+  PayloadType payload_type = 12;
+}
