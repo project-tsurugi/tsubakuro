@@ -12,10 +12,15 @@ import com.nautilus_technologies.tsubakuro.low.backup.Backup;
  * Backup type.
  */
 public class BackupImpl implements Backup {
+    long backupID;
+    
     /**
      * Class constructor, called from  FutureBackupImpl.
      */
     public BackupImpl() {
+    }
+    public BackupImpl(long backupID) {
+        this.backupID = backupID;
     }
 
     /**
@@ -23,11 +28,19 @@ public class BackupImpl implements Backup {
      * @return List of file path to be backuped
      */
     public List<Path> files() {
-	List<Path> list = new LinkedList<>();
-	list.add(Paths.get("/tmp", "backup-1"));
-	return list;
+        List<Path> list = new LinkedList<>();
+        list.add(Paths.get("/tmp", "backup-1"));
+        return list;
     }
 
+    /**
+     * Get the the backup ID
+     * @return backup ID
+     */
+    public long backupID() {
+        return backupID;
+    }
+    
     /**
      * Close the Transaction
      */

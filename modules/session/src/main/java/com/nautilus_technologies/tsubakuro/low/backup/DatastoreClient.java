@@ -10,6 +10,7 @@ import com.nautilus_technologies.tsubakuro.impl.low.backup.DatastoreClientImpl;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
+import com.nautilus_technologies.tateyama.proto.DatastoreCommonProtos;
 
 /**
  * A datastore service client.
@@ -37,7 +38,95 @@ public interface DatastoreClient extends ServerResource {
         throw new UnsupportedOperationException();
     }
 
-    // FIXME more commands
+    /**
+     * Stops backup.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> endBackup(long id) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Continues backup.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> continueBackup(long id, long ms) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * Estimates backup operation magnitude.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> estimateBackup() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+    
+    /**
+     * RestoreBackup backup operation magnitude.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> restoreBackup(String path, boolean keepBackup) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Restores datastore from Point-in-Time recovery tag.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> restoreTag(String name) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Retrieves the list of registered Point-in-Time recovery tags.
+     * @return the future of TagList
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<TagList> listTag() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Creates a new Point-in-Time recovery tag.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<DatastoreCommonProtos.Tag> addTag(String name, String comment) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Retrieves a Point-in-Time recovery tag.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<DatastoreCommonProtos.Tag> getTag(String name) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Removes a Point-in-Time recovery tag.
+     * @return the future of void
+     * @throws IOException if I/O error was occurred while sending request
+     * @throws InterruptedException if interrupted while sending request
+     */
+    default FutureResponse<Void> removeTag(String name) throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Disposes the underlying server resources.

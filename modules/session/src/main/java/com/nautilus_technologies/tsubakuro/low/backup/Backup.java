@@ -15,4 +15,10 @@ public interface Backup extends Closeable {
      * @throws IOException error occurred in listing backup files
      */
     Collection<? extends Path> files() throws IOException;
+
+    /**
+     * Get the the backup ID
+     * @return backup ID
+     */
+    long backupID();
 }
