@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.stream;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -216,5 +218,18 @@ public class SessionWireImpl implements SessionWire {
             throw new IOException("already closed");
         }
         return new ResultSetWireImpl(streamWire);
+    }
+
+    @Override
+    public FutureInputStream send(long serviceID, byte[] request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public InputStream responseStream(ResponseWireHandle handle) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+        throw new UnsupportedOperationException();
     }
 }

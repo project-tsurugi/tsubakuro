@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
@@ -116,6 +118,21 @@ class SessionImplTest {
 
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
+        }
+
+        @Override
+        public FutureInputStream send(long serviceID, byte[] request) {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
+        public InputStream responseStream(ResponseWireHandle handle) {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
+        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return null; // dummy as it is test for session
         }
 
         @Override

@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -8,16 +10,18 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureTransactionImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.PreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.low.backup.Backup;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.impl.low.backup.FutureBackupImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -121,6 +125,18 @@ public class SessionImpl implements Session {
                 .setParameters(parameterSet));
     }
 
+
+    interface WriteAction {
+        void perform(OutputStream buffer) throws IOException, InterruptedException;
+    }
+
+    private static byte[] dump(WriteAction action) throws IOException, InterruptedException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            action.perform(buffer);
+            return buffer.toByteArray();
+        }
+    }
+
     /**
      * Begin a new backup session (like transaction) by specifying the transaction type
      * @return the backup session
@@ -130,7 +146,15 @@ public class SessionImpl implements Session {
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("this session is not connected to the Database");
         }
-        return sessionLinkImpl.send();
+        try {
+            var request = dump(out -> {
+                    DatastoreRequestProtos.BackupBegin.newBuilder().build().writeDelimitedTo(out);
+                });
+            return new FutureBackupImpl(sessionLinkImpl.send(request));
+        } catch (IOException | InterruptedException e) {
+            throw new IOException(e);
+        }
+
     }
 
     /**

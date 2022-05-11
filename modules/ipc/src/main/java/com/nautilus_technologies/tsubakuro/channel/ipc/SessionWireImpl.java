@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -71,28 +72,6 @@ public class SessionWireImpl implements SessionWire {
         }
         public void flush(long responseHandle, boolean isQuery) {
             flushNative(wireHandle, responseHandle, isQuery);
-        }
-    }
-
-    static class ByteBufferBackedInputStream extends InputStream {
-        ByteBuffer buf;
-        ByteBufferBackedInputStream(ByteBuffer buf) {
-            this.buf = buf;
-        }
-        public int read() throws IOException {
-            if (!buf.hasRemaining()) {
-                return -1;
-            }
-            return buf.get() & 0xFF;
-        }
-        public int read(byte[] bytes, int off, int len)
-            throws IOException {
-            if (!buf.hasRemaining()) {
-                return -1;
-            }
-            len = Math.min(len, buf.remaining());
-            buf.get(bytes, off, len);
-            return len;
         }
     }
 
@@ -304,6 +283,50 @@ public class SessionWireImpl implements SessionWire {
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
             throw new IOException("error: SessionWireImpl.receive()", e);
         }
+    }
+
+    /**
+     * Send RequestProtos.Request to the SQL server via the native wire.
+     * @param request the RequestProtos.Request message
+     * @return a Future response message corresponding the request
+     * @throws IOException error occurred in sendNative()
+     */
+    @Override
+    public FutureInputStream send(long serviceID, byte[] request) throws IOException {
+        if (wireHandle == 0) {
+            throw new IOException("already closed");
+        }
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var futureBody = new FutureInputStream(this);
+        synchronized (this) {
+            var handle = nativeOutputStream.getResponseHandle();
+            if (handle != 0) {
+                header.writeDelimitedTo(nativeOutputStream);
+                nativeOutputStream.write(request);
+                nativeOutputStream.flush(handle, false);
+                futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
+                logger.trace("send " + request + ", handle = " + handle);
+            } else {
+                throw new IOException("no response box available");
+            }
+        }
+        return futureBody;
+    }
+
+    @Override
+    public InputStream responseStream(ResponseWireHandle handle) throws IOException {
+        if (wireHandle == 0) {
+            throw new IOException("already closed");
+        }
+        var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
+        var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle));
+        FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
+        return byteBufferInput;
+    }
+    @Override
+    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit)
+            throws TimeoutException, IOException {
+        return responseStream(handle);  // FIXME
     }
 
     /**

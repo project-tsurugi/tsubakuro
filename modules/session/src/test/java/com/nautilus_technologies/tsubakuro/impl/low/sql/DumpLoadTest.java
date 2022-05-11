@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
@@ -116,6 +118,18 @@ class DumpLoadTest {
         }
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
+        }
+        @Override
+        public FutureInputStream send(long serviceID, byte[] request) {
+            return null; // dummy as it is test for session
+        }
+        @Override
+        public InputStream responseStream(ResponseWireHandle handle) {
+            return null; // dummy as it is test for session
+        }
+        @Override
+        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return null; // dummy as it is test for session
         }
         @Override
         public void close() throws IOException {

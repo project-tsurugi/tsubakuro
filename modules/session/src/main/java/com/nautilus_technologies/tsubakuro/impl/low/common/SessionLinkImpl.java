@@ -7,15 +7,14 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.impl.low.backup.FutureBackupImpl;
+import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureExplainImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FuturePreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.PreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.TransactionImpl;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
-import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ExplainDistiller;
 import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
@@ -31,6 +30,7 @@ import com.nautilus_technologies.tsubakuro.util.ServerResource;
  */
 public class SessionLinkImpl implements ServerResource {
     static final long SERVICE_ID_SQL = 3;
+    static final long SERVICE_ID_DATASTORE = 4;
     private SessionWire wire;
     private final Set<TransactionImpl> transactions;
     private final Set<PreparedStatementImpl> preparedStatements;
@@ -70,7 +70,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return new FutureExplainImpl(wire.<ResponseProtos.Explain>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExplain(request), new ExplainDistiller()));
-    };
+    }
 
     /**
      * Send execute sql statement request to via wire.send()
@@ -83,7 +83,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Send execute prepared statement request to via wire.send()
@@ -110,7 +110,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteQuery(request));
-    };
+    }
 
     /**
      * Send execute prepared query request to via wire.send()
@@ -124,7 +124,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecutePreparedQuery(request));
-    };
+    }
 
     /**
      * Send begin request to via wire.send()
@@ -137,7 +137,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.Begin>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setBegin(request), new BeginDistiller());
-    };
+    }
 
     /**
      * Send commit request to via wire.send()
@@ -150,7 +150,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Send rollback request to via wire.send()
@@ -163,7 +163,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Send disposePreparedStatement request to via wire.send()
@@ -176,7 +176,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Send Disconnect request to via wire.send()
@@ -189,7 +189,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
@@ -214,7 +214,7 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
-    };
+    }
 
     /**
      * Send execute dump request to via wire.send()
@@ -228,19 +228,19 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteDump(request));
-    };
+    }
 
     /**
-     * Send beginBackup request to the backup service via wire.send().
-     * @return a Future of FutureBackupImpl object
+     * Send request request to the backup service via wire.send().
+     * @return a Future of FutureInputStream object
      * @throws IOException error occurred in creating backup session
      */
-    public FutureResponse<Backup> send() throws IOException {
+    public FutureInputStream send(byte[] request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return new FutureBackupImpl();
-    };
+        return wire.send(SERVICE_ID_DATASTORE, request);
+    }
 
     /**
      * Add TransactionImpl to transactions

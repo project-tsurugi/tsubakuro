@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -46,6 +47,11 @@ public interface SessionWire extends ServerResource {
     ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException;
 
     ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
+
+
+    FutureInputStream send(long serviceID, byte[] request) throws IOException;
+    InputStream responseStream(ResponseWireHandle handle) throws IOException;
+    InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
     /**
      * Treat the latest response message received as not having been read

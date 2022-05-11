@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.backup;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.backup.DatastoreClient;
@@ -51,6 +53,19 @@ class SessionImplTest {
         public void unReceive(ResponseWireHandle responseWireHandle) {
         }
 
+        @Override
+        public FutureInputStream send(long serviceID, byte[] request) {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
+        public InputStream responseStream(ResponseWireHandle handle) {
+            return null; // dummy as it is test for session
+        }
+        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return null; // dummy as it is test for session
+        }
+        
         @Override
         public void close() throws IOException {
         }
