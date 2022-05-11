@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.sql;
+package com.nautilus_technologies.tsubakuro.channel.common;
 
 /**
  * ResponseHandle type.

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.value.ValueType;
 
+import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class ResultSetTotalTest {

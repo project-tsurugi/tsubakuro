@@ -9,6 +9,7 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
+import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 
 import org.junit.jupiter.api.Test;
 

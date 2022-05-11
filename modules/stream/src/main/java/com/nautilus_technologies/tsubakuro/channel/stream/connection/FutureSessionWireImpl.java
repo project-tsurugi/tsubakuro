@@ -3,9 +3,9 @@ package com.nautilus_technologies.tsubakuro.channel.stream.connection;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
-import com.nautilus_technologies.tsubakuro.channel.stream.sql.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Lang;

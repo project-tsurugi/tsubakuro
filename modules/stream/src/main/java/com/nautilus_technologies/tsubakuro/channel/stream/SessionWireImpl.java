@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.stream.sql;
+package com.nautilus_technologies.tsubakuro.channel.stream;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -9,12 +9,13 @@ import java.util.concurrent.TimeoutException;
 
 import org.slf4j.LoggerFactory;
 
+import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
+import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;

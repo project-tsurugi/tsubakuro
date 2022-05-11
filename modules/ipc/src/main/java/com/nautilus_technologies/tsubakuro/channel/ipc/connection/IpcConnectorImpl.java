@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.ipc.sql.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**

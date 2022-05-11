@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.sql;
+package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -10,7 +10,8 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
-
+import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+     
 /**
  * SessionWire type.
  */

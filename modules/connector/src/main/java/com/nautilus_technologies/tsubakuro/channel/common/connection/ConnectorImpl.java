@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 
-import com.nautilus_technologies.tsubakuro.channel.common.sql.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
