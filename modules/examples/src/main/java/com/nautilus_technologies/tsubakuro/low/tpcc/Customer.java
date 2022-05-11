@@ -24,7 +24,7 @@ public final class Customer {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast))
                 .build();
-        var future1 = transaction.executeQuery(prepared1, ps1);
+        var future1 = transaction.executeQuery(prepared1, ps1.getParametersList());
         long nameCnt = 0;
         var resultSet1 = future1.get();
         try {
@@ -66,7 +66,7 @@ public final class Customer {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_last").setCharacterValue(paramsClast))
                 .build();
-        var future2 = transaction.executeQuery(prepared2, ps2);
+        var future2 = transaction.executeQuery(prepared2, ps2.getParametersList());
         long rv = -1;
         var resultSet2 = future2.get();
         try {

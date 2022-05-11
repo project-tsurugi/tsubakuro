@@ -75,7 +75,7 @@ public class SelectOne extends Thread {
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
                         .build();
-                var future2 = transaction.executeQuery(prepared2, ps2);
+                var future2 = transaction.executeQuery(prepared2, ps2.getParametersList());
                 var resultSet2 = future2.get();
                 now = System.nanoTime();
                 profile.head += (now - prev);

@@ -86,7 +86,7 @@ public class StockLevel {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
-	    var future1 = transaction.executeQuery(prepared1, ps1);
+	    var future1 = transaction.executeQuery(prepared1, ps1.getParametersList());
 	    var resultSet1 = future1.get();
 	    try {
 		if (!Objects.isNull(resultSet1)) {
@@ -129,7 +129,7 @@ public class StockLevel {
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(paramsWid))
                 .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(paramsThreshold))
 		.build();
-	    var future2 = transaction.executeQuery(prepared2, ps2);
+	    var future2 = transaction.executeQuery(prepared2, ps2.getParametersList());
 	    var resultSet2 = future2.get();
 	    try {
 		if (!Objects.isNull(resultSet2)) {

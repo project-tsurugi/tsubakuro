@@ -217,7 +217,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(paramsCid))
 		.build();
-	    var future1 = transaction.executeQuery(prepared1, ps1);
+	    var future1 = transaction.executeQuery(prepared1, ps1.getParametersList());
 	    var resultSet1 = future1.get();
 	    try {
 		if (!Objects.isNull(resultSet1)) {
@@ -262,7 +262,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
-	    var future2 = transaction.executeQuery(prepared2, ps2);
+	    var future2 = transaction.executeQuery(prepared2, ps2.getParametersList());
 	    var resultSet2 = future2.get();
 	    try {
 		if (!Objects.isNull(resultSet2)) {
@@ -304,7 +304,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
-	    var future3 = transaction.executeStatement(prepared3, ps3);
+	    var future3 = transaction.executeStatement(prepared3, ps3.getParametersList());
 	    var result3 = future3.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
@@ -325,7 +325,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setInt8Value(paramsOlCnt))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(paramsAllLocal))
 		.build();
-	    var future4 = transaction.executeStatement(prepared4, ps4);
+	    var future4 = transaction.executeStatement(prepared4, ps4.getParametersList());
 	    var result4 = future4.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result4.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
@@ -340,7 +340,7 @@ public class NewOrder {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
 		.build();
-	    var future5 = transaction.executeStatement(prepared5, ps5);
+	    var future5 = transaction.executeStatement(prepared5, ps5.getParametersList());
 	    var result5 = future5.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
 		profile.retryOnStatement.newOrder++;
@@ -359,7 +359,7 @@ public class NewOrder {
 		var ps6 = RequestProtos.ParameterSet.newBuilder()
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("i_id").setInt8Value(olIid))
 		    .build();
-		var future6 = transaction.executeQuery(prepared6, ps6);
+		var future6 = transaction.executeQuery(prepared6, ps6.getParametersList());
 		var resultSet6 = future6.get();
 		try {
 		    if (!Objects.isNull(resultSet6)) {
@@ -399,7 +399,7 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
 		    .build();
-		var future7 = transaction.executeQuery(prepared7, ps7);
+		var future7 = transaction.executeQuery(prepared7, ps7.getParametersList());
 		var resultSet7 = future7.get();
 		try {
 		    if (!Objects.isNull(resultSet7)) {
@@ -458,7 +458,7 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
 		    .build();
-		var future8 = transaction.executeStatement(prepared8, ps8);
+		var future8 = transaction.executeStatement(prepared8, ps8.getParametersList());
 		var result8 = future8.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
 		    profile.stockTable.newOrder++;
@@ -481,7 +481,7 @@ public class NewOrder {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_amount").setFloat8Value(olAmount))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("ol_dist_info").setCharacterValue(olDistInfo))
 		    .build();
-		var future9 = transaction.executeStatement(prepared9, ps9);
+		var future9 = transaction.executeStatement(prepared9, ps9.getParametersList());
 		var result9 = future9.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
 		    profile.ordersTable.newOrder++;

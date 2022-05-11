@@ -83,7 +83,7 @@ public class Update extends Thread {
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
                         .build();
-                var future8 = transaction.executeStatement(prepared8, ps8);
+                var future8 = transaction.executeStatement(prepared8, ps8.getParametersList());
                 var result8 = future8.get();
                 if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
                     if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {

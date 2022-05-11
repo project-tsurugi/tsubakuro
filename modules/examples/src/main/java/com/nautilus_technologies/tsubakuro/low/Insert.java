@@ -45,7 +45,7 @@ public class Insert {
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_ol_cnt").setInt8Value(7))
                     .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_all_local").setInt8Value(0))
                     .build();
-            var result = transaction.executeStatement(preparedStatement, ps).get();
+            var result = transaction.executeStatement(preparedStatement, ps.getParametersList()).get();
             if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result.getResultCase())) {
                 if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
                     throw new IOException("error in rollback");
