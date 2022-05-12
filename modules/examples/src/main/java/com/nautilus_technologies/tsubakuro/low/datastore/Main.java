@@ -35,6 +35,7 @@ public final class Main {
                     System.out.println(source);
                 }
                 backup.keepAlive(1, TimeUnit.SECONDS);
+                backup.close();
             }
         }
     }

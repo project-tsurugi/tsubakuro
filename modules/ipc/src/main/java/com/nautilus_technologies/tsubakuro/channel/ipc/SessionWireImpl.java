@@ -28,6 +28,7 @@ import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 
 /**
@@ -207,7 +208,7 @@ public class SessionWireImpl implements SessionWire {
         }
         try {
             var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-            var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle));
+            var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle));
             FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
             var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
             logger.trace("receive " + response + ", hancle = " + handle);
@@ -255,7 +256,7 @@ public class SessionWireImpl implements SessionWire {
             if (timeoutNano == Long.MIN_VALUE) {
                 throw new IOException("timeout duration overflow");
             }
-            var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle, timeoutNano));
+            var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle, timeoutNano));
             FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
             var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
             synchronized (this) {
@@ -319,7 +320,7 @@ public class SessionWireImpl implements SessionWire {
             throw new IOException("already closed");
         }
         var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-        var byteBufferInput = new ByteBufferBackedInputStream(receiveNative(responseHandle));
+        var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle));
         FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
         return byteBufferInput;
     }
