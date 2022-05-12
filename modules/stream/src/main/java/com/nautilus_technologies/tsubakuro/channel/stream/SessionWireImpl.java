@@ -1,5 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.stream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayDeque;
@@ -23,6 +25,8 @@ import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
+import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 
@@ -30,6 +34,8 @@ import com.nautilus_technologies.tsubakuro.util.Pair;
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements SessionWire {
+    static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
+
     private StreamWire streamWire;
     private final long sessionID;
     private final ResponseBox responseBox;
@@ -103,16 +109,24 @@ public class SessionWireImpl implements SessionWire {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
-        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
-        var futureBody = new FutureResponseImpl<V>(this, distiller);
-        var index = responseBox.lookFor(1);
-        if (index >= 0) {
-            streamWire.send(index, req);
-            futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
-        } else {
-            queue.add(new QueueEntry<V>(req, futureBody));
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            req.writeDelimitedTo(buffer);
+            var bytes = buffer.toByteArray();
+            var futureBody = new FutureResponseImpl<V>(this, distiller);
+            var index = responseBox.lookFor(1);
+            if (index >= 0) {
+                streamWire.send(index, bytes);
+                futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
+            } else {
+                queue.add(new QueueEntry<V>(bytes, futureBody));
+            }
+            return futureBody;
+        } catch (IOException e) {
+            throw new IOException(e);
         }
-        return futureBody;
     }
 
     /**
@@ -125,18 +139,27 @@ public class SessionWireImpl implements SessionWire {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
-        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build().toByteArray();
-        var left = new FutureQueryResponseImpl(this);
-        var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
-        var index = responseBox.lookFor(2);
-        if (index >= 0) {
-            streamWire.send(index, req);
-            left.setResponseHandle(new ResponseWireHandleImpl(index));
-            right.setResponseHandle(new ResponseWireHandleImpl(index));
-        } else {
-            queue.add(new QueueEntry<ResponseProtos.ResultOnly>(req, left, right));
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            req.writeDelimitedTo(buffer);
+            var bytes = buffer.toByteArray();
+
+            var left = new FutureQueryResponseImpl(this);
+            var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
+            var index = responseBox.lookFor(2);
+            if (index >= 0) {
+                streamWire.send(index, bytes);
+                left.setResponseHandle(new ResponseWireHandleImpl(index));
+                right.setResponseHandle(new ResponseWireHandleImpl(index));
+            } else {
+                queue.add(new QueueEntry<ResponseProtos.ResultOnly>(bytes, left, right));
+            }
+            return Pair.of(left, right);
+        } catch (IOException e) {
+            throw new IOException(e);
         }
-        return Pair.of(left, right);
     }
 
     /**
@@ -151,8 +174,9 @@ public class SessionWireImpl implements SessionWire {
         }
         try {
             byte index = ((ResponseWireHandleImpl) handle).getHandle();
-
-            var response = ResponseProtos.Response.parseFrom(responseBox.receive(index));
+            var inputStream = new ByteArrayInputStream(responseBox.receive(index));
+            FrameworkResponseProtos.Header.parseDelimitedFrom(inputStream);
+            var response = ResponseProtos.Response.parseDelimitedFrom(inputStream);
             responseBox.release(index);
             var entry = queue.peek();
             if (!Objects.isNull(entry)) {
@@ -222,11 +246,34 @@ public class SessionWireImpl implements SessionWire {
 
     @Override
     public FutureInputStream send(long serviceID, byte[] request) throws IOException {
-        throw new UnsupportedOperationException();
+        if (Objects.isNull(streamWire)) {
+            throw new IOException("already closed");
+        }
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var futureBody = new FutureInputStream(this);
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            var bytes = buffer.toByteArray();
+            var index = responseBox.lookFor(1);
+            if (index >= 0) {
+                streamWire.send(index, bytes, request);
+                futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
+            }
+            return futureBody;
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
+
     @Override
     public InputStream responseStream(ResponseWireHandle handle) throws IOException {
-        throw new UnsupportedOperationException();
+        if (Objects.isNull(streamWire)) {
+            throw new IOException("already closed");
+        }
+        byte index = ((ResponseWireHandleImpl) handle).getHandle();
+        var inputStream = new ByteArrayInputStream(responseBox.receive(index));
+        FrameworkResponseProtos.Header.parseDelimitedFrom(inputStream);
+        return inputStream;
     }
     @Override
     public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {

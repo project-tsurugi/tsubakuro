@@ -2,6 +2,8 @@ package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.ServerSocket;
 // import java.text.MessageFormat;
 // import java.util.Objects;
@@ -13,11 +15,14 @@ import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.channel.stream.ServerStreamWire;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
+import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 
 /**
  * ServerWireImpl type.
  */
 public class ServerWireImpl implements Closeable {
+    static final FrameworkResponseProtos.Header.Builder HEADER_BUILDER = FrameworkResponseProtos.Header.newBuilder();
 
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
@@ -142,7 +147,10 @@ public class ServerWireImpl implements Closeable {
         try {
             while (true) {
                 if (!receiveQueue.isEmpty()) {
-                    return RequestProtos.Request.parseFrom(receiveQueue.poll().getBytes());
+                    var ba = receiveQueue.poll().getBytes();
+                    var byteArrayInputStream = new ByteArrayInputStream(ba);
+                    FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
+                    return RequestProtos.Request.parseDelimitedFrom(byteArrayInputStream);
                 }
                 try {
                     Thread.sleep(10);
@@ -161,7 +169,15 @@ public class ServerWireImpl implements Closeable {
      @param request the ResponseProtos.Response message
      */
     public void put(ResponseProtos.Response response) throws IOException {
-        serverStreamWire.sendResponse(0, response.toByteArray());
+        var header = HEADER_BUILDER.build();
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            response.writeDelimitedTo(buffer);
+            var bytes = buffer.toByteArray();
+            serverStreamWire.sendResponse(0, bytes);
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 
     public long createRSL(String name) throws IOException {
