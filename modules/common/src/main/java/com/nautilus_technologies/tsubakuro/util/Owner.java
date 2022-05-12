@@ -4,9 +4,10 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import  com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 /**
  * Represents an ownership of {@link ServerResource}.
@@ -61,6 +62,15 @@ public class Owner<T extends ServerResource> implements ServerResource {
         return Owner.of(release());
     }
 
+    @Override
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
+        Objects.requireNonNull(timeout);
+        var resource = ownership.get();
+        if (Objects.nonNull(resource)) {
+            resource.setCloseTimeout(timeout);
+        }
+    }
+
     /**
      * Closes the holding object only if it is present.
      */
@@ -83,9 +93,8 @@ public class Owner<T extends ServerResource> implements ServerResource {
      */
     public static void close(@Nullable ServerResource resource)
             throws IOException, ServerException, InterruptedException {
-        try (resource) {
-            // only close the resource
-            Lang.pass();
+        if (Objects.nonNull(resource)) {
+            resource.close();
         }
     }
 }

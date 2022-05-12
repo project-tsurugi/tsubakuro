@@ -9,7 +9,6 @@ import java.util.concurrent.TimeoutException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos.ResultOnly;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureResponseMock type.
@@ -52,6 +51,5 @@ public class FutureResponseMock extends AbstractFutureResponse<ResponseProtos.Re
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        Lang.pass();
     }
 }

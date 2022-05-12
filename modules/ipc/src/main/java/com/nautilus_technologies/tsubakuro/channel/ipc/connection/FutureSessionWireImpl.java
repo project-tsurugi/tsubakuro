@@ -7,7 +7,6 @@ import java.util.concurrent.TimeoutException;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureSessionWireImpl type.
@@ -38,6 +37,5 @@ public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         // FIXME: cancel connection if get() have never been called
-        Lang.pass();
     }
 }

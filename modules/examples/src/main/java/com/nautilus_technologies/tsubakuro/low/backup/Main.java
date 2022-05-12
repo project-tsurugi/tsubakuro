@@ -29,12 +29,11 @@ public final class Main {
                 .create(10, TimeUnit.SECONDS);
                 DatastoreClient client = DatastoreClient.attach(session);) {
 
-            try (Backup transaction = client.beginBackup().await()) {
-                System.out.println("backup id = " + transaction.backupID());
+            try (Backup backup = client.beginBackup().await()) {
                 System.out.println("files are:");
-                transaction.files().forEach(s -> {
-                        System.out.println(s);
-                    });
+                for (Path source : backup.getFiles()) {
+                    System.out.println(source);
+                }
             }
         }
     }

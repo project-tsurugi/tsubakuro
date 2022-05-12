@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 
@@ -75,6 +74,5 @@ public class FutureQueryResponseImpl implements FutureResponse<ResponseProtos.Ex
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         // FIXME: impl
-        Lang.pass();
     }
 }

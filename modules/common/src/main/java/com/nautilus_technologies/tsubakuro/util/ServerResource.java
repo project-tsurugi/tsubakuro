@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.util;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -14,13 +13,12 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 public interface ServerResource extends AutoCloseable {
 
     /**
-     * Sets timeout of {@link #close()} operation.
-     * If this object does not take long time, this operation does nothing.
-     * @param timeout time length until the close operation timeout
-     * @param unit unit of timeout
+     * Sets close timeout.
+     * This is only effective if this resource considers close timeout.
+     * @param timeout the timeout setting
      */
-    default void setCloseTimeout(long timeout, TimeUnit unit) {
-        Lang.pass();
+    default void setCloseTimeout(@Nonnull Timeout timeout) {
+        return;
     }
 
     @Override

@@ -7,7 +7,6 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * ResultSetMock type.
@@ -276,6 +275,5 @@ public class ResultSetMock implements ResultSet {
      */
     @Override
     public void close() {
-        Lang.pass();
     }
 }

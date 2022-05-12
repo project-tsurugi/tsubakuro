@@ -24,7 +24,6 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 
 class SessionImplTest {
@@ -61,7 +60,6 @@ class SessionImplTest {
         }
         @Override
         public void close() throws IOException, ServerException, InterruptedException {
-            Lang.pass();
         }
     }
 

@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureInputStream type.
@@ -68,6 +67,5 @@ public class FutureInputStream implements FutureResponse<InputStream> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         // FIXME impl
-        Lang.pass();
     }
 }

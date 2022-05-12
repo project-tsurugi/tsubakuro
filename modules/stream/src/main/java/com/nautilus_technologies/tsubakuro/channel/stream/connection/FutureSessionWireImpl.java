@@ -8,7 +8,6 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureSessionWireImpl type.
@@ -54,6 +53,6 @@ public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        Lang.pass();
+        // FIXME
     }
 }

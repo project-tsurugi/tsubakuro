@@ -79,7 +79,7 @@ class SessionImplTest {
                 var client = DatastoreClient.attach(session);
                 var backup = client.beginBackup().await();
             ) {
-                for (Path source : backup.files()) {
+                for (Path source : backup.getFiles()) {
                     assertEquals(Path.of("/tmp/backup-1"), source);
                 }
             } catch (Exception e) {

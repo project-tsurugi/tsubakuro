@@ -49,7 +49,6 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @param t time length until the close operation timeout
      * @param u unit of timeout
      */
-    @Override
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;

@@ -12,6 +12,21 @@ public enum DatastoreServiceCode implements DiagnosticCode {
      */
     UNKNOWN(0),
 
+    /**
+     * Backup session is already expired.
+     */
+    BACKUP_EXPIRED(1_01),
+
+    /**
+     * The target tag is already exists.
+     */
+    TAG_ALREADY_EXISTS(6_01),
+
+    /**
+     * The target tag name is too long.
+     */
+    TAG_NAME_TOO_LONG(6_01),
+
     ;
     private final int codeNumber;
 

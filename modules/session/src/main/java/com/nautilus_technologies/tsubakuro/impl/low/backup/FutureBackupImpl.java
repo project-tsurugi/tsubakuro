@@ -10,7 +10,6 @@ import java.util.List;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.backup.Backup;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
 import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 
@@ -58,6 +57,5 @@ public class FutureBackupImpl implements FutureResponse<Backup> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         // FIXME: impl
-        Lang.pass();
     }
 }

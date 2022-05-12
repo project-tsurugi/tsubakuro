@@ -6,7 +6,6 @@ import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 
 /**
  * FutureResultSetMock type.
@@ -32,6 +31,5 @@ public class FutureResultSetMock extends AbstractFutureResponse<ResultSet> {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        Lang.pass();
     }
 }

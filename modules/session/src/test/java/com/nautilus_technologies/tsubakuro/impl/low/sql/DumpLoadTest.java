@@ -27,7 +27,6 @@ import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 class DumpLoadTest {
     ResponseProtos.Response nextResponse;
@@ -41,9 +40,6 @@ class DumpLoadTest {
         @Override
         public boolean hasResultRecords() {
             return false;
-        }
-        @Override
-        public void setCloseTimeout(long t, TimeUnit u) {
         }
 
         @Override
@@ -80,7 +76,6 @@ class DumpLoadTest {
 
         @Override
         public void close() throws IOException, ServerException, InterruptedException {
-            Lang.pass();
         }
     }
 

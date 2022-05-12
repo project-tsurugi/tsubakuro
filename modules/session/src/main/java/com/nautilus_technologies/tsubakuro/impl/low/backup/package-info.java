@@ -1,6 +1,4 @@
 /**
- * Implementation of Tsurugi datastore service client.
+ * Implementation of Tsurugi administration service clients.
  */
-package com.nautilus_technologies.tsubakuro.impl.low.backup;
-
-//FIXME consider whether to rename to `datastore` or `admin`
+package com.nautilus_technologies.tsubakuro.admin.impl;
