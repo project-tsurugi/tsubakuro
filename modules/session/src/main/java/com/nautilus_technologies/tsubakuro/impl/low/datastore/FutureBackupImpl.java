@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.backup;
+package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
+import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
 import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;

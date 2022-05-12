@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.backup;
+package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -22,12 +22,12 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tateyama.proto.DatastoreCommonProtos;
 import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
-// import com.nautilus_technologies.tsubakuro.low.backup.BackupEstimate;
-import com.nautilus_technologies.tsubakuro.low.backup.DatastoreService;
-import com.nautilus_technologies.tsubakuro.low.backup.DatastoreServiceCode;
-import com.nautilus_technologies.tsubakuro.low.backup.DatastoreServiceException;
-import com.nautilus_technologies.tsubakuro.low.backup.Tag;
+import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
+// import com.nautilus_technologies.tsubakuro.low.datastore.BackupEstimate;
+import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreService;
+import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreServiceCode;
+import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreServiceException;
+import com.nautilus_technologies.tsubakuro.low.datastore.Tag;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;

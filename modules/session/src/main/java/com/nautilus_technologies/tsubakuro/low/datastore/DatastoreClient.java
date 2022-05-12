@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.backup;
+package com.nautilus_technologies.tsubakuro.low.datastore;
 
 import java.io.IOException;
 import java.util.List;
@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
-import com.nautilus_technologies.tsubakuro.impl.low.backup.DatastoreClientImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.datastore.DatastoreClientImpl;
 
 /**
  * A datastore service client.

@@ -95,6 +95,6 @@ tasks.register('runBackup', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.backup.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.datastore.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }

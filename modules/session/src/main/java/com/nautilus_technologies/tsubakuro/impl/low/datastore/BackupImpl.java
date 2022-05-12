@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.impl.low.backup;
+package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -15,8 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
-import com.nautilus_technologies.tsubakuro.low.backup.DatastoreService;
+import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
+import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreService;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
