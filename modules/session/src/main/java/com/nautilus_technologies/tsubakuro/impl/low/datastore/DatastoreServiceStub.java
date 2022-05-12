@@ -93,13 +93,34 @@ public class DatastoreServiceStub implements DatastoreService {
     @Override
     public FutureResponse<Backup> send(@Nonnull DatastoreRequestProtos.BackupBegin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return new FutureBackupImpl(session.send(Constants.SERVICE_ID_BACKUP, toByteArray(DatastoreRequestProtos.Request.newBuilder()
-                                                                                          .setMessageVersion(Constants.MESSAGE_VERSION)
-                                                                                          .setBackupBegin(request)
-                                                                                          .build())));
+        return new FutureBackupImpl(session.send(Constants.SERVICE_ID_BACKUP,
+                                                 toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                                             .setMessageVersion(Constants.MESSAGE_VERSION)
+                                                             .setBackupBegin(request)
+                                                             .build())));
     }
 
-// FIXME user response processor
+    @Override
+    public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupEnd request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return new FutureEndImpl(session.send(SERVICE_ID,
+                                              toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                                                   .setMessageVersion(Constants.MESSAGE_VERSION)
+                                                                   .setBackupEnd(request)
+                                                                   .build())));
+    }
+
+    @Override
+    public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupContinue request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return new FutureContinueImpl(session.send(SERVICE_ID,
+                                                   toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                                                        .setMessageVersion(Constants.MESSAGE_VERSION)
+                                                                        .setBackupContine(request)
+                                                                        .build())));
+    }
+
+    // FIXME user response processor
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
@@ -107,7 +128,7 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
 // FIXME should process at transport layer
-    private byte[] toByteArray(DatastoreRequestProtos.Request request) throws IOException {
+    private byte[] toDelimitedByteArray(DatastoreRequestProtos.Request request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

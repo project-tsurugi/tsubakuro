@@ -34,6 +34,7 @@ public final class Main {
                 for (Path source : backup.getFiles()) {
                     System.out.println(source);
                 }
+                backup.keepAlive(1, TimeUnit.SECONDS);
             }
         }
     }
