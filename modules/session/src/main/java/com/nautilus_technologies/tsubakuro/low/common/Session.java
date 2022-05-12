@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.common;
 import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
@@ -44,6 +44,15 @@ public interface Session extends ServerResource {
      */
     FutureResponse<Transaction> createTransaction(RequestProtos.TransactionOption option) throws IOException;
 
+    /**
+     * Send a request via sessionWire
+     * @param id identifies the service
+     * @param request the request to the service
+     * @return a FutureInputStream for response
+     * @throws IOException error occurred in send
+     */
+    FutureInputStream send(long id, byte[] request) throws IOException;
+
     @Deprecated
     default FutureResponse<Transaction> createTransaction(RequestProtos.TransactionOption.Builder option) throws IOException {
         return createTransaction(option.build());
@@ -76,11 +85,4 @@ public interface Session extends ServerResource {
     default FutureResponse<String> explain(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
         return explain(preparedStatement, parameterSet.build());
     }
-
-    /**
-     * Begin the new backup session
-     * @return a FutureResponse of a backup session
-     * @throws IOException error occurs during the backup session initiation process
-     */
-    FutureResponse<Backup> beginBackup() throws IOException;
 }

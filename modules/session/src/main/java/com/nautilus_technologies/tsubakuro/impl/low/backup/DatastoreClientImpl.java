@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.impl.low.backup;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -10,11 +12,13 @@ import com.nautilus_technologies.tsubakuro.low.backup.Backup;
 import com.nautilus_technologies.tsubakuro.low.backup.DatastoreClient;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 
 /**
  * An implementation of {@link DatastoreClient}.
  */
 public class DatastoreClientImpl implements DatastoreClient {
+    static final long SERVICE_ID_DATASTORE = 2;
 
     private final Session session;
 
@@ -29,9 +33,27 @@ public class DatastoreClientImpl implements DatastoreClient {
 
     // FIXME directly send request messages instead of delegate it via Session
 
+    interface WriteAction {
+        void perform(OutputStream buffer) throws IOException, InterruptedException;
+    }
+
+    private static byte[] dump(WriteAction action) throws IOException, InterruptedException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            action.perform(buffer);
+            return buffer.toByteArray();
+        }
+    }
+
     @Override
     public FutureResponse<Backup> beginBackup() throws IOException, InterruptedException {
-        return session.beginBackup();
+        try {
+            var request = dump(out -> {
+                    DatastoreRequestProtos.BackupBegin.newBuilder().build().writeDelimitedTo(out);
+                });
+            return new FutureBackupImpl(session.send(SERVICE_ID_DATASTORE, request));
+        } catch (IOException | InterruptedException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

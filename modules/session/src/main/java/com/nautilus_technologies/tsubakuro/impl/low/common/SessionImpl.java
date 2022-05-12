@@ -1,8 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -11,17 +9,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureTransactionImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.PreparedStatementImpl;
-import com.nautilus_technologies.tsubakuro.low.backup.Backup;
-import com.nautilus_technologies.tsubakuro.impl.low.backup.FutureBackupImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -30,9 +26,11 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 public class SessionImpl implements Session {
     static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
 
+
     private long timeout;
     private TimeUnit unit;
     private SessionLinkImpl sessionLinkImpl;
+    private SessionWire sessionWire;
 
     /**
      * Connect this session to the SQL server.
@@ -43,8 +41,9 @@ public class SessionImpl implements Session {
      * @param sessionWire the wire that connects to the Database
      */
     @Override
-    public void connect(SessionWire sessionWire) {
-        this.sessionLinkImpl = new SessionLinkImpl(sessionWire);
+    public void connect(SessionWire wire) {
+        sessionLinkImpl = new SessionLinkImpl(wire);
+        sessionWire = wire;
     }
 
     /**
@@ -125,36 +124,9 @@ public class SessionImpl implements Session {
                 .setParameters(parameterSet));
     }
 
-
-    interface WriteAction {
-        void perform(OutputStream buffer) throws IOException, InterruptedException;
-    }
-
-    private static byte[] dump(WriteAction action) throws IOException, InterruptedException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            action.perform(buffer);
-            return buffer.toByteArray();
-        }
-    }
-
-    /**
-     * Begin a new backup session (like transaction) by specifying the transaction type
-     * @return the backup session
-     */
     @Override
-    public FutureResponse<Backup> beginBackup() throws IOException {
-        if (Objects.isNull(sessionLinkImpl)) {
-            throw new IOException("this session is not connected to the Database");
-        }
-        try {
-            var request = dump(out -> {
-                    DatastoreRequestProtos.BackupBegin.newBuilder().build().writeDelimitedTo(out);
-                });
-            return new FutureBackupImpl(sessionLinkImpl.send(request));
-        } catch (IOException | InterruptedException e) {
-            throw new IOException(e);
-        }
-
+    public FutureInputStream send(long id, byte[] request) throws IOException {
+        return sessionWire.send(id, request);
     }
 
     /**
@@ -186,6 +158,7 @@ public class SessionImpl implements Session {
                 LOG.warn("closing session is timeout", e);
             } finally {
                 sessionLinkImpl = null;
+                sessionWire = null;
             }
         }
     }

@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -30,7 +29,7 @@ import com.nautilus_technologies.tsubakuro.util.ServerResource;
  */
 public class SessionLinkImpl implements ServerResource {
     static final long SERVICE_ID_SQL = 3;
-    static final long SERVICE_ID_DATASTORE = 4;
+
     private SessionWire wire;
     private final Set<TransactionImpl> transactions;
     private final Set<PreparedStatementImpl> preparedStatements;
@@ -228,18 +227,6 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteDump(request));
-    }
-
-    /**
-     * Send request request to the backup service via wire.send().
-     * @return a Future of FutureInputStream object
-     * @throws IOException error occurred in creating backup session
-     */
-    public FutureInputStream send(byte[] request) throws IOException {
-        if (Objects.isNull(wire)) {
-            throw new IOException("already closed");
-        }
-        return wire.send(SERVICE_ID_DATASTORE, request);
     }
 
     /**
