@@ -31,23 +31,26 @@ public class DatastoreClientImpl implements DatastoreClient {
         this.session = session;
     }
 
-    // FIXME directly send request messages instead of delegate it via Session
-
     @Override
     public FutureResponse<Backup> beginBackup() throws IOException, InterruptedException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            DatastoreRequestProtos.Request.newBuilder()
-            .setMessageVersion(MESSAGE_VERSION)
-            .setBackupBegin(DatastoreRequestProtos.BackupBegin.newBuilder())
-            .build().writeDelimitedTo(buffer);
-            return new FutureBackupImpl(session.send(SERVICE_ID_DATASTORE, buffer.toByteArray()));
-        } catch (IOException e) {
-            throw new IOException(e);
-        }
+        var request = DatastoreRequestProtos.Request.newBuilder()
+                        .setMessageVersion(MESSAGE_VERSION)
+                        .setBackupBegin(DatastoreRequestProtos.BackupBegin.newBuilder())
+                        .build();
+        return new FutureBackupImpl(session.send(SERVICE_ID_DATASTORE, toByteArray(request)));
     }
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         // FIXME close underlying resources (e.g. ongoing transactions)
+    }
+
+    private byte[] toByteArray(DatastoreRequestProtos.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 }
