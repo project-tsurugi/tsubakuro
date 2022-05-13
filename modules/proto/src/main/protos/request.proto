@@ -35,7 +35,7 @@ message PlaceHolder {
     uint32 dimension = 20;
 }
 
-// the placeholder replacements.
+/* For set of parameters passed when executing prepared statements. */
 message Parameter {
     // the placeholder location.
     oneof placement {
