@@ -25,7 +25,7 @@ message PlaceHolder {
         // the placeholder type.
         oneof type_info {
             // FIXME: rename (atom_type) - the atom type.
-            common.DataType type = 11;
+            common.AtomType type = 11;
             // the row type.
             common.RowType row_type = 12;
             // the user defined type.
