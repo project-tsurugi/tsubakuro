@@ -12,7 +12,7 @@ import "common.proto";
  * Definition of sub fields for Request.
  */
 
-/* For host variable consisting of name and type. */
+// the placeholder for the prepared statements.
 message PlaceHolder {
     // the placeholder location.
     oneof placement {
@@ -35,7 +35,7 @@ message PlaceHolder {
     uint32 dimension = 20;
 }
 
-/* For set of parameters passed when executing prepared statements. */
+// the placeholder replacements.
 message Parameter {
     // the placeholder location.
     oneof placement {
