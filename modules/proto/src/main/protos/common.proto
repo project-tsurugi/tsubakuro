@@ -25,8 +25,7 @@ message PreparedStatement {
   bool has_result_records = 2;
 }
 
-// FIXME: rename (AtomType) - For data types that the 'tsurugi' supports.
-enum DataType {
+enum AtomType {
     // unspecified type.
     TYPE_UNSPECIFIED = 0;
 
@@ -108,7 +107,7 @@ message Column {
     // the column type.
     oneof type_info {
         // the atom type.
-        DataType atom_type = 2;
+        AtomType atom_type = 2;
         // the row type.
         RowType row_type = 3;
         // the user defined type.
@@ -133,7 +132,7 @@ message TypeInfo {
     // the column type.
     oneof type_info {
         // the atom type.
-        DataType atom_type = 1;
+        AtomType atom_type = 1;
         // the row type.
         RowType row_type = 2;
         // the user defined type.

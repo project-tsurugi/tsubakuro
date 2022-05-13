@@ -15,7 +15,7 @@ option java_outer_classname = "SchemaProtos";
 message RecordMeta {
   message Column {
     string name = 1;
-    common.DataType type = 2;
+    common.AtomType type = 2;
     bool nullable = 3;
   }
 
