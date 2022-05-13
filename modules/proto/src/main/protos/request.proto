@@ -1,11 +1,12 @@
 syntax = "proto3";
 
-package request;
+package jogasaki.proto.sql.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.jogasaki.proto";
+option java_outer_classname = "SqlRequest";
 
 import "common.proto";
-
-option java_package = "com.nautilus_technologies.tsubakuro.protos";
-option java_outer_classname = "RequestProtos";
 
 /*
  * Definition of sub fields for Request.

@@ -1,8 +1,9 @@
 syntax = "proto3";
 
-package common;
+package jogasaki.proto.sql.common;
 
-option java_package = "com.nautilus_technologies.tsubakuro.protos";
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.jogasaki.proto";
 option java_outer_classname = "CommonProtos";
 
 /*
