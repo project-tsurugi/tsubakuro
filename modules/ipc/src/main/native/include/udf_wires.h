@@ -87,8 +87,8 @@ public:
         void write(const int b) {
             wire_->write(bip_buffer_, b);
         }
-        void flush(message_header&& header) {
-            wire_->flush(bip_buffer_, std::move(header));
+        void flush(message_header::index_type index) {
+            wire_->flush(bip_buffer_, index);
         }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
@@ -134,16 +134,16 @@ public:
         return nullptr;
     }
     void write(const int b) {
-        if (length_ == 0) {
+        if (!header_processed_) {
             request_wire_.brand_new();
+            header_processed_ = true;
         }
         request_wire_.write(b);
-        length_++;
     }
     void flush() {
-        request_wire_.flush(message_header(index_, length_));
+        request_wire_.flush(index_);
         index_ = -1;
-        length_ = 0;
+        header_processed_ = false;
     }
     resultset_wires_container *create_resultset_wire() {
         return new resultset_wires_container(this);
@@ -158,8 +158,8 @@ private:
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_{};
     response_box* responses_;
-    message_header::length_type length_{};
     message_header::index_type index_{};
+    bool header_processed_{};
 };
 
 class connection_container

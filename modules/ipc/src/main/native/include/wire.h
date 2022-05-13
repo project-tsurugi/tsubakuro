@@ -128,39 +128,6 @@ public:
     simple_wire& operator = (simple_wire const&) = delete;
     simple_wire& operator = (simple_wire&&) = delete;
 
-    /**
-     * @brief peep the current header.
-     */
-    T peep(const char* base, bool wait_flag = false) {
-        while (true) {
-            if(stored() >= T::size) {
-                break;
-            }
-            if (wait_flag) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                wait_for_read_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return stored() >= T::size; });
-                wait_for_read_ = false;
-            } else {
-                if (stored() < T::size) { return T(); }
-            }
-        }
-        if ((base + capacity_) >= (read_address(base) + sizeof(T))) {  //NOLINT
-            T header(read_address(base));  // normal case
-            return header;
-        }
-        char buf[sizeof(T)];  // in case for ring buffer full  //NOLINT
-        std::size_t first_part = capacity_ - index(poped_);
-        memcpy(buf, read_address(base), first_part);  //NOLINT
-        memcpy(buf + first_part, base, sizeof(T) - first_part);  //NOLINT
-        T header(static_cast<char*>(buf));
-        return header;
-    }
-    T peep(bool wait_flag = false) {
-        return peep(get_bip_address(), wait_flag);
-    }
-
     char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
         if (buffer_handle_ != 0) {
             return static_cast<char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
@@ -208,7 +175,6 @@ protected:
     std::size_t capacity_;  //NOLINT
 
     std::atomic_ulong pushed_{0};  //NOLINT
-    std::size_t header_position_{0};  //NOLINT
     std::size_t poped_{0};  //NOLINT
 
     std::atomic_bool wait_for_write_{};  //NOLINT
@@ -226,23 +192,54 @@ public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
+     * @brief peep the current header.
+     */
+    message_header peep(const char* base, bool wait_flag = false) {
+        while (true) {
+            if(stored_valid() >= message_header::size) {
+                break;
+            }
+            if (wait_flag) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                wait_for_read_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                c_empty_.wait(lock, [this](){ return stored_valid() >= message_header::size; });
+                wait_for_read_ = false;
+            } else {
+                if (stored_valid() < message_header::size) { return message_header(); }
+            }
+        }
+        if ((base + capacity_) >= (read_address(base) + sizeof(message_header))) {  //NOLINT
+            message_header header(read_address(base));  // normal case
+            return header;
+        }
+        char buf[sizeof(message_header)];  // in case for ring buffer full  //NOLINT
+        std::size_t first_part = capacity_ - index(poped_);
+        memcpy(buf, read_address(base), first_part);  //NOLINT
+        memcpy(buf + first_part, base, sizeof(message_header) - first_part);  //NOLINT
+        message_header header(static_cast<char*>(buf));
+        return header;
+    }
+
+    /**
      * @brief push a request message into the queue one by one byte.
      */
     void brand_new() {
         std::size_t length = message_header::size;
         if (length > room()) { wait_to_write(length); }
-        header_position_ = pushed_;
         pushed_ += length;
     }
     void write(char* base, const int b) {
         std::size_t length = 1;
-        char c = b & 0xff;
+        char c = b & 0xff;  // NOLINT
         if (length > room()) { wait_to_write(length); }
         write_in_buffer(base, buffer_address(base, pushed_), &c, 1);
         pushed_ += length;
     }
-    void flush(char* base, message_header&& header) {
-        write_in_buffer(base, buffer_address(base, header_position_), header.get_buffer(), message_header::size);
+    void flush(char* base, message_header::index_type index) {
+        message_header header(index, pushed_ - (pushed_valid_ + message_header::size));
+        write_in_buffer(base, buffer_address(base, pushed_valid_), header.get_buffer(), message_header::size);
+        pushed_valid_.store(pushed_.load());
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -293,6 +290,9 @@ public:
 
 private:
     std::unique_ptr<char[]> copy_of_payload_{};  // in case of ring buffer wrap around  //NOLINT
+    std::atomic_ulong pushed_valid_{0};  //NOLINT
+
+    std::size_t stored_valid() const { return (pushed_valid_ - poped_); }  //NOLINT
 };
 
 

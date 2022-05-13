@@ -82,21 +82,27 @@ public class SessionWireImpl implements SessionWire {
     };
 
     static class QueueEntry<V> {
+        long serviceId;
         RequestType type;
         RequestProtos.Request request;
         FutureResponseImpl<V> futureBody;
         FutureQueryResponseImpl futureHead;
 
-        QueueEntry(RequestProtos.Request request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
+        QueueEntry(long serviceId, RequestProtos.Request request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
+            this.serviceId = serviceId;
             this.type = RequestType.QUERY;
             this.request = request;
             this.futureBody = futureBody;
             this.futureHead = futureHead;
         }
-        QueueEntry(RequestProtos.Request request, FutureResponseImpl<V> futureBody) {
+        QueueEntry(long serviceId, RequestProtos.Request request, FutureResponseImpl<V> futureBody) {
+            this.serviceId = serviceId;
             this.type = RequestType.STATEMENT;
             this.request = request;
             this.futureBody = futureBody;
+        }
+        long serviceId() {
+            return serviceId;
         }
         RequestType getRequestType() {
             return type;
@@ -143,11 +149,11 @@ public class SessionWireImpl implements SessionWire {
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+    public <V> FutureResponse<V> send(long serviceId, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
         var futureBody = new FutureResponseImpl<V>(this, distiller);
         synchronized (this) {
@@ -159,7 +165,7 @@ public class SessionWireImpl implements SessionWire {
                 futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
             } else {
-                queue.add(new QueueEntry<V>(req, futureBody));
+                queue.add(new QueueEntry<V>(serviceId, req, futureBody));
             }
         }
         return futureBody;
@@ -172,11 +178,11 @@ public class SessionWireImpl implements SessionWire {
      */
     @Override
     public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-            long serviceID, RequestProtos.Request.Builder request) throws IOException {
+            long serviceId, RequestProtos.Request.Builder request) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
         var left = new FutureQueryResponseImpl(this);
         var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
@@ -190,7 +196,7 @@ public class SessionWireImpl implements SessionWire {
                 right.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
             } else {
-                queue.add(new QueueEntry<ResponseProtos.ResultOnly>(req, left, right));
+                queue.add(new QueueEntry<ResponseProtos.ResultOnly>(serviceId, req, left, right));
             }
         }
         return Pair.of(left, right);
@@ -218,13 +224,16 @@ public class SessionWireImpl implements SessionWire {
                 if (!Objects.isNull(entry)) {
                     long responseBoxHandle = nativeOutputStream.getResponseHandle();
                     if (responseBoxHandle != 0) {
+                        var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                         if (entry.getRequestType() == RequestType.STATEMENT) {
-                            entry.getRequest().writeTo(nativeOutputStream);
+                            header.writeDelimitedTo(nativeOutputStream);
+                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
                             nativeOutputStream.flush(responseBoxHandle, false);
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
                         } else {
-                            entry.getRequest().writeTo(nativeOutputStream);
+                            header.writeDelimitedTo(nativeOutputStream);
+                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
                             nativeOutputStream.flush(responseBoxHandle, true);
                             entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
@@ -265,13 +274,16 @@ public class SessionWireImpl implements SessionWire {
                 if (!Objects.isNull(entry)) {
                     long responseBoxHandle = nativeOutputStream.getResponseHandle();
                     if (responseBoxHandle != 0) {
+                        var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                         if (entry.getRequestType() == RequestType.STATEMENT) {
-                            entry.getRequest().writeTo(nativeOutputStream);
+                            header.writeDelimitedTo(nativeOutputStream);
+                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
                             nativeOutputStream.flush(responseBoxHandle, false);
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
                         } else {
-                            entry.getRequest().writeTo(nativeOutputStream);
+                            header.writeDelimitedTo(nativeOutputStream);
+                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
                             nativeOutputStream.flush(responseBoxHandle, true);
                             entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
@@ -293,11 +305,11 @@ public class SessionWireImpl implements SessionWire {
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public FutureInputStream send(long serviceID, byte[] request) throws IOException {
+    public FutureInputStream send(long serviceId, byte[] request) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         var futureBody = new FutureInputStream(this);
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
