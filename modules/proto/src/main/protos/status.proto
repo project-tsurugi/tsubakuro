@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package status;
+package jogasaki.proto.sql.status;
 
 option java_package = "com.nautilus_technologies.tsubakuro.protos";
 option java_outer_classname = "StatusProtos";
