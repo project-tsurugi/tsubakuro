@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package jogasaki.proto.sql.status;
 
-option java_package = "com.nautilus_technologies.tsubakuro.protos";
+option java_package = "com.tsurugidb.jogasaki.proto";
 option java_outer_classname = "StatusProtos";
 
 enum Status {
