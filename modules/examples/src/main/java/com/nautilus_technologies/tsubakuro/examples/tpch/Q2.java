@@ -74,7 +74,7 @@ public class Q2 {
             }
             ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey));
 
-            var future = transaction.executeQuery(prepared1, ps.build());
+            var future = transaction.executeQuery(prepared1, ps.getParametersList());
             var resultSet = future.get();
 
             try {
@@ -117,7 +117,7 @@ public class Q2 {
             ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey))
             .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(entry.getValue()));
 
-            var future = transaction.executeQuery(prepared2, ps.build());
+            var future = transaction.executeQuery(prepared2, ps.getParametersList());
             var resultSet = future.get();
 
             try {

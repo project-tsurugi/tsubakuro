@@ -78,7 +78,7 @@ public class SelectMulti extends Thread {
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_d_id").setInt8Value(paramsDid))
                         .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("no_w_id").setInt8Value(paramsWid))
                         .build();
-                var future1 = transaction.executeQuery(prepared1, ps1);
+                var future1 = transaction.executeQuery(prepared1, ps1.getParametersList());
                 var resultSet1 = future1.get();
                 now = System.nanoTime();
                 profile.head += (now - prev);

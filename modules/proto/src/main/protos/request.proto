@@ -13,28 +13,97 @@ option java_outer_classname = "RequestProtos";
 
 /* For host variable consisting of name and type. */
 message PlaceHolder {
-  message Variable {
-    string name = 1;
-    common.DataType type = 2;
-  }
+    // FIXME: to top, rename - the placeholder for the prepared statements.
+    message Variable {
+        // the placeholder location.
+        oneof placement {
+            // the placeholder name.
+            string name = 2;
+        }
+        reserved 3 to 10;
+
+        // the placeholder type.
+        oneof type_info {
+            // FIXME: rename (atom_type) - the atom type.
+            common.DataType type = 11;
+            // the row type.
+            common.RowType row_type = 12;
+            // the user defined type.
+            common.UserType user_type = 13;
+        }
+        reserved 14 to 19;
+
+        // the type dimension for array types.
+        uint32 dimension = 20;
+    }
 
   repeated Variable Variables = 1;
 }
 
 /* For set of parameters passed when executing prepared statements. */
 message ParameterSet {
-  message Parameter {
-    string name = 1;
-    oneof value {
-      int32 int4_value = 2;
-      int64 int8_value = 3;
-      float float4_value = 4;
-      double float8_value = 5;
-      string character_value = 6;
-    }
-  }
 
-  repeated Parameter parameters = 1;
+    // FIXME: to top - the placeholder replacements.
+    message Parameter {
+        // the placeholder location.
+        oneof placement {
+            // the placeholder name.
+            string name = 2;
+        }
+        reserved 3 to 10;
+
+        // the replacement values (unset describes NULL).
+        oneof value {
+            // boolean type.
+            bool boolean_value = 11;
+
+            // 32-bit signed integer.
+            sint32 int4_value = 14;
+
+            // 64-bit signed integer.
+            sint64 int8_value = 15;
+
+            // 32-bit floating point number.
+            float float4_value = 16;
+
+            // 64-bit floating point number.
+            double float8_value = 17;
+
+            // 128-bit floating decimal number (encoded by decimal128, big-endian).
+            bytes decimal_value = 18;
+
+            // character sequence.
+            string character_value = 19;
+
+            // octet sequence.
+            bytes octet_value = 21;
+
+            // bit sequence.
+            common.Bit bit_value = 23;
+
+            // date (number of days offset of epoch 1970-01-01).
+            sint64 date_value = 25;
+
+            // time of day (nano-seconds since 00:00:00).
+            uint64 time_of_day_value = 26;
+
+            // time point.
+            common.TimePoint time_point_value = 27;
+
+            // date-time interval.
+            common.DateTimeInterval datetime_interval_value = 28;
+
+            // reference column position (for load action).
+            uint64 reference_column_position = 51;
+
+            // reference column name (for load action).
+            string reference_column_name = 52;
+        }
+
+        reserved 12, 13, 20, 22, 24, 29 to 40, 41 to 50, 53 to 99;
+    }
+
+    repeated Parameter parameters = 1;
 }
 
 /* For transaction type and options. */

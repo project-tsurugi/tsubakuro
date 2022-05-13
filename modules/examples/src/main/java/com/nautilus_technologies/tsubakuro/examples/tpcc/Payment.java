@@ -185,7 +185,7 @@ public class Payment {
 	    paramsWid = randomGenerator.uniformWithin(1, warehouses);
 	}
 	paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
-	paramsHamount = ((double) randomGenerator.uniformWithin(100, 500000)) / 100.0;
+	paramsHamount = (randomGenerator.uniformWithin(100, 500000)) / 100.0;
 	paramsByName = randomGenerator.uniformWithin(1, 100) <= 60;
 	if (paramsByName) {
 	    paramsClast = lastName((int) randomGenerator.nonUniform255Within(0, Scale.L_NAMES - 1));  // scale::lnames
@@ -213,7 +213,7 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("h_amount").setFloat8Value(paramsHamount))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid))
 		.build();
-	    var future1 = transaction.executeStatement(prepared1, ps1);
+	    var future1 = transaction.executeStatement(prepared1, ps1.getParametersList());
 	    var result1 = future1.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result1.getResultCase())) {
 		profile.retryOnStatement.payment++;
@@ -226,7 +226,7 @@ public class Payment {
 	    var ps2 = RequestProtos.ParameterSet.newBuilder()
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("w_id").setInt8Value(paramsWid))
 		.build();
-	    var future2 = transaction.executeQuery(prepared2, ps2);
+	    var future2 = transaction.executeQuery(prepared2, ps2.getParametersList());
 	    var resultSet2 = future2.get();
 	    try {
 		if (!Objects.isNull(resultSet2)) {
@@ -276,7 +276,7 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
-	    var future3 = transaction.executeStatement(prepared3, ps3);
+	    var future3 = transaction.executeStatement(prepared3, ps3.getParametersList());
 	    var result3 = future3.get();
 	    if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result3.getResultCase())) {
 		profile.retryOnStatement.payment++;
@@ -290,7 +290,7 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_w_id").setInt8Value(paramsWid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("d_id").setInt8Value(paramsDid))
 		.build();
-	    var future4 = transaction.executeQuery(prepared4, ps4);
+	    var future4 = transaction.executeQuery(prepared4, ps4.getParametersList());
 	    var resultSet4 = future4.get();
 	    try {
 		if (!Objects.isNull(resultSet4)) {
@@ -352,7 +352,7 @@ public class Payment {
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		.build();
-	    var future7 = transaction.executeQuery(prepared7, ps7);
+	    var future7 = transaction.executeQuery(prepared7, ps7.getParametersList());
 	    var resultSet7 = future7.get();
 	    try {
 		if (!Objects.isNull(resultSet7)) {
@@ -421,7 +421,7 @@ public class Payment {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		    .build();
-		var future8 = transaction.executeQuery(prepared8, ps8);
+		var future8 = transaction.executeQuery(prepared8, ps8.getParametersList());
 		var resultSet8 = future8.get();
 		try {
 		    if (!Objects.isNull(resultSet8)) {
@@ -471,7 +471,7 @@ public class Payment {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		    .build();
-		var future9 = transaction.executeStatement(prepared9, ps9);
+		var future9 = transaction.executeStatement(prepared9, ps9.getParametersList());
 		var result9 = future9.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result9.getResultCase())) {
 		    profile.retryOnStatement.payment++;
@@ -487,7 +487,7 @@ public class Payment {
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_d_id").setInt8Value(paramsDid))
 		    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("c_id").setInt8Value(cId))
 		    .build();
-		var future10 = transaction.executeStatement(prepared10, ps10);
+		var future10 = transaction.executeStatement(prepared10, ps10.getParametersList());
 		var result10 = future10.get();
 		if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result10.getResultCase())) {
 		    profile.retryOnStatement.payment++;

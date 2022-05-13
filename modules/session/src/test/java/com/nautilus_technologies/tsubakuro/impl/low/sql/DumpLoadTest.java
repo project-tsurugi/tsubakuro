@@ -148,7 +148,7 @@ class DumpLoadTest {
             List<Path> paths = new ArrayList<>();
             paths.add(Path.of("/load_directory/somefile"));
             var response = transaction.executeLoad(preparedStatement,
-                    RequestProtos.ParameterSet.newBuilder().build(),
+                    List.of(),
                     paths).get();
 
             assertTrue(ProtosForTest.ResultOnlyChecker.check(response));
@@ -175,7 +175,7 @@ class DumpLoadTest {
             List<Path> paths = new ArrayList<>();
             paths.add(Path.of("/load_directory/NGfile"));  // when file name includes "NG", executeLoad() will return error.
             var response = transaction.executeLoad(preparedStatement,
-                    RequestProtos.ParameterSet.newBuilder().build(),
+                    List.of(),
                     paths).get();
 
             assertFalse(ProtosForTest.ResultOnlyChecker.check(response));
@@ -201,7 +201,7 @@ class DumpLoadTest {
 
         try (Transaction transaction = fTransaction.get()) {
             FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
-                    RequestProtos.ParameterSet.newBuilder().build(),
+                    List.of(),
                     target);
 
             var results = fResults.get();
@@ -243,7 +243,7 @@ class DumpLoadTest {
 
         try (Transaction transaction = fTransaction.get()) {
             FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
-                    RequestProtos.ParameterSet.newBuilder().build(),
+                    List.of(),
                     target);
             var results = fResults.get();
             assertTrue(Objects.nonNull(results));

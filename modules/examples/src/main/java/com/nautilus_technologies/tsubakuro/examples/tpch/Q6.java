@@ -56,7 +56,7 @@ public class Q6 {
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity").setInt8Value(25));
         }
 
-	var future = transaction.executeQuery(prepared, ps.build());
+	var future = transaction.executeQuery(prepared, ps.getParametersList());
 	var resultSet = future.get();
 
 	try {

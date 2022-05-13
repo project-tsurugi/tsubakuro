@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,113 +50,120 @@ public class TransactionImpl implements Transaction {
         this.timeout = 0;
     }
 
-    /**
-     * Request executeStatement to the SQL service
-     * @param sql sql text for the command
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute statement by the SQL service
-     */
     @Override
-    public FutureResponse<ResponseProtos.ResultOnly> executeStatement(String sql) throws IOException {
+    public FutureResponse<ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+        Objects.requireNonNull(source);
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         return sessionLinkImpl.send(RequestProtos.ExecuteStatement.newBuilder()
                 .setTransactionHandle(transaction)
-                .setSql(sql));
+                .setSql(source));
     }
 
-    /**
-     * Request executeQuery to the SQL service
-     * @param sql sql text for the command
-     * @return a FutureResponse of ResultSet which is a processing result of the SQL service
-     * @throws IOException error occurred in execute query by the SQL service
-     */
     @Override
-    public FutureResponse<ResultSet> executeQuery(String sql) throws IOException {
+    public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
+        Objects.requireNonNull(source);
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pair = sessionLinkImpl.send(RequestProtos.ExecuteQuery.newBuilder()
                 .setTransactionHandle(transaction)
-                .setSql(sql));
+                .setSql(source));
         if (!Objects.isNull(pair.getLeft())) {
             return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
         }
         return new FutureResultSetImpl(pair.getRight());
-    };
+    }
 
-    /**
-     * Request executeStatement to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute statement by the SQL service
-     */
     @Override
-    public FutureResponse<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public FutureResponse<ResultOnly> executeStatement(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         return sessionLinkImpl.send(RequestProtos.ExecutePreparedStatement.newBuilder()
                 .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet));
-    }
-    @Override
-    @Deprecated
-    public FutureResponse<ResponseProtos.ResultOnly> executeStatement(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
-        if (Objects.isNull(sessionLinkImpl)) {
-            throw new IOException("already closed");
-        }
-        return sessionLinkImpl.send(RequestProtos.ExecutePreparedStatement.newBuilder()
-                .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet));
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .setParameters(RequestProtos.ParameterSet.newBuilder()
+                        .addAllParameters(parameters)));
     }
 
-    /**
-     * Request executeQuery to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResultSet which is a processing result of the SQL service
-     * @throws IOException error occurred in execute query by the SQL service
-     */
     @Override
-    public FutureResponse<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet) throws IOException {
+    public FutureResponse<ResultSet> executeQuery(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pair = sessionLinkImpl.send(RequestProtos.ExecutePreparedQuery.newBuilder()
                 .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet));
-        if (!Objects.isNull(pair.getLeft())) {
-            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
-        }
-        return new FutureResultSetImpl(pair.getRight());
-    }
-    @Override
-    @Deprecated
-    public FutureResponse<ResultSet> executeQuery(PreparedStatement preparedStatement, RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
-        if (Objects.isNull(sessionLinkImpl)) {
-            throw new IOException("already closed");
-        }
-        var pair = sessionLinkImpl.send(RequestProtos.ExecutePreparedQuery.newBuilder()
-                .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet));
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .setParameters(RequestProtos.ParameterSet.newBuilder()
+                        .addAllParameters(parameters)));
         if (!Objects.isNull(pair.getLeft())) {
             return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
         }
         return new FutureResultSetImpl(pair.getRight());
     }
 
-    /**
-     * Request commit to the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in commit by the SQL service
-     */
+    @Override
+    public FutureResponse<ResultSet> executeDump(@Nonnull String source, @Nonnull Path directory) throws IOException {
+        Objects.requireNonNull(source);
+        Objects.requireNonNull(directory);
+        // FIXME impl
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public FutureResponse<ResultSet> executeDump(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters,
+            @Nonnull Path directory) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
+        Objects.requireNonNull(directory);
+        if (Objects.isNull(sessionLinkImpl)) {
+            throw new IOException("already closed");
+        }
+        var pair = sessionLinkImpl.send(RequestProtos.ExecuteDump.newBuilder()
+                .setTransactionHandle(transaction)
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .setParameters(RequestProtos.ParameterSet.newBuilder()
+                        .addAllParameters(parameters))
+                .setDirectory(directory.toString()));
+        if (!Objects.isNull(pair.getLeft())) {
+            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
+        }
+        return new FutureResultSetImpl(pair.getRight());
+    }
+
+    @Override
+    public FutureResponse<ResultOnly> executeLoad(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters,
+            @Nonnull Collection<? extends Path> files) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
+        Objects.requireNonNull(files);
+        if (Objects.isNull(sessionLinkImpl)) {
+            throw new IOException("already closed");
+        }
+        return sessionLinkImpl.send(RequestProtos.ExecuteLoad.newBuilder()
+                .setTransactionHandle(transaction)
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .setParameters(RequestProtos.ParameterSet.newBuilder()
+                        .addAllParameters(parameters))
+                .addAllFile(files.stream()
+                        .map(Path::toString)
+                        .collect(Collectors.toList())));
+    }
+
     @Override
     public FutureResponse<ResponseProtos.ResultOnly> commit() throws IOException {
         if (Objects.isNull(sessionLinkImpl)) {
@@ -166,11 +176,6 @@ public class TransactionImpl implements Transaction {
         return rv;
     }
 
-    /**
-     * Request rollback to the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in rollback by the SQL service
-     */
     @Override
     public FutureResponse<ResponseProtos.ResultOnly> rollback() throws IOException {
         if (Objects.isNull(sessionLinkImpl)) {
@@ -186,53 +191,6 @@ public class TransactionImpl implements Transaction {
         var rv = sessionLinkImpl.send(RequestProtos.Rollback.newBuilder()
                 .setTransactionHandle(transaction));
         return rv;
-    }
-
-    /**
-     * Request dump execution to the SQL service
-     * @param preparedStatement prepared statement used in the dump operation
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param directory the directory path where dumped files are placed
-     * @return a FutureResponse of ResultSet which is a processing result of the SQL service
-     * @throws IOException error occurred in execute dump by the SQL service
-     */
-    @Override
-    public FutureResponse<ResultSet> executeDump(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Path directory) throws IOException {
-        if (Objects.isNull(sessionLinkImpl)) {
-            throw new IOException("already closed");
-        }
-        var pair = sessionLinkImpl.send(RequestProtos.ExecuteDump.newBuilder()
-                .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet)
-                .setDirectory(directory.toString()));
-        if (!Objects.isNull(pair.getLeft())) {
-            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
-        }
-        return new FutureResultSetImpl(pair.getRight());
-    }
-
-    /**
-     * Request load execution to the SQL service
-     * @param preparedStatement prepared statement used in the dump operation
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param files the collection of file path to be loaded
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute load by the SQL service
-     */
-    @Override
-    public FutureResponse<ResponseProtos.ResultOnly> executeLoad(PreparedStatement preparedStatement, RequestProtos.ParameterSet parameterSet, Collection<? extends Path> files) throws IOException {
-        if (Objects.isNull(sessionLinkImpl)) {
-            throw new IOException("already closed");
-        }
-        var message = RequestProtos.ExecuteLoad.newBuilder()
-                .setTransactionHandle(transaction)
-                .setPreparedStatementHandle(((PreparedStatementImpl) preparedStatement).getHandle())
-                .setParameters(parameterSet);
-        for (Path file : files) {
-            message.addFile(file.toString());
-        }
-        return sessionLinkImpl.send(message);
     }
 
     /**

@@ -20,7 +20,7 @@ public class Q19 {
     }
 
     public void prepare() throws IOException, ServerException, InterruptedException {
-	String sql = 
+	String sql =
 	    "SELECT SUM(L_EXTENDEDPRICE * (100 - L_DISCOUNT)) AS REVENUE "
 	    + "FROM LINEITEM, PART "
 	    + "WHERE "
@@ -89,7 +89,7 @@ public class Q19 {
 		addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("quantity3").setInt8Value(21));
         }
 
-	var future = transaction.executeQuery(prepared, ps.build());
+	var future = transaction.executeQuery(prepared, ps.getParametersList());
 	var resultSet = future.get();
 
 	try {
