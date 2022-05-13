@@ -41,6 +41,9 @@ class DumpLoadTest {
         public boolean hasResultRecords() {
             return false;
         }
+        @Override
+        public void setCloseTimeout(long t, TimeUnit u) {
+        }
 
         @Override
         public void close() throws IOException {
