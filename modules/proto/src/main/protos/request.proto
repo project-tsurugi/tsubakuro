@@ -151,7 +151,7 @@ message Begin {
 /* For prepare request. */
 message Prepare {
   string sql = 1;
-  PlaceHolder host_variables = 2;
+  repeated PlaceHolder placeholders = 2;
 }
 
 /* For execute statement request. */
