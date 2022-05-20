@@ -21,10 +21,10 @@ import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.Distiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
@@ -177,79 +177,9 @@ class DumpLoadTest {
         FutureResponse<Transaction> fTransaction = session.createTransaction(opts);
 
         try (Transaction transaction = fTransaction.get()) {
-            List<Path> paths = new ArrayList<>();
-            paths.add(Path.of("/load_directory/NGfile"));  // when file name includes "NG", executeLoad() will return error.
-            var response = transaction.executeLoad(preparedStatement,
-                    List.of(),
-                    paths).get();
-
-            assertFalse(ProtosForTest.ResultOnlyChecker.check(response));
-
-            transaction.commit();
-            session.close();
-        }
-    }
-
-    void dumpOK() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireTestMock());
-
-        var preparedStatement = new PreparedStatementMock();
-        var target = Path.of("/dump_directory");
-
-        var opts = RequestProtos.TransactionOption.newBuilder()
-                .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_LONG)
-                .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("LOAD_TARGET"))
-                .build();
-
-        FutureResponse<Transaction> fTransaction = session.createTransaction(opts);
-
-        try (Transaction transaction = fTransaction.get()) {
             FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
-                    List.of(),
-                    target);
-
-            var results = fResults.get();
-            assertTrue(Objects.nonNull(results));
-
-            int recordCount = 0;
-            int columnCount = 0;
-            while (results.nextRecord()) {
-                while (results.nextColumn()) {
-                    assertEquals(results.type(), CommonProtos.DataType.CHARACTER);
-                    assertEquals(results.getCharacter(), ResultSetMock.FILE_NAME);
-                    columnCount++;
-                }
-                recordCount++;
-            }
-            assertEquals(columnCount, 1);
-            assertEquals(recordCount, 1);
-
-            assertTrue(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
-
-            transaction.commit();
-            session.close();
-        }
-    }
-
-    void dumpNG() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireTestMock());
-
-        var preparedStatement = new PreparedStatementMock();
-        var target = Path.of("/dump_NGdirectory");  // when directory name includes "NG", executeDump() will return error.
-
-        var opts = RequestProtos.TransactionOption.newBuilder()
-                .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_LONG)
-                .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("LOAD_TARGET"))
-                .build();
-
-        FutureResponse<Transaction> fTransaction = session.createTransaction(opts);
-
-        try (Transaction transaction = fTransaction.get()) {
-            FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
-                    List.of(),
-                    target);
+                List.of(),
+                target);
             var results = fResults.get();
             assertTrue(Objects.nonNull(results));
             assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));

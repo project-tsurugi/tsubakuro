@@ -19,26 +19,26 @@ public class ServerStreamWire {
     private byte slot;
 
     public ServerStreamWire(Socket socket) throws IOException {
-	this.socket = socket;
+    this.socket = socket;
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
         this.sendOk = false;
     }
 
     public void sendResponse(int s, byte[] payload) throws IOException {
-	byte[] header = new byte[6];
+    byte[] header = new byte[6];
         int length = (int) payload.length;
-	//	System.out.println("sendResponse " + length + " bytes, slot = " + s);
+    //    System.out.println("sendResponse " + length + " bytes, slot = " + s);
 
-	header[0] = StreamWire.RESPONSE_SESSION_PAYLOAD;  // info
-	header[1] = strip(s);  // slot
-	header[2] = strip(length);
-	header[3] = strip(length >> 8);
-	header[4] = strip(length >> 16);
-	header[5] = strip(length >> 24);
+    header[0] = StreamWire.RESPONSE_SESSION_PAYLOAD;  // info
+    header[1] = strip(s);  // slot
+    header[2] = strip(length);
+    header[3] = strip(length >> 8);
+    header[4] = strip(length >> 16);
+    header[5] = strip(length >> 24);
 
-	synchronized (this) {
-	    outStream.write(header, 0, header.length);
+    synchronized (this) {
+        outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信
@@ -48,40 +48,40 @@ public class ServerStreamWire {
     }
 
     public void sendRecordHello(int s, String name) throws IOException {
-	byte[] header = new byte[6];
-	byte[] payload = name.getBytes("UTF-8");
-	int length = payload.length;
-	//	System.out.println("sendRecordByeOk, slot = " + s);
+    byte[] header = new byte[6];
+    byte[] payload = name.getBytes("UTF-8");
+    int length = payload.length;
+    //    System.out.println("sendRecordByeOk, slot = " + s);
 
-	header[0] = StreamWire.RESPONSE_RESULT_SET_HELLO;  // info
-	header[1] = strip(s);  // slot
-	header[2] = strip(length);
-	header[3] = strip(length >> 8);
-	header[4] = strip(length >> 16);
-	header[4] = strip(length >> 24);
+    header[0] = StreamWire.RESPONSE_RESULT_SET_HELLO;  // info
+    header[1] = strip(s);  // slot
+    header[2] = strip(length);
+    header[3] = strip(length >> 8);
+    header[4] = strip(length >> 16);
+    header[4] = strip(length >> 24);
 
-	synchronized (this) {
-	    outStream.write(header, 0, header.length);
-	    outStream.write(payload, 0, length);
-	}
-	sendOk = true;
+    synchronized (this) {
+        outStream.write(header, 0, header.length);
+        outStream.write(payload, 0, length);
+    }
+    sendOk = true;
     }
 
     public void sendRecord(int s, int w, byte[] payload) throws IOException {
-	byte[] header = new byte[7];
+    byte[] header = new byte[7];
         int length = (int) payload.length;
-	//	System.out.println("sendRecord " + length + " bytes, slot = " + s + ", writer = " + w);
+    //    System.out.println("sendRecord " + length + " bytes, slot = " + s + ", writer = " + w);
 
-	header[0] = StreamWire.RESPONSE_RESULT_SET_PAYLOAD;  // info
-	header[1] = strip(s);  // slot
-	header[2] = strip(w);  // slot
-	header[3] = strip(length);
-	header[4] = strip(length >> 8);
-	header[5] = strip(length >> 16);
-	header[6] = strip(length >> 24);
+    header[0] = StreamWire.RESPONSE_RESULT_SET_PAYLOAD;  // info
+    header[1] = strip(s);  // slot
+    header[2] = strip(w);  // slot
+    header[3] = strip(length);
+    header[4] = strip(length >> 8);
+    header[5] = strip(length >> 16);
+    header[6] = strip(length >> 24);
 
-	synchronized (this) {
-	    outStream.write(header, 0, header.length);
+    synchronized (this) {
+        outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信
@@ -91,11 +91,11 @@ public class ServerStreamWire {
     }
 
     byte strip(int i) {
-	return (byte) (i & 0xff);
+    return (byte) (i & 0xff);
     }
 
     public boolean isSnedOk() {
-	return sendOk;
+    return sendOk;
     }
     
     public boolean receive() throws IOException {
@@ -106,7 +106,7 @@ public class ServerStreamWire {
             info = inStream.readByte();
 
             // slot受信
-	    slot = inStream.readByte();
+        slot = inStream.readByte();
 
             // length受信
             int length = 0;
@@ -126,29 +126,29 @@ public class ServerStreamWire {
             }
         } catch (EOFException e) {  // imply session close
             socket.close();
-	    socket = null;
+        socket = null;
             return false;
         } catch (SocketException e) {
-	    socket = null;
+        socket = null;
             return false;
         }
         return true;
     }
 
     public byte getInfo() {
-	return info;
+    return info;
     }
     public byte getSlot() {
-	return slot;
+    return slot;
     }
     public byte[] getBytes() {
-	return bytes;
+    return bytes;
     }
 
     public void close() throws IOException {
-	if (Objects.nonNull(socket)) {
-	    socket.close();
-	    socket = null;
-	}
+    if (Objects.nonNull(socket)) {
+        socket.close();
+        socket = null;
+    }
     }
 }

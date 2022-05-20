@@ -11,9 +11,9 @@ import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * PreparedStatementImpl type.
@@ -23,16 +23,16 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     private long timeout = 0;
     private TimeUnit unit;
-    CommonProtos.PreparedStatement handle;
+    SqlCommon.PreparedStatement handle;
     private SessionLinkImpl sessionLinkImpl;
 
-    public PreparedStatementImpl(CommonProtos.PreparedStatement handle, SessionLinkImpl sessionLinkImpl) {
+    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SessionLinkImpl sessionLinkImpl) {
         this.handle = handle;
         this.sessionLinkImpl = sessionLinkImpl;
         this.sessionLinkImpl.add(this);
     }
 
-    public CommonProtos.PreparedStatement getHandle() throws IOException {
+    public SqlCommon.PreparedStatement getHandle() throws IOException {
         if (Objects.isNull(handle)) {
             throw new IOException("already closed");
         }
@@ -59,9 +59,9 @@ public class PreparedStatementImpl implements PreparedStatement {
     public void close() throws IOException, ServerException, InterruptedException {
         if (Objects.nonNull(handle) && Objects.nonNull(sessionLinkImpl)) {
             try {
-                var futureResponse = sessionLinkImpl.send(RequestProtos.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
+                var futureResponse = sessionLinkImpl.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
                 var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
                     throw new IOException(response.getError().getDetail());
                 }
                 sessionLinkImpl.remove(this);

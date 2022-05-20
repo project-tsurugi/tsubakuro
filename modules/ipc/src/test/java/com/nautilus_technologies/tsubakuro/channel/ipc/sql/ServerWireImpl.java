@@ -6,8 +6,8 @@ import java.io.OutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 
@@ -53,35 +53,35 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void close() throws IOException {
-	if (wireHandle != 0) {
-	    closeNative(wireHandle);
-	    wireHandle = 0;
-	}
+    if (wireHandle != 0) {
+        closeNative(wireHandle);
+        wireHandle = 0;
+    }
     }
 
     public long getSessionID() {
-	return sessionID;
+    return sessionID;
     }
 
     /**
-     * Get RequestProtos.Request from a client via the native wire.
-     @returns RequestProtos.Request
+     * Get SqlRequest.Request from a client via the native wire.
+     @returns SqlRequest.Request
     */
-    public RequestProtos.Request get() throws IOException {
+    public SqlRequest.Request get() throws IOException {
         try {
             var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
             FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
-            return RequestProtos.Request.parseDelimitedFrom(byteArrayInputStream);
+            return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
             throw new IOException("error: ServerWireImpl.get()");
         }
     }
 
     /**
-     * Put ResponseProtos.Response to the client via the native wire.
-     @param request the ResponseProtos.Response message
+     * Put SqlResponse.Response to the client via the native wire.
+     @param request the SqlResponse.Response message
     */
-    public void put(ResponseProtos.Response response) throws IOException {
+    public void put(SqlResponse.Response response) throws IOException {
         try {
             byte[] resposeByteArray = dump(out -> {
                     FrameworkResponseProtos.Header.newBuilder().build().writeDelimitedTo(out);

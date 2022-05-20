@@ -14,7 +14,7 @@ import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
-import com.nautilus_technologies.tsubakuro.stream.ProtosForTest;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class ResultSetTotalTest {
     static final long SERVICE_ID_SQL = 3;

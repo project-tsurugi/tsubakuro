@@ -6,19 +6,21 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
+import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Update extends Thread {
     CyclicBarrier barrier;
     AtomicBoolean stop;
-    Session session;
+    SqlClient sqlClient;
     Transaction transaction;
     RandomGenerator randomGenerator;
     Profile profile;
@@ -30,12 +32,11 @@ public class Update extends Thread {
     long olIid;
     long oid;
 
-    public Update(Connector connector, Session session, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
+    public Update(SqlClient sqlClient, Profile profile, CyclicBarrier barrier, AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
         this.barrier = barrier;
         this.stop = stop;
         this.profile = profile;
-        this.session = session;
-        this.session.connect(connector.connect().get());
+        this.sqlClient = sqlClient;
         this.randomGenerator = new RandomGenerator();
         this.oid = Scale.ORDERS + 1;
         prepare();
@@ -43,12 +44,10 @@ public class Update extends Thread {
 
     void prepare() throws IOException, ServerException, InterruptedException {
         String sql8 = "UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
-        var ph8 = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_quantity").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_i_id").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("s_w_id").setType(CommonProtos.DataType.INT8))
-                .build();
-        prepared8 = session.prepare(sql8, ph8).get();
+        prepared8 = sqlClient.prepare(sql8, 
+            Placeholders.of("s_quantity", long.class),
+            Placeholders.of("s_i_id", long.class),
+            Placeholders.of("s_w_id", long.class)).get();
     }
 
     void setParams() {
@@ -68,7 +67,7 @@ public class Update extends Thread {
             long now = 0;
             while (!stop.get()) {
                 if (Objects.isNull(transaction)) {
-                    transaction = session.createTransaction().get();
+                    transaction = sqlClient.createTransaction().await();
                 }
                 setParams();
                 now = System.nanoTime();
@@ -78,15 +77,14 @@ public class Update extends Thread {
                 prev = now;
 
                 // UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
-                var ps8 = RequestProtos.ParameterSet.newBuilder()
-                        .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_quantity").setInt8Value(sQuantity))
-                        .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_i_id").setInt8Value(olIid))
-                        .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("s_w_id").setInt8Value(olSupplyWid))
-                        .build();
-                var future8 = transaction.executeStatement(prepared8, ps8.getParametersList());
+                var future8 = transaction.executeStatement(prepared8, 
+                    Parameters.of("s_quantity", (long) sQuantity),
+                    Parameters.of("s_i_id", (long) olIid),
+                    Parameters.of("s_w_id", (long) olSupplyWid));
+
                 var result8 = future8.get();
-                if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
-                    if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
+                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
+                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
                         throw new IOException("error in rollback");
                     }
                     transaction = null;
@@ -111,7 +109,6 @@ public class Update extends Thread {
         } finally {
             try {
                 prepared8.close();
-                session.close();
             } catch (IOException | ServerException | InterruptedException e) {
                 System.out.println(e);
             }

@@ -6,22 +6,24 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
+import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q2 {
-    Session session;
+    SqlClient sqlClient;
     PreparedStatement prepared1;
     PreparedStatement prepared2;
     static final int PARTKEY_SIZE = 200000;
     Map<Integer, Long> q2intermediate;
 
-    public Q2(Session session) throws IOException, ServerException, InterruptedException {
-        this.session = session;
+    public Q2(SqlClient sqlClient) throws IOException, ServerException, InterruptedException {
+        this.sqlClient = sqlClient;
         this.q2intermediate = new HashMap<>();
         prepare();
     }
@@ -35,11 +37,9 @@ public class Q2 {
                 + "AND N_REGIONKEY = R_REGIONKEY "
                 + "AND R_NAME = :region "
                 + "AND PS_PARTKEY = :partkey ";
-        var ph1 = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("region").setType(CommonProtos.DataType.CHARACTER))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("partkey").setType(CommonProtos.DataType.INT8))
-                .build();
-        prepared1 = session.prepare(sql1, ph1).get();
+        prepared1 = sqlClient.prepare(sql1,
+            Placeholders.of("region", String.class),
+            Placeholders.of("partkey", long.class)).get();
 
         String sql2 = "SELECT S_ACCTBAL, S_NAME, N_NAME, P_MFGR, S_ADDRESS, S_PHONE, S_COMMENT "
                 + "FROM PART, SUPPLIER, PARTSUPP, NATION, REGION "
@@ -53,28 +53,19 @@ public class Q2 {
                 + "AND R_NAME = :region "
                 + "AND PS_SUPPLYCOST = :mincost "
                 + "ORDER BY S_ACCTBAL DESC, N_NAME, S_NAME, P_PARTKEY";
-        var ph2 = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("partkey").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("size").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("type").setType(CommonProtos.DataType.CHARACTER))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("region").setType(CommonProtos.DataType.CHARACTER))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("mincost").setType(CommonProtos.DataType.INT8))
-                .build();
-        prepared2 = session.prepare(sql2, ph2).get();
+        prepared2 = sqlClient.prepare(sql2,
+            Placeholders.of("partkey", long.class),
+            Placeholders.of("size", long.class),
+            Placeholders.of("type", String.class),
+            Placeholders.of("region", String.class),
+            Placeholders.of("mincost", long.class)).get();
     }
 
     void q21(boolean qvalidation, Transaction transaction) throws IOException, ServerException, InterruptedException {
         for (int partkey = 1; partkey <= PARTKEY_SIZE; partkey++) {
-
-            var ps = RequestProtos.ParameterSet.newBuilder();
-            if (qvalidation) {
-                ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE                   "));
-            } else {
-                ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("ASIA                     "));
-            }
-            ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey));
-
-            var future = transaction.executeQuery(prepared1, ps.getParametersList());
+            var future = transaction.executeQuery(prepared1,
+                Parameters.of("region", qvalidation ? "EUROPE                   " : "ASIA                     "),
+                Parameters.of("partkey", (long) partkey));
             var resultSet = future.get();
 
             try {
@@ -94,7 +85,7 @@ public class Q2 {
                 if (!Objects.isNull(resultSet)) {
                     resultSet.close();
                 }
-                if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
+                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                 }
             }
@@ -104,20 +95,12 @@ public class Q2 {
     void q22(boolean qvalidation, Transaction transaction) throws IOException, ServerException, InterruptedException {
         for (Map.Entry<Integer, Long> entry : q2intermediate.entrySet()) {
             int partkey = entry.getKey();
-            var ps = RequestProtos.ParameterSet.newBuilder();
-            if (qvalidation) {
-                ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("type").setCharacterValue("BRASS"))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("EUROPE                   "))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("size").setInt8Value(15));
-            } else {
-                ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("type").setCharacterValue("STEEL"))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("region").setCharacterValue("ASIA                     "))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("size").setInt8Value(16));
-            }
-            ps.addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("partkey").setInt8Value(partkey))
-            .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("mincost").setInt8Value(entry.getValue()));
-
-            var future = transaction.executeQuery(prepared2, ps.getParametersList());
+            var future = transaction.executeQuery(prepared2,
+                Parameters.of("type", qvalidation ? "BRASS" : "STEEL"), 
+                Parameters.of("region", qvalidation ? "EUROPE                   " : "ASIA                     "),
+                Parameters.of("size", (long) (qvalidation ? 15 : 16)), 
+                Parameters.of("partkey", (long) partkey), 
+                Parameters.of("mincost", (long) entry.getValue()));
             var resultSet = future.get();
 
             try {
@@ -148,7 +131,7 @@ public class Q2 {
                 if (!Objects.isNull(resultSet)) {
                     resultSet.close();
                 }
-                if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
+                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                 }
             }
@@ -157,12 +140,12 @@ public class Q2 {
 
     public void run21(Profile profile) throws IOException, ServerException, InterruptedException {
         long start = System.currentTimeMillis();
-        var transaction = session.createTransaction(profile.transactionOption.build()).get();
+        var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
         q21(profile.queryValidation, transaction);
 
         var commitResponse = transaction.commit().get();
-        if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
+        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
             throw new IOException("commit error");
         }
         profile.q21 = System.currentTimeMillis() - start;
@@ -170,13 +153,13 @@ public class Q2 {
 
     public void run2(Profile profile) throws IOException, ServerException, InterruptedException {
         long start = System.currentTimeMillis();
-        var transaction = session.createTransaction(profile.transactionOption.build()).get();
+        var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
         q21(profile.queryValidation, transaction);
         q22(profile.queryValidation, transaction);
 
         var commitResponse = transaction.commit().get();
-        if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
+        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
             throw new IOException("commit error");
         }
         profile.q22 = System.currentTimeMillis() - start;

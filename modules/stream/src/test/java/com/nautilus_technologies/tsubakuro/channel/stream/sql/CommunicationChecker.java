@@ -7,8 +7,8 @@ import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
-import com.nautilus_technologies.tsubakuro.stream.ProtosForTest;
+import com.tsurugidb.jogasaki.proto.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 public final class CommunicationChecker {
     static final long SERVICE_ID_SQL = 3;

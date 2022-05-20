@@ -20,11 +20,11 @@ import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryRespons
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.Distiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.ResultOnlyDistiller;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -84,18 +84,18 @@ public class SessionWireImpl implements SessionWire {
     static class QueueEntry<V> {
         long serviceId;
         RequestType type;
-        RequestProtos.Request request;
+        SqlRequest.Request request;
         FutureResponseImpl<V> futureBody;
         FutureQueryResponseImpl futureHead;
 
-        QueueEntry(long serviceId, RequestProtos.Request request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
+        QueueEntry(long serviceId, SqlRequest.Request request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
             this.serviceId = serviceId;
             this.type = RequestType.QUERY;
             this.request = request;
             this.futureBody = futureBody;
             this.futureHead = futureHead;
         }
-        QueueEntry(long serviceId, RequestProtos.Request request, FutureResponseImpl<V> futureBody) {
+        QueueEntry(long serviceId, SqlRequest.Request request, FutureResponseImpl<V> futureBody) {
             this.serviceId = serviceId;
             this.type = RequestType.STATEMENT;
             this.request = request;
@@ -107,7 +107,7 @@ public class SessionWireImpl implements SessionWire {
         RequestType getRequestType() {
             return type;
         }
-        RequestProtos.Request getRequest() {
+        SqlRequest.Request getRequest() {
             return request;
         }
         FutureQueryResponseImpl getFutureHead() {
@@ -143,18 +143,18 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Send RequestProtos.Request to the SQL server via the native wire.
-     * @param request the RequestProtos.Request message
+     * Send SqlRequest.Request to the SQL server via the native wire.
+     * @param request the SqlRequest.Request message
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public <V> FutureResponse<V> send(long serviceId, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+    public <V> FutureResponse<V> send(long serviceId, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
-        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
+        var req = request.setSessionHandle(SqlCommon.Session.newBuilder().setHandle(sessionID)).build();
         var futureBody = new FutureResponseImpl<V>(this, distiller);
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
@@ -172,20 +172,20 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Send RequestProtos.Request to the SQL server via the native wire.
-     * @param request the RequestProtos.Request message
+     * Send SqlRequest.Request to the SQL server via the native wire.
+     * @param request the SqlRequest.Request message
      * @return a couple of Future response message corresponding the request
      */
     @Override
-    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-            long serviceId, RequestProtos.Request.Builder request) throws IOException {
+    public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(
+            long serviceId, SqlRequest.Request.Builder request) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
-        var req = request.setSessionHandle(CommonProtos.Session.newBuilder().setHandle(sessionID)).build();
+        var req = request.setSessionHandle(SqlCommon.Session.newBuilder().setHandle(sessionID)).build();
         var left = new FutureQueryResponseImpl(this);
-        var right = new FutureResponseImpl<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
+        var right = new FutureResponseImpl<SqlResponse.ResultOnly>(this, new ResultOnlyDistiller());
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
             if (handle != 0) {
@@ -196,19 +196,19 @@ public class SessionWireImpl implements SessionWire {
                 right.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
             } else {
-                queue.add(new QueueEntry<ResponseProtos.ResultOnly>(serviceId, req, left, right));
+                queue.add(new QueueEntry<SqlResponse.ResultOnly>(serviceId, req, left, right));
             }
         }
         return Pair.of(left, right);
     }
 
     /**
-     * Receive ResponseProtos.Response from the SQL server via the native wire.
+     * Receive SqlResponse.Response from the SQL server via the native wire.
      * @param handle the handle indicating the sent request message corresponding to the response message to be received.
      * @return ResposeProtos.Response message
     */
     @Override
-    public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+    public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
@@ -216,7 +216,7 @@ public class SessionWireImpl implements SessionWire {
             var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
             var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle));
             FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-            var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
+            var response = SqlResponse.Response.parseDelimitedFrom(byteBufferInput);
             logger.trace("receive " + response + ", hancle = " + handle);
             synchronized (this) {
                 releaseNative(responseHandle);
@@ -249,12 +249,12 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Receive ResponseProtos.Response from the SQL server via the native wire.
+     * Receive SqlResponse.Response from the SQL server via the native wire.
      * @param handle the handle indicating the sent request message corresponding to the response message to be received.
      * @return response message of ResposeProtos.Response type
     */
     @Override
-    public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit)
+    public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit)
             throws TimeoutException, IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
@@ -267,7 +267,7 @@ public class SessionWireImpl implements SessionWire {
             }
             var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle, timeoutNano));
             FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-            var response = ResponseProtos.Response.parseDelimitedFrom(byteBufferInput);
+            var response = SqlResponse.Response.parseDelimitedFrom(byteBufferInput);
             synchronized (this) {
                 releaseNative(responseHandle);
                 var entry = queue.peek();
@@ -299,8 +299,8 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Send RequestProtos.Request to the SQL server via the native wire.
-     * @param request the RequestProtos.Request message
+     * Send SqlRequest.Request to the SQL server via the native wire.
+     * @param request the SqlRequest.Request message
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
@@ -343,7 +343,7 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * UnReceive one ResponseProtos.Response
+     * UnReceive one SqlResponse.Response
      * @param handle the handle to the response box
     */
     @Override

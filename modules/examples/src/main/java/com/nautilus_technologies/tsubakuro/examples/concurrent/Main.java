@@ -1,6 +1,8 @@
 package com.nautilus_technologies.tsubakuro.low.concurrent;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.Objects;
 
 import org.apache.commons.cli.CommandLine;
@@ -10,44 +12,54 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorImpl;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
-    static long orderId() throws IOException, ServerException, InterruptedException  {
-        var connector = new ConnectorImpl(dbName);
-        var session = new SessionImpl();
-        session.connect(connector.connect().await());
-
-        var transaction = session.createTransaction().get();
-        var future = transaction.executeQuery("SELECT no_o_id FROM NEW_ORDER WHERE no_w_id = 1 AND no_d_id = 1 ORDER by no_o_id DESC");
-        var resultSet = future.get();
-        long count = 0;
-        if (resultSet.nextRecord()) {
-            if (resultSet.nextColumn()) {
-                count = resultSet.getInt8();
-            }
-        }
-        resultSet.close();
-        var r = resultSet.getResponse().get();
-        if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(r.getResultCase())) {
-            throw new IOException("select error");
-        }
-        var commitResponse = transaction.commit().get();
-        if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-            throw new IOException("commit (select) error");
-        }
-        session.close();
-        return count;
-    }
+    private static String url = "ipc:tateyama";
+    private static int concurrency = 1;
 
     private Main() {
     }
 
-    private static String dbName = "tateyama";
-    private static int concurrency = 1;
+    static long orderId() throws IOException, ServerException, InterruptedException, TimeoutException {
+        try (
+            Session session = SessionBuilder.connect(url)
+            .withCredential(new UsernamePasswordCredential("user", "pass"))
+            .create(10, TimeUnit.SECONDS);
+            SqlClient sqlClient = SqlClient.attach(session);) {
+
+                var transaction = sqlClient.createTransaction().get();
+                var future = transaction.executeQuery("SELECT no_o_id FROM NEW_ORDER WHERE no_w_id = 1 AND no_d_id = 1 ORDER by no_o_id DESC");
+                var resultSet = future.get();
+                long count = 0;
+                if (resultSet.nextRecord()) {
+                    if (resultSet.nextColumn()) {
+                        count = resultSet.getInt8();
+                    }
+                }
+                resultSet.close();
+                var r = resultSet.getResponse().get();
+                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(r.getResultCase())) {
+                    throw new IOException("select error");
+                }
+                var commitResponse = transaction.commit().get();
+                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+                    throw new IOException("commit (select) error");
+                }
+                session.close();
+                return count;
+
+        } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
+            System.out.println(e);
+            throw e;
+        }
+    }
 
     public static void main(String[] args) {
         // コマンドラインオプションの設定
@@ -65,12 +77,20 @@ public final class Main {
                 concurrency = Integer.parseInt(cmd.getOptionValue("c"));
             }
 
-            var client = new Insert(new ConnectorImpl(dbName), new SessionImpl(), concurrency, orderId());
-            if (!Objects.isNull(client)) {
-                client.start();
-                client.join();
+            try (
+                Session session = SessionBuilder.connect(url)
+                .withCredential(new UsernamePasswordCredential("user", "pass"))
+                .create(10, TimeUnit.SECONDS);
+                SqlClient sqlClient = SqlClient.attach(session);) {
+    
+                    var client = new Insert(sqlClient, concurrency, orderId());
+                    if (!Objects.isNull(client)) {
+                        client.start();
+                        client.join();
+                    }
             }
-        } catch (IOException | ServerException | InterruptedException e) {
+
+        } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
             System.out.println(e);
         } catch (ParseException e) {
             System.err.printf("cmd parser failed." + e);

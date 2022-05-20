@@ -24,25 +24,25 @@ public class ResultSetWireImpl implements ResultSetWire {
     private boolean eor;
 
     class ByteBufferBackedInput extends ByteBufferInput {
-	ByteBufferBackedInput(ByteBuffer byteBuffer) {
-	    super(byteBuffer);
-	}
+    ByteBufferBackedInput(ByteBuffer byteBuffer) {
+        super(byteBuffer);
+    }
 
-	public MessageBuffer next() {
-	    var rv = super.next();
-	    if (!Objects.isNull(rv)) {
-		return rv;
-	    }
-	    if (!eor) {
-		var buffer = getChunkNative(wireHandle);
-		if (Objects.isNull(buffer)) {
-		    return null;
-		}
-		super.reset(buffer);
-		return super.next();
-	    }
-	    return null;
-	}
+    public MessageBuffer next() {
+        var rv = super.next();
+        if (!Objects.isNull(rv)) {
+        return rv;
+        }
+        if (!eor) {
+        var buffer = getChunkNative(wireHandle);
+        if (Objects.isNull(buffer)) {
+            return null;
+        }
+        super.reset(buffer);
+        return super.next();
+        }
+        return null;
+    }
     }
 
     /**
@@ -50,9 +50,9 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
      */
     public ResultSetWireImpl(long sessionWireHandle) {
-	this.sessionWireHandle = sessionWireHandle;
-	this.byteBufferBackedInput = null;
-	this.eor = false;
+    this.sessionWireHandle = sessionWireHandle;
+    this.byteBufferBackedInput = null;
+    this.eor = false;
     }
 
     /**
@@ -61,11 +61,11 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @throws IOException connection error
      */
     public void connect(String name) throws IOException {
-	if (name.length() == 0) {
-	    throw new IOException("ResultSet wire name is empty");
-	}
-	wireHandle = createNative(sessionWireHandle);
-	connectNative(wireHandle, name);
+    if (name.length() == 0) {
+        throw new IOException("ResultSet wire name is empty");
+    }
+    wireHandle = createNative(sessionWireHandle);
+    connectNative(wireHandle, name);
     }
 
     /**
@@ -73,36 +73,36 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @return ByteBufferInput contains the record data from the SQL server.
      */
     public ByteBufferInput getByteBufferBackedInput() {
-	if (Objects.isNull(byteBufferBackedInput)) {
-	    var buffer = getChunkNative(wireHandle);
-	    if (Objects.isNull(buffer)) {
-		eor = true;
-		return null;
-	    }
-	    byteBufferBackedInput = new ByteBufferBackedInput(buffer);
-	}
-	return byteBufferBackedInput;
+    if (Objects.isNull(byteBufferBackedInput)) {
+        var buffer = getChunkNative(wireHandle);
+        if (Objects.isNull(buffer)) {
+        eor = true;
+        return null;
+        }
+        byteBufferBackedInput = new ByteBufferBackedInput(buffer);
+    }
+    return byteBufferBackedInput;
     }
 
     public boolean disposeUsedData(long length) throws IOException {
-	disposeUsedDataNative(wireHandle, length);
-	var buffer = getChunkNative(wireHandle);
-	if (Objects.isNull(buffer)) {
-	    eor = true;
-	    return false;
-	}
-	byteBufferBackedInput.reset(buffer);
-	return true;
+    disposeUsedDataNative(wireHandle, length);
+    var buffer = getChunkNative(wireHandle);
+    if (Objects.isNull(buffer)) {
+        eor = true;
+        return false;
+    }
+    byteBufferBackedInput.reset(buffer);
+    return true;
     }
 
     /**
      * Close the wire
      */
     public void close() throws IOException {
-	closeNative(wireHandle);
-	wireHandle = 0;
-	if (!Objects.isNull(byteBufferBackedInput)) {
-	    byteBufferBackedInput.close();
-	}
+    closeNative(wireHandle);
+    wireHandle = 0;
+    if (!Objects.isNull(byteBufferBackedInput)) {
+        byteBufferBackedInput.close();
+    }
     }
 }

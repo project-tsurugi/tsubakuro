@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
-import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
-import com.nautilus_technologies.tsubakuro.stream.ProtosForTest;
+import com.tsurugidb.jogasaki.proto.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class SessionWireTest {
     static final long SERVICE_ID_SQL = 3;

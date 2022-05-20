@@ -3,9 +3,9 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -19,11 +19,11 @@ public class ResultSetMock implements ResultSet {
         RecordMetaImpl() {
         }
         @Override
-        public CommonProtos.DataType type(int index) throws IOException {
+        public SqlCommon.AtomType type(int index) throws IOException {
             if (index != 0) {
                 throw new IOException("index is out of the range");
             }
-            return CommonProtos.DataType.CHARACTER;
+            return SqlCommon.AtomType.CHARACTER;
         }
         @Override
         public String name(int index) throws IOException {
@@ -45,12 +45,12 @@ public class ResultSetMock implements ResultSet {
         }
         @Override
         @Deprecated
-        public CommonProtos.DataType at(int index) throws IOException {
+        public SqlCommon.AtomType at(int index) throws IOException {
             return type(index);
         }
         @Override
         @Deprecated
-        public CommonProtos.DataType at() throws IOException {
+        public SqlCommon.AtomType at() throws IOException {
             if (!columnReady) {
                 throw new IOException("the column is not ready to be read");
             }
@@ -71,7 +71,7 @@ public class ResultSetMock implements ResultSet {
     private int columnIndex;
     private int numRecords;
     private boolean columnReady;
-    private final FutureResponse<ResponseProtos.ResultOnly> futureResponse;
+    private final FutureResponse<SqlResponse.ResultOnly> futureResponse;
 
     /**
      * Class constructor, called from FutureResultSetMock.
@@ -139,7 +139,7 @@ public class ResultSetMock implements ResultSet {
         columnIndex = -1;
         columnReady = false;
         numRecords++;
-        return 	numRecords == 1;
+        return     numRecords == 1;
     }
 
     /**
@@ -169,7 +169,7 @@ public class ResultSetMock implements ResultSet {
      * @return current field type
      */
     @Override
-    public CommonProtos.DataType type() throws IOException {
+    public SqlCommon.AtomType type() throws IOException {
         if (!columnReady) {
             throw new IOException("the column is not ready to be read");
         }
@@ -266,7 +266,7 @@ public class ResultSetMock implements ResultSet {
     }
 
     @Override
-    public FutureResponse<ResponseProtos.ResultOnly> getResponse() {
+    public FutureResponse<SqlResponse.ResultOnly> getResponse() {
         return futureResponse;
     }
 

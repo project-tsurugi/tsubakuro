@@ -8,8 +8,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 
@@ -24,7 +24,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<ResponseProtos.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+    default FutureResponse<SqlResponse.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -35,9 +35,9 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<ResponseProtos.ResultOnly> executeStatement(
+    default FutureResponse<SqlResponse.ResultOnly> executeStatement(
             @Nonnull PreparedStatement statement,
-            @Nonnull RequestProtos.ParameterSet.Parameter... parameters) throws IOException {
+            @Nonnull SqlRequest.Parameter... parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         return executeStatement(statement, Arrays.asList(parameters));
@@ -50,9 +50,9 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<ResponseProtos.ResultOnly> executeStatement(
+    default FutureResponse<SqlResponse.ResultOnly> executeStatement(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -75,7 +75,7 @@ public interface Transaction extends ServerResource {
      */
     default FutureResponse<ResultSet> executeQuery(
             @Nonnull PreparedStatement statement,
-            @Nonnull RequestProtos.ParameterSet.Parameter... parameters) throws IOException {
+            @Nonnull SqlRequest.Parameter... parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         return executeQuery(statement, Arrays.asList(parameters));
@@ -90,7 +90,7 @@ public interface Transaction extends ServerResource {
      */
     default FutureResponse<ResultSet> executeQuery(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -129,7 +129,7 @@ public interface Transaction extends ServerResource {
      */
     default FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory) throws IOException {
         throw new UnsupportedOperationException();
     }
@@ -152,9 +152,9 @@ public interface Transaction extends ServerResource {
      * @return a future response of the result set
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<ResponseProtos.ResultOnly> executeLoad(
+    default FutureResponse<SqlResponse.ResultOnly> executeLoad(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path... files) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
@@ -181,118 +181,24 @@ public interface Transaction extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      * @see Parameters
      */
-    default FutureResponse<ResponseProtos.ResultOnly> executeLoad(
+    default FutureResponse<SqlResponse.ResultOnly> executeLoad(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Request commit to the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in commit by the SQL service
      */
-    FutureResponse<ResponseProtos.ResultOnly> commit() throws IOException;
+    FutureResponse<SqlResponse.ResultOnly> commit() throws IOException;
 
     /**
      * Request rollback to the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in rollback by the SQL service
      */
-    FutureResponse<ResponseProtos.ResultOnly> rollback() throws IOException;
-
-    /**
-     * Request executeStatement to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute statement by the SQL service
-     * @deprecated use {@link #executeStatement(PreparedStatement, Collection)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResponseProtos.ResultOnly> executeStatement(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet parameterSet) throws IOException {
-        return executeStatement(preparedStatement, parameterSet.getParametersList());
-    }
-
-    /**
-     * Request executeStatement to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute statement by the SQL service
-     * @deprecated use {@link #executeStatement(PreparedStatement, Collection)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResponseProtos.ResultOnly> executeStatement(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
-        return executeStatement(preparedStatement, parameterSet.getParametersList());
-    }
-
-    /**
-     * Request executeQuery to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResultSet which is a processing result of the SQL service
-     * @throws IOException error occurred in execute query by the SQL service
-     * @deprecated use {@link #executeQuery(PreparedStatement, Collection)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResultSet> executeQuery(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet parameterSet) throws IOException {
-        return executeQuery(preparedStatement, parameterSet.getParametersList());
-    }
-
-    /**
-     * Request executeQuery to the SQL service
-     * @param preparedStatement prepared statement for the command
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @return a FutureResponse of ResultSet which is a processing result of the SQL service
-     * @throws IOException error occurred in execute query by the SQL service
-     * @deprecated use {@link #executeQuery(PreparedStatement, Collection)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResultSet> executeQuery(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet.Builder parameterSet) throws IOException {
-        return executeQuery(preparedStatement, parameterSet.getParametersList());
-    }
-
-    /**
-     * Request dump execution to the SQL service
-     * @param preparedStatement prepared statement used in the dump operation
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param directory the directory path where dumped files are placed
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute dump by the SQL service
-     * @deprecated use {@link #executeDump(PreparedStatement, Collection, Path)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResultSet> executeDump(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet parameterSet,
-            Path directory) throws IOException {
-        return executeDump(preparedStatement, parameterSet.getParametersList(), directory);
-    }
-
-    /**
-     * Request load execution to the SQL service
-     * @param preparedStatement prepared statement used in the dump operation
-     * @param parameterSet parameter set for the prepared statement encoded with protocol buffer
-     * @param files the collection of file path to be loaded
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
-     * @throws IOException error occurred in execute load by the SQL service
-     * @deprecated use {@link #executeLoad(PreparedStatement, Collection, Collection)} instead
-     */
-    @Deprecated
-    default FutureResponse<ResponseProtos.ResultOnly> executeLoad(
-            PreparedStatement preparedStatement,
-            RequestProtos.ParameterSet parameterSet,
-            Collection<? extends Path> files) throws IOException {
-        return executeLoad(preparedStatement, parameterSet.getParametersList(), files);
-    }
+    FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException;
 }

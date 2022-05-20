@@ -18,29 +18,29 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
 
     private class ByteBufferBackedInput extends ByteBufferInput {
-	ByteBufferBackedInput(ByteBuffer byteBuffer) {
-	    super(byteBuffer);
-	}
+    ByteBufferBackedInput(ByteBuffer byteBuffer) {
+        super(byteBuffer);
+    }
 
-	public MessageBuffer next() {
-	    var rv = super.next();
-	    if (Objects.nonNull(rv)) {
-		return rv;
-	    }
-	    try {
-		var receivedData = resultSetBox.receive(slot);
-		var buffer = receivedData.getPayload();
-		if (Objects.isNull(buffer)) {
-		    return null;
-		}
-		super.reset(ByteBuffer.wrap(buffer));
-	    } catch (IOException e) {
-		System.err.println(e);
-		e.printStackTrace();
-		return null;
-	    }
-	    return super.next();
-	}
+    public MessageBuffer next() {
+        var rv = super.next();
+        if (Objects.nonNull(rv)) {
+        return rv;
+        }
+        try {
+        var receivedData = resultSetBox.receive(slot);
+        var buffer = receivedData.getPayload();
+        if (Objects.isNull(buffer)) {
+            return null;
+        }
+        super.reset(ByteBuffer.wrap(buffer));
+        } catch (IOException e) {
+        System.err.println(e);
+        e.printStackTrace();
+        return null;
+        }
+        return super.next();
+    }
     }
 
     /**
@@ -48,9 +48,9 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param streamWire the stream object of the sessionWire
      */
     public ResultSetWireImpl(StreamWire streamWire) {
-	this.streamWire = streamWire;
-	this.resultSetBox = streamWire.getResultSetBox();
-	this.byteBufferBackedInput = null;
+    this.streamWire = streamWire;
+    this.resultSetBox = streamWire.getResultSetBox();
+    this.byteBufferBackedInput = null;
     }
 
     /**
@@ -59,52 +59,52 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @throws IOException connection error
      */
     public void connect(String name) throws IOException {
-	if (name.length() == 0) {
-	    throw new IOException("ResultSet wire name is empty");
-	}
-	slot = resultSetBox.hello(name);
+    if (name.length() == 0) {
+        throw new IOException("ResultSet wire name is empty");
+    }
+    slot = resultSetBox.hello(name);
     }
 
     /**
      * Provides the Input to retrieve the received data.
      */
     public ByteBufferInput getByteBufferBackedInput() {
-	if (Objects.isNull(byteBufferBackedInput)) {
-	    try {
-		var receivedData = resultSetBox.receive(slot);
-		var buffer = receivedData.getPayload();
-		if (Objects.isNull(buffer)) {
-		    return null;
-		}
-		byteBufferBackedInput = new ByteBufferBackedInput(ByteBuffer.wrap(buffer));
-	    } catch (IOException e) {
-		System.err.println(e);
-		e.printStackTrace();
-		return null;
-	    }
-	}
-	return byteBufferBackedInput;
+    if (Objects.isNull(byteBufferBackedInput)) {
+        try {
+        var receivedData = resultSetBox.receive(slot);
+        var buffer = receivedData.getPayload();
+        if (Objects.isNull(buffer)) {
+            return null;
+        }
+        byteBufferBackedInput = new ByteBufferBackedInput(ByteBuffer.wrap(buffer));
+        } catch (IOException e) {
+        System.err.println(e);
+        e.printStackTrace();
+        return null;
+        }
+    }
+    return byteBufferBackedInput;
     }
 
     public boolean disposeUsedData(long length) throws IOException {
-	// FIXME
-	// When multiple writer is implemented, this becomes necessary.
-	return true;
+    // FIXME
+    // When multiple writer is implemented, this becomes necessary.
+    return true;
     }
 
     /**
      * Close the wire
      */
     public void close() throws IOException {
-	while (true) {
-	    var entry = resultSetBox.receive(slot);
-	    if (Objects.isNull(entry.getPayload())) {
-		break;
-	    }
-	}
-	streamWire.sendResutSetByeOk(slot);
-	if (Objects.nonNull(byteBufferBackedInput)) {
-	    byteBufferBackedInput.close();
-	}
+    while (true) {
+        var entry = resultSetBox.receive(slot);
+        if (Objects.isNull(entry.getPayload())) {
+        break;
+        }
+    }
+    streamWire.sendResutSetByeOk(slot);
+    if (Objects.nonNull(byteBufferBackedInput)) {
+        byteBufferBackedInput.close();
+    }
     }
 }

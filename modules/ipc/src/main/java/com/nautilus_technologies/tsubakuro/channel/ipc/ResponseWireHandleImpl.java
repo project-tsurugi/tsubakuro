@@ -13,13 +13,13 @@ public class ResponseWireHandleImpl extends ResponseWireHandle {
      * @param handle the handle that this class stores.
      */
     ResponseWireHandleImpl(long handle) {
-	this.handle = handle;
+    this.handle = handle;
     }
     /**
      * Provides the handle.
      * @return the handle in long, where the type is implementation-dependent
      */
     long getHandle() {
-	return handle;
+    return handle;
     }
 }
