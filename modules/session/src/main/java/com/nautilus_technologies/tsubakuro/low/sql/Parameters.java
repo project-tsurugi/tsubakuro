@@ -11,11 +11,11 @@ import javax.annotation.Nonnull;
 import org.firebirdsql.decimal.Decimal128;
 
 import com.google.protobuf.ByteString;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
 
 /**
- * Utilities of {@link com.nautilus_technologies.tsubakuro.protos.RequestProtos.ParameterSet.Parameter Parameter}.
+ * Utilities of {@link com.tsurugidb.jogasaki.proto.SqlRequest.Parameter Parameter}.
  */
 public final class Parameters {
 
@@ -24,9 +24,9 @@ public final class Parameters {
      * @param name the place-holder name
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter ofNull(@Nonnull String name) {
+    public static SqlRequest.Parameter ofNull(@Nonnull String name) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 // unset value
                 // .clearValue()
@@ -39,9 +39,9 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, boolean value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, boolean value) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setBooleanValue(value)
                 .build();
@@ -53,9 +53,9 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, long value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, long value) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setInt8Value(value)
                 .build();
@@ -67,9 +67,9 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, int value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, int value) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setInt4Value(value)
                 .build();
@@ -81,9 +81,9 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, float value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, float value) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setFloat4Value(value)
                 .build();
@@ -95,9 +95,9 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, double value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, double value) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setFloat8Value(value)
                 .build();
@@ -109,11 +109,11 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull BigDecimal value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull BigDecimal value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
         var bytes = ByteString.copyFrom(Decimal128.valueOf(value).toBytes());
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setDecimalValue(bytes)
                 .build();
@@ -125,10 +125,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull String value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull String value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setCharacterValue(value)
                 .build();
@@ -140,10 +140,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull byte[] value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull byte[] value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setOctetValue(ByteString.copyFrom(value))
                 .build();
@@ -155,10 +155,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull ByteString value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull ByteString value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setOctetValue(value)
                 .build();
@@ -170,7 +170,7 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull boolean[] value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull boolean[] value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
 
@@ -181,9 +181,9 @@ public final class Parameters {
             bytes[byteOffset] |= value[i] ? (1 << bitOffset) : 0;
         }
 
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setBitValue(CommonProtos.Bit.newBuilder()
+                .setBitValue(SqlCommon.Bit.newBuilder()
                         .setPacked(ByteString.copyFrom(bytes))
                         .setSize(value.length))
                 .build();
@@ -195,10 +195,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull CommonProtos.Bit value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull SqlCommon.Bit value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setBitValue(value)
                 .build();
@@ -210,10 +210,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull LocalDate value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull LocalDate value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setDateValue(value.toEpochDay())
                 .build();
@@ -225,10 +225,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull LocalTime value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull LocalTime value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimeOfDayValue(value.toNanoOfDay())
                 .build();
@@ -240,12 +240,12 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull Instant value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull Instant value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setTimePointValue(CommonProtos.TimePoint.newBuilder()
+                .setTimePointValue(SqlCommon.TimePoint.newBuilder()
                         .setOffsetSeconds(value.getEpochSecond())
                         .setNanoAdjustment(value.getNano()))
                 .build();
@@ -257,10 +257,10 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter of(@Nonnull String name, @Nonnull CommonProtos.TimePoint value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull SqlCommon.TimePoint value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(value)
                 .build();
@@ -272,9 +272,9 @@ public final class Parameters {
      * @param position the position of target column
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter referenceColumn(@Nonnull String name, int position) {
+    public static SqlRequest.Parameter referenceColumn(@Nonnull String name, int position) {
         Objects.requireNonNull(name);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setReferenceColumnPosition(position)
                 .build();
@@ -286,10 +286,10 @@ public final class Parameters {
      * @param columnName the name of target column
      * @return the created place-holder
      */
-    public static RequestProtos.ParameterSet.Parameter referenceColumn(@Nonnull String name, @Nonnull String columnName) {
+    public static SqlRequest.Parameter referenceColumn(@Nonnull String name, @Nonnull String columnName) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(columnName);
-        return RequestProtos.ParameterSet.Parameter.newBuilder()
+        return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setReferenceColumnName(columnName)
                 .build();

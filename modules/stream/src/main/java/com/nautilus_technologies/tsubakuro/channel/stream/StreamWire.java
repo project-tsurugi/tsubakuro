@@ -62,7 +62,7 @@ public class StreamWire {
         return resultSetBox;
     }
     public void sendResutSetByeOk(int slot) throws IOException {
-	send(REQUEST_RESULT_SET_BYE_OK, slot);
+    send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
 
     private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
@@ -89,14 +89,14 @@ public class StreamWire {
         header[5] = strip(length >> 24);
 
         synchronized (this) {
-	    outStream.write(header, 0, header.length);
+        outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信
                 outStream.write(payload, 0, length);
             }
         }
-	    logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
+        logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
     }
 
     public void send(int s, byte[] first, byte[] payload) throws IOException {  // SESSION_PAYLOAD
@@ -110,7 +110,7 @@ public class StreamWire {
         header[5] = strip(length >> 24);
 
         synchronized (this) {
-	    outStream.write(header, 0, header.length);
+        outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信

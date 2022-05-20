@@ -13,7 +13,7 @@ import org.msgpack.core.MessagePacker;
 import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
-import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
+    import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class ResultSetTotalTest {
     static final long SERVICE_ID_SQL = 3;

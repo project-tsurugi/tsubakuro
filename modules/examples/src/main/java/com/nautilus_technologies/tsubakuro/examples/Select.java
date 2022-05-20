@@ -5,18 +5,21 @@ import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
+import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Select {
-    Session session;
+    SqlClient sqlClient;
 
-    public Select(Connector connector, Session session) throws IOException, ServerException, InterruptedException {
-        this.session = session;
-        this.session.connect(connector.connect().await());
+    public Select(SqlClient sqlClient) throws IOException, ServerException, InterruptedException {
+        this.sqlClient = sqlClient;
     }
 
     void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
@@ -55,33 +58,28 @@ public class Select {
 
     public void prepareAndSelect() throws IOException, ServerException, InterruptedException {
         String sql = "SELECT * FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id";
-        var ph = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_d_id").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_w_id").setType(CommonProtos.DataType.INT8))
-                .build();
-        try (var preparedStatement = session.prepare(sql, ph).await();
-                var transaction = session.createTransaction().await()) {
+        try (var preparedStatement = sqlClient.prepare(sql,
+        Placeholders.of("o_id", long.class),
+        Placeholders.of("o_d_id", long.class),
+        Placeholders.of("o_w_id", long.class)).await();
 
-            var ps = RequestProtos.ParameterSet.newBuilder()
-                    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_id").setInt8Value(99999999))
-                    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_d_id").setInt8Value(3))
-                    .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("o_w_id").setInt8Value(1))
-                    .build();
-            var resultSet = transaction.executeQuery(preparedStatement, ps.getParametersList()).get();
+        var transaction = sqlClient.createTransaction().await()) {
+
+            var resultSet = transaction.executeQuery(preparedStatement,
+            Parameters.of("o_id", (long) 99999999),
+            Parameters.of("o_d_id", (long) 3),
+            Parameters.of("o_w_id", (long) 1)).get();
             if (!Objects.isNull(resultSet)) {
                 printResultset(resultSet);
                 resultSet.close();
             }
-            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
+            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
                 throw new IOException("select error");
             }
             var commitResponse = transaction.commit().get();
-            if (!ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
                 throw new IOException("commit (select) error");
             }
-        } finally {
-            session.close();
         }
     }
 }

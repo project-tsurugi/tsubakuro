@@ -13,13 +13,13 @@ public class ResponseWireHandleImpl extends ResponseWireHandle {
      * @param handle the handle that this class stores.
      */
     ResponseWireHandleImpl(byte index) {
-	this.index = index;
+    this.index = index;
     }
     /**
      * Provides the handle.
      * @return the handle in StreamWire, where the type is implementation-dependent
      */
     byte getHandle() {
-	return index;
+    return index;
     }
 }

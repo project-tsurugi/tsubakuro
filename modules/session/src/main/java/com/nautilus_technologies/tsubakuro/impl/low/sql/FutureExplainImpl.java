@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -13,31 +13,31 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
  */
 public class FutureExplainImpl extends AbstractFutureResponse<String> {
 
-    private final FutureResponse<ResponseProtos.Explain> delegate;
+    private final FutureResponse<SqlResponse.Explain> delegate;
 
     /**
      * Class constructor, called from SessionLinkImpl that is connected to the SQL server.
-     * @param future the Future of ResponseProtos.Explain
+     * @param future the Future of SqlResponse.Explain
      */
-    public FutureExplainImpl(FutureResponse<ResponseProtos.Explain> future) {
+    public FutureExplainImpl(FutureResponse<SqlResponse.Explain> future) {
         this.delegate = future;
     }
 
     @Override
     protected String getInternal() throws IOException, ServerException, InterruptedException {
-        ResponseProtos.Explain response = delegate.get();
+        SqlResponse.Explain response = delegate.get();
         return resolve(response);
     }
 
     @Override
     protected String getInternal(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
-        ResponseProtos.Explain response = delegate.get(timeout, unit);
+        SqlResponse.Explain response = delegate.get(timeout, unit);
         return resolve(response);
     }
 
-    private String resolve(ResponseProtos.Explain response) throws IOException {
-        if (ResponseProtos.Explain.ResultCase.ERROR.equals(response.getResultCase())) {
+    private String resolve(SqlResponse.Explain response) throws IOException {
+        if (SqlResponse.Explain.ResultCase.ERROR.equals(response.getResultCase())) {
             // FIXME: throw structured exception
             throw new IOException(response.getError().getDetail());
         }

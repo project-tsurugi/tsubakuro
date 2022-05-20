@@ -80,7 +80,7 @@ public class DatastoreClientImpl implements DatastoreClient {
         if (!Objects.isNull(comment)) {
             builder.setComment(comment);
         }
-    	return service.send(builder.build());
+        return service.send(builder.build());
     }
 
     @Override

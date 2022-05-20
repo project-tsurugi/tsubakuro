@@ -7,14 +7,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos.ResultOnly;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.SqlResponse.ResultOnly;
 
 /**
  * FutureResponseMock type.
  */
 // FIXME: remove mock code
-public class FutureResponseMock extends AbstractFutureResponse<ResponseProtos.ResultOnly> {
+public class FutureResponseMock extends AbstractFutureResponse<SqlResponse.ResultOnly> {
     private boolean success;
 
     public FutureResponseMock(Collection<? extends Path> files) {
@@ -34,12 +34,12 @@ public class FutureResponseMock extends AbstractFutureResponse<ResponseProtos.Re
     @Override
     protected ResultOnly getInternal() throws IOException, ServerException, InterruptedException {
         if (success) {
-            return ResponseProtos.ResultOnly.newBuilder()
-                    .setSuccess(ResponseProtos.Success.newBuilder())
+            return SqlResponse.ResultOnly.newBuilder()
+                    .setSuccess(SqlResponse.Success.newBuilder())
                     .build();
         }
-        return ResponseProtos.ResultOnly.newBuilder()
-                .setError(ResponseProtos.Error.newBuilder().setDetail("intentional fail for test purpose"))
+        return SqlResponse.ResultOnly.newBuilder()
+                .setError(SqlResponse.Error.newBuilder().setDetail("intentional fail for test purpose"))
                 .build();
     }
 

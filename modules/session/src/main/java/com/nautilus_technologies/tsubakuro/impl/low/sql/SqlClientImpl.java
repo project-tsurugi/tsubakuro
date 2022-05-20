@@ -11,7 +11,9 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -20,6 +22,7 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 public class SqlClientImpl implements SqlClient {
 
     private final Session session;
+    private final SessionLinkImpl sessionLinkImpl;
 
     /**
      * Creates a new instance.
@@ -28,37 +31,74 @@ public class SqlClientImpl implements SqlClient {
     public SqlClientImpl(@Nonnull Session session) {
         Objects.requireNonNull(session);
         this.session = session;
+        this.sessionLinkImpl = ((SessionImpl) session).getSessionLinkImpl();
     }
 
-    // FIXME directly send request messages instead of delegate it via Session
-
-    @Override
-    public FutureResponse<Transaction> createTransaction(@Nonnull RequestProtos.TransactionOption option)
-            throws IOException {
-        Objects.requireNonNull(option);
-        return session.createTransaction(option);
+    /**
+     * Begin a new transaction
+     * @param readOnly specify whether the new transaction is read-only or not
+     * @return the transaction
+     */
+//    @Override
+    @Deprecated
+    public FutureResponse<Transaction> createTransaction(boolean readOnly) throws IOException {
+        if (Objects.isNull(sessionLinkImpl)) {
+            throw new IOException("this session is not connected to the Database");
+        }
+        return new FutureTransactionImpl(sessionLinkImpl.send(
+                                             SqlRequest.Begin.newBuilder()
+                                                 .setOption(SqlRequest.TransactionOption.newBuilder()
+                                                                .setType(readOnly ? SqlRequest.TransactionType.READ_ONLY : SqlRequest.TransactionType.SHORT)
+                                                            )
+                                             ),
+                                         sessionLinkImpl);
     }
 
+    /**
+     * Begin a new read-write transaction
+     * @return the transaction
+     */
+//    @Override
+    public FutureResponse<Transaction> createTransaction() throws IOException {
+        return createTransaction(SqlRequest.TransactionOption.newBuilder().build());
+    }
+
+    /**
+     * Begin a new transaction by specifying the transaction type
+     * @return the transaction
+     */
     @Override
+    public FutureResponse<Transaction> createTransaction(SqlRequest.TransactionOption option) throws IOException {
+        if (Objects.isNull(sessionLinkImpl)) {
+            throw new IOException("this session is not connected to the Database");
+        }
+        return new FutureTransactionImpl(sessionLinkImpl.send(SqlRequest.Begin.newBuilder().setOption(option)), sessionLinkImpl);
+    }
+
+//    @Override
     public FutureResponse<PreparedStatement> prepare(
             @Nonnull String source,
-            @Nonnull Collection<? extends RequestProtos.PlaceHolder.Variable> placeholders) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
         Objects.requireNonNull(source);
         Objects.requireNonNull(placeholders);
-        return session.prepare(source, RequestProtos.PlaceHolder.newBuilder()
-                .addAllVariables(placeholders)
-                .build());
+        var pb = SqlRequest.Prepare.newBuilder().setSql(source);
+        for (SqlRequest.PlaceHolder e : placeholders) {
+            pb.addPlaceholders(e);
+        }
+        return sessionLinkImpl.send(pb);
     }
 
-    @Override
+//    @Override
     public FutureResponse<String> explain(
             @Nonnull PreparedStatement statement,
-            @Nonnull Collection<? extends RequestProtos.ParameterSet.Parameter> parameters) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        return session.explain(statement, RequestProtos.ParameterSet.newBuilder()
-                .addAllParameters(parameters)
-                .build());
+        var pb = SqlRequest.Explain.newBuilder().setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
+        for (SqlRequest.Parameter e : parameters) {
+            pb.addParameters(e);
+        }
+        return sessionLinkImpl.send(pb);
     }
 
     @Override

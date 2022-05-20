@@ -3,8 +3,8 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 import java.io.Closeable;
 import java.io.IOException;
 
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -21,7 +21,7 @@ public interface ResultSet extends Closeable {
          * @return field type
          * @throws IOException error occurred in investigating the column type
          */
-        CommonProtos.DataType type(int index) throws IOException;
+        SqlCommon.AtomType type(int index) throws IOException;
 
         /**
          * Get the field name
@@ -52,7 +52,7 @@ public interface ResultSet extends Closeable {
          * @throws IOException error occurred in investigating the column type
          */
         @Deprecated
-        CommonProtos.DataType at(int index) throws IOException;
+        SqlCommon.AtomType at(int index) throws IOException;
 
         /**
          * Get the current field type
@@ -60,7 +60,7 @@ public interface ResultSet extends Closeable {
          * @throws IOException error occurred in investigating the column type
          */
         @Deprecated
-        CommonProtos.DataType at() throws IOException;
+        SqlCommon.AtomType at() throws IOException;
 
         /**
          * Get the nullability for the field
@@ -114,7 +114,7 @@ public interface ResultSet extends Closeable {
      * @return current field type
      * @throws IOException error occurred in investigating column data type
      */
-    CommonProtos.DataType type() throws IOException;
+    SqlCommon.AtomType type() throws IOException;
 
     /**
      * Get the current field name
@@ -132,8 +132,8 @@ public interface ResultSet extends Closeable {
 
     /**
      * Get a FutureResponse of the response returned from the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
     // FIXME: raise exception until close if error, instead.
-    FutureResponse<ResponseProtos.ResultOnly> getResponse();
+    FutureResponse<SqlResponse.ResultOnly> getResponse();
 }

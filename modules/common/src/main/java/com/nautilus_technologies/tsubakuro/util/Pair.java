@@ -22,15 +22,15 @@ public final class Pair<L, R> {
     //    private final R right;
 
     //    public Pair(L left, R right) {
-    //	this.left = left;
-    //	this.right = right;
+    //    this.left = left;
+    //    this.right = right;
     //    }
 
     public L getLeft() {
-	return left;
+    return left;
     }
 
     public R getRight() {
-	return right;
+    return right;
     }
 }

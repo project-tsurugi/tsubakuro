@@ -14,11 +14,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.protobuf.ByteString;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos.TypeInfo;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlCommon.TypeInfo;
 
 /**
- * Utilities to build {@link com.nautilus_technologies.tsubakuro.protos.CommonProtos.TypeInfo}.
+ * Utilities to build {@link com.tsurugidb.jogasaki.proto.SqlCommon.TypeInfo}.
  *
  * <p>
  * This helps to build a SQL type representation from the Java types.
@@ -68,7 +68,7 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos.TypeInfo;
  *     </tr>
  *     <tr>
  *       <td> {@code BIT} </td>
- *       <td> {@code byte[]}, {@link com.nautilus_technologies.tsubakuro.protos.CommonProtos.Bit CommonProtos.Bit} </td>
+ *       <td> {@code byte[]}, {@link com.tsurugidb.jogasaki.proto.SqlCommon.Bit SqlCommon.Bit} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code DATE} </td>
@@ -84,15 +84,15 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos.TypeInfo;
  *     </tr>
  *     <tr>
  *       <td> {@code DATETIME_INTERVAL} </td>
- *       <td> {@link com.nautilus_technologies.tsubakuro.protos.CommonProtos.DateTimeInterval CommonProtos.DateTimeInterval} </td>
+ *       <td> {@link com.tsurugidb.jogasaki.proto.SqlCommon.DateTimeInterval SqlCommon.DateTimeInterval} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code CLOB} </td>
- *       <td> {@link java.sql.Clob}, {@link com.nautilus_technologies.tsubakuro.protos.CommonProtos.Clob CommonProtos.Clob} </td>
+ *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.jogasaki.proto.SqlCommon.Clob SqlCommon.Clob} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code BLOB} </td>
- *       <td> {@link java.sql.Clob}, {@link com.nautilus_technologies.tsubakuro.protos.CommonProtos.Blob CommonProtos.Blob} </td>
+ *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.jogasaki.proto.SqlCommon.Blob SqlCommon.Blob} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code ARRAY} </td>
@@ -109,46 +109,46 @@ import com.nautilus_technologies.tsubakuro.protos.CommonProtos.TypeInfo;
  */
 public final class Types {
 
-    private static final Map<Class<?>, CommonProtos.TypeInfo> TYPE_MAP = Map.ofEntries(
+    private static final Map<Class<?>, SqlCommon.TypeInfo> TYPE_MAP = Map.ofEntries(
             // numeric
-            Map.entry(boolean.class, wrap(CommonProtos.DataType.BOOLEAN)),
-            Map.entry(Boolean.class, wrap(CommonProtos.DataType.BOOLEAN)),
-            Map.entry(int.class, wrap(CommonProtos.DataType.INT4)),
-            Map.entry(Integer.class, wrap(CommonProtos.DataType.INT4)),
-            Map.entry(long.class, wrap(CommonProtos.DataType.INT8)),
-            Map.entry(Long.class, wrap(CommonProtos.DataType.INT8)),
-            Map.entry(float.class, wrap(CommonProtos.DataType.FLOAT4)),
-            Map.entry(Float.class, wrap(CommonProtos.DataType.FLOAT4)),
-            Map.entry(double.class, wrap(CommonProtos.DataType.FLOAT8)),
-            Map.entry(Double.class, wrap(CommonProtos.DataType.FLOAT8)),
-            Map.entry(BigDecimal.class, wrap(CommonProtos.DataType.DECIMAL)),
+            Map.entry(boolean.class, wrap(SqlCommon.AtomType.BOOLEAN)),
+            Map.entry(Boolean.class, wrap(SqlCommon.AtomType.BOOLEAN)),
+            Map.entry(int.class, wrap(SqlCommon.AtomType.INT4)),
+            Map.entry(Integer.class, wrap(SqlCommon.AtomType.INT4)),
+            Map.entry(long.class, wrap(SqlCommon.AtomType.INT8)),
+            Map.entry(Long.class, wrap(SqlCommon.AtomType.INT8)),
+            Map.entry(float.class, wrap(SqlCommon.AtomType.FLOAT4)),
+            Map.entry(Float.class, wrap(SqlCommon.AtomType.FLOAT4)),
+            Map.entry(double.class, wrap(SqlCommon.AtomType.FLOAT8)),
+            Map.entry(Double.class, wrap(SqlCommon.AtomType.FLOAT8)),
+            Map.entry(BigDecimal.class, wrap(SqlCommon.AtomType.DECIMAL)),
 
             // sequence
-            Map.entry(String.class, wrap(CommonProtos.DataType.CHARACTER)),
-            Map.entry(byte[].class, wrap(CommonProtos.DataType.OCTET)),
-            Map.entry(ByteString.class, wrap(CommonProtos.DataType.OCTET)),
-            Map.entry(boolean[].class, wrap(CommonProtos.DataType.BIT)),
-            Map.entry(CommonProtos.Bit.class, wrap(CommonProtos.DataType.BIT)),
+            Map.entry(String.class, wrap(SqlCommon.AtomType.CHARACTER)),
+            Map.entry(byte[].class, wrap(SqlCommon.AtomType.OCTET)),
+            Map.entry(ByteString.class, wrap(SqlCommon.AtomType.OCTET)),
+            Map.entry(boolean[].class, wrap(SqlCommon.AtomType.BIT)),
+            Map.entry(SqlCommon.Bit.class, wrap(SqlCommon.AtomType.BIT)),
 
             // temporal
-            Map.entry(LocalDate.class, wrap(CommonProtos.DataType.DATE)),
-            Map.entry(java.sql.Date.class, wrap(CommonProtos.DataType.DATE)),
-            Map.entry(LocalTime.class, wrap(CommonProtos.DataType.TIME_OF_DAY)),
-            Map.entry(java.sql.Time.class, wrap(CommonProtos.DataType.TIME_OF_DAY)),
-            Map.entry(Instant.class, wrap(CommonProtos.DataType.TIME_POINT)),
-            Map.entry(java.sql.Timestamp.class, wrap(CommonProtos.DataType.TIME_POINT)),
-            Map.entry(CommonProtos.TimePoint.class, wrap(CommonProtos.DataType.TIME_POINT)),
-            Map.entry(CommonProtos.DateTimeInterval.class, wrap(CommonProtos.DataType.DATETIME_INTERVAL)),
+            Map.entry(LocalDate.class, wrap(SqlCommon.AtomType.DATE)),
+            Map.entry(java.sql.Date.class, wrap(SqlCommon.AtomType.DATE)),
+            Map.entry(LocalTime.class, wrap(SqlCommon.AtomType.TIME_OF_DAY)),
+            Map.entry(java.sql.Time.class, wrap(SqlCommon.AtomType.TIME_OF_DAY)),
+            Map.entry(Instant.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+            Map.entry(java.sql.Timestamp.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+            Map.entry(SqlCommon.TimePoint.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+            Map.entry(SqlCommon.DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
 
             // LOB
-            Map.entry(CommonProtos.Clob.class, wrap(CommonProtos.DataType.CLOB)),
-            Map.entry(java.sql.Clob.class, wrap(CommonProtos.DataType.CLOB)),
-            Map.entry(CommonProtos.Blob.class, wrap(CommonProtos.DataType.BLOB)),
-            Map.entry(java.sql.Blob.class, wrap(CommonProtos.DataType.BLOB)),
+            Map.entry(SqlCommon.Clob.class, wrap(SqlCommon.AtomType.CLOB)),
+            Map.entry(java.sql.Clob.class, wrap(SqlCommon.AtomType.CLOB)),
+            Map.entry(SqlCommon.Blob.class, wrap(SqlCommon.AtomType.BLOB)),
+            Map.entry(java.sql.Blob.class, wrap(SqlCommon.AtomType.BLOB)),
 
             // special values
-            Map.entry(void.class, wrap(CommonProtos.DataType.UNKNOWN)),
-            Map.entry(Void.class, wrap(CommonProtos.DataType.UNKNOWN)));
+            Map.entry(void.class, wrap(SqlCommon.AtomType.UNKNOWN)),
+            Map.entry(Void.class, wrap(SqlCommon.AtomType.UNKNOWN)));
 
 
     private Types() {
@@ -164,7 +164,7 @@ public final class Types {
      * @return the corresponding type
      * @throws IllegalArgumentException if there is no corresponding type
      */
-    public static CommonProtos.TypeInfo of(@Nonnull Class<?> aClass) {
+    public static SqlCommon.TypeInfo of(@Nonnull Class<?> aClass) {
         Objects.requireNonNull(aClass);
         return typeOf(aClass);
     }
@@ -175,7 +175,7 @@ public final class Types {
      * @return the corresponding type
      * @throws IllegalArgumentException if there is no corresponding type
      */
-    public static CommonProtos.TypeInfo typeOf(@Nonnull Class<?> aClass) {
+    public static SqlCommon.TypeInfo typeOf(@Nonnull Class<?> aClass) {
         Objects.requireNonNull(aClass);
         if (!TYPE_MAP.containsKey(aClass) && aClass.isArray()) {
             return array(of(aClass.getComponentType()));
@@ -195,7 +195,7 @@ public final class Types {
      * @return the created type
      * @see #column(String, Class)
      */
-    public static CommonProtos.TypeInfo array(@Nonnull Class<?> aClass) {
+    public static SqlCommon.TypeInfo array(@Nonnull Class<?> aClass) {
         Objects.requireNonNull(aClass);
         return array(typeOf(aClass));
     }
@@ -205,7 +205,7 @@ public final class Types {
      * @param componentType the component type
      * @return the created type
      */
-    public static CommonProtos.TypeInfo array(@Nonnull CommonProtos.DataType componentType) {
+    public static SqlCommon.TypeInfo array(@Nonnull SqlCommon.AtomType componentType) {
         Objects.requireNonNull(componentType);
         return array(componentType, 1);
     }
@@ -215,7 +215,7 @@ public final class Types {
      * @param componentType the component type
      * @return the created type
      */
-    public static CommonProtos.TypeInfo array(@Nonnull CommonProtos.TypeInfo componentType) {
+    public static SqlCommon.TypeInfo array(@Nonnull SqlCommon.TypeInfo componentType) {
         Objects.requireNonNull(componentType);
         return array(componentType, 1);
     }
@@ -227,7 +227,7 @@ public final class Types {
      * @return the created type
      * @see #column(String, Class)
      */
-    public static CommonProtos.TypeInfo array(@Nonnull Class<?> aClass, int dimension) {
+    public static SqlCommon.TypeInfo array(@Nonnull Class<?> aClass, int dimension) {
         Objects.requireNonNull(aClass);
         checkDimension(dimension);
         return array(typeOf(aClass), dimension);
@@ -239,12 +239,12 @@ public final class Types {
      * @param dimension the number of dimensions ({@code >= 1})
      * @return the created type
      */
-    public static CommonProtos.TypeInfo array(
-            @Nonnull CommonProtos.DataType componentType,
+    public static SqlCommon.TypeInfo array(
+            @Nonnull SqlCommon.AtomType componentType,
             int dimension) {
         Objects.requireNonNull(componentType);
         checkDimension(dimension);
-        return CommonProtos.TypeInfo.newBuilder()
+        return SqlCommon.TypeInfo.newBuilder()
                 .setAtomType(componentType)
                 .setDimension(dimension)
                 .build();
@@ -256,12 +256,12 @@ public final class Types {
      * @param dimension the number of dimensions ({@code >= 1})
      * @return the created type
      */
-    public static CommonProtos.TypeInfo array(
-            @Nonnull CommonProtos.TypeInfo componentType,
+    public static SqlCommon.TypeInfo array(
+            @Nonnull SqlCommon.TypeInfo componentType,
             int dimension) {
         Objects.requireNonNull(componentType);
         checkDimension(dimension);
-        return CommonProtos.TypeInfo.newBuilder(componentType)
+        return SqlCommon.TypeInfo.newBuilder(componentType)
                 .setDimension(componentType.getDimension() + dimension)
                 .build();
     }
@@ -272,7 +272,7 @@ public final class Types {
      * @return the created type
      * @see #column(String, Class)
      */
-    public static CommonProtos.TypeInfo row(@Nonnull CommonProtos.Column... elements) {
+    public static SqlCommon.TypeInfo row(@Nonnull SqlCommon.Column... elements) {
         Objects.requireNonNull(elements);
         return row(Arrays.asList(elements));
     }
@@ -283,10 +283,10 @@ public final class Types {
      * @return the created type
      * @see #column(String, Class)
      */
-    public static CommonProtos.TypeInfo row(@Nonnull List<? extends CommonProtos.Column> elements) {
+    public static SqlCommon.TypeInfo row(@Nonnull List<? extends SqlCommon.Column> elements) {
         Objects.requireNonNull(elements);
-        return CommonProtos.TypeInfo.newBuilder()
-                .setRowType(CommonProtos.RowType.newBuilder()
+        return SqlCommon.TypeInfo.newBuilder()
+                .setRowType(SqlCommon.RowType.newBuilder()
                         .addAllColumns(elements))
                 .build();
     }
@@ -298,7 +298,7 @@ public final class Types {
      * @return the created column info
      * @throws IllegalArgumentException if there is no corresponding type
      */
-    public static CommonProtos.Column column(@Nullable String name, @Nonnull Class<?> aClass) {
+    public static SqlCommon.Column column(@Nullable String name, @Nonnull Class<?> aClass) {
         Objects.requireNonNull(aClass);
         return column(name, typeOf(aClass));
     }
@@ -309,7 +309,7 @@ public final class Types {
      * @return the created column info
      * @throws IllegalArgumentException if there is no corresponding type
      */
-    public static CommonProtos.Column column(@Nonnull Class<?> aClass) {
+    public static SqlCommon.Column column(@Nonnull Class<?> aClass) {
         Objects.requireNonNull(aClass);
         return column(typeOf(aClass));
     }
@@ -320,9 +320,9 @@ public final class Types {
      * @param type the column type
      * @return the created column info
      */
-    public static CommonProtos.Column column(@Nullable String name, @Nonnull CommonProtos.DataType type) {
+    public static SqlCommon.Column column(@Nullable String name, @Nonnull SqlCommon.AtomType type) {
         Objects.requireNonNull(type);
-        var builder = CommonProtos.Column.newBuilder();
+        var builder = SqlCommon.Column.newBuilder();
         if (Objects.nonNull(name)) {
             builder.setName(name);
         }
@@ -335,7 +335,7 @@ public final class Types {
      * @param type the column type
      * @return the created column info
      */
-    public static CommonProtos.Column column(@Nonnull CommonProtos.DataType type) {
+    public static SqlCommon.Column column(@Nonnull SqlCommon.AtomType type) {
         Objects.requireNonNull(type);
         return column(null, type);
     }
@@ -346,9 +346,9 @@ public final class Types {
      * @param type the column type
      * @return the created column info
      */
-    public static CommonProtos.Column column(@Nullable String name, @Nonnull CommonProtos.TypeInfo type) {
+    public static SqlCommon.Column column(@Nullable String name, @Nonnull SqlCommon.TypeInfo type) {
         Objects.requireNonNull(type);
-        var builder = CommonProtos.Column.newBuilder();
+        var builder = SqlCommon.Column.newBuilder();
         if (Objects.nonNull(name)) {
             builder.setName(name);
         }
@@ -378,7 +378,7 @@ public final class Types {
      * @param type the column type
      * @return the created column info
      */
-    public static CommonProtos.Column column(@Nonnull CommonProtos.TypeInfo type) {
+    public static SqlCommon.Column column(@Nonnull SqlCommon.TypeInfo type) {
         Objects.requireNonNull(type);
         return column(null, type);
     }
@@ -388,10 +388,10 @@ public final class Types {
      * @param name the type name
      * @return the created type
      */
-    public static CommonProtos.TypeInfo user(@Nonnull String name) {
+    public static SqlCommon.TypeInfo user(@Nonnull String name) {
         Objects.requireNonNull(name);
-        return CommonProtos.TypeInfo.newBuilder()
-                .setUserType(CommonProtos.UserType.newBuilder()
+        return SqlCommon.TypeInfo.newBuilder()
+                .setUserType(SqlCommon.UserType.newBuilder()
                         .setName(name))
                 .build();
     }
@@ -404,9 +404,9 @@ public final class Types {
         }
     }
 
-    private static CommonProtos.TypeInfo wrap(@Nonnull CommonProtos.DataType kind) {
+    private static SqlCommon.TypeInfo wrap(@Nonnull SqlCommon.AtomType kind) {
         assert kind != null;
-        return CommonProtos.TypeInfo.newBuilder()
+        return SqlCommon.TypeInfo.newBuilder()
                 .setAtomType(kind)
                 .build();
     }

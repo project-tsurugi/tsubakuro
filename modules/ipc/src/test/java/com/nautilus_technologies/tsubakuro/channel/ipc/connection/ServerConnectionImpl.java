@@ -15,28 +15,28 @@ public class ServerConnectionImpl implements Closeable {
     private static native void closeNative(long handle);
 
     static {
-	System.loadLibrary("wire-test");
+    System.loadLibrary("wire-test");
     }
 
     private long handle;
     private String name;
 
     ServerConnectionImpl(String name) throws IOException {
-	this.handle = createNative(name);
-	this.name = name;
+    this.handle = createNative(name);
+    this.name = name;
     }
 
     public long listen() {
-	return listenNative(handle);
+    return listenNative(handle);
     }
 
     public ServerWireImpl accept(long id) throws IOException {
-	var rv = new ServerWireImpl(name, id);
-	acceptNative(handle, id);
-	return rv;
+    var rv = new ServerWireImpl(name, id);
+    acceptNative(handle, id);
+    return rv;
     }
 
     public void close() throws IOException {
-	closeNative(handle);
+    closeNative(handle);
     }
 }
