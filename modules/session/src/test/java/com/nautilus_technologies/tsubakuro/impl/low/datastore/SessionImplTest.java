@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
@@ -71,6 +72,7 @@ class SessionImplTest {
         }
     }
 
+    @Disabled("mock is no longer available")
     @Test
     void getPath() {
         try (var session = new SessionImpl()) {

@@ -12,15 +12,17 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
+import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
@@ -31,12 +33,12 @@ import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 class DumpLoadTest {
-    ResponseProtos.Response nextResponse;
+    SqlResponse.Response nextResponse;
 
     private class PreparedStatementMock implements PreparedStatement {
         PreparedStatementMock() {
         }
-        public CommonProtos.PreparedStatement getHandle() throws IOException {
+        public SqlCommon.PreparedStatement getHandle() throws IOException {
             return null;
         }
         @Override
@@ -99,11 +101,11 @@ class DumpLoadTest {
             }
         }
         @Override
-        public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
+        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
         @Override
-        public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
             var r = nextResponse;
             nextResponse = null;
             return r;
@@ -113,7 +115,7 @@ class DumpLoadTest {
             return null;  // dummy as it is test for session
         }
         @Override
-        public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
             return null;  // dummy as it is test for session
         }
         @Override
@@ -184,6 +186,77 @@ class DumpLoadTest {
             assertTrue(Objects.nonNull(results));
             assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
 
+            transaction.commit();
+            session.close();
+        }
+    }
+    
+    void dumpOK() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireTestMock());
+        var sqlClient = SqlClient.attach(session);
+        
+        var preparedStatement = new PreparedStatementMock();
+        var target = Path.of("/dump_directory");
+        
+        var opts = SqlRequest.TransactionOption.newBuilder()
+            .setType(SqlRequest.TransactionType.LONG)
+            .addWritePreserves(SqlRequest.WritePreserve.newBuilder().setTableName("LOAD_TARGET"))
+            .build();
+        
+        FutureResponse<Transaction> fTransaction = sqlClient.createTransaction(opts);
+        
+        try (Transaction transaction = fTransaction.get()) {
+            FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
+                                                                         List.of(),
+                                                                         target);
+            
+            var results = fResults.get();
+            assertTrue(Objects.nonNull(results));
+            
+            int recordCount = 0;
+            int columnCount = 0;
+            while (results.nextRecord()) {
+                while (results.nextColumn()) {
+                    assertEquals(results.type(), SqlCommon.AtomType.CHARACTER);
+                    assertEquals(results.getCharacter(), ResultSetMock.FILE_NAME);
+                    columnCount++;
+                }
+                recordCount++;
+            }
+            assertEquals(columnCount, 1);
+            assertEquals(recordCount, 1);
+            
+            assertTrue(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
+            
+            transaction.commit();
+            session.close();
+        }
+    }
+    
+    void dumpNG() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireTestMock());
+        var sqlClient = SqlClient.attach(session);
+        
+        var preparedStatement = new PreparedStatementMock();
+        var target = Path.of("/dump_NGdirectory");  // when directory name includes "NG", executeDump() will return error.
+        
+        var opts = SqlRequest.TransactionOption.newBuilder()
+            .setType(SqlRequest.TransactionType.LONG)
+            .addWritePreserves(SqlRequest.WritePreserve.newBuilder().setTableName("LOAD_TARGET"))
+            .build();
+        
+        FutureResponse<Transaction> fTransaction = sqlClient.createTransaction(opts);
+        
+        try (Transaction transaction = fTransaction.get()) {
+            FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
+                                                                         List.of(),
+                                                                         target);
+            var results = fResults.get();
+            assertTrue(Objects.nonNull(results));
+            assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
+            
             transaction.commit();
             session.close();
         }
