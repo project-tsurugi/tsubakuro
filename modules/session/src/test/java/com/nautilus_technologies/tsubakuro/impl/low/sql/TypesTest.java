@@ -21,14 +21,14 @@ class TypesTest {
     }
     
     @Test
-    void typeOf_array() {
+    void typeOfArray() {
         var type = Types.of(int[].class);
         assertEquals(AtomType.INT4, type.getAtomType());
         assertEquals(1, type.getDimension());
     }
     
     @Test
-    void typeOf_missing() {
+    void typeOfMissing() {
         assertThrows(IllegalArgumentException.class, () -> Types.of(Object.class));
     }
     
@@ -38,12 +38,12 @@ class TypesTest {
     }
     
     @Test
-    void array_kind() {
+    void arrayKind() {
         assertEquals(Types.of(String[].class), Types.array(AtomType.CHARACTER));
     }
     
     @Test
-    void array_dimensions() {
+    void arrayDimensions() {
         assertEquals(Types.of(int[][][].class), Types.array(int.class, 3));
     }
     
@@ -55,7 +55,7 @@ class TypesTest {
     }
     
     @Test
-    void column_noname() {
+    void columnNoname() {
         var column = Types.column(String.class);
         assertEquals("", column.getName());
         assertEquals(AtomType.CHARACTER, column.getAtomType());
