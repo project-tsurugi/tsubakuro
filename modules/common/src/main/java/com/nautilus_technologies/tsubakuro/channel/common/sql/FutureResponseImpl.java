@@ -44,7 +44,7 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
      * get the message received from the SQL server.
      */
     @Override
-    public V get() throws IOException {
+    public V get() throws IOException, ServerException {
         if (Objects.isNull(responseWireHandleImpl)) {
             throw new IOException("request has not been send out");
         }
@@ -54,7 +54,7 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    public V get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException {
         if (Objects.isNull(responseWireHandleImpl)) {
             throw new IOException("request has not been send out");
         }

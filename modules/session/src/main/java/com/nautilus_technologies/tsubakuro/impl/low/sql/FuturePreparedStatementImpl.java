@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.exception.SqlServiceException;
+import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
@@ -41,10 +43,10 @@ public class FuturePreparedStatementImpl extends AbstractFutureResponse<Prepared
         return resolve(response);
     }
 
-    private PreparedStatement resolve(ResponseProtos.Prepare response) throws IOException {
+    private PreparedStatement resolve(ResponseProtos.Prepare response) throws IOException, ServerException {
         if (ResponseProtos.Prepare.ResultCase.ERROR.equals(response.getResultCase())) {
-            // FIXME: throw structured exception
-            throw new IOException("prepare error");
+            var errorResponse = response.getError();
+			throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
         }
         return new PreparedStatementImpl(response.getPreparedStatementHandle(), sessionLinkImpl);
     }

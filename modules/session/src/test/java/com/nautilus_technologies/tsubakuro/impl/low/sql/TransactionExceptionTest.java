@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -21,16 +22,20 @@ import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
 import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.nautilus_technologies.tsubakuro.protos.StatusProtos;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
-class SessionImplTest {
+class TransactionExceptionTest {
     ResponseProtos.Response nextResponse;
+    ResponseProtos.Response processedResponse;
     private final long specialTimeoutValue = 9999;
+    private final String messageForTheTest = "this is a error message for the test";
 
     class FutureResponseMock<V> implements FutureResponse<V> {
         private final SessionWireMock wire;
@@ -65,6 +70,41 @@ class SessionImplTest {
         }
     }
 
+    class FutureQueryResponseMock implements FutureResponse<ResponseProtos.ExecuteQuery> {
+        private final SessionWireMock wire;
+        private ResponseWireHandle handle; // dummey
+        FutureQueryResponseMock(SessionWireMock wire) {
+            this.wire = wire;
+        }
+
+        @Override
+        public ResponseProtos.ExecuteQuery get() throws IOException, ServerException {
+            var response = wire.receive(handle);
+            if (Objects.isNull(response)) {
+                throw new IOException("received null response at FutureResponseMock, probably test program is incomplete");
+            }
+            if (ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(response.getResponseCase())) {
+                return response.getExecuteQuery();
+            }
+            wire.unReceive(handle);
+            return null;
+        }
+        @Override
+        public ResponseProtos.ExecuteQuery get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException {
+            if (timeout == specialTimeoutValue) {
+                throw new TimeoutException("timeout for test");
+            }
+            return get();  // FIXME need to be implemented properly, same as below
+        }
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+        @Override
+        public void close() throws IOException, ServerException, InterruptedException {
+        }
+    }
+
     class SessionWireMock implements SessionWire {
         @Override
         public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
@@ -75,8 +115,25 @@ class SessionImplTest {
             case PREPARE:
                 nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
                 return new FutureResponseMock<>(this, distiller);
+            case EXECUTE_STATEMENT:
+            case EXECUTE_PREPARED_STATEMENT:
+                nextResponse = ResponseProtos.Response.newBuilder()
+                    .setResultOnly(ResponseProtos.ResultOnly.newBuilder()
+                                   .setError(ResponseProtos.Error.newBuilder()
+                                             .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                             .setDetail(messageForTheTest)))
+                    .build();
+                return new FutureResponseMock<>(this, distiller);
             case DISPOSE_PREPARED_STATEMENT:
                 nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                return new FutureResponseMock<>(this, distiller);
+            case COMMIT:
+                nextResponse = ResponseProtos.Response.newBuilder()
+                    .setResultOnly(ResponseProtos.ResultOnly.newBuilder()
+                                   .setError(ResponseProtos.Error.newBuilder()
+                                             .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                             .setDetail(messageForTheTest)))
+                    .build();
                 return new FutureResponseMock<>(this, distiller);
             case ROLLBACK:
                 nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
@@ -85,7 +142,12 @@ class SessionImplTest {
                 nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                 return new FutureResponseMock<>(this, distiller);
             case EXPLAIN:
-                nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
+                nextResponse = ResponseProtos.Response.newBuilder()
+                    .setExplain(ResponseProtos.Explain.newBuilder()
+                                   .setError(ResponseProtos.Error.newBuilder()
+                                             .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                             .setDetail(messageForTheTest)))
+                    .build();
                 return new FutureResponseMock<>(this, distiller);
             default:
                 return null;  // dummy as it is test for session
@@ -94,14 +156,27 @@ class SessionImplTest {
 
         @Override
         public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
-            return null;  // dummy as it is test for session
+            switch (request.getRequestCase()) {
+            case EXECUTE_QUERY:
+            case EXECUTE_PREPARED_QUERY:
+                nextResponse = ResponseProtos.Response.newBuilder()
+                    .setResultOnly(ResponseProtos.ResultOnly.newBuilder()
+                                   .setError(ResponseProtos.Error.newBuilder()
+                                             .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                             .setDetail(messageForTheTest)))
+                    .build();
+                var left = new FutureQueryResponseMock(this);
+                var right = new FutureResponseMock<ResponseProtos.ResultOnly>(this, new ResultOnlyDistiller());
+                return Pair.of(left, right);
+            }
+            return Pair.of(null, null);
         }
 
         @Override
-        public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
-            var r = nextResponse;
+        public ResponseProtos.Response receive(ResponseWireHandle handle) {
+            processedResponse = nextResponse;
             nextResponse = null;
-            return r;
+            return processedResponse;
         }
 
         @Override
@@ -111,13 +186,12 @@ class SessionImplTest {
 
         @Override
         public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            var r = nextResponse;
-            nextResponse = null;
-            return r;
+            return receive(handle);  // do not handle timeout as it is a test
         }
 
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
+            nextResponse = processedResponse;
         }
 
         @Override
@@ -141,75 +215,92 @@ class SessionImplTest {
     }
 
     @Test
-    void useSessionAfterClose() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireMock());
-        session.close();
-
-        Throwable exception = assertThrows(IOException.class, () -> {
-            session.createTransaction();
-        });
-        // FIXME: check structured error code instead of message
-        assertEquals("this session is not connected to the Database", exception.getMessage());
-    }
-
-    @Disabled("timeout should raise whether error or warning")
-    @Test
-    void sessionTimeout() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireMock());
-        session.setCloseTimeout(specialTimeoutValue, TimeUnit.SECONDS);
-
-        Throwable exception = assertThrows(IOException.class, () -> {
-            session.close();
-        });
-        // FIXME: check structured error code instead of message
-        assertEquals("java.util.concurrent.TimeoutException: timeout for test", exception.getMessage());
-    }
-
-    @Test
-    void useTransactionAfterClose() throws Exception {
+    void executeStatementError() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var transaction = session.createTransaction().get();
-        transaction.commit();
-        session.close();
 
-        Throwable exception = assertThrows(IOException.class, () -> {
-            transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')").get();
         });
         // FIXME: check structured error code instead of message
-        assertEquals("already closed", exception.getMessage());
+        assertTrue(exception.getMessage().contains(messageForTheTest));
+
+        session.close();
     }
 
     @Test
-    void useTransactionAfterSessionClose() throws Exception {
+    void executePreparedStatementError() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-        var t1 = session.createTransaction().get();
-        var t2 = session.createTransaction().get();
-        var t3 = session.createTransaction().get();
-        var t4 = session.createTransaction().get();
+        var transaction = session.createTransaction().get();
 
-        t2.commit();
-        t4.commit();
+        String sql = "INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')";
+        var ph = RequestProtos.PlaceHolder.newBuilder().build();
+        var preparedStatement = session.prepare(sql, ph).get();
 
-        session.close();
-
-        Throwable e1 = assertThrows(IOException.class, () -> {
-            t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                transaction.executeStatement(preparedStatement).get();
         });
         // FIXME: check structured error code instead of message
-        assertEquals("already closed", e1.getMessage());
+        assertTrue(exception.getMessage().contains(messageForTheTest));
 
-        Throwable e2 = assertThrows(IOException.class, () -> {
-            t2.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
-        });
-        assertEquals("already closed", e2.getMessage());
+        session.close();
     }
 
     @Test
-    void usePreparedStatementAfterClose() throws Exception {
+    void executeQueryError() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var transaction = session.createTransaction().get();
+        var resultSet = transaction.executeQuery("SELECT * FROM ORDERS WHERE o_id = 1").get();
+
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                resultSet.getResponse().get();
+        });
+        // FIXME: check structured error code instead of message
+        assertTrue(exception.getMessage().contains(messageForTheTest));
+
+        session.close();
+    }
+
+    @Test
+    void executePreparedQueryError() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+
+        String sql = "SELECT * FROM ORDERS WHERE o_id = 1";
+        var ph = RequestProtos.PlaceHolder.newBuilder().build();
+        var preparedStatement = session.prepare(sql, ph).get();
+
+        var transaction = session.createTransaction().get();
+        var resultSet = transaction.executeQuery(preparedStatement).get();
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                resultSet.getResponse().get();
+        });
+        // FIXME: check structured error code instead of message
+        assertTrue(exception.getMessage().contains(messageForTheTest));
+
+        session.close();
+    }
+
+    @Test
+    void commitError() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var transaction = session.createTransaction().get();
+
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                transaction.commit().get();
+        });
+        // FIXME: check structured error code instead of message
+        assertTrue(exception.getMessage().contains(messageForTheTest));
+
+        session.close();
+    }
+
+    @Test
+    void explainError() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
 
@@ -217,46 +308,13 @@ class SessionImplTest {
         var ph = RequestProtos.PlaceHolder.newBuilder()
                 .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
         var preparedStatement = session.prepare(sql, ph).get();
-        preparedStatement.close();
 
-        var transaction = session.createTransaction().get();
-
-        Throwable exception = assertThrows(IOException.class, () -> {
-            var resultSet = transaction.executeQuery(preparedStatement, Parameters.of("o_id", 99999999L)).await();
+        Throwable exception = assertThrows(ServerException.class, () -> {
+                session.explain(preparedStatement, RequestProtos.ParameterSet.newBuilder().build()).get();
         });
         // FIXME: check structured error code instead of message
-        assertEquals("already closed", exception.getMessage());
+        assertTrue(exception.getMessage().contains(messageForTheTest));
 
-        transaction.commit();
         session.close();
-    }
-
-    @Test
-    void usePreparedStatementAfterSessionClose() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireMock());
-
-        String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
-        var ph = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
-        var ps1 = session.prepare(sql, ph).get();
-        var ps2 = session.prepare(sql, ph).get();
-        var ps3 = session.prepare(sql, ph).get();
-        var ps4 = session.prepare(sql, ph).get();
-
-        ps2.close();
-        ps4.close();
-        session.close();
-
-        Throwable e1 = assertThrows(IOException.class, () -> {
-            var handle = ((PreparedStatementImpl) ps1).getHandle();
-        });
-        // FIXME: check structured error code instead of message
-        assertEquals("already closed", e1.getMessage());
-        Throwable e2 = assertThrows(IOException.class, () -> {
-            var handle = ((PreparedStatementImpl) ps2).getHandle();
-        });
-        // FIXME: check structured error code instead of message
-        assertEquals("already closed", e2.getMessage());
     }
 }
