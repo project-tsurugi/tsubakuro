@@ -28,6 +28,8 @@ import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
+
 class DumpLoadTest {
     ResponseProtos.Response nextResponse;
 
@@ -60,7 +62,7 @@ class DumpLoadTest {
         }
 
         @Override
-        public V get() throws IOException {
+        public V get() throws IOException, ServerException {
             var response = wire.receive(handle);
             if (Objects.isNull(response)) {
                 throw new IOException("received null response at FutureResponseTestMock, probably test program is incomplete");
@@ -68,7 +70,7 @@ class DumpLoadTest {
             return distiller.distill(response);
         }
         @Override
-        public V get(long timeout, TimeUnit unit) throws IOException {
+        public V get(long timeout, TimeUnit unit) throws IOException, ServerException {
             return get();  // FIXME need to be implemented properly, same as below
         }
 
