@@ -29,7 +29,6 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 class DumpLoadTest {
     SqlResponse.Response nextResponse;
@@ -87,7 +86,7 @@ class DumpLoadTest {
 
     class SessionWireTestMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
             switch (request.getRequestCase()) {
             case BEGIN:
                 nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
@@ -100,7 +99,7 @@ class DumpLoadTest {
             }
         }
         @Override
-        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
+        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
         @Override
@@ -140,15 +139,16 @@ class DumpLoadTest {
     void loadOK() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireTestMock());
+        var sqlClient = SqlClient.attach(session);
 
         var preparedStatement = new PreparedStatementMock();
 
-        var opts = RequestProtos.TransactionOption.newBuilder()
-                .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_LONG)
-                .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("LOAD_TARGET"))
-                .build();
+        var opts = SqlRequest.TransactionOption.newBuilder()
+            .setType(SqlRequest.TransactionType.LONG)
+            .addWritePreserves(SqlRequest.WritePreserve.newBuilder().setTableName("LOAD_TARGET"))
+            .build();
 
-        FutureResponse<Transaction> fTransaction = session.createTransaction(opts);
+        FutureResponse<Transaction> fTransaction = sqlClient.createTransaction(opts);
 
         try (Transaction transaction = fTransaction.get()) {
             List<Path> paths = new ArrayList<>();
@@ -167,24 +167,26 @@ class DumpLoadTest {
     void loadNG() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireTestMock());
+        var sqlClient = SqlClient.attach(session);
 
         var preparedStatement = new PreparedStatementMock();
 
-        var opts = RequestProtos.TransactionOption.newBuilder()
-                .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_LONG)
-                .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("LOAD_TARGET"))
-                .build();
+        var opts = SqlRequest.TransactionOption.newBuilder()
+            .setType(SqlRequest.TransactionType.LONG)
+            .addWritePreserves(SqlRequest.WritePreserve.newBuilder().setTableName("LOAD_TARGET"))
+            .build();
 
-        FutureResponse<Transaction> fTransaction = session.createTransaction(opts);
+        FutureResponse<Transaction> fTransaction = sqlClient.createTransaction(opts);
 
         try (Transaction transaction = fTransaction.get()) {
-            FutureResponse<ResultSet> fResults = transaction.executeDump(preparedStatement,
-                List.of(),
-                target);
-            var results = fResults.get();
-            assertTrue(Objects.nonNull(results));
-            assertFalse(ProtosForTest.ResultOnlyChecker.check(results.getResponse().get()));
-
+            List<Path> paths = new ArrayList<>();
+            paths.add(Path.of("/load_directory/NGfile"));  // when file name includes "NG", executeLoad() will return error.
+            var response = transaction.executeLoad(preparedStatement,
+                                                   List.of(),
+                                                   paths).get();
+            
+            assertFalse(ProtosForTest.ResultOnlyChecker.check(response));
+            
             transaction.commit();
             session.close();
         }

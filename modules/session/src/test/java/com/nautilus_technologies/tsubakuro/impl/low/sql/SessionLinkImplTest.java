@@ -21,7 +21,6 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 class SessionLinkImplTest {
     SqlResponse.Response nextResponse;

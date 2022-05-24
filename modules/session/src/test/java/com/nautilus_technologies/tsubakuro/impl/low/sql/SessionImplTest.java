@@ -27,7 +27,6 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 class SessionImplTest {
     SqlResponse.Response nextResponse;
@@ -68,7 +67,7 @@ class SessionImplTest {
 
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
             switch (request.getRequestCase()) {
             case BEGIN:
                 nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
@@ -94,7 +93,7 @@ class SessionImplTest {
         }
 
         @Override
-        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
+        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
 
@@ -148,10 +147,11 @@ class SessionImplTest {
     void useSessionAfterClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-        session.close();
+        var sqlClient = SqlClient.attach(session);
+        sqlClient.close();
 
         Throwable exception = assertThrows(IOException.class, () -> {
-            session.createTransaction();
+                sqlClient.createTransaction();
         });
         // FIXME: check structured error code instead of message
         assertEquals("this session is not connected to the Database", exception.getMessage());
@@ -176,9 +176,10 @@ class SessionImplTest {
     void useTransactionAfterClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-        var transaction = session.createTransaction().get();
+        var sqlClient = SqlClient.attach(session);
+
+        var transaction = sqlClient.createTransaction().get();
         transaction.commit();
-        session.close();
 
         Throwable exception = assertThrows(IOException.class, () -> {
             transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
@@ -192,15 +193,17 @@ class SessionImplTest {
     void useTransactionAfterSessionClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-        var t1 = session.createTransaction().get();
-        var t2 = session.createTransaction().get();
-        var t3 = session.createTransaction().get();
-        var t4 = session.createTransaction().get();
+        var sqlClient = SqlClient.attach(session);
+
+        var t1 = sqlClient.createTransaction().get();
+        var t2 = sqlClient.createTransaction().get();
+        var t3 = sqlClient.createTransaction().get();
+        var t4 = sqlClient.createTransaction().get();
 
         t2.commit();
         t4.commit();
 
-        session.close();
+        sqlClient.close();
 
         Throwable e1 = assertThrows(IOException.class, () -> {
             t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
@@ -219,23 +222,22 @@ class SessionImplTest {
     void usePreparedStatementAfterClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-
+        var sqlClient = SqlClient.attach(session);
+        
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
-        var ph = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
-        var preparedStatement = session.prepare(sql, ph).get();
+        var preparedStatement = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         preparedStatement.close();
-
-        var transaction = session.createTransaction().get();
-
+        
+        var transaction = sqlClient.createTransaction().get();
+        
         Throwable exception = assertThrows(IOException.class, () -> {
-            var resultSet = transaction.executeQuery(preparedStatement, Parameters.of("o_id", 99999999L)).await();
-        });
+                var resultSet = transaction.executeQuery(preparedStatement, Parameters.of("o_id", 99999999L)).await();
+            });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", exception.getMessage());
-
+        
         transaction.commit();
-        session.close();
+        sqlClient.close();
     }
 
     @Disabled("not implemented")  // FIXME implement close handling of PreparedStatement
@@ -243,27 +245,26 @@ class SessionImplTest {
     void usePreparedStatementAfterSessionClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-
+        var sqlClient = SqlClient.attach(session);
+        
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
-        var ph = RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("o_id").setType(CommonProtos.DataType.INT8)).build();
-        var ps1 = session.prepare(sql, ph).get();
-        var ps2 = session.prepare(sql, ph).get();
-        var ps3 = session.prepare(sql, ph).get();
-        var ps4 = session.prepare(sql, ph).get();
-
+        var ps1 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
+        var ps2 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
+        var ps3 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
+        var ps4 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
+        
         ps2.close();
         ps4.close();
-        session.close();
-
+        sqlClient.close();
+        
         Throwable e1 = assertThrows(IOException.class, () -> {
-            var handle = ((PreparedStatementImpl) ps1).getHandle();
-        });
+                var handle = ((PreparedStatementImpl) ps1).getHandle();
+            });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", e1.getMessage());
         Throwable e2 = assertThrows(IOException.class, () -> {
-            var handle = ((PreparedStatementImpl) ps2).getHandle();
-        });
+                var handle = ((PreparedStatementImpl) ps2).getHandle();
+            });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", e2.getMessage());
     }
