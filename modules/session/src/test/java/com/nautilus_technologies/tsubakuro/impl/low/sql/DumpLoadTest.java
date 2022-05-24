@@ -32,7 +32,7 @@ import com.nautilus_technologies.tsubakuro.util.Pair;
 
 class DumpLoadTest {
     SqlResponse.Response nextResponse;
-
+    
     private class PreparedStatementMock implements PreparedStatement {
         PreparedStatementMock() {
         }
@@ -46,12 +46,12 @@ class DumpLoadTest {
         @Override
         public void setCloseTimeout(long t, TimeUnit u) {
         }
-
+        
         @Override
         public void close() throws IOException {
         }
     }
-
+    
     class FutureResponseTestMock<V> implements FutureResponse<V> {
         private final SessionWireTestMock wire;
         private final Distiller<V> distiller;
@@ -60,7 +60,7 @@ class DumpLoadTest {
             this.wire = wire;
             this.distiller = distiller;
         }
-
+        
         @Override
         public V get() throws IOException, ServerException {
             var response = wire.receive(handle);
@@ -73,17 +73,17 @@ class DumpLoadTest {
         public V get(long timeout, TimeUnit unit) throws IOException, ServerException {
             return get();  // FIXME need to be implemented properly, same as below
         }
-
+        
         @Override
         public boolean isDone() {
             return true;
         }
-
+        
         @Override
         public void close() throws IOException, ServerException, InterruptedException {
         }
     }
-
+    
     class SessionWireTestMock implements SessionWire {
         @Override
         public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
@@ -135,7 +135,7 @@ class DumpLoadTest {
         public void close() throws IOException {
         }
     }
-
+    
     void loadOK() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireTestMock());
@@ -154,16 +154,16 @@ class DumpLoadTest {
             List<Path> paths = new ArrayList<>();
             paths.add(Path.of("/load_directory/somefile"));
             var response = transaction.executeLoad(preparedStatement,
-                    List.of(),
-                    paths).get();
-
+                                                   List.of(),
+                                                   paths).get();
+            
             assertTrue(ProtosForTest.ResultOnlyChecker.check(response));
-
+            
             transaction.commit();
             session.close();
         }
     }
-
+    
     void loadNG() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireTestMock());
