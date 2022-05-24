@@ -221,6 +221,14 @@ message Explain {
   repeated Parameter parameters = 2;
 }
 
+// describe about the table.
+message DescribeTable {
+    reserved 1 to 10;
+
+    // the table name to describe.
+    string name = 11;
+}
+
 /* For request message to the SQL service. */
 message Request {
   common.Session session_handle = 1;
@@ -238,5 +246,6 @@ message Request {
     Explain explain = 12;
     ExecuteDump execute_dump = 13;
     ExecuteLoad execute_load = 14;
+    DescribeTable describe_table = 15;
   }
 }
