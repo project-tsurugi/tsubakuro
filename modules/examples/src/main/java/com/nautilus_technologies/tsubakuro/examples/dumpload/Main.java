@@ -11,7 +11,7 @@ import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
     private Main() {
@@ -31,10 +31,10 @@ public final class Main {
             try (Transaction transaction = client.createTransaction().await()) {
                 // create table
                 var responseCreateTable = transaction.executeStatement("CREATE TABLE dump_load_test(pk INT PRIMARY KEY, c1 INT)").await();
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
                     throw new IOException("error in create table");
                 }
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
                     throw new IOException("error in commit");
                 }
             }
@@ -52,11 +52,11 @@ public final class Main {
                         List.of(),
                         Path.of("/path/to/load-parameter"))
                         .await();
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
                     throw new IOException("error executeLoad");
                 }
                 var status = tx.commit().await();
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
                     throw new IOException("error in commit");
                 }
             }
@@ -73,7 +73,7 @@ public final class Main {
                     }
                 }
                 var status = tx.commit().await();
-                if (ResponseProtos.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
                     throw new IOException("error in commit");
                 }
             }

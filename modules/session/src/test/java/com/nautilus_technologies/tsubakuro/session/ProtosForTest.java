@@ -1,920 +1,1075 @@
 package com.nautilus_technologies.tsubakuro.session;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.SchemaProtos;
+import com.tsurugidb.jogasaki.proto.StatusProtos;
 
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
-import com.nautilus_technologies.tsubakuro.protos.StatusProtos;
+import static org.junit.jupiter.api.Assertions.*;
 
+// import org.junit.jupiter.api.Test;
+
+//FIXME: delete tests for generated sources
 public final class ProtosForTest {
     private ProtosForTest() {
         // for checkstyle
     }
-
+    
     static class TransactionChecker {
-        static CommonProtos.Transaction.Builder builder() {
+        static SqlCommon.Transaction.Builder builder() {
             return
-                CommonProtos.Transaction.newBuilder()
+                SqlCommon.Transaction.newBuilder()
                 .setHandle(456);
         }
-        static boolean check(CommonProtos.Transaction dst) {
+        static boolean check(SqlCommon.Transaction dst) {
             return
                 (dst.getHandle() == 456);
         }
+        
         void test() {
             try {
-                assertTrue(check(CommonProtos.Transaction.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlCommon.Transaction.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class PreparedStatementChecker {
-        static CommonProtos.PreparedStatement.Builder builder() {
+        static SqlCommon.PreparedStatement.Builder builder() {
             return
-                CommonProtos.PreparedStatement.newBuilder()
+                SqlCommon.PreparedStatement.newBuilder()
                 .setHandle(789);
         }
-        static boolean check(CommonProtos.PreparedStatement dst) {
+        static boolean check(SqlCommon.PreparedStatement dst) {
             return
                 (dst.getHandle() == 789);
         }
+        
         void test() {
             try {
-                assertTrue(check(CommonProtos.PreparedStatement.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlCommon.PreparedStatement.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
-
+    
+    
     /**
      * Check of Request parts
      */
     static class PlaceHolderChecker {
-        static RequestProtos.PlaceHolder.Builder builder() {
+        static SqlRequest.PlaceHolder.Builder builder() {
             return
-                RequestProtos.PlaceHolder.newBuilder()
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
-                .addVariables(RequestProtos.PlaceHolder.Variable.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8));
+                SqlRequest.PlaceHolder.newBuilder()
+                .setName("v1").setType(SqlCommon.AtomType.INT8);
         }
-        static boolean check(RequestProtos.PlaceHolder dst) {
-            RequestProtos.PlaceHolder.Variable v1 = dst.getVariablesList().get(0);
-            RequestProtos.PlaceHolder.Variable v2 = dst.getVariablesList().get(1);
-
+        static boolean check(SqlRequest.PlaceHolder dst) {
             return
-                v1.getName().equals("v1")
-                && v1.getType().equals(CommonProtos.DataType.INT8)
-                && v2.getName().equals("v2")
-                && v2.getType().equals(CommonProtos.DataType.FLOAT8)
-                && (dst.getVariablesList().size() == 2);
+                dst.getName().equals("v1")
+                && dst.getType().equals(SqlCommon.AtomType.INT8);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.PlaceHolder.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.PlaceHolder.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    static class PlaceHolderChecker2 {
+        static SqlRequest.PlaceHolder.Builder builder() {
+            return
+                SqlRequest.PlaceHolder.newBuilder().setName("v2").setType(SqlCommon.AtomType.FLOAT8);
+        }
+        static boolean check(SqlRequest.PlaceHolder dst) {
+            return
+                dst.getName().equals("v2")
+                && dst.getType().equals(SqlCommon.AtomType.FLOAT8);
+        }
+        
+        void test() {
+            try {
+                assertTrue(check(SqlRequest.PlaceHolder.parseFrom(builder().build().toByteArray())));
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                fail("cought com.google.protobuf.InvalidProtocolBufferException");
+            }
+        }
+    }
+    
     static class ParameterSetChecker {
-        static RequestProtos.ParameterSet.Builder builder() {
+        static SqlRequest.Parameter.Builder builder() {
             return
-                RequestProtos.ParameterSet.newBuilder()
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v1").setInt4Value(11))
-                .addParameters(RequestProtos.ParameterSet.Parameter.newBuilder().setName("v2").setFloat8Value(123.45));
+                SqlRequest.Parameter.newBuilder().setName("v1").setInt4Value(11);
         }
-        static boolean check(RequestProtos.ParameterSet dst) {
-            RequestProtos.ParameterSet.Parameter v1 = dst.getParametersList().get(0);
-            RequestProtos.ParameterSet.Parameter v2 = dst.getParametersList().get(1);
-
+        static boolean check(SqlRequest.Parameter dst) {
             return
-                v1.getName().equals("v1")
-                && RequestProtos.ParameterSet.Parameter.ValueCase.INT4_VALUE.equals(v1.getValueCase())
-                && v2.getName().equals("v2")
-                && RequestProtos.ParameterSet.Parameter.ValueCase.FLOAT8_VALUE.equals(v2.getValueCase())
-                && (dst.getParametersList().size() == 2);
+                dst.getName().equals("v1")
+                && SqlRequest.Parameter.ValueCase.INT4_VALUE.equals(dst.getValueCase());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.ParameterSet.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Parameter.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
-    static class TransactionOptionChecker {
-        static RequestProtos.TransactionOption.Builder builder() {
+    static class ParameterSetChecker2 {
+        static SqlRequest.Parameter.Builder builder() {
             return
-                RequestProtos.TransactionOption.newBuilder()
-                .setType(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
-                .addWritePreserves(RequestProtos.TransactionOption.WritePreserve.newBuilder().setName("table_for_preserve"));
+                SqlRequest.Parameter.newBuilder().setName("v2").setFloat8Value(123.45);
         }
-        static boolean check(RequestProtos.TransactionOption dst) {
-            RequestProtos.TransactionOption.WritePreserve r1 = dst.getWritePreservesList().get(0);
-
+        static boolean check(SqlRequest.Parameter dst) {
             return
-                dst.getType().equals(RequestProtos.TransactionOption.TransactionType.TRANSACTION_TYPE_SHORT)
-                && r1.getName().equals("table_for_preserve")
+                dst.getName().equals("v2")
+                && SqlRequest.Parameter.ValueCase.FLOAT8_VALUE.equals(dst.getValueCase());
+        }
+        
+        void test() {
+            try {
+                assertTrue(check(SqlRequest.Parameter.parseFrom(builder().build().toByteArray())));
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                fail("cought com.google.protobuf.InvalidProtocolBufferException");
+            }
+        }
+    }
+    
+    static class TransactionOptionChecker {
+        static final String TABLE_NAME = "table_for_preserve";
+        static SqlRequest.TransactionOption.Builder builder() {
+            return
+                SqlRequest.TransactionOption.newBuilder()
+                .setType(SqlRequest.TransactionType.SHORT)
+                .addWritePreserves(SqlRequest.WritePreserve.newBuilder().setTableName(TABLE_NAME));
+        }
+        static boolean check(SqlRequest.TransactionOption dst) {
+            SqlRequest.WritePreserve r1 = dst.getWritePreservesList().get(0);
+            
+            return
+                dst.getType().equals(SqlRequest.TransactionType.SHORT)
+                && r1.getTableName().equals(TABLE_NAME)
                 && (dst.getWritePreservesList().size() == 1);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.TransactionOption.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.TransactionOption.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
-
+    
+    
     /**
      * Check of each Request
      */
     public static class BeginChecker {
-        public static RequestProtos.Begin.Builder builder() {
+        public static SqlRequest.Begin.Builder builder() {
             return
-                RequestProtos.Begin.newBuilder()
+                SqlRequest.Begin.newBuilder()
                 .setOption(TransactionOptionChecker.builder());
         }
-        public static boolean check(RequestProtos.Begin dst) {
+        public static boolean check(SqlRequest.Begin dst) {
             return
                 TransactionOptionChecker.check(dst.getOption());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Begin.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Begin.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class PrepareChecker {
-        static RequestProtos.Prepare.Builder builder() {
+        static final String SQL = "SELECT a, b, c FROM t WHERE d = 321";
+        static SqlRequest.Prepare.Builder builder() {
             return
-                RequestProtos.Prepare.newBuilder()
-                .setSql("SELECT a, b, c FROM t WHERE d = 321")
-                .setHostVariables(PlaceHolderChecker.builder());
+                SqlRequest.Prepare.newBuilder()
+                .setSql(SQL)
+                .addPlaceholders(PlaceHolderChecker.builder())
+                .addPlaceholders(PlaceHolderChecker2.builder());
         }
-        static boolean check(RequestProtos.Prepare dst) {
+        static boolean check(SqlRequest.Prepare dst) {
+            var p1 = dst.getPlaceholdersList().get(0);
+            var p2 = dst.getPlaceholdersList().get(1);
+            
             return
-                dst.getSql().equals("SELECT a, b, c FROM t WHERE d = 321")
-                && PlaceHolderChecker.check(dst.getHostVariables());
+                dst.getSql().equals(SQL)
+                && PlaceHolderChecker.check(p1)
+                && PlaceHolderChecker2.check(p2);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Prepare.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Prepare.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class ExecuteStatementChecker {
-        static RequestProtos.ExecuteStatement.Builder builder() {
+        static final String SQL = "UPDATE t SET a = a + 1 WHERE d = 654";
+        static SqlRequest.ExecuteStatement.Builder builder() {
             return
-                RequestProtos.ExecuteStatement.newBuilder()
+                SqlRequest.ExecuteStatement.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder())
-                .setSql("UPDATE t SET a = a + 1 WHERE d = 654");
+                .setSql(SQL);
         }
-        static boolean check(RequestProtos.ExecuteStatement dst) {
+        static boolean check(SqlRequest.ExecuteStatement dst) {
             return
                 TransactionChecker.check(dst.getTransactionHandle())
-                && dst.getSql().equals("UPDATE t SET a = a + 1 WHERE d = 654");
+                && dst.getSql().equals(SQL);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.ExecuteStatement.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.ExecuteStatement.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class ExecuteQueryChecker {
-        static RequestProtos.ExecuteQuery.Builder builder() {
+        static final String SQL = "SELECT x, y, z FROM t WHERE d = 987";
+        static SqlRequest.ExecuteQuery.Builder builder() {
             return
-                RequestProtos.ExecuteQuery.newBuilder()
+                SqlRequest.ExecuteQuery.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder())
-                .setSql("SELECT x, y, z FROM t WHERE d = 987");
+                .setSql(SQL);
         }
-        static boolean check(RequestProtos.ExecuteQuery dst) {
+        static boolean check(SqlRequest.ExecuteQuery dst) {
             return
                 TransactionChecker.check(dst.getTransactionHandle())
-                && dst.getSql().equals("SELECT x, y, z FROM t WHERE d = 987");
+                && dst.getSql().equals(SQL);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.ExecuteQuery.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.ExecuteQuery.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class ExecutePreparedStatementChecker {
-        static RequestProtos.ExecutePreparedStatement.Builder builder() {
+        static SqlRequest.ExecutePreparedStatement.Builder builder() {
             return
-                RequestProtos.ExecutePreparedStatement.newBuilder()
+                SqlRequest.ExecutePreparedStatement.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder())
                 .setPreparedStatementHandle(PreparedStatementChecker.builder())
-                .setParameters(ParameterSetChecker.builder());
+                .addParameters(ParameterSetChecker.builder())
+                .addParameters(ParameterSetChecker2.builder());
         }
-        static boolean check(RequestProtos.ExecutePreparedStatement dst) {
+        static boolean check(SqlRequest.ExecutePreparedStatement dst) {
+            var p1 = dst.getParametersList().get(0);
+            var p2 = dst.getParametersList().get(1);
+            
             return
                 TransactionChecker.check(dst.getTransactionHandle())
                 && PreparedStatementChecker.check(dst.getPreparedStatementHandle())
-                && ParameterSetChecker.check(dst.getParameters());
+                && ParameterSetChecker.check(p1)
+                && ParameterSetChecker2.check(p2);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.ExecutePreparedStatement.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.ExecutePreparedStatement.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class ExecutePreparedQueryChecker {
-        static RequestProtos.ExecutePreparedQuery.Builder builder() {
+        static SqlRequest.ExecutePreparedQuery.Builder builder() {
             return
-                RequestProtos.ExecutePreparedQuery.newBuilder()
+                SqlRequest.ExecutePreparedQuery.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder())
                 .setPreparedStatementHandle(PreparedStatementChecker.builder())
-                .setParameters(ParameterSetChecker.builder());
+                .addParameters(ParameterSetChecker.builder())
+                .addParameters(ParameterSetChecker2.builder());
         }
-        static boolean check(RequestProtos.ExecutePreparedQuery dst) {
+        static boolean check(SqlRequest.ExecutePreparedQuery dst) {
+            var p1 = dst.getParametersList().get(0);
+            var p2 = dst.getParametersList().get(1);
+            
             return
                 TransactionChecker.check(dst.getTransactionHandle())
                 && PreparedStatementChecker.check(dst.getPreparedStatementHandle())
-                && ParameterSetChecker.check(dst.getParameters());
+                && ParameterSetChecker.check(p1)
+                && ParameterSetChecker2.check(p2);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.ExecutePreparedQuery.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.ExecutePreparedQuery.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
+    static class ExecuteDumpChecker {
+        static final String PATH = "/This/Is/A/Path/String";
+        static SqlRequest.ExecuteDump.Builder builder() {
+            return
+                SqlRequest.ExecuteDump.newBuilder()
+                .setTransactionHandle(TransactionChecker.builder())
+                .setPreparedStatementHandle(PreparedStatementChecker.builder())
+                .addParameters(ParameterSetChecker.builder())
+                .addParameters(ParameterSetChecker2.builder())
+                .setDirectory(PATH);
+        }
+        static boolean check(SqlRequest.ExecuteDump dst) {
+            var p1 = dst.getParametersList().get(0);
+            var p2 = dst.getParametersList().get(1);
+            
+            return
+                TransactionChecker.check(dst.getTransactionHandle())
+                && PreparedStatementChecker.check(dst.getPreparedStatementHandle())
+                && ParameterSetChecker.check(p1)
+                && ParameterSetChecker2.check(p2)
+                && dst.getDirectory().equals(PATH);
+        }
+        
+        void test() {
+            try {
+                assertTrue(check(SqlRequest.ExecuteDump.parseFrom(builder().build().toByteArray())));
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                fail("cought com.google.protobuf.InvalidProtocolBufferException");
+            }
+        }
+    }
+    
+    static class ExecuteLoadChecker {
+        static final String PATH = "/This/Is/A/Path/String";
+        static SqlRequest.ExecuteLoad.Builder builder() {
+            return
+                SqlRequest.ExecuteLoad.newBuilder()
+                .setTransactionHandle(TransactionChecker.builder())
+                .setPreparedStatementHandle(PreparedStatementChecker.builder())
+                .addParameters(ParameterSetChecker.builder())
+                .addParameters(ParameterSetChecker2.builder())
+                .addFile(PATH);
+        }
+        static boolean check(SqlRequest.ExecuteLoad dst) {
+            var p1 = dst.getParametersList().get(0);
+            var p2 = dst.getParametersList().get(1);
+            
+            return
+                TransactionChecker.check(dst.getTransactionHandle())
+                && PreparedStatementChecker.check(dst.getPreparedStatementHandle())
+                && ParameterSetChecker.check(p1)
+                && ParameterSetChecker2.check(p2)
+                && dst.getFileList().get(0).equals(PATH);
+        }
+        
+        void test() {
+            try {
+                assertTrue(check(SqlRequest.ExecuteLoad.parseFrom(builder().build().toByteArray())));
+            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                fail("cought com.google.protobuf.InvalidProtocolBufferException");
+            }
+        }
+    }
+    
     static class CommitChecker {
-        static RequestProtos.Commit.Builder builder() {
+        static SqlRequest.Commit.Builder builder() {
             return
-                RequestProtos.Commit.newBuilder()
+                SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder());
         }
-        static boolean check(RequestProtos.Commit dst) {
+        static boolean check(SqlRequest.Commit dst) {
             return
                 TransactionChecker.check(dst.getTransactionHandle());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Commit.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Commit.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class RollbackChecker {
-        static RequestProtos.Rollback.Builder builder() {
+        static SqlRequest.Rollback.Builder builder() {
             return
-                RequestProtos.Rollback.newBuilder()
+                SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder());
         }
-        static boolean check(RequestProtos.Rollback dst) {
+        static boolean check(SqlRequest.Rollback dst) {
             return
                 TransactionChecker.check(dst.getTransactionHandle());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Rollback.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Rollback.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class DisposePreparedStatementChecker {
-        static RequestProtos.DisposePreparedStatement.Builder builder() {
+        static SqlRequest.DisposePreparedStatement.Builder builder() {
             return
-                RequestProtos.DisposePreparedStatement.newBuilder()
+                SqlRequest.DisposePreparedStatement.newBuilder()
                 .setPreparedStatementHandle(PreparedStatementChecker.builder());
         }
-        static boolean check(RequestProtos.DisposePreparedStatement dst) {
+        static boolean check(SqlRequest.DisposePreparedStatement dst) {
             return
                 PreparedStatementChecker.check(dst.getPreparedStatementHandle());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.DisposePreparedStatement.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.DisposePreparedStatement.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static class DisconnectChecker {
-        static RequestProtos.Disconnect.Builder builder() {
+        static SqlRequest.Disconnect.Builder builder() {
             return
-                RequestProtos.Disconnect.newBuilder();
+                SqlRequest.Disconnect.newBuilder();
         }
-        static boolean check(RequestProtos.Disconnect dst) {
+        static boolean check(SqlRequest.Disconnect dst) {
             return
                 true;
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Disconnect.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Disconnect.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExplainChecker {
-        public static RequestProtos.Explain.Builder builder() {
+        public static SqlRequest.Explain.Builder builder() {
             return
-                RequestProtos.Explain.newBuilder()
+                SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(PreparedStatementChecker.builder())
-                .setParameters(ParameterSetChecker.builder());
+                .addParameters(ParameterSetChecker.builder())
+                .addParameters(ParameterSetChecker2.builder());
         }
-        static boolean check(RequestProtos.Explain dst) {
+        static boolean check(SqlRequest.Explain dst) {
+            var p1 = dst.getParametersList().get(0);
+            var p2 = dst.getParametersList().get(1);
+            
             return
                 PreparedStatementChecker.check(dst.getPreparedStatementHandle())
-                && ParameterSetChecker.check(dst.getParameters());
+                && ParameterSetChecker.check(p1)
+                && ParameterSetChecker2.check(p2);
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Explain.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Explain.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     static long sessionID = 123;
-
+    
     /**
      * Check of Request level message
      * can be used by external packages
      */
     public static class BeginRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setBegin(BeginChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setBegin(BeginChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
                 && BeginChecker.check(dst.getBegin());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class PrepareRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setPrepare(PrepareChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {
+        public static SqlRequest.Request.Builder builder() {
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setPrepare(PrepareChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.PREPARE.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.PREPARE.equals(dst.getRequestCase())
                 && PrepareChecker.check(dst.getPrepare());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExecuteStatementRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setExecuteStatement(ExecuteStatementChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setExecuteStatement(ExecuteStatementChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
                 && ExecuteStatementChecker.check(dst.getExecuteStatement());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExecuteQueryRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setExecuteQuery(ExecuteQueryChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setExecuteQuery(ExecuteQueryChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
                 && ExecuteQueryChecker.check(dst.getExecuteQuery());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExecutePreparedStatementRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setExecutePreparedStatement(ExecutePreparedStatementChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setExecutePreparedStatement(ExecutePreparedStatementChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.EXECUTE_PREPARED_STATEMENT.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.EXECUTE_PREPARED_STATEMENT.equals(dst.getRequestCase())
                 && ExecutePreparedStatementChecker.check(dst.getExecutePreparedStatement());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExecutePreparedQueryRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setExecutePreparedQuery(ExecutePreparedQueryChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setExecutePreparedQuery(ExecutePreparedQueryChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.EXECUTE_PREPARED_QUERY.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.EXECUTE_PREPARED_QUERY.equals(dst.getRequestCase())
                 && ExecutePreparedQueryChecker.check(dst.getExecutePreparedQuery());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class CommitRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setCommit(CommitChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setCommit(CommitChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.COMMIT.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.COMMIT.equals(dst.getRequestCase())
                 && CommitChecker.check(dst.getCommit());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class RollbackRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setRollback(RollbackChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setRollback(RollbackChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.ROLLBACK.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.ROLLBACK.equals(dst.getRequestCase())
                 && RollbackChecker.check(dst.getRollback());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class DisposePreparedStatementRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setDisposePreparedStatement(DisposePreparedStatementChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setDisposePreparedStatement(DisposePreparedStatementChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.DISPOSE_PREPARED_STATEMENT.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.DISPOSE_PREPARED_STATEMENT.equals(dst.getRequestCase())
                 && DisposePreparedStatementChecker.check(dst.getDisposePreparedStatement());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class DisconnectRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setDisconnect(DisconnectChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setDisconnect(DisconnectChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.DISCONNECT.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.DISCONNECT.equals(dst.getRequestCase())
                 && DisconnectChecker.check(dst.getDisconnect());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExplainRequestChecker {
-        static RequestProtos.Request.Builder builder(long id) {
+        static SqlRequest.Request.Builder builder(long id) {
             return
-                RequestProtos.Request.newBuilder()
-                .setSessionHandle(CommonProtos.Session.newBuilder().setHandle(id))
+                SqlRequest.Request.newBuilder()
+                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
                 .setExplain(ExplainChecker.builder());
         }
-        public static RequestProtos.Request.Builder builder() {  // SessionHandle won't be set
+        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
             return
-                RequestProtos.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                 .setExplain(ExplainChecker.builder());
         }
-        public static boolean check(RequestProtos.Request dst, long id) {
+        public static boolean check(SqlRequest.Request dst, long id) {
             return
                 (dst.getSessionHandle().getHandle() == id)
-                && RequestProtos.Request.RequestCase.EXPLAIN.equals(dst.getRequestCase())
+                && SqlRequest.Request.RequestCase.EXPLAIN.equals(dst.getRequestCase())
                 && ExplainChecker.check(dst.getExplain());
         }
+        
         void test() {
             try {
-                assertTrue(check(RequestProtos.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
-
+    
+    
     /**
      * Check of Response parts
      */
     static class SuccessChecker {
-        static ResponseProtos.Success.Builder builder() {
+        static SqlResponse.Success.Builder builder() {
             return
-                ResponseProtos.Success.newBuilder();
+                SqlResponse.Success.newBuilder();
         }
-        static boolean check(ResponseProtos.Success dst) {
+        static boolean check(SqlResponse.Success dst) {
             return
                 true;
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Success.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Success.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
     static class ErrorChecker {
-        static ResponseProtos.Error.Builder builder() {
+        static final String ERROR = "This is a error for test purpose";
+        static SqlResponse.Error.Builder builder() {
             return
-                ResponseProtos.Error.newBuilder()
+                SqlResponse.Error.newBuilder()
                 .setStatus(StatusProtos.Status.NOT_FOUND)
-                .setDetail("This is a error for test purpose");
+                .setDetail(ERROR);
         }
-        static boolean check(ResponseProtos.Error dst) {
+        static boolean check(SqlResponse.Error dst) {
             return
                 dst.getStatus().equals(StatusProtos.Status.NOT_FOUND)
-                && dst.getDetail().equals("This is a error for test purpose");
+                && dst.getDetail().equals(ERROR);
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Error.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Error.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     /**
      * Check of each Response
      */
     public static class ResultOnlyChecker {
-        static ResponseProtos.ResultOnly.Builder builder() {
+        static SqlResponse.ResultOnly.Builder builder() {
             return
-                ResponseProtos.ResultOnly.newBuilder()
+                SqlResponse.ResultOnly.newBuilder()
                 .setSuccess(SuccessChecker.builder());
         }
-        public static boolean check(ResponseProtos.ResultOnly dst) {
+        public static boolean check(SqlResponse.ResultOnly dst) {
             return
-                ResponseProtos.ResultOnly.ResultCase.SUCCESS.equals(dst.getResultCase())
+                SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(dst.getResultCase())
                 && SuccessChecker.check(dst.getSuccess());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.ResultOnly.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.ResultOnly.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ResMessageBeginChecker {
-        static ResponseProtos.Begin.Builder builder() {
+        static SqlResponse.Begin.Builder builder() {
             return
-                ResponseProtos.Begin.newBuilder()
+                SqlResponse.Begin.newBuilder()
                 .setTransactionHandle(TransactionChecker.builder());
         }
-        public static boolean check(ResponseProtos.Begin dst) {
+        public static boolean check(SqlResponse.Begin dst) {
             return
-                ResponseProtos.Begin.ResultCase.TRANSACTION_HANDLE.equals(dst.getResultCase())
+                SqlResponse.Begin.ResultCase.TRANSACTION_HANDLE.equals(dst.getResultCase())
                 && TransactionChecker.check(dst.getTransactionHandle());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Begin.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Begin.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ResMessagePrepareChecker {
-        static ResponseProtos.Prepare.Builder builder() {
+        static SqlResponse.Prepare.Builder builder() {
             return
-                ResponseProtos.Prepare.newBuilder()
+                SqlResponse.Prepare.newBuilder()
                 .setPreparedStatementHandle(PreparedStatementChecker.builder());
         }
-        public static boolean check(ResponseProtos.Prepare dst) {
+        public static boolean check(SqlResponse.Prepare dst) {
             return
-                ResponseProtos.Prepare.ResultCase.PREPARED_STATEMENT_HANDLE.equals(dst.getResultCase())
+                SqlResponse.Prepare.ResultCase.PREPARED_STATEMENT_HANDLE.equals(dst.getResultCase())
                 && PreparedStatementChecker.check(dst.getPreparedStatementHandle());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Prepare.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Prepare.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ResMessageExecuteQueryChecker {
-        static ResponseProtos.ExecuteQuery.Builder builder() {
+        static final String RESYKTSET_NAME = "ResultSetName";
+        static SqlResponse.ExecuteQuery.Builder builder() {
             return
-                ResponseProtos.ExecuteQuery.newBuilder()
-                .setName("ResultSetName")
+                SqlResponse.ExecuteQuery.newBuilder()
+                .setName(RESYKTSET_NAME)
                 .setRecordMeta(SchemaProtosChecker.builder());
         }
-        public static boolean check(ResponseProtos.ExecuteQuery dst) {
+        public static boolean check(SqlResponse.ExecuteQuery dst) {
             return
-                dst.getName().equals("ResultSetName")
+                dst.getName().equals(RESYKTSET_NAME)
                 && SchemaProtosChecker.check(dst.getRecordMeta());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.ExecuteQuery.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.ExecuteQuery.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ResMessageExplainChecker {
-        public static ResponseProtos.Explain.Builder builder() {
+        static final String EXPLAIN = "ThisIsAnExecutionPlanString";
+        public static SqlResponse.Explain.Builder builder() {
             return
-                ResponseProtos.Explain.newBuilder()
-                .setOutput("ThisIsAnExecutionPlanString");
+                SqlResponse.Explain.newBuilder()
+                .setOutput(EXPLAIN);
         }
-        public static boolean check(ResponseProtos.Explain dst) {
+        public static boolean check(SqlResponse.Explain dst) {
             return
-                dst.getOutput().equals("ThisIsAnExecutionPlanString");
+                dst.getOutput().equals(EXPLAIN);
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Explain.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Explain.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     /**
      * Check of Response level message
      * can be used by external packages
      */
     public static class ResultOnlyResponseChecker {
-        public static ResponseProtos.Response.Builder builder() {
+        public static SqlResponse.Response.Builder builder() {
             return
-                ResponseProtos.Response.newBuilder()
+                SqlResponse.Response.newBuilder()
                 .setResultOnly(ResultOnlyChecker.builder());
         }
-        public static boolean check(ResponseProtos.Response dst) {
+        public static boolean check(SqlResponse.Response dst) {
             return
-                ResponseProtos.Response.ResponseCase.RESULT_ONLY.equals(dst.getResponseCase())
+                SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(dst.getResponseCase())
                 && ResultOnlyChecker.check(dst.getResultOnly());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class BeginResponseChecker {
-        public static ResponseProtos.Response.Builder builder() {
+        public static SqlResponse.Response.Builder builder() {
             return
-                ResponseProtos.Response.newBuilder()
+                SqlResponse.Response.newBuilder()
                 .setBegin(ResMessageBeginChecker.builder());
         }
-        public static boolean check(ResponseProtos.Response dst) {
+        public static boolean check(SqlResponse.Response dst) {
             return
-                ResponseProtos.Response.ResponseCase.BEGIN.equals(dst.getResponseCase())
+                SqlResponse.Response.ResponseCase.BEGIN.equals(dst.getResponseCase())
                 && ResMessageBeginChecker.check(dst.getBegin());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class PrepareResponseChecker {
-        public static ResponseProtos.Response.Builder builder() {
+        public static SqlResponse.Response.Builder builder() {
             return
-                ResponseProtos.Response.newBuilder()
+                SqlResponse.Response.newBuilder()
                 .setPrepare(ResMessagePrepareChecker.builder());
         }
-        public static boolean check(ResponseProtos.Response dst) {
+        public static boolean check(SqlResponse.Response dst) {
             return
-                ResponseProtos.Response.ResponseCase.PREPARE.equals(dst.getResponseCase())
+                SqlResponse.Response.ResponseCase.PREPARE.equals(dst.getResponseCase())
                 && ResMessagePrepareChecker.check(dst.getPrepare());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExecuteQueryResponseChecker {
-        public static ResponseProtos.Response.Builder builder() {
+        public static SqlResponse.Response.Builder builder() {
             return
-                ResponseProtos.Response.newBuilder()
+                SqlResponse.Response.newBuilder()
                 .setExecuteQuery(ResMessageExecuteQueryChecker.builder());
         }
-        public static boolean check(ResponseProtos.Response dst) {
+        public static boolean check(SqlResponse.Response dst) {
             return
-                ResponseProtos.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())
+                SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(dst.getResponseCase())
                 && ResMessageExecuteQueryChecker.check(dst.getExecuteQuery());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
+    
     public static class ExplainResponseChecker {
-        public static ResponseProtos.Response.Builder builder() {
+        public static SqlResponse.Response.Builder builder() {
             return
-                ResponseProtos.Response.newBuilder()
+                SqlResponse.Response.newBuilder()
                 .setExplain(ResMessageExplainChecker.builder());
         }
-        public static boolean check(ResponseProtos.Response dst) {
+        public static boolean check(SqlResponse.Response dst) {
             return
-                ResponseProtos.Response.ResponseCase.EXPLAIN.equals(dst.getResponseCase())
+                SqlResponse.Response.ResponseCase.EXPLAIN.equals(dst.getResponseCase())
                 && ResMessageExplainChecker.check(dst.getExplain());
         }
+        
         void test() {
             try {
-                assertTrue(check(ResponseProtos.Response.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
-
-
+    
+    
     /**
      * Check of Schema meta data
      */
@@ -922,12 +1077,12 @@ public final class ProtosForTest {
         public static SchemaProtos.RecordMeta.Builder builder() {
             return
                 SchemaProtos.RecordMeta.newBuilder()
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(CommonProtos.DataType.INT8))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(CommonProtos.DataType.FLOAT8).setNullable(false))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(CommonProtos.DataType.CHARACTER).setNullable(true))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.INT8))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.FLOAT8).setNullable(false))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(CommonProtos.DataType.CHARACTER).setNullable(true));
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(SqlCommon.AtomType.INT8))
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(SqlCommon.AtomType.FLOAT8).setNullable(false))
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(SqlCommon.AtomType.CHARACTER).setNullable(true))
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.INT8))
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.FLOAT8).setNullable(false))
+                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.CHARACTER).setNullable(true));
         }
         public static boolean check(SchemaProtos.RecordMeta dst) {
             SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
@@ -936,28 +1091,29 @@ public final class ProtosForTest {
             SchemaProtos.RecordMeta.Column v4 = dst.getColumnsList().get(3);
             SchemaProtos.RecordMeta.Column v5 = dst.getColumnsList().get(4);
             SchemaProtos.RecordMeta.Column v6 = dst.getColumnsList().get(5);
-
+            
             return
                 v1.getName().equals("v1")
-                && v1.getType().equals(CommonProtos.DataType.INT8)
+                && v1.getType().equals(SqlCommon.AtomType.INT8)
                 && (v1.getNullable() ==  false)
                 && v2.getName().equals("v2")
-                && v2.getType().equals(CommonProtos.DataType.FLOAT8)
+                && v2.getType().equals(SqlCommon.AtomType.FLOAT8)
                 && (v2.getNullable() ==  false)
                 && v3.getName().equals("v3")
-                && v3.getType().equals(CommonProtos.DataType.CHARACTER)
+                && v3.getType().equals(SqlCommon.AtomType.CHARACTER)
                 && (v3.getNullable() ==  true)
-                && v4.getType().equals(CommonProtos.DataType.INT8)
+                && v4.getType().equals(SqlCommon.AtomType.INT8)
                 && v4.getName().equals("")
                 && (v4.getNullable() ==  false)
                 && v5.getName().equals("")
-                && v5.getType().equals(CommonProtos.DataType.FLOAT8)
+                && v5.getType().equals(SqlCommon.AtomType.FLOAT8)
                 && (v5.getNullable() ==  false)
                 && v6.getName().equals("")
-                && v6.getType().equals(CommonProtos.DataType.CHARACTER)
+                && v6.getType().equals(SqlCommon.AtomType.CHARACTER)
                 && (v6.getNullable() ==  true)
                 && (dst.getColumnsList().size() == 6);
         }
+        
         void test() {
             try {
                 assertTrue(check(SchemaProtos.RecordMeta.parseFrom(builder().build().toByteArray())));

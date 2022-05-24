@@ -9,20 +9,20 @@ public class ResultSetResponse {
     public byte[] payload;
 
     ResultSetResponse(int writerId, byte[] payload) {
-	this.writerId = writerId;
-	this.payload = payload;
+    this.writerId = writerId;
+    this.payload = payload;
     }
     ResultSetResponse(int info) {
-	this.info = info;
-	this.payload = null;
+    this.info = info;
+    this.payload = null;
     }
     public int getInfo() {
-	return info;
+    return info;
     }
     public int getWriterId() {
-	return writerId;
+    return writerId;
     }
     public byte[] getPayload() {
-	return payload;
+    return payload;
     }
 }

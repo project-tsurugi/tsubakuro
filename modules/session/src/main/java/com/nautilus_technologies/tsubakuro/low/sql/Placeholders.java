@@ -5,11 +5,11 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
 
 /**
- * Utilities to build {@link com.nautilus_technologies.tsubakuro.protos.RequestProtos.PlaceHolder.Variable Placeholder}.
+ * Utilities to build {@link com.tsurugidb.jogasaki.proto.SqlRequest.PlaceHolder Placeholder}.
  */
 public final class Placeholders {
 
@@ -21,7 +21,7 @@ public final class Placeholders {
      * @throws IllegalArgumentException if there is no corresponding type
      * @see Types#typeOf(Class)
      */
-    public static RequestProtos.PlaceHolder.Variable of(@Nonnull String name, @Nonnull Class<?> aClass) {
+    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull Class<?> aClass) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(aClass);
         return of(name, Types.typeOf(aClass));
@@ -33,10 +33,10 @@ public final class Placeholders {
      * @param type the place-holder type
      * @return the created place-holder
      */
-    public static RequestProtos.PlaceHolder.Variable of(@Nonnull String name, @Nonnull CommonProtos.DataType type) {
+    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull SqlCommon.AtomType type) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(type);
-        return RequestProtos.PlaceHolder.Variable.newBuilder()
+        return SqlRequest.PlaceHolder.newBuilder()
                 .setName(name)
                 .setType(type)
                 .build();
@@ -48,10 +48,10 @@ public final class Placeholders {
      * @param type the place-holder type
      * @return the created place-holder
      */
-    public static RequestProtos.PlaceHolder.Variable of(@Nonnull String name, @Nonnull CommonProtos.TypeInfo type) {
+    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull SqlCommon.TypeInfo type) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(type);
-        var builder = RequestProtos.PlaceHolder.Variable.newBuilder()
+        var builder = SqlRequest.PlaceHolder.newBuilder()
                 .setName(name);
         switch (type.getTypeInfoCase()) {
         case ATOM_TYPE:

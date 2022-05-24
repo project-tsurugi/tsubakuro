@@ -5,9 +5,9 @@ import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.Distiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -26,7 +26,7 @@ public interface SessionWire extends ServerResource {
      * @throws IOException error occurred in request transfer
      */
     // FIXME: send(long servicdID, byte[]) -> FutureResponse<Response>
-    <V> FutureResponse<V> send(long servicdID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException;
+    <V> FutureResponse<V> send(long servicdID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException;
 
     /**
      * Send a query request to the SQL server.
@@ -35,18 +35,18 @@ public interface SessionWire extends ServerResource {
      * @throws IOException error occurred in request transfer
      */
     // FIXME: remove this and use send()
-    Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(
-            long servicdID, RequestProtos.Request.Builder request) throws IOException;
+    Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(
+            long servicdID, SqlRequest.Request.Builder request) throws IOException;
 
     /**
      * Receive the message corresponding to the given ResponseHandle from the SQL server
      * @param handle the handle of communication wire to receive incoming message
-     * @return ResponseProtos.Response the response message received from the SQL server
+     * @return SqlResponse.Response the response message received from the SQL server
      * @throws IOException error occurred in responce receive
      */
-    ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException;
+    SqlResponse.Response receive(ResponseWireHandle handle) throws IOException;
 
-    ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
+    SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
 
     FutureInputStream send(long serviceID, byte[] request) throws IOException;

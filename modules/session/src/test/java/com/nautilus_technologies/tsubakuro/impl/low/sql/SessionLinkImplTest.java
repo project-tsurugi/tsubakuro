@@ -15,16 +15,15 @@ import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.Distiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 class SessionLinkImplTest {
-    ResponseProtos.Response nextResponse;
+    SqlResponse.Response nextResponse;
 
     class FutureResponseMock<V> implements FutureResponse<V> {
         private final SessionWireMock wire;
@@ -57,7 +56,7 @@ class SessionLinkImplTest {
 
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, RequestProtos.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
             switch (request.getRequestCase()) {
             case BEGIN:
                 nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
@@ -80,12 +79,12 @@ class SessionLinkImplTest {
         }
 
         @Override
-        public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> sendQuery(long serviceID, RequestProtos.Request.Builder request) throws IOException {
+        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
 
         @Override
-        public ResponseProtos.Response receive(ResponseWireHandle handle) throws IOException {
+        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
             var r = nextResponse;
             nextResponse = null;
             return r;
@@ -97,7 +96,7 @@ class SessionLinkImplTest {
         }
 
         @Override
-        public ResponseProtos.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
             var r = nextResponse;
             nextResponse = null;
             return r;

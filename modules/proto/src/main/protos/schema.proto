@@ -1,10 +1,11 @@
 syntax = "proto3";
 
-package schema;
+package jogasaki.proto.sql.schema;
 
 import "common.proto";
 
-option java_package = "com.nautilus_technologies.tsubakuro.protos";
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.jogasaki.proto";
 option java_outer_classname = "SchemaProtos";
 
 /*
@@ -15,7 +16,7 @@ option java_outer_classname = "SchemaProtos";
 message RecordMeta {
   message Column {
     string name = 1;
-    common.DataType type = 2;
+    common.AtomType type = 2;
     bool nullable = 3;
   }
 

@@ -11,9 +11,9 @@ import org.msgpack.value.ValueType;
 
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.protos.CommonProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.SchemaProtos;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -33,7 +33,7 @@ public class ResultSetImpl implements ResultSet {
             this.recordMeta = null;
         }
         @Override
-        public CommonProtos.DataType type(int index) throws IOException {
+        public SqlCommon.AtomType type(int index) throws IOException {
             if (index < 0 || fieldCount() <= index) {
                 throw new IOException("index is out of the range");
             }
@@ -62,7 +62,7 @@ public class ResultSetImpl implements ResultSet {
         }
         @Override
         @Deprecated
-        public CommonProtos.DataType at(int index) throws IOException {
+        public SqlCommon.AtomType at(int index) throws IOException {
             if (index < 0 || fieldCount() <= index) {
                 throw new IOException("index is out of the range");
             }
@@ -70,7 +70,7 @@ public class ResultSetImpl implements ResultSet {
         }
         @Override
         @Deprecated
-        public CommonProtos.DataType at() throws IOException {
+        public SqlCommon.AtomType at() throws IOException {
             if (!columnReady) {
                 throw new IOException("the column is not ready to be read");
             }
@@ -94,14 +94,14 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     private boolean recordReady;
-    private FutureResponse<ResponseProtos.ResultOnly> futureResponse;
+    private FutureResponse<SqlResponse.ResultOnly> futureResponse;
 
     /**
      * Class constructor, called from FutureResultSetImpl.
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
      * @throws IOException error occurred in class constructor
      */
-    public ResultSetImpl(ResultSetWire resultSetWire, FutureResponse<ResponseProtos.ResultOnly> futureResponse) throws IOException {
+    public ResultSetImpl(ResultSetWire resultSetWire, FutureResponse<SqlResponse.ResultOnly> futureResponse) throws IOException {
         this.resultSetWire = resultSetWire;
         this.futureResponse = futureResponse;
         unpackerConfig = new UnpackerConfig()
@@ -109,7 +109,7 @@ public class ResultSetImpl implements ResultSet {
                 .withActionOnUnmappableString(CodingErrorAction.IGNORE);
     }
 
-    public ResultSetImpl(FutureResponse<ResponseProtos.ResultOnly> futureResponse) throws IOException {
+    public ResultSetImpl(FutureResponse<SqlResponse.ResultOnly> futureResponse) throws IOException {
         recordMeta = new RecordMetaImpl();
     }
 
@@ -225,7 +225,7 @@ public class ResultSetImpl implements ResultSet {
      * @return current field type
      */
     @Override
-    public CommonProtos.DataType type() throws IOException {
+    public SqlCommon.AtomType type() throws IOException {
         if (!recordReady) {
             throw new IOException("the column is not ready to be read");
         }
@@ -401,10 +401,10 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Get a FutureResponse of the response returned from the SQL service
-     * @return a FutureResponse of ResponseProtos.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
     @Override
-    public FutureResponse<ResponseProtos.ResultOnly> getResponse() {
+    public FutureResponse<SqlResponse.ResultOnly> getResponse() {
         return futureResponse;
     }
 

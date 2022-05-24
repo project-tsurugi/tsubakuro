@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.ServerStreamWire;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 
@@ -140,17 +140,17 @@ public class ServerWireImpl implements Closeable {
     }
 
     /**
-     * Get RequestProtos.Request from a client via the native wire.
-     @returns RequestProtos.Request
+     * Get SqlRequest.Request from a client via the native wire.
+     @returns SqlRequest.Request
      */
-    public RequestProtos.Request get() throws IOException {
+    public SqlRequest.Request get() throws IOException {
         try {
             while (true) {
                 if (!receiveQueue.isEmpty()) {
                     var ba = receiveQueue.poll().getBytes();
                     var byteArrayInputStream = new ByteArrayInputStream(ba);
                     FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
-                    return RequestProtos.Request.parseDelimitedFrom(byteArrayInputStream);
+                    return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
                 }
                 try {
                     Thread.sleep(10);
@@ -165,10 +165,10 @@ public class ServerWireImpl implements Closeable {
     }
 
     /**
-     * Put ResponseProtos.Response to the client via the native wire.
-     @param request the ResponseProtos.Response message
+     * Put SqlResponse.Response to the client via the native wire.
+     @param request the SqlResponse.Response message
      */
-    public void put(ResponseProtos.Response response) throws IOException {
+    public void put(SqlResponse.Response response) throws IOException {
         var header = HEADER_BUILDER.build();
         try (var buffer = new ByteArrayOutputStream()) {
             header.writeDelimitedTo(buffer);
@@ -187,14 +187,14 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
-        //	serverStreamWire.sendRecord(0, 0, ba);
+        //    serverStreamWire.sendRecord(0, 0, ba);
         sendQueue.add(new Message(ba));
         sender.notifyEvent();
     }
 
     public void eorRSL(long handle) throws IOException {
         byte[] ba = new byte[0];
-        //	serverStreamWire.sendRecord(0, 0, ba);
+        //    serverStreamWire.sendRecord(0, 0, ba);
         sendQueue.add(new Message(ba));
         sender.notifyEvent();
     }

@@ -14,12 +14,12 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureExplainImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FuturePreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.PreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.TransactionImpl;
-import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
-import com.nautilus_technologies.tsubakuro.protos.ExplainDistiller;
-import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
-import com.nautilus_technologies.tsubakuro.protos.RequestProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResponseProtos;
-import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.tsurugidb.jogasaki.proto.BeginDistiller;
+import com.tsurugidb.jogasaki.proto.ExplainDistiller;
+import com.tsurugidb.jogasaki.proto.PrepareDistiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.ResultOnlyDistiller;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -48,14 +48,14 @@ public class SessionLinkImpl implements ServerResource {
     /**
      * Send prepare request to the SQL server via wire.send().
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.Prepare contains prepared statement handle
+     * @return a Future of SqlResponse.Prepare contains prepared statement handle
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<PreparedStatement> send(RequestProtos.Prepare.Builder request) throws IOException {
+    public FutureResponse<PreparedStatement> send(SqlRequest.Prepare.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return new FuturePreparedStatementImpl(wire.<ResponseProtos.Prepare>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
+        return new FuturePreparedStatementImpl(wire.<SqlResponse.Prepare>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setPrepare(request), new PrepareDistiller()), this);
     };
 
     /**
@@ -64,130 +64,130 @@ public class SessionLinkImpl implements ServerResource {
      * @return a Future of String contains a string to explain the plan
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<String> send(RequestProtos.Explain.Builder request) throws IOException {
+    public FutureResponse<String> send(SqlRequest.Explain.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return new FutureExplainImpl(wire.<ResponseProtos.Explain>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExplain(request), new ExplainDistiller()));
+        return new FutureExplainImpl(wire.<SqlResponse.Explain>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExplain(request), new ExplainDistiller()));
     }
 
     /**
      * Send execute sql statement request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteStatement.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteStatement.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecuteStatement(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send execute prepared statement request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.ExecutePreparedStatement.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecutePreparedStatement.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecutePreparedStatement(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecutePreparedStatement(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send execute sql query request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Pair of a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Pair of a Future of SqlResponse.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not.
      * @throws IOException error occurred in sending request message
      */
-    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteQuery.Builder request) throws IOException {
+    public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> send(SqlRequest.ExecuteQuery.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteQuery(request));
+        return wire.sendQuery(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecuteQuery(request));
     }
 
     /**
      * Send execute prepared query request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Future of SqlResponse.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not.
      * @throws IOException error occurred in sending request message
      */
-    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> send(RequestProtos.ExecutePreparedQuery.Builder request) throws IOException {
+    public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> send(SqlRequest.ExecutePreparedQuery.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecutePreparedQuery(request));
+        return wire.sendQuery(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecutePreparedQuery(request));
     }
 
     /**
      * Send begin request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.Begin contains transaction handle
+     * @return a Future of SqlResponse.Begin contains transaction handle
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.Begin> send(RequestProtos.Begin.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.Begin> send(SqlRequest.Begin.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.Begin>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setBegin(request), new BeginDistiller());
+        return wire.<SqlResponse.Begin>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setBegin(request), new BeginDistiller());
     }
 
     /**
      * Send commit request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.Commit.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Commit.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setCommit(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send rollback request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.Rollback.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setRollback(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send disposePreparedStatement request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.DisposePreparedStatement.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.DisposePreparedStatement.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setDisposePreparedStatement(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send Disconnect request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.Disconnect.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Disconnect.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setDisconnect(request), new ResultOnlyDistiller());
     }
 
     /**
@@ -205,28 +205,28 @@ public class SessionLinkImpl implements ServerResource {
     /**
      * Send execute load request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not
+     * @return a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in sending request message
      */
-    public FutureResponse<ResponseProtos.ResultOnly> send(RequestProtos.ExecuteLoad.Builder request) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteLoad.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.<ResponseProtos.ResultOnly>send(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
+        return wire.<SqlResponse.ResultOnly>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecuteLoad(request), new ResultOnlyDistiller());
     }
 
     /**
      * Send execute dump request to via wire.send()
      * @param request the request message encoded with protocol buffer
-     * @return a Pair of a Future of ResponseProtos.ExecuteQuery contains the name of result set wire and record metadata,
-     and a Future of ResponseProtos.ResultOnly indicate whether the command is processed successfully or not.
+     * @return a Pair of a Future of SqlResponse.ExecuteQuery contains the name of result set wire and record metadata,
+     and a Future of SqlResponse.ResultOnly indicate whether the command is processed successfully or not.
      * @throws IOException error occurred in sending request message
      */
-    public Pair<FutureResponse<ResponseProtos.ExecuteQuery>, FutureResponse<ResponseProtos.ResultOnly>> send(RequestProtos.ExecuteDump.Builder request) throws IOException {
+    public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> send(SqlRequest.ExecuteDump.Builder request) throws IOException {
         if (Objects.isNull(wire)) {
             throw new IOException("already closed");
         }
-        return wire.sendQuery(SERVICE_ID_SQL, RequestProtos.Request.newBuilder().setExecuteDump(request));
+        return wire.sendQuery(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecuteDump(request));
     }
 
     /**

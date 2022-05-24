@@ -5,7 +5,7 @@ import java.util.EnumMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.protos.StatusProtos;
+import com.tsurugidb.jogasaki.proto.StatusProtos;
 
 /**
  * Code of server core diagnostics.
