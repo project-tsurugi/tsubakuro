@@ -180,9 +180,6 @@ class SessionImplTest {
         var transaction = sqlClient.createTransaction().get();
         transaction.commit();
 
-        var transaction = sqlClient.createTransaction().get();
-        transaction.commit();
-        
         Throwable exception = assertThrows(IOException.class, () -> {
                 transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
             });
