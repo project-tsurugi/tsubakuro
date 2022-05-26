@@ -18,14 +18,19 @@ public enum SqlServiceCode implements DiagnosticCode {
     OK(0, StatusProtos.Status.OK),
 
     /**
+     * Not Found
+     */
+    NOT_FOUND(1, StatusProtos.Status.NOT_FOUND),
+
+    /**
      * Already Exists
      */
-    ALREADY_EXISTS(1, StatusProtos.Status.ALREADY_EXISTS),
+    ALREADY_EXISTS(2, StatusProtos.Status.ALREADY_EXISTS),
 
     /**
      * system is something wrong.
      */
-    USER_ROLLBACK(2, StatusProtos.Status.USER_ROLLBACK),
+    USER_ROLLBACK(3, StatusProtos.Status.USER_ROLLBACK),
 
     /**
      * operation is not supported.
