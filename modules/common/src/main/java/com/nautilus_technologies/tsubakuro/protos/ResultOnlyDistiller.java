@@ -1,8 +1,9 @@
-package com.tsurugidb.jogasaki.proto;
+package com.nautilus_technologies.tsubakuro.protos;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.exception.SqlServiceException;
 import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 import java.io.IOException;
 import org.slf4j.LoggerFactory;

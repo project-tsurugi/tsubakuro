@@ -20,11 +20,11 @@ import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
+import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.ResultOnlyDistiller;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;

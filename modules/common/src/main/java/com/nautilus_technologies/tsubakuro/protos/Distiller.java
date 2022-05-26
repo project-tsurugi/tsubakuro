@@ -1,8 +1,9 @@
-package com.tsurugidb.jogasaki.proto;
+package com.nautilus_technologies.tsubakuro.protos;
 
 import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Interface Distiller classes which are innner static classes and intended to be used in FutureResponseImpl class.

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.tsurugidb.jogasaki.proto.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;

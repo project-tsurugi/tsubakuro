@@ -15,7 +15,7 @@ import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
-import com.tsurugidb.jogasaki.proto.Distiller;
+import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;

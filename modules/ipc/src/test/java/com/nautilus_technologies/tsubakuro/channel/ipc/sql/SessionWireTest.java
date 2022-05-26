@@ -11,8 +11,8 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
-import com.tsurugidb.jogasaki.proto.BeginDistiller;
-    import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
+import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
+import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 class SessionWireTest {
     static final long SERVICE_ID_SQL = 3;
