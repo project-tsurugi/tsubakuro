@@ -31,7 +31,7 @@ public class Insert {
         Placeholders.of("o_entry_d", String.class),
         Placeholders.of("o_carrier_id", long.class),
         Placeholders.of("o_ol_cnt", long.class),
-        Placeholders.of("o_all_local", String.class)).get();
+        Placeholders.of("o_all_local", long.class)).get();
 
         try (Transaction transaction = sqlClient.createTransaction().await()) {
             var result = transaction.executeStatement(preparedStatement,
