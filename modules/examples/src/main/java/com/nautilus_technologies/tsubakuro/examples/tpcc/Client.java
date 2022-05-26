@@ -33,8 +33,6 @@ public class  Client extends Thread {
         this.randomGenerator = new RandomGenerator();
         this.profile = profile;
         this.url = url;
-    
-        prepare();
     }
 
     void prepare()  throws IOException, ServerException, InterruptedException {
@@ -60,6 +58,7 @@ public class  Client extends Thread {
         delivery = new Delivery(sqlClient, randomGenerator, profile);
         orderStatus = new OrderStatus(sqlClient, randomGenerator, profile);
         stockLevel = new StockLevel(sqlClient, randomGenerator, profile);
+        prepare();
 
         barrier.await();
         long start = System.currentTimeMillis();

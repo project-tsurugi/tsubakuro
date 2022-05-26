@@ -16,11 +16,12 @@ dependencies {
 }
 
 application {
-    mainClass.set('com.nautilus_technologies.tsubakuro.low.tpcc.Main')
+    mainClass.set('com.nautilus_technologies.tsubakuro.low.Main')
 }
 
 run {
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
 compileJava {

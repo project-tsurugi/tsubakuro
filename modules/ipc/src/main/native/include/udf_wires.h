@@ -92,7 +92,12 @@ public:
         }
         void read(char* to, std::size_t msg_len) {
             wire_->read(to, bip_buffer_, msg_len);
-        }        
+        }
+        void disconnect() {
+            wire_->brand_new();
+            wire_->flush(bip_buffer_, message_header::not_use);
+        }
+
     private:
         unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
@@ -112,6 +117,10 @@ public:
         catch(const boost::interprocess::interprocess_exception& ex) {
             throw std::runtime_error("cannot find a session with the specified name");
         }
+    }
+
+    ~session_wire_container() {
+        request_wire_.disconnect();
     }
 
     /**
