@@ -158,9 +158,9 @@ public enum SqlServiceCode implements DiagnosticCode {
     }
 
     /**
-     * Structured code prefix of server diagnostics (`SCD-xxxxx`).
+     * Structured code prefix of server diagnostics (`SQL-xxxxx`).
      */
-    public static final String PREFIX_STRUCTURED_CODE = "SCD"; //$NON-NLS-1$
+    public static final String PREFIX_STRUCTURED_CODE = "SQL"; //$NON-NLS-1$
 
     @Override
     public String getStructuredCode() {
