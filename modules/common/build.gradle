@@ -13,9 +13,3 @@ dependencies {
 
     api project(':proto')
 }
-
-spotbugsMain {
-    onlyAnalyze = [
-        'com.nautilus_technologies.tsubakuro.impl.low.sql.*'
-    ]
-}
