@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.measurement;
+package com.nautilus_technologies.tsubakuro.examples.measurement;
 
 import java.util.Random;
 

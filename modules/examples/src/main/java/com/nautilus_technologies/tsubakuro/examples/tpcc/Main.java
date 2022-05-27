@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +65,7 @@ public final class Main {
                 duration = Integer.parseInt(args[1]);
             }
         }
-    
+
         try {
             var warehouses = warehouses();
             if (fixThreadMapping) {
@@ -84,7 +84,7 @@ public final class Main {
             ArrayList<Profile> profiles = new ArrayList<>();
             CyclicBarrier barrier = new CyclicBarrier(threads + 1);
             AtomicBoolean stop = new AtomicBoolean();
-    
+
             for (int i = 0; i < threads; i++) {
                 var profile = new Profile();
                 profile.warehouses = warehouses;
@@ -94,7 +94,7 @@ public final class Main {
                 profiles.add(profile);
                 clients.add(new Client(url, profile, barrier, stop, doingDelivery));
             }
-    
+
             for (int i = 0; i < clients.size(); i++) {
                 clients.get(i).start();
             }
@@ -111,7 +111,7 @@ public final class Main {
             total.print(threads);
         } catch (IOException | ServerException | InterruptedException | BrokenBarrierException | TimeoutException e) {
             System.out.println(e);
-    
+
         }
     }
 }

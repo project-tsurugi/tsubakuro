@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 public final class Scale {
     private Scale() {

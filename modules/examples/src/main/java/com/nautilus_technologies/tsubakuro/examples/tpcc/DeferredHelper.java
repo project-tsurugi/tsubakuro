@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

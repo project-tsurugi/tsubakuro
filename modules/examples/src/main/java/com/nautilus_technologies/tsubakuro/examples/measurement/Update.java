@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.measurement;
+package com.nautilus_technologies.tsubakuro.examples.measurement;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -8,13 +8,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Update extends Thread {
@@ -44,7 +41,7 @@ public class Update extends Thread {
 
     void prepare() throws IOException, ServerException, InterruptedException {
         String sql8 = "UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
-        prepared8 = sqlClient.prepare(sql8, 
+        prepared8 = sqlClient.prepare(sql8,
             Placeholders.of("s_quantity", long.class),
             Placeholders.of("s_i_id", long.class),
             Placeholders.of("s_w_id", long.class)).get();
@@ -77,7 +74,7 @@ public class Update extends Thread {
                 prev = now;
 
                 // UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
-                var future8 = transaction.executeStatement(prepared8, 
+                var future8 = transaction.executeStatement(prepared8,
                     Parameters.of("s_quantity", (long) sQuantity),
                     Parameters.of("s_i_id", (long) olIid),
                     Parameters.of("s_w_id", (long) olSupplyWid));

@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.concurrent;
+package com.nautilus_technologies.tsubakuro.examples.concurrent;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +17,6 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
@@ -82,7 +81,7 @@ public final class Main {
                 .withCredential(new UsernamePasswordCredential("user", "pass"))
                 .create(10, TimeUnit.SECONDS);
                 SqlClient sqlClient = SqlClient.attach(session);) {
-    
+
                     var client = new Insert(sqlClient, concurrency, orderId());
                     if (!Objects.isNull(client)) {
                         client.start();

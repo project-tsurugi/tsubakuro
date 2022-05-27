@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -67,7 +67,7 @@ public final class Main {
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
-    
+
         try {
             cmd = parser.parse(options, args);
 

@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -7,16 +7,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.xml.validation.SchemaFactoryConfigurationError;
-
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Payment {
@@ -179,7 +175,7 @@ public class Payment {
         paramsHdate = dateStamp();
         paramsHdata = randomGenerator.makeAlphaString(12, 24);
         }
-    
+
         void rollback() throws IOException, ServerException, InterruptedException {
         if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
             throw new IOException("error in rollback");
@@ -187,6 +183,7 @@ public class Payment {
         transaction = null;
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
     while (!stop.get()) {
         transaction = sqlClient.createTransaction().get();
@@ -390,7 +387,7 @@ public class Payment {
 
         if (cCredit.indexOf("BC") >= 0) {
         // SELECT c_data FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
-        var future8 = transaction.executeQuery(prepared8, 
+        var future8 = transaction.executeQuery(prepared8,
         Parameters.of("c_w_id", (long) paramsWid),
         Parameters.of("c_d_id", (long) paramsDid),
         Parameters.of("c_id", (long) cId));
@@ -436,7 +433,7 @@ public class Payment {
         }
 
         // UPDATE CUSTOMER SET c_balance = :c_balance ,c_data = :c_data WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_id = :c_id
-        var future9 = transaction.executeStatement(prepared9, 
+        var future9 = transaction.executeStatement(prepared9,
         Parameters.of("c_balance", (double) cBalance),
         Parameters.of("c_data", cNewData),
         Parameters.of("c_w_id", (long) paramsWid),

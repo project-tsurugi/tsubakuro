@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -13,8 +13,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class NewOrder {
@@ -75,7 +73,7 @@ public class NewOrder {
         this.profile = profile;
         this.paramsQty = new long[15];
         this.paramsItemId = new long[15];
-    
+
         this.stock = new long[15];
         this.bg = new String[15];
         this.amt = new double[15];
@@ -163,7 +161,7 @@ public class NewOrder {
         paramsDid = randomGenerator.uniformWithin(1, Scale.DISTRICTS);  // scale::districts
         paramsCid = randomGenerator.uniformWithin(1, Scale.CUSTOMERS);  // scale::customers
         paramsOlCnt = randomGenerator.uniformWithin(Scale.MIN_OL_COUNT, Scale.MAX_OL_COUNT); // scale::min_ol_count, scale::max_ol_count
-    
+
         paramsRemoteWarehouse = (randomGenerator.uniformWithin(1, 100) <= Percent.K_NEW_ORDER_REMOTE); //kNewOrderRemotePercent
         if (paramsRemoteWarehouse && warehouses > 1) {
             do {
@@ -190,6 +188,7 @@ public class NewOrder {
         transaction = null;
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
     while (!stop.get()) {
         transaction = sqlClient.createTransaction().get();

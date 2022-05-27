@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -8,8 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q14 {
@@ -54,7 +52,7 @@ public class Q14 {
 
     long t, b;
     var futureT = transaction.executeQuery(preparedT,
-        Parameters.of("datefrom", profile.queryValidation ? "1995-09-01" : "1997-11-01"), 
+        Parameters.of("datefrom", profile.queryValidation ? "1995-09-01" : "1997-11-01"),
         Parameters.of("dateto", profile.queryValidation ? "1995-10-01" : "1997-12-01"));
     var resultSetT = futureT.get();
     try {
@@ -85,7 +83,7 @@ public class Q14 {
     }
 
     var futureB = transaction.executeQuery(preparedB,
-        Parameters.of("datefrom", profile.queryValidation ? "1995-09-01" : "1997-11-01"), 
+        Parameters.of("datefrom", profile.queryValidation ? "1995-09-01" : "1997-11-01"),
         Parameters.of("dateto", profile.queryValidation ? "1995-10-01" : "1997-12-01"));
     var resultSetB = futureB.get();
     try {

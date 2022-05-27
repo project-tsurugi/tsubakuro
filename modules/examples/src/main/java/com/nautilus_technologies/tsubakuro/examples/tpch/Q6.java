@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -8,8 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q6 {
@@ -44,9 +42,9 @@ public class Q6 {
     var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
     var future = transaction.executeQuery(prepared,
-        Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"), 
+        Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"),
         Parameters.of("dateto", profile.queryValidation ? "1995-01-01" : "1996-01-01"),
-        Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)), 
+        Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)),
         Parameters.of("quantity", (long) (profile.queryValidation ? 24 : 25)));
     var resultSet = future.get();
 
@@ -69,7 +67,7 @@ public class Q6 {
             } else {
             throw new IOException("no resultSet");
             }
-    
+
             var commitResponse = transaction.commit().get();
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
             throw new IOException("commit error");

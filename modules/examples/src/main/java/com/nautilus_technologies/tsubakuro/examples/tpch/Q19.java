@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -8,8 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q19 {
@@ -72,11 +70,11 @@ public class Q19 {
     var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
     var future = transaction.executeQuery(prepared,
-        Parameters.of("brand1", profile.queryValidation ? "Brand#12  " : "Brand#43  "), 
-        Parameters.of("brand2", profile.queryValidation ? "Brand#23  " : "Brand#41  "), 
-        Parameters.of("brand3", profile.queryValidation ? "Brand#34  " : "Brand#35  "), 
-        Parameters.of("quantity1", (long) (profile.queryValidation ? 1 : 5)), 
-        Parameters.of("quantity2", (long) (profile.queryValidation ? 10 : 11)), 
+        Parameters.of("brand1", profile.queryValidation ? "Brand#12  " : "Brand#43  "),
+        Parameters.of("brand2", profile.queryValidation ? "Brand#23  " : "Brand#41  "),
+        Parameters.of("brand3", profile.queryValidation ? "Brand#34  " : "Brand#35  "),
+        Parameters.of("quantity1", (long) (profile.queryValidation ? 1 : 5)),
+        Parameters.of("quantity2", (long) (profile.queryValidation ? 10 : 11)),
         Parameters.of("quantity3", (long) (profile.queryValidation ? 20 : 21)));
     var resultSet = future.get();
 

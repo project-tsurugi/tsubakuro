@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.warehouse;
+package com.nautilus_technologies.tsubakuro.examples.warehouse;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -6,7 +6,6 @@ import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -14,7 +13,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 public final class Main {
     private Main() {
     }
-    
+
     private static String url = "ipc:tateyama";
     //    private static String url = "tcp://localhost:12345/";
 
