@@ -1,9 +1,6 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -13,8 +10,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.tsurugidb.jogasaki.proto.StatusProtos;
 
@@ -74,31 +69,31 @@ public class OrderStatus {
 		Placeholders.of("c_w_id", long.class),
 		Placeholders.of("c_d_id", long.class),
 		Placeholders.of("c_last", String.class)).get();
-	
+
 		String sql2 = "SELECT c_id FROM CUSTOMER WHERE c_w_id = :c_w_id AND c_d_id = :c_d_id AND c_last = :c_last  ORDER by c_first";
 		prepared2 = sqlClient.prepare(sql2,
 		Placeholders.of("c_w_id", long.class),
 		Placeholders.of("c_d_id", long.class),
 		Placeholders.of("c_last", String.class)).get();
-	
+
 		String sql3 = "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id";
 		prepared3 = sqlClient.prepare(sql3,
 		Placeholders.of("c_id", long.class),
 		Placeholders.of("c_d_id", long.class),
 		Placeholders.of("c_w_id", long.class)).get();
-	
+
 		String sql4 = "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC";
 		prepared4 = sqlClient.prepare(sql4,
 		Placeholders.of("o_w_id", long.class),
 		Placeholders.of("o_d_id", long.class),
 		Placeholders.of("o_c_id", long.class)).get();
-	
+
 		String sql5 = "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id";
 		prepared5 = sqlClient.prepare(sql5,
 		Placeholders.of("o_w_id", long.class),
 		Placeholders.of("o_d_id", long.class),
 		Placeholders.of("o_id", long.class)).get();
-	
+
 		String sql6 = "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id";
 		prepared6 = sqlClient.prepare(sql6,
 		Placeholders.of("ol_o_id", long.class),
@@ -129,6 +124,7 @@ public class OrderStatus {
     transaction = null;
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
     while (!stop.get()) {
         transaction = sqlClient.createTransaction().get();

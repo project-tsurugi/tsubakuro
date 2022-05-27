@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low;
+package com.nautilus_technologies.tsubakuro.examples;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;

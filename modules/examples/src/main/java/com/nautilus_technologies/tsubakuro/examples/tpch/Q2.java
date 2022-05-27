@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -11,8 +11,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q2 {
@@ -96,10 +94,10 @@ public class Q2 {
         for (Map.Entry<Integer, Long> entry : q2intermediate.entrySet()) {
             int partkey = entry.getKey();
             var future = transaction.executeQuery(prepared2,
-                Parameters.of("type", qvalidation ? "BRASS" : "STEEL"), 
+                Parameters.of("type", qvalidation ? "BRASS" : "STEEL"),
                 Parameters.of("region", qvalidation ? "EUROPE                   " : "ASIA                     "),
-                Parameters.of("size", (long) (qvalidation ? 15 : 16)), 
-                Parameters.of("partkey", (long) partkey), 
+                Parameters.of("size", (long) (qvalidation ? 15 : 16)),
+                Parameters.of("partkey", (long) partkey),
                 Parameters.of("mincost", (long) entry.getValue()));
             var resultSet = future.get();
 

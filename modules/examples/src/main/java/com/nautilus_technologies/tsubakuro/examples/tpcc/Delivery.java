@@ -1,9 +1,6 @@
-package com.nautilus_technologies.tsubakuro.low.tpcc;
+package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -13,8 +10,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Delivery {
@@ -116,6 +111,7 @@ public class Delivery {
     transaction = null;
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
     while (!stop.get()) {
         transaction = sqlClient.createTransaction().get();
@@ -161,7 +157,7 @@ public class Delivery {
         if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(result2.getResultCase())) {
             profile.ordersTable.delivery++;
             break;
-        }    
+        }
 
         // "SELECT o_c_id FROM ORDERS WHERE o_id = :o_id AND o_d_id = :o_d_id AND o_w_id = :o_w_id"
         var future3 = transaction.executeQuery(prepared3,

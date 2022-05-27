@@ -1,8 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples.datastore;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
@@ -10,9 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
 import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
     private Main() {

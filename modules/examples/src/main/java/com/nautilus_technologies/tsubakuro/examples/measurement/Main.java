@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.measurement;
+package com.nautilus_technologies.tsubakuro.examples.measurement;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -83,7 +83,7 @@ public final class Main {
 
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = null;
-            
+
             cmd = parser.parse(options, args);
 
             if (cmd.hasOption("d")) {
@@ -105,12 +105,12 @@ public final class Main {
                     throw new ParseException("illegal type");
                 }
             }
-    
+
             var warehouses = warehouses();
             CyclicBarrier barrier = new CyclicBarrier(2);
             AtomicBoolean stop = new AtomicBoolean();
             var profile = new Profile(warehouses);
-    
+
             Thread client = null;
             switch (type) {
                 case SELECT_ONE:

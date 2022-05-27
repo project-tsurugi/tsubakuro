@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.low.tpch;
+package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 

@@ -1,20 +1,19 @@
-package com.nautilus_technologies.tsubakuro.low.warehouse;
+package com.nautilus_technologies.tsubakuro.examples.warehouse;
 
 import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 
 public class Select {
     SqlClient sqlClient;
-    
+
     public Select(SqlClient sqlClient) throws IOException, ServerException, InterruptedException {
         this.sqlClient = sqlClient;
     }
-    
+
     void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
     int count = 1;
 
