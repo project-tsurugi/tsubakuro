@@ -32,10 +32,6 @@ spotbugs {
     excludeFilter = file("$projectDir/config/spotbugs/spotbugsExclude.xml")
 }
 
-checkstyle {
-    configFile file("$projectDir/config/checkstyle/checkstyle.xml")
-}
-
 tasks.register('runExample', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
