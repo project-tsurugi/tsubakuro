@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 /**
  * Awaits {@link FutureResponse} with timeout.
  */
-public final class Timeout implements Cloneable {
+public final class Timeout {
 
     static final Logger LOG = LoggerFactory.getLogger(Timeout.class);
 

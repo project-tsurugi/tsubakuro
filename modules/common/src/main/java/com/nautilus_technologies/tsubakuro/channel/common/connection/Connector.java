@@ -3,7 +3,6 @@ package com.nautilus_technologies.tsubakuro.channel.common.connection;
 import java.io.IOException;
 import java.net.URI;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
@@ -23,7 +22,6 @@ public interface Connector {
      * @throws NoSuchElementException if there is no suitable connector implementation for the URI
      */
     static Connector create(@Nonnull String endpoint) {
-        Objects.nonNull(endpoint);
         return ConnectorHelper.create(URI.create(endpoint));
     }
 
@@ -34,7 +32,6 @@ public interface Connector {
      * @throws NoSuchElementException if there is no suitable connector implementation for the URI
      */
     static Connector create(@Nonnull URI endpoint) {
-        Objects.nonNull(endpoint);
         return ConnectorHelper.create(endpoint);
     }
 
