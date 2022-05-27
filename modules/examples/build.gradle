@@ -16,7 +16,7 @@ dependencies {
 }
 
 application {
-    mainClass.set('com.nautilus_technologies.tsubakuro.low.Main')
+    mainClass.set('com.nautilus_technologies.tsubakuro.examples.Main')
 }
 
 run {
@@ -36,7 +36,7 @@ tasks.register('runExample', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -44,7 +44,7 @@ tasks.register('runTpcc', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.tpcc.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.tpcc.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -52,7 +52,7 @@ tasks.register('runPm', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.measurement.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.measurement.Main'
     jvmArgs = ['-Xms1024m', '-Xmx4096m', '-XX:+PreserveFramePointer', '--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -60,7 +60,7 @@ tasks.register('runWarehouse', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.warehouse.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.warehouse.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -68,7 +68,7 @@ tasks.register('runIc', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.concurrent.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.concurrent.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -76,7 +76,7 @@ tasks.register('runTpch', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.tpch.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.tpch.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -84,7 +84,7 @@ tasks.register('runDumpLoad', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.low.dumpload.Main'
+    mainClass = 'com.nautilus_technologies.tsubakuro.examples.dumpload.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
