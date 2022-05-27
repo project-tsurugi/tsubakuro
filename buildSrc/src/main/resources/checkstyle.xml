@@ -29,18 +29,15 @@
       <property name="format" value="^([a-z][a-zA-Z0-9]*|__[a-zA-Z0-9_]*)$"/>
     </module>
     <module name="PackageName"/>
+    <module name="PackageDeclaration"/>
     <module name="ParameterName"/>
-    <module name="StaticVariableName">
-      <property name="severity" value="error"/>
-    </module>
+    <module name="StaticVariableName"/>
     <module name="TypeName"/>
     <!-- <module name="AvoidStarImport"> <property name="allowStaticMemberImports" value="true"/> </module> -->
     <module name="IllegalImport"/>
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
-    <module name="MethodLength">
-      <property name="severity" value="error"/>
-    </module>
+    <module name="MethodLength"/>
     <module name="ParameterNumber">
       <property name="max" value="10"/>
     </module>
