@@ -53,3 +53,15 @@ Generate Javadoc for Tsubakuro client API in directory `${ProjectTopDirectory}/b
 cd ${ProjectTopDirectory}
 ./gradlew clientApiJavadoc
 ```
+
+## How to use
+To use on Gradle, add Tsubakuro libraries and SLF4J implementation library to dependencies.
+
+```
+dependencies {
+    api 'com.tsurugidb.tsubakuro:tsubakuro-session:0.0.1'
+    api 'com.tsurugidb.tsubakuro:tsubakuro-connector:0.0.1'
+
+    implementation 'org.slf4j:slf4j-simple:1.7.32'
+}
+```
