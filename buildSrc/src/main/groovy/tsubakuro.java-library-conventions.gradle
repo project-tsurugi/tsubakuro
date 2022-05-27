@@ -8,7 +8,7 @@ plugins {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            artifactId = project.name
+            artifactId = "${rootProject.name}-${project.name}"
 
             from components.java
 
