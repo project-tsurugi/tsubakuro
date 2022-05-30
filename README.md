@@ -1,10 +1,26 @@
 # Requirements for and how to build Tsubakuro
 
-## JDK
+## Requirements
+
+### JDK
 * OpenJDK 11 (see https://docs.microsoft.com/ja-jp/java/openjdk/download)
 The environment variables JAVA_HOME and PATH should be as follows;
 set JAVA_HOME to the directory where the JDK is installed,
 and add the directory where the java command exists to PATH.
+
+### Dependency packages for Native Library
+Tsubakuro needs to install several packages for Native Libarary builds.
+See *Dockerfile* section.
+
+### Dockerfile
+
+```dockerfile
+FROM ubuntu:20.04
+
+RUN apt update -y && apt install -y git build-essential cmake libboost-system-dev openjdk-11-jdk
+```
+
+###
 
 ## How to build
 
