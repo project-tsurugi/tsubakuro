@@ -1,0 +1,68 @@
+name: Tsubakuro-Build-Ubuntu
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-tsubakuro-ubuntu.yml'
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: [self-hosted, docker]
+    timeout-minutes: 30
+    container:
+      image: 'ubuntu:20.04'
+    defaults:
+      run:
+        shell: bash
+    env:
+      JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
+
+    steps:
+      - id: Apt-Install
+        name: Apt-Install
+        run: |
+          apt-get update -y
+          apt-get install -y git build-essential cmake libboost-system-dev openjdk-11-jdk
+        env:
+          DEBIAN_FRONTEND: noninteractive
+
+      - id: Checkout
+        name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GHA_PAT }}
+
+      - id: Assemble
+        name: Assemble
+        run: |
+          ./gradlew -i clean assemble
+
+      - id: Test
+        name: Test
+        run: |
+          ./gradlew -i test
+
+      - id: Generate_Annotations
+        name: Generate_Annotations
+        uses: ./.github/actions/tsurugi-annotations-action
+        if: always()
+        with:
+          junit_input: '**/build/test-results/**/TEST-*.xml'
+          junit_test_src_dir: 'src/test/java'
+          spotbugs_input: '**/build/reports/spotbugs/main/*.xml'
+          checkstyle_input: '**/build/reports/checkstyle/main.xml'
+
+      - id: Notify_Slack
+        name: Notify_Slack
+        uses: ./.github/actions/tsurugi-slack-action
+        if: always() && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          kind: 'job-result'
+          channel: 'tsurugi-dev'
+          status: ${{ job.status }}
+          step_context: ${{ toJson(steps) }}
+          username: ${{ github.workflow }}
