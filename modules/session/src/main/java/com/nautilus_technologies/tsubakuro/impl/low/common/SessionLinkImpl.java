@@ -6,11 +6,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureExplainImpl;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureTableMetadataImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.FuturePreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.PreparedStatementImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.TransactionImpl;
@@ -18,6 +22,7 @@ import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ExplainDistiller;
 import com.nautilus_technologies.tsubakuro.protos.PrepareDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
+import com.nautilus_technologies.tsubakuro.protos.DescribeTableDistiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -227,6 +232,22 @@ public class SessionLinkImpl implements ServerResource {
             throw new IOException("already closed");
         }
         return wire.sendQuery(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setExecuteDump(request));
+    }
+
+    /**
+     * Send describe table request to the SQL server via wire.send().
+     * @param request the request message encoded with protocol buffer
+     * @return a Future of TableMetadata
+     * @throws IOException error occurred in sending request message
+     */
+    public FutureResponse<TableMetadata> send(
+            @Nonnull SqlRequest.DescribeTable request) throws IOException {
+        Objects.requireNonNull(request);
+//        LOG.trace("send: {}", request); //$NON-NLS-1$
+        if (Objects.isNull(wire)) {
+            throw new IOException("already closed");
+        }
+        return new FutureTableMetadataImpl(wire.<SqlResponse.DescribeTable>send(SERVICE_ID_SQL, SqlRequest.Request.newBuilder().setDescribeTable(request), new DescribeTableDistiller()));
     }
 
     /**
