@@ -123,6 +123,17 @@ public interface SqlClient extends ServerResource {
         throw new UnsupportedOperationException();
     }
 
+        /**
+     * Retrieves metadata for a table.
+     * @param tableName the target table name
+     * @return a future response of table metadata
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<TableMetadata> getTableMetadata(@Nonnull String tableName) throws IOException {
+        Objects.requireNonNull(tableName);
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Disposes the underlying server resources.
      * Note that, this never closes the underlying {@link Session}.

@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
+import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
@@ -58,7 +59,7 @@ public class SqlClientImpl implements SqlClient {
      * Begin a new read-write transaction
      * @return the transaction
      */
-//    @Override
+    @Override
     public FutureResponse<Transaction> createTransaction() throws IOException {
         return createTransaction(SqlRequest.TransactionOption.newBuilder().build());
     }
@@ -75,7 +76,7 @@ public class SqlClientImpl implements SqlClient {
         return new FutureTransactionImpl(sessionLinkImpl.send(SqlRequest.Begin.newBuilder().setOption(option)), sessionLinkImpl);
     }
 
-//    @Override
+    @Override
     public FutureResponse<PreparedStatement> prepare(
             @Nonnull String source,
             @Nonnull Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
@@ -88,7 +89,7 @@ public class SqlClientImpl implements SqlClient {
         return sessionLinkImpl.send(pb);
     }
 
-//    @Override
+    @Override
     public FutureResponse<String> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
@@ -99,6 +100,15 @@ public class SqlClientImpl implements SqlClient {
             pb.addParameters(e);
         }
         return sessionLinkImpl.send(pb);
+    }
+
+    @Override
+    public FutureResponse<TableMetadata> getTableMetadata(@Nonnull String tableName) throws IOException {
+        Objects.requireNonNull(tableName);
+        var resuest = SqlRequest.DescribeTable.newBuilder()
+                .setName(tableName)
+                .build();
+        return sessionLinkImpl.send(resuest);
     }
 
     @Override

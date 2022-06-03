@@ -20,6 +20,7 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
+import com.nautilus_technologies.tsubakuro.low.sql.Types;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
@@ -87,6 +88,17 @@ class SessionImplTest {
                 return new FutureResponseMock<>(this, distiller);
             case EXPLAIN:
                 nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
+                return new FutureResponseMock<>(this, distiller);
+            case DESCRIBE_TABLE:
+                nextResponse =  SqlResponse.Response.newBuilder()
+                .setDescribeTable(SqlResponse.DescribeTable.newBuilder()
+                    .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
+                         .setDatabaseName("D")
+                         .setSchemaName("S")
+                         .setTableName(request.getDescribeTable().getName())
+                         .addColumns(Types.column("a", Types.of(int.class)))
+                    )
+                ).build();
                 return new FutureResponseMock<>(this, distiller);
             default:
                 return null;  // dummy as it is test for session
@@ -266,5 +278,17 @@ class SessionImplTest {
             });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", e2.getMessage());
+    }
+
+    @Test
+    void getTableMetadata() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var sqlClient = SqlClient.attach(session);
+
+        var info = sqlClient.getTableMetadata("TBL").await();
+        assertEquals("D", info.getDatabaseName());
+        assertEquals("S", info.getSchemaName());
+        assertEquals("TBL", info.getTableName());
     }
 }
