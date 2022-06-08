@@ -18,7 +18,7 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 /**
  * SessionImpl type.
  */
-public class SessionImpl implements Session {
+public class SessionImpl extends Session {
     static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
 
     private long timeout;
@@ -34,13 +34,11 @@ public class SessionImpl implements Session {
      *
      * @param sessionWire the wire that connects to the Database
      */
-    @Override
     public void connect(SessionWire wire) {
         sessionLinkImpl = new SessionLinkImpl(wire);
         sessionWire = wire;
     }
 
-    @Override
     public FutureInputStream send(long id, byte[] request) throws IOException {
         return sessionWire.send(id, request);
     }
@@ -58,7 +56,6 @@ public class SessionImpl implements Session {
      * @param t time length until the close operation timeout
      * @param u unit of timeout
      */
-    @Override
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
@@ -68,7 +65,7 @@ public class SessionImpl implements Session {
      * Close the Session
      */
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
+    public void close() throws IOException, InterruptedException {
         if (Objects.nonNull(sessionLinkImpl)) {
             try (var link = sessionLinkImpl) {
                 sessionLinkImpl.discardRemainingResources(timeout, unit);
@@ -78,7 +75,7 @@ public class SessionImpl implements Session {
                 if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
                     throw new IOException(response.getError().getDetail());
                 }
-            } catch (TimeoutException e) {
+            } catch (TimeoutException | ServerException e) {
                 LOG.warn("closing session is timeout", e);
             } finally {
                 sessionLinkImpl = null;
