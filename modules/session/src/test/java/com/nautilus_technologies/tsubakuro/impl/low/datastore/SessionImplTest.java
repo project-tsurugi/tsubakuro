@@ -4,25 +4,77 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
+import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
 
 class SessionImplTest {
+    public class TestResponse implements Response {
+        private final SessionWireMock wire;
+        private ResponseWireHandle handle;
+
+        TestResponse(SessionWireMock wire) {
+            this.wire = wire;
+            this.handle = null;
+        }
+
+        @Override
+        public boolean isMainResponseReady() {
+            return true;
+        }
+    
+        @Override
+        public InputStream waitForMainResponse() throws IOException {
+            if (isMainResponseReady()) {
+                return wire.responseStream(handle);
+            }
+            throw new IOException("response box is not available");
+        }
+    
+        @Override
+        public InputStream waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+            if (isMainResponseReady()) {
+                return wire.responseStream(handle, timeout, unit);
+            }
+            throw new IOException("response box is not available");  // FIXME arch. mismatch??
+        }
+    
+        @Override
+        public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
+            return null;
+        }
+    
+        @Override
+        public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
+            return null;
+        }
+
+        @Override
+        public void close() throws IOException, InterruptedException {
+        }
+    }
+
     class SessionWireMock implements SessionWire {
         @Override
         public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
@@ -55,16 +107,36 @@ class SessionImplTest {
         }
 
         @Override
-        public FutureInputStream send(long serviceID, byte[] request) {
-            return null; // dummy as it is test for session
+        public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
+            var response = new TestResponse(this);
+            return FutureResponse.wrap(Owner.of(response));
+        }
+
+        @Override
+        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
+            var response = new TestResponse(this);
+            return FutureResponse.wrap(Owner.of(response));
         }
 
         @Override
         public InputStream responseStream(ResponseWireHandle handle) {
+            try (var buffer = new ByteArrayOutputStream()) {
+                var response = DatastoreResponseProtos.BackupBegin.newBuilder()
+                    .setSuccess(DatastoreResponseProtos.BackupBegin.Success.newBuilder()
+                    .setId(100)
+                    .addFiles("/tmp/backup-1")
+                    .build())
+                .build();
+                response.writeDelimitedTo(buffer);
+                return new ByteArrayInputStream(buffer.toByteArray());
+            } catch (IOException e) {
+                System.out.println(e);
+            }
             return null; // dummy as it is test for session
         }
+
         public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return null; // dummy as it is test for session
+            return responseStream(handle);
         }
         
         @Override
@@ -72,7 +144,6 @@ class SessionImplTest {
         }
     }
 
-    @Disabled("mock is no longer available")
     @Test
     void getPath() {
         try (var session = new SessionImpl()) {
@@ -85,9 +156,11 @@ class SessionImplTest {
                     assertEquals(Path.of("/tmp/backup-1"), source);
                 }
             } catch (Exception e) {
+                e.printStackTrace();
                 System.err.println(e);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             System.err.println(e);
         }
     }

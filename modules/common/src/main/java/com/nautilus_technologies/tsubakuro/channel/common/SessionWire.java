@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -12,7 +13,8 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-     
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+
 /**
  * SessionWire type.
  */
@@ -48,8 +50,8 @@ public interface SessionWire extends ServerResource {
 
     SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
-
-    FutureInputStream send(long serviceID, byte[] request) throws IOException;
+    FutureResponse<? extends Response> send(long serviceID, byte[] request) throws IOException;
+    FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) throws IOException;
     InputStream responseStream(ResponseWireHandle handle) throws IOException;
     InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
@@ -61,4 +63,11 @@ public interface SessionWire extends ServerResource {
     void unReceive(ResponseWireHandle handle) throws IOException;
 
     ResultSetWire createResultSetWire() throws IOException;
+
+    /**
+     * Closes this connection.
+     * This method will be invoked one or more times.
+     */
+    @Override
+    void close() throws IOException, InterruptedException;
 }

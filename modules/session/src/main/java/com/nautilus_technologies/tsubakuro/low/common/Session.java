@@ -12,9 +12,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;  // FIXME shoule delete
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;  // FIXME shoule delete
+// import com.nautilus_technologies.tsubakuro.channel.common.wire.Wire;  // FIXME shoule use it
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.ResponseProcessor;
 import com.nautilus_technologies.tsubakuro.channel.common.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
@@ -41,7 +40,8 @@ public class Session implements ServerResource {
         }
     };
 
-    private final Wire wire;
+//    private final Wire wire;
+    public SessionWire wire;  // FIXME use Wire
 
     private final ExecutorService executor;
 
@@ -49,7 +49,7 @@ public class Session implements ServerResource {
      * Creates a new instance.
      * @param wire the underlying wire
      */
-    public Session(@Nonnull Wire wire) {
+    public Session(@Nonnull SessionWire wire) {
         this(wire, Executors.newCachedThreadPool(THREAD_FACTORY));
     }
 
@@ -58,7 +58,7 @@ public class Session implements ServerResource {
      * @param wire the underlying wire
      * @param executor worker threads to process responses
      */
-    public Session(@Nonnull Wire wire, @Nonnull ExecutorService executor) {
+    public Session(@Nonnull SessionWire wire, @Nonnull ExecutorService executor) {
         Objects.requireNonNull(wire);
         Objects.requireNonNull(executor);
         this.wire = wire;
@@ -114,6 +114,10 @@ public class Session implements ServerResource {
             boolean background) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
+
+        if (Objects.isNull(wire)) {
+            System.out.println("wire is null");
+        }
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
         return convert(future, processor, background);
     }
@@ -189,7 +193,7 @@ public class Session implements ServerResource {
      * @return a FutureInputStream for response
      * @throws IOException error occurred in send
      */
-    public FutureInputStream send(long id, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
         return null;
     }
 }

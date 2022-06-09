@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -9,8 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
@@ -35,11 +35,12 @@ public class SessionImpl extends Session {
      * @param sessionWire the wire that connects to the Database
      */
     public void connect(SessionWire wire) {
+        super.wire = wire;
         sessionLinkImpl = new SessionLinkImpl(wire);
         sessionWire = wire;
     }
 
-    public FutureInputStream send(long id, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
         return sessionWire.send(id, request);
     }
 
@@ -66,7 +67,8 @@ public class SessionImpl extends Session {
      */
     @Override
     public void close() throws IOException, InterruptedException {
-        if (Objects.nonNull(sessionLinkImpl)) {
+//        if (Objects.nonNull(sessionLinkImpl)) {  // FIXME
+        if (false) {
             try (var link = sessionLinkImpl) {
                 sessionLinkImpl.discardRemainingResources(timeout, unit);
 

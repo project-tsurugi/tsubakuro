@@ -1,8 +1,9 @@
 package com.nautilus_technologies.tsubakuro.channel.common.wire;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+// import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.io.InputStream;
 
 import javax.annotation.Nonnull;
 
@@ -23,7 +24,7 @@ public interface MainResponseProcessor<T> {
      * @throws ServerException if server error was occurred while processing the response
      * @throws InterruptedException if interrupted while processing the response
      */
-    T process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException;
+    T process(@Nonnull InputStream payload) throws IOException, ServerException, InterruptedException;
 
     /**
      * Returns {@link ResponseProcessor} view of this object.
