@@ -1,8 +1,8 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,8 +12,6 @@ import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * SessionImpl type.
@@ -60,6 +58,9 @@ public class SessionImpl extends Session {
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
+        if (Objects.nonNull(sessionLinkImpl)) {
+            sessionLinkImpl.setCloseTimeout(t, u);
+        }
     }
 
     /**
@@ -67,22 +68,15 @@ public class SessionImpl extends Session {
      */
     @Override
     public void close() throws IOException, InterruptedException {
-//        if (Objects.nonNull(sessionLinkImpl)) {  // FIXME
-        if (false) {
-            try (var link = sessionLinkImpl) {
-                sessionLinkImpl.discardRemainingResources(timeout, unit);
-
-                var futureResponse = sessionLinkImpl.send(SqlRequest.Disconnect.newBuilder());
-                var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-                    throw new IOException(response.getError().getDetail());
-                }
-            } catch (TimeoutException | ServerException e) {
+        if (Objects.nonNull(sessionLinkImpl)) {
+            try {
+                sessionLinkImpl.close();
+            } catch (ServerException e) {
                 LOG.warn("closing session is timeout", e);
             } finally {
                 sessionLinkImpl = null;
-                sessionWire = null;
             }
         }
+        super.close();
     }
 }

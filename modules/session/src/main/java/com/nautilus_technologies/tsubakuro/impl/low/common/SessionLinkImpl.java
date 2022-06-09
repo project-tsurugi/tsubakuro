@@ -5,6 +5,10 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 
@@ -33,8 +37,12 @@ import com.nautilus_technologies.tsubakuro.util.ServerResource;
  * SessionLinkImpl type.
  */
 public class SessionLinkImpl implements ServerResource {
+    static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
+
     static final long SERVICE_ID_SQL = 3;
 
+    private long timeout;
+    private TimeUnit unit;
     private SessionWire wire;
     private final Set<TransactionImpl> transactions;
     private final Set<PreparedStatementImpl> preparedStatements;
@@ -283,24 +291,46 @@ public class SessionLinkImpl implements ServerResource {
         return preparedStatements.remove(preparedStatement);
     }
 
-    void discardRemainingResources(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException {
+    void discardRemainingResources(long t, TimeUnit u) throws IOException, ServerException, InterruptedException {
         while (!transactions.isEmpty()) {
             try (var transaction = transactions.iterator().next()) {
-                transaction.setCloseTimeout(timeout, unit);
+                transaction.setCloseTimeout(t, u);
             }
         }
         while (!preparedStatements.isEmpty()) {
             try (var preparedStatement = preparedStatements.iterator().next()) {
-                preparedStatement.setCloseTimeout(timeout, unit);
+                preparedStatement.setCloseTimeout(t, u);
             }
         }
+    }
+    
+    /**
+     * set timeout to close(), which won't timeout if this is not performed.
+     * @param t time length until the close operation timeout
+     * @param u unit of timeout
+     */
+    public void setCloseTimeout(long t, TimeUnit u) {
+        timeout = t;
+        unit = u;
     }
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
+        discardRemainingResources(timeout, unit);
         if (Objects.nonNull(wire)) {
-            wire.close();
-            wire = null;
+            try {
+                var futureResponse = send(SqlRequest.Disconnect.newBuilder());
+                if (Objects.nonNull(futureResponse)) {
+                    var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
+                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
+                        throw new IOException(response.getError().getDetail());
+                    }
+                }
+            } catch (TimeoutException | ServerException e) {
+                LOG.warn("closing session is timeout", e);
+            } finally {
+                wire = null;
+            }
         }
     }
 }
