@@ -15,10 +15,11 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
+// import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
@@ -30,6 +31,7 @@ import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Pair;
+import com.nautilus_technologies.tsubakuro.util.Owner;
 
 /**
  * SessionWireImpl type.
@@ -67,6 +69,11 @@ public class SessionWireImpl implements SessionWire {
         }
         public void write(int b) {
             sendNative(wireHandle, b);
+        }
+        public void write(ByteBuffer bb) {
+            while (bb.hasRemaining()) {
+                sendNative(wireHandle, bb.get());
+            }
         }
         public long getResponseHandle() {
             return getResponseHandleNative(wireHandle);
@@ -305,25 +312,55 @@ public class SessionWireImpl implements SessionWire {
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public FutureInputStream send(long serviceId, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(long serviceId, byte[] request) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
+        var response = new IpcResponse(this);
+        var future = FutureResponse.wrap(Owner.of(response));
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
-        var futureBody = new FutureInputStream(this);
         synchronized (this) {
             var handle = nativeOutputStream.getResponseHandle();
             if (handle != 0) {
                 header.writeDelimitedTo(nativeOutputStream);
                 nativeOutputStream.write(request);
                 nativeOutputStream.flush(handle, false);
-                futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
-                logger.trace("send " + request + ", handle = " + handle);
+                response.setHandle(new ResponseWireHandleImpl(handle));
+                logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
-                throw new IOException("no response box available");
+                throw new IOException("no response box available");  // FIXME should queueing
             }
         }
-        return futureBody;
+        return future;
+    }
+
+        /**
+     * Send SqlRequest.Request to the SQL server via the native wire.
+     * @param request the SqlRequest.Request message
+     * @return a Future response message corresponding the request
+     * @throws IOException error occurred in sendNative()
+     */
+    @Override
+    public FutureResponse<? extends Response> send(long serviceId, ByteBuffer request) throws IOException {
+        if (wireHandle == 0) {
+            throw new IOException("already closed");
+        }
+        var response = new IpcResponse(this);
+        var future = FutureResponse.wrap(Owner.of(response));
+        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
+        synchronized (this) {
+            var handle = nativeOutputStream.getResponseHandle();
+            if (handle != 0) {
+                header.writeDelimitedTo(nativeOutputStream);
+                nativeOutputStream.write(request);
+                nativeOutputStream.flush(handle, false);
+                response.setHandle(new ResponseWireHandleImpl(handle));
+                logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
+            } else {
+                throw new IOException("no response box available");  // FIXME should queueing
+            }
+        }
+        return future;
     }
 
     @Override
@@ -337,9 +374,18 @@ public class SessionWireImpl implements SessionWire {
         return byteBufferInput;
     }
     @Override
-    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit)
-            throws TimeoutException, IOException {
-        return responseStream(handle);  // FIXME
+    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+        if (wireHandle == 0) {
+            throw new IOException("already closed");
+        }
+        var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
+        var timeoutNano = unit.toNanos(timeout);
+        if (timeoutNano == Long.MIN_VALUE) {
+            throw new IOException("timeout duration overflow");
+        }
+        var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle, timeoutNano));
+        FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
+        return byteBufferInput;
     }
 
     /**

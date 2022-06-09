@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
@@ -14,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -245,24 +246,33 @@ public class SessionWireImpl implements SessionWire {
     }
 
     @Override
-    public FutureInputStream send(long serviceID, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(long serviceID, byte[] request) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
-        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
-        var futureBody = new FutureInputStream(this);
-        try (var buffer = new ByteArrayOutputStream()) {
-            header.writeDelimitedTo(buffer);
-            var bytes = buffer.toByteArray();
-            var index = responseBox.lookFor(1);
-            if (index >= 0) {
-                streamWire.send(index, bytes, request);
-                futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
-            }
-            return futureBody;
-        } catch (IOException e) {
-            throw new IOException(e);
+//        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+//        var futureBody = new FutureInputStream(this);
+//        try (var buffer = new ByteArrayOutputStream()) {
+//            header.writeDelimitedTo(buffer);
+//            var bytes = buffer.toByteArray();
+//            var index = responseBox.lookFor(1);
+//            if (index >= 0) {
+//                streamWire.send(index, bytes, request);
+//                futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
+//            }
+//            return futureBody;
+//        } catch (IOException e) {
+//            throw new IOException(e);
+//        }
+        return null;  // FIXME implement
+    }
+
+    @Override
+    public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) throws IOException {
+        if (Objects.isNull(streamWire)) {
+            throw new IOException("already closed");
         }
+        return null;  // FIXME implement
     }
 
     @Override
