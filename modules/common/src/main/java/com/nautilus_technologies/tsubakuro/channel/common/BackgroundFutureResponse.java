@@ -79,7 +79,9 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     @Override
     public V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
-        latch.await(timeout, unit);
+        if (!latch.await(timeout, unit)) {
+            throw new TimeoutException("detects timeout");
+        }
         return result.get().get();
     }
 

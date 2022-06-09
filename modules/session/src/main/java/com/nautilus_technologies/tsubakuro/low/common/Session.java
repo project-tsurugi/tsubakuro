@@ -165,8 +165,12 @@ public class Session implements ServerResource {
     @Override
     public void close() throws IOException, InterruptedException {
         // FIXME: close timeout
-        executor.shutdownNow();
-        wire.close();
+        if (Objects.nonNull(executor)) {
+            executor.shutdownNow();
+        }
+        if (Objects.nonNull(wire)) {
+            wire.close();
+        }
     }
 
 

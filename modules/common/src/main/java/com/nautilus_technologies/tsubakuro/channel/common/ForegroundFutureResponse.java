@@ -96,7 +96,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     private V processResult(Owner<Response> response) throws IOException, ServerException, InterruptedException {
-        assert response != null;
+//        assert response != null;    // comment out in order to prevent SpotBugs violation
         try (response) {
             V mapped;
             synchronized (this) {
