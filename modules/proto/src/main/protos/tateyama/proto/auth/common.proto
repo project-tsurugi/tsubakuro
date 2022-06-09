@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package tateyama.proto.auth.common;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "AuthCommon";

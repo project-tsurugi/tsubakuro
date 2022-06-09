@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package tateyama.proto.auth.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "AuthRequest";
+
+import "tateyama/proto/auth/common.proto";
+
+// the request message to auth service.
+message Request {
+    // the request message version.
+    uint64 message_version = 1;
+    reserved 2 to 10;
+
+    // the request command.
+    oneof command {
+        AuthInfo auth_info = 11;
+    }
+    reserved 12 to 99;
+}
+
+// retrieve auth info.
+message AuthInfo {}
