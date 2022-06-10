@@ -200,4 +200,12 @@ public class Session implements ServerResource {
     public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
         return null;
     }
+
+    /**
+     * Provides wire to tha caller, exists as a temporal measure for sessionLink
+     * @return the wire that this session uses
+     */
+    public SessionWire getWire() {
+        return wire;
+    }
 }

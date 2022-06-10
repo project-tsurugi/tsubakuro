@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -23,7 +22,7 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 public class SqlClientImpl implements SqlClient {
 
     private final Session session;
-    private final SessionLinkImpl sessionLinkImpl;
+    private SessionLinkImpl sessionLinkImpl;
 
     /**
      * Creates a new instance.
@@ -32,7 +31,7 @@ public class SqlClientImpl implements SqlClient {
     public SqlClientImpl(@Nonnull Session session) {
         Objects.requireNonNull(session);
         this.session = session;
-        this.sessionLinkImpl = ((SessionImpl) session).getSessionLinkImpl();
+        sessionLinkImpl = new SessionLinkImpl(session.getWire());
     }
 
     /**
@@ -114,5 +113,9 @@ public class SqlClientImpl implements SqlClient {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         // FIXME close underlying resources (e.g. ongoing transactions)
+        if (Objects.nonNull(sessionLinkImpl)) {
+            sessionLinkImpl.close();
+            sessionLinkImpl = null;
+        }
     }
 }
