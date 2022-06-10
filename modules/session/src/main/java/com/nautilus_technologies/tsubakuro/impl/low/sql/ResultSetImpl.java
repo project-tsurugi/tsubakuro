@@ -94,6 +94,7 @@ public class ResultSetImpl implements ResultSet {
     private boolean detectNull;
     private boolean columnReady;
     private boolean recordReady;
+    private boolean closed;
     private FutureResponse<SqlResponse.ResultOnly> futureResponse;
 
     /**
@@ -109,18 +110,28 @@ public class ResultSetImpl implements ResultSet {
                 .withActionOnUnmappableString(CodingErrorAction.IGNORE);
     }
 
-    public ResultSetImpl(FutureResponse<SqlResponse.ResultOnly> futureResponse) throws IOException {
-        recordMeta = new RecordMetaImpl();
-    }
-
+    /**
+     * Connect this to the wire indicated by name.
+     * @param name the name of the wire.
+     * @param meta schema meta data for this result set.
+     * @return recordMeta the metadata object
+     */
     public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
         recordMeta = new RecordMetaImpl(meta);
         columnIndex = recordMeta.fieldCount();
         resultSetWire.connect(name);
         var byteBufferBackedInput = resultSetWire.getByteBufferBackedInput();
-        if (!Objects.isNull(byteBufferBackedInput)) {
+        if (Objects.nonNull(byteBufferBackedInput)) {
             unpacker = unpackerConfig.newUnpacker(byteBufferBackedInput);
         }
+    }
+
+    /**
+     * Notify this that an error has occurred.
+     */
+    public void indicateError() {
+        recordMeta = new RecordMetaImpl();
+        resultSetWire = null;
     }
 
     /**
@@ -172,8 +183,11 @@ public class ResultSetImpl implements ResultSet {
      */
     @Override
     public boolean nextRecord() throws IOException {
-        if (Objects.isNull(resultSetWire)) {
+        if (closed) {
             throw new IOException("already closed");
+        }
+        if (Objects.isNull(resultSetWire)) {
+            return false;
         }
         if (Objects.isNull(unpacker)) {  // means the query returns no record
             return false;
@@ -418,5 +432,6 @@ public class ResultSetImpl implements ResultSet {
             resultSetWire.close();
             resultSetWire = null;
         }
+        closed = true;
     }
 }

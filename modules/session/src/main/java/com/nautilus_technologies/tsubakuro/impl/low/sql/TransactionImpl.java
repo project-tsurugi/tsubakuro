@@ -70,10 +70,7 @@ public class TransactionImpl implements Transaction {
         var pair = sessionLinkImpl.send(SqlRequest.ExecuteQuery.newBuilder()
                 .setTransactionHandle(transaction)
                 .setSql(source));
-        if (!Objects.isNull(pair.getLeft())) {
-            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
-        }
-        return new FutureResultSetImpl(pair.getRight());
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
@@ -110,10 +107,7 @@ public class TransactionImpl implements Transaction {
             pb.addParameters(e);
         }
         var pair = sessionLinkImpl.send(pb);
-        if (!Objects.isNull(pair.getLeft())) {
-            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
-        }
-        return new FutureResultSetImpl(pair.getRight());
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
@@ -143,10 +137,7 @@ public class TransactionImpl implements Transaction {
             pb.addParameters(e);
         }
         var pair = sessionLinkImpl.send(pb);
-        if (!Objects.isNull(pair.getLeft())) {
-            return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
-        }
-        return new FutureResultSetImpl(pair.getRight());
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
