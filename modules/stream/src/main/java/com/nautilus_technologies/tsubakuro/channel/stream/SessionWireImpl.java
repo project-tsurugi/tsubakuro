@@ -14,6 +14,7 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
@@ -30,6 +31,7 @@ import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
+import com.nautilus_technologies.tsubakuro.util.Owner;
 
 /**
  * SessionWireImpl type.
@@ -250,21 +252,23 @@ public class SessionWireImpl implements SessionWire {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
-//        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
-//        var futureBody = new FutureInputStream(this);
-//        try (var buffer = new ByteArrayOutputStream()) {
-//            header.writeDelimitedTo(buffer);
-//            var bytes = buffer.toByteArray();
-//            var index = responseBox.lookFor(1);
-//            if (index >= 0) {
-//                streamWire.send(index, bytes, request);
-//                futureBody.setResponseHandle(new ResponseWireHandleImpl(index));
-//            }
-//            return futureBody;
-//        } catch (IOException e) {
-//            throw new IOException(e);
-//        }
-        return null;  // FIXME implement
+        var response = new ChannelResponse(this);
+        var future = FutureResponse.wrap(Owner.of(response));
+        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            var bytes = buffer.toByteArray();
+            var index = responseBox.lookFor(1);
+            if (index >= 0) {
+                streamWire.send(index, bytes, request);
+                response.setHandle(new ResponseWireHandleImpl(index));
+            } else {
+                throw new IOException("no response box available");  // FIXME should queueing
+            }
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
+        return future;
     }
 
     @Override
@@ -272,7 +276,11 @@ public class SessionWireImpl implements SessionWire {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
-        return null;  // FIXME implement
+        try {
+            return send(serviceID, request.array());
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override

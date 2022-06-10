@@ -14,8 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-// import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
@@ -316,7 +316,7 @@ public class SessionWireImpl implements SessionWire {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var response = new IpcResponse(this);
+        var response = new ChannelResponse(this);
         var future = FutureResponse.wrap(Owner.of(response));
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
@@ -345,7 +345,7 @@ public class SessionWireImpl implements SessionWire {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var response = new IpcResponse(this);
+        var response = new ChannelResponse(this);
         var future = FutureResponse.wrap(Owner.of(response));
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
