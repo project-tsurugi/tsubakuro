@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -11,7 +10,6 @@ import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 /**
  * SessionImpl type.
@@ -21,7 +19,6 @@ public class SessionImpl extends Session {
 
     private long timeout;
     private TimeUnit unit;
-    private SessionLinkImpl sessionLinkImpl;
     private SessionWire sessionWire;
 
     /**
@@ -34,20 +31,11 @@ public class SessionImpl extends Session {
      */
     public void connect(SessionWire wire) {
         super.wire = wire;
-        sessionLinkImpl = new SessionLinkImpl(wire);
         sessionWire = wire;
     }
 
     public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
         return sessionWire.send(id, request);
-    }
-
-    /**
-     * Provide sessionLink for SqlClientImpl
-     * @return sessionLinkImpl
-     */
-    public SessionLinkImpl getSessionLinkImpl() {
-        return sessionLinkImpl;
     }
 
     /**
@@ -58,9 +46,6 @@ public class SessionImpl extends Session {
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
-        if (Objects.nonNull(sessionLinkImpl)) {
-            sessionLinkImpl.setCloseTimeout(t, u);
-        }
     }
 
     /**
@@ -68,15 +53,6 @@ public class SessionImpl extends Session {
      */
     @Override
     public void close() throws IOException, InterruptedException {
-        if (Objects.nonNull(sessionLinkImpl)) {
-            try {
-                sessionLinkImpl.close();
-            } catch (ServerException e) {
-                LOG.warn("closing session is timeout", e);
-            } finally {
-                sessionLinkImpl = null;
-            }
-        }
         super.close();
     }
 }
