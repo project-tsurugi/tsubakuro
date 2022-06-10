@@ -51,7 +51,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
 
     @Override
     public void run() {
-        synchronized (result) {
+        synchronized (delegate) {
             if (result.get() != null) {
                 return;
             }
