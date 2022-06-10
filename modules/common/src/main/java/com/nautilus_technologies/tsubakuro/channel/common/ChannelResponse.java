@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.ipc;
+package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,14 +20,13 @@ import javax.annotation.Nonnull;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 // import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
  */
-public class IpcResponse implements Response {
+public class ChannelResponse implements Response {
 
-    private final SessionWireImpl wire;
+    private final SessionWire wire;
     private ResponseWireHandle handle;
 //    private final ByteBuffer main;
 
@@ -40,8 +39,8 @@ public class IpcResponse implements Response {
      * @param main the main response data
      * @param subMap map of sub response ID and its data
      */
-//    public IpcResponse(@Nonnull ByteBuffer main, @Nonnull Map<String, ByteBuffer> subMap) {
-    public IpcResponse(@Nonnull SessionWireImpl wire) {
+//    public ChannelResponse(@Nonnull ByteBuffer main, @Nonnull Map<String, ByteBuffer> subMap) {
+    public ChannelResponse(@Nonnull SessionWire wire) {
         Objects.requireNonNull(wire);
 //        Objects.requireNonNull(subMap);
         this.wire = wire;
@@ -56,7 +55,7 @@ public class IpcResponse implements Response {
      * Creates a new instance, without any attached data.
      * @param main the main response data
      */
-//    public IpcResponse(@Nonnull ByteBuffer main) {
+//    public ChannelResponse(@Nonnull ByteBuffer main) {
 //        this(main, Collections.emptyMap());
 //    }
 
@@ -113,11 +112,11 @@ public class IpcResponse implements Response {
 //    @Override
 //    public String toString() {
 //        return MessageFormat.format(
-//                "IpcResponse(main={0}, sub={1})",
+//                "ChannelResponse(main={0}, sub={1})",
 //                main.remaining(),
 //                subs.keySet());
 //                main.remaining()
-//            "IpcResponse"  // FIXME can not pirnt the contents of InputStream??
+//            "ChannelResponse"  // FIXME can not pirnt the contents of InputStream??
 //        );
 //    }
 
