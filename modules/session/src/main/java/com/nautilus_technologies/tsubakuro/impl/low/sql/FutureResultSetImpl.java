@@ -31,20 +31,13 @@ public class FutureResultSetImpl extends AbstractFutureResponse<ResultSet> {
         this.resultSetImpl = new ResultSetImpl(sessionLinkImpl.createResultSetWire(), futureResponse);
     }
 
-    /**
-     * Class constructor used when an error occured in SQL server.
-     * @param future the FutureResponse<SqlResponse.ResultOnly>
-     * @param sessionLinkImpl the sessionLink to which the transaction that created this object belongs
-     */
-    FutureResultSetImpl(FutureResponse<SqlResponse.ResultOnly> futureResponse) throws IOException {
-        this.resultSetImpl = new ResultSetImpl(futureResponse);
-    }
-
     @Override
     protected ResultSet getInternal() throws IOException, ServerException, InterruptedException {
         SqlResponse.ExecuteQuery response = future.get();
         if (Objects.nonNull(response)) {
             resultSetImpl.connect(response.getName(), response.getRecordMeta());
+        } else {
+            resultSetImpl.indicateError();
         }
         return resultSetImpl;
     }
@@ -55,6 +48,8 @@ public class FutureResultSetImpl extends AbstractFutureResponse<ResultSet> {
         SqlResponse.ExecuteQuery response = future.get(timeout, unit);
         if (Objects.nonNull(response)) {
             resultSetImpl.connect(response.getName(), response.getRecordMeta());
+        } else {
+            resultSetImpl.indicateError();
         }
         return resultSetImpl;
     }
