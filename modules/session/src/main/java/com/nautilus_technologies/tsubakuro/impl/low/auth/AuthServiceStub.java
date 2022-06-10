@@ -2,6 +2,7 @@ package com.nautilus_technologies.tsubakuro.impl.low.auth;
 
 import java.io.IOException;
 // import java.nio.ByteBuffer;
+import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.Objects;
 
@@ -17,11 +18,11 @@ import com.nautilus_technologies.tsubakuro.low.auth.AuthInfo;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthService;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthServiceCode;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthServiceException;
-// import com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-// import com.nautilus_technologies.tsubakuro.connection.wire.MainResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
-// import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -62,37 +63,41 @@ public class AuthServiceStub implements AuthService {
                 name));
     }
 
-    //    class AuthInfoProcessor implements MainResponseProcessor<AuthInfo> {
-    //        @Override
-    //        public AuthInfo process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-    //            var message = AuthResponse.AuthInfo.parseFrom(payload);
-    //            LOG.trace("receive: {}", message); //$NON-NLS-1$
-    //            switch (message.getResultCase()) {
-    //            case SUCCESS:
-    //                var res = message.getSuccess();
-    //                return new AuthInfo(res.getUser(), new RememberMeCredential(res.getToken()));
-    //
-    //            case NOT_AUTHENTICATED:
-    //                throw new AuthServiceException(AuthServiceCode.NOT_AUTHENTICATED);
-    //
-    //            case UNKNOWN_ERROR:
-    //                throw newUnknown(message.getUnknownError());
-    //
-    //            case RESULT_NOT_SET:
-    //                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
-    //            }
-    //            throw new AssertionError(); // may not occur
-    //        }
-    //    }
+    static class AuthInfoProcessor implements MainResponseProcessor<AuthInfo> {
+        @Override
+        public AuthInfo process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = AuthResponse.AuthInfo.parseDelimitedFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                var res = message.getSuccess();
+                return new AuthInfo(res.getUser(), new RememberMeCredential(res.getToken()));
+
+            case NOT_AUTHENTICATED:
+                throw new AuthServiceException(AuthServiceCode.NOT_AUTHENTICATED);
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
 
     @Override
     public FutureResponse<AuthInfo> send(AuthRequest.AuthInfo request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return new FutureAuthInfoImpl(session.send(
-                       SERVICE_ID,
-                       AuthRequest.Request.newBuilder()
-                       .setAuthInfo(request)
-                       .build()
-                       .toByteArray()));
+        return session.send(
+            SERVICE_ID,
+            AuthRequest.Request.newBuilder()
+            .setAuthInfo(request)
+            .build()
+            .toByteArray(),
+            new AuthInfoProcessor().asResponseProcessor());
     }
 }
