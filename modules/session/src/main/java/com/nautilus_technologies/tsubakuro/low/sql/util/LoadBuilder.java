@@ -322,8 +322,9 @@ public class LoadBuilder {
             return result.setRowType(destinationColumn.getRowType()).build();
         case USER_TYPE:
             return result.setUserType(destinationColumn.getUserType()).build();
+        default:
+            throw new AssertionError();
         }
-        throw new AssertionError();
     }
 
     /**
