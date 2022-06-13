@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -466,8 +465,7 @@ public class LoadBuilder {
                     "column type is not set: {0}.{1}",
                     destination.getTableName(),
                     column.getName()));
-        case ATOM_TYPE:
-            {
+        case ATOM_TYPE: {
                 var name = ATOM_TYPE_NAMES.get(column.getAtomType());
                 if (name == null) {
                     throw new IllegalStateException(MessageFormat.format(
@@ -552,8 +550,9 @@ public class LoadBuilder {
                 return Objects.equals(column.getRowType(), column.getRowType());
             case USER_TYPE:
                 return Objects.equals(column.getUserType(), column.getUserType());
+            default:
+                throw new AssertionError();
             }
-            throw new AssertionError();
         }
     }
 }

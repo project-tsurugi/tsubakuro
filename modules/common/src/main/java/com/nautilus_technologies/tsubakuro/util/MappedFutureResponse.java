@@ -63,7 +63,6 @@ public final class MappedFutureResponse<T extends ServerResource, V> implements 
     }
 
     private V doApply(Owner<T> response) throws IOException, ServerException, InterruptedException {
-        assert response != null;
         try (response) {
             var mapped = mapper.apply(response.get());
             result.compareAndSet(null, mapped);
