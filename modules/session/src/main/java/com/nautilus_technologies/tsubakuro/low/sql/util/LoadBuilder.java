@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -523,7 +524,23 @@ public class LoadBuilder {
             if (column.getDimension() != from.getDimension()) {
                 return false;
             }
-            if (!Objects.equals(column.getTypeInfoCase().name(), from.getTypeInfoCase().name())) {
+            switch (column.getTypeInfoCase()) {
+            case ATOM_TYPE:
+                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.TYPE) {
+                    return false;
+                }
+                break;
+            case ROW_TYPE:
+                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.ROW_TYPE) {
+                    return false;
+                }
+                break;
+            case USER_TYPE:
+                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.USER_TYPE) {
+                    return false;
+                }
+                break;
+            default:
                 return false;
             }
             switch (column.getTypeInfoCase()) {
