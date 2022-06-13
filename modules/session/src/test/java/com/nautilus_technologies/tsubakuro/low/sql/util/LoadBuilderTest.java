@@ -132,7 +132,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_position() throws Exception {
+    void testPosition() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -157,7 +157,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_columns() throws Exception {
+    void testColumns() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -191,7 +191,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_style_error() throws Exception {
+    void testStyleError() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -209,7 +209,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_style_skip() throws Exception {
+    void testStyleSkip() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -227,7 +227,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_style_overwrite() throws Exception {
+    void testStyleOverwrite() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -245,7 +245,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_mapping_inconsistent() throws Exception {
+    void testMappingInconsistent() throws Exception {
         var cols = table.getColumnsList();
         try (
             var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
@@ -270,7 +270,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_delimited_table() throws Exception {
+    void testDelimitedTable() throws Exception {
         var other = SqlResponse.DescribeTable.Success.newBuilder(table)
                 .setDatabaseName("data base")
                 .setTableName("My Table")
@@ -291,7 +291,7 @@ class LoadBuilderTest {
     }
 
     @Test
-    void test_delimited_column() throws Exception {
+    void testDelimitedColumn() throws Exception {
         var other = SqlResponse.DescribeTable.Success.newBuilder(table)
                 .clearColumns()
                 .addColumns(SqlCommon.Column.newBuilder()
@@ -331,8 +331,8 @@ class LoadBuilderTest {
                 start = matcher.end();
                 if (matcher.group(1) != null) {
                     results.add(matcher.group(1));
-                } else {
-                    // ignore spaces
+//                } else {  // comment out for avoid checkstyle rule violation
+//                    // ignore spaces
                 }
             }
         }
