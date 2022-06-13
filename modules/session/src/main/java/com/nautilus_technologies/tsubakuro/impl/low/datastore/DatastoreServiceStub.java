@@ -2,11 +2,12 @@ package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 // import java.nio.ByteBuffer;
-// import java.nio.file.Path;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
-// import java.util.ArrayList;
+import java.util.ArrayList;
 // import java.util.Collections;
 // import java.util.List;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.MainResponseProcessor;
 import com.nautilus_technologies.tateyama.proto.DatastoreCommonProtos;
 import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
@@ -90,34 +92,117 @@ public class DatastoreServiceStub implements DatastoreService {
         return value;
     }
 
+    class BackupBeginProcessor implements MainResponseProcessor<Backup> {
+        @Override
+        public Backup process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupBegin.parseDelimitedFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                var backupId = message.getSuccess().getId();
+                var files = new ArrayList<Path>();
+                for (var f : message.getSuccess().getFilesList()) {
+                    files.add(Path.of(f));
+                }
+                return resources.register(new BackupImpl(DatastoreServiceStub.this, resources, backupId, files));
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
     @Override
     public FutureResponse<Backup> send(@Nonnull DatastoreRequestProtos.BackupBegin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return new FutureBackupImpl(session.send(Constants.SERVICE_ID_BACKUP,
-                                                 toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-                                                             .setMessageVersion(Constants.MESSAGE_VERSION)
-                                                             .setBackupBegin(request)
-                                                             .build())));
+        return session.send(
+            SERVICE_ID,
+            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+            .setMessageVersion(Constants.MESSAGE_VERSION)
+            .setBackupBegin(request)
+            .build()),
+            new BackupBeginProcessor().asResponseProcessor());
+    }
+
+    static class BackupEndProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupEnd.parseDelimitedFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case EXPIRED:
+                throw new DatastoreServiceException(DatastoreServiceCode.BACKUP_EXPIRED);
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
     }
 
     @Override
     public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupEnd request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return new FutureEndImpl(session.send(SERVICE_ID,
-                                              toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-                                                                   .setMessageVersion(Constants.MESSAGE_VERSION)
-                                                                   .setBackupEnd(request)
-                                                                   .build())));
+        return session.send(
+            SERVICE_ID,
+            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+            .setMessageVersion(Constants.MESSAGE_VERSION)
+            .setBackupEnd(request)
+            .build()),
+            new BackupEndProcessor().asResponseProcessor());
+    }
+
+    static class BackupContinueProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupContinue.parseDelimitedFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case EXPIRED:
+                throw new DatastoreServiceException(DatastoreServiceCode.BACKUP_EXPIRED);
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
     }
 
     @Override
     public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupContinue request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return new FutureContinueImpl(session.send(SERVICE_ID,
-                                                   toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-                                                                        .setMessageVersion(Constants.MESSAGE_VERSION)
-                                                                        .setBackupContine(request)
-                                                                        .build())));
+        return session.send(
+            SERVICE_ID,
+            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+            .setMessageVersion(Constants.MESSAGE_VERSION)
+            .setBackupContine(request)
+            .build()),
+            new BackupContinueProcessor().asResponseProcessor());
     }
 
     // FIXME user response processor

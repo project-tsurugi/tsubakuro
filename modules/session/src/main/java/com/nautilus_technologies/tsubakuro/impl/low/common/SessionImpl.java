@@ -1,29 +1,24 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * SessionImpl type.
  */
-public class SessionImpl implements Session {
+public class SessionImpl extends Session {
     static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
 
     private long timeout;
     private TimeUnit unit;
-    private SessionLinkImpl sessionLinkImpl;
     private SessionWire sessionWire;
 
     /**
@@ -34,23 +29,13 @@ public class SessionImpl implements Session {
      *
      * @param sessionWire the wire that connects to the Database
      */
-    @Override
     public void connect(SessionWire wire) {
-        sessionLinkImpl = new SessionLinkImpl(wire);
+        super.wire = wire;
         sessionWire = wire;
     }
 
-    @Override
-    public FutureInputStream send(long id, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
         return sessionWire.send(id, request);
-    }
-
-    /**
-     * Provide sessionLink for SqlClientImpl
-     * @return sessionLinkImpl
-     */
-    public SessionLinkImpl getSessionLinkImpl() {
-        return sessionLinkImpl;
     }
 
     /**
@@ -58,7 +43,6 @@ public class SessionImpl implements Session {
      * @param t time length until the close operation timeout
      * @param u unit of timeout
      */
-    @Override
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
@@ -68,22 +52,7 @@ public class SessionImpl implements Session {
      * Close the Session
      */
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(sessionLinkImpl)) {
-            try (var link = sessionLinkImpl) {
-                sessionLinkImpl.discardRemainingResources(timeout, unit);
-
-                var futureResponse = sessionLinkImpl.send(SqlRequest.Disconnect.newBuilder());
-                var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-                    throw new IOException(response.getError().getDetail());
-                }
-            } catch (TimeoutException e) {
-                LOG.warn("closing session is timeout", e);
-            } finally {
-                sessionLinkImpl = null;
-                sessionWire = null;
-            }
-        }
+    public void close() throws IOException, InterruptedException {
+        super.close();
     }
 }

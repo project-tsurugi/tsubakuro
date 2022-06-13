@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,8 +15,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.FutureInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -27,7 +29,6 @@ import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 
 class DumpLoadTest {
@@ -120,7 +121,11 @@ class DumpLoadTest {
         public void unReceive(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public FutureInputStream send(long serviceID, byte[] request) {
+        public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
+            return null; // dummy as it is test for session
+        }
+        @Override
+        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
             return null; // dummy as it is test for session
         }
         @Override
