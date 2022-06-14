@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,7 +35,7 @@ class SessionImplTest {
 
     SqlResponse.Response nextResponse;
     private final long specialTimeoutValue = 9999;
-    
+
     class FutureResponseMock<V> implements FutureResponse<V> {
         private final SessionWireMock wire;
         private final Distiller<V> distiller;
@@ -43,7 +44,7 @@ class SessionImplTest {
             this.wire = wire;
             this.distiller = distiller;
         }
-        
+
         @Override
         public V get() throws IOException, ServerException {
             var response = wire.receive(handle);
@@ -67,7 +68,7 @@ class SessionImplTest {
         public void close() throws IOException, ServerException, InterruptedException {
         }
     }
-    
+
     class SessionWireMock implements SessionWire {
         @Override
         public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
@@ -105,35 +106,35 @@ class SessionImplTest {
                 return null;  // dummy as it is test for session
             }
         }
-        
+
         @Override
         public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
             return null;  // dummy as it is test for session
         }
-        
+
         @Override
         public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
             var r = nextResponse;
             nextResponse = null;
             return r;
         }
-        
+
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
         }
-        
+
         @Override
         public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
             var r = nextResponse;
             nextResponse = null;
             return r;
         }
-        
+
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
         }
-        
+
         @Override
         public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
             return null; // dummy as it is test for session
@@ -148,17 +149,17 @@ class SessionImplTest {
         public InputStream responseStream(ResponseWireHandle handle) {
             return null; // dummy as it is test for session
         }
-        
+
         @Override
         public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
             return null; // dummy as it is test for session
         }
-        
+
         @Override
         public void close() throws IOException {
         }
     }
-    
+
     @Disabled("not implemented")  // FIXME implement close handling of Session
     @Test
     void useSessionAfterClose() throws Exception {
@@ -173,14 +174,14 @@ class SessionImplTest {
         // FIXME: check structured error code instead of message
         assertEquals("this session is not connected to the Database", exception.getMessage());
     }
-    
+
     @Disabled("timeout should raise whether error or warning")
     @Test
     void sessionTimeout() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         session.setCloseTimeout(specialTimeoutValue, TimeUnit.SECONDS);
-        
+
         Throwable exception = assertThrows(IOException.class, () -> {
                 session.close();
             });
@@ -227,7 +228,7 @@ class SessionImplTest {
             });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", e1.getMessage());
-        
+
         Throwable e2 = assertThrows(IOException.class, () -> {
                 t2.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
             });
@@ -240,19 +241,19 @@ class SessionImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
-        
+
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
         var preparedStatement = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         preparedStatement.close();
-        
+
         var transaction = sqlClient.createTransaction().get();
-        
+
         Throwable exception = assertThrows(IOException.class, () -> {
                 var resultSet = transaction.executeQuery(preparedStatement, Parameters.of("o_id", 99999999L)).await();
             });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", exception.getMessage());
-        
+
         transaction.commit();
         sqlClient.close();
     }
@@ -263,17 +264,17 @@ class SessionImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
-        
+
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
         var ps1 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps2 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps3 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps4 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
-        
+
         ps2.close();
         ps4.close();
         sqlClient.close();
-        
+
         Throwable e1 = assertThrows(IOException.class, () -> {
                 var handle = ((PreparedStatementImpl) ps1).getHandle();
             });
@@ -293,8 +294,8 @@ class SessionImplTest {
         var sqlClient = SqlClient.attach(session);
 
         var info = sqlClient.getTableMetadata("TBL").await();
-        assertEquals("D", info.getDatabaseName());
-        assertEquals("S", info.getSchemaName());
+        assertEquals(Optional.of("D"), info.getDatabaseName());
+        assertEquals(Optional.of("S"), info.getSchemaName());
         assertEquals("TBL", info.getTableName());
     }
 }
