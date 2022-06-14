@@ -377,12 +377,12 @@ public class LoadBuilder {
         buf.append(' ');
 
         // table
-        if (destination.getSchemaName() != null) {
-            if (destination.getDatabaseName() != null) {
-                buf.append(identifier(destination.getDatabaseName()));
+        if (destination.getSchemaName().isPresent()) {
+            if (destination.getDatabaseName().isPresent()) {
+                buf.append(identifier(destination.getDatabaseName().get()));
                 buf.append('.');
             }
-            buf.append(identifier(destination.getSchemaName()));
+            buf.append(identifier(destination.getSchemaName().get()));
             buf.append('.');
         }
         buf.append(identifier(destination.getTableName()));

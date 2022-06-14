@@ -2,12 +2,13 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 
+import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 
 /**
  * An implementation of {@link TableMetadata} which just wraps original protocol buffers' message.
@@ -26,13 +27,15 @@ public class TableMetadataAdapter implements TableMetadata {
     }
 
     @Override
-    public String getDatabaseName() {
-        return proto.getDatabaseName();
+    public Optional<String> getDatabaseName() {
+        return Optional.of(proto.getDatabaseName())
+                .filter(it -> !it.isEmpty());
     }
 
     @Override
-    public String getSchemaName() {
-        return proto.getSchemaName();
+    public Optional<String> getSchemaName() {
+        return Optional.of(proto.getSchemaName())
+                .filter(it -> !it.isEmpty());
     }
 
     @Override
