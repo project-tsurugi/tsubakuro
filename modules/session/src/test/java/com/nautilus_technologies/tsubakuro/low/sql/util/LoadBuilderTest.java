@@ -315,6 +315,48 @@ class LoadBuilderTest {
         assertEquals(List.of(Path.of("testing")), captureFiles);
     }
 
+    @Test
+    void testDatabaseEmpty() throws Exception {
+        var other = SqlResponse.DescribeTable.Success.newBuilder(table)
+                .clearDatabaseName()
+                .build();
+        var cols = other.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(other))
+                    .errorOnCoflict()
+                    .mapping(cols.get(0), "L0")
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        assertEquals(1, ps.size());
+        assertEquals(
+                tokenize("INSERT INTO S.T (C1) VALUES(", ph(ps.get(0)), ")"),
+                captureSource);
+    }
+
+    @Test
+    void testSchamaEmpty() throws Exception {
+        var other = SqlResponse.DescribeTable.Success.newBuilder(table)
+                .clearSchemaName()
+                .build();
+        var cols = other.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(other))
+                    .errorOnCoflict()
+                    .mapping(cols.get(0), "L0")
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        assertEquals(1, ps.size());
+        assertEquals(
+                tokenize("INSERT INTO T (C1) VALUES(", ph(ps.get(0)), ")"),
+                captureSource);
+    }
+
     private static String ph(SqlRequest.PlaceHolder ps) {
         return String.format(":%s", ps.getName());
     }

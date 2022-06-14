@@ -1,5 +1,7 @@
 package com.nautilus_technologies.tsubakuro.low.sql;
 
+import java.util.Optional;
+
 /**
  * Represents metadata of tables.
  */
@@ -7,15 +9,15 @@ public interface TableMetadata extends RelationMetadata {
 
     /**
      * Returns the database name where the table defined.
-     * @return the database name
+     * @return the database name, or empty if it is not set
      */
-    String getDatabaseName();
+    Optional<String> getDatabaseName();
 
     /**
      * Returns the schema name where the table defined.
-     * @return the schema name
+     * @return the schema name, or empty if it is not set
      */
-    String getSchemaName();
+    Optional<String> getSchemaName();
 
     /**
      * Returns simple name of the table.
