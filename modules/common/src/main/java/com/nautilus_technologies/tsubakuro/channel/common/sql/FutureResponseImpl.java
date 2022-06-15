@@ -52,8 +52,6 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
             V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
             isDone.set(true);
             return result;
-        } catch (IOException | ServerException e) {
-            throw e;
         } finally {
             responseWireHandleImpl = null;
         }
@@ -68,8 +66,6 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
             V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
             isDone.set(true);
             return result;
-        } catch (IOException | ServerException e) {
-            throw e;
         } finally {
             responseWireHandleImpl = null;
         }
