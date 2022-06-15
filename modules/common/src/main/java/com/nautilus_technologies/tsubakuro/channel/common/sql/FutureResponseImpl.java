@@ -48,10 +48,15 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
         if (Objects.isNull(responseWireHandleImpl)) {
             throw new IOException("request has not been send out or get() called more than once");
         }
-        V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
-        isDone.set(true);
-        responseWireHandleImpl = null;
-        return result;
+        try {
+            V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
+            isDone.set(true);
+            return result;
+        } catch (IOException | ServerException e) {
+            throw e;
+        } finally {
+            responseWireHandleImpl = null;
+        }
     }
 
     @Override
@@ -59,10 +64,15 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
         if (Objects.isNull(responseWireHandleImpl)) {
             throw new IOException("request has not been send out or get() called more than once");
         }
-        V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
-        isDone.set(true);
-        responseWireHandleImpl = null;
-        return result;
+        try {
+            V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
+            isDone.set(true);
+            return result;
+        } catch (IOException | ServerException e) {
+            throw e;
+        } finally {
+            responseWireHandleImpl = null;
+        }
     }
 
     @Override
