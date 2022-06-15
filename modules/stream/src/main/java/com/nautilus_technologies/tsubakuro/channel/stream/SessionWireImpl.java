@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.channel.stream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+// import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Objects;
@@ -30,6 +30,7 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 
@@ -284,17 +285,17 @@ public class SessionWireImpl implements SessionWire {
     }
 
     @Override
-    public InputStream responseStream(ResponseWireHandle handle) throws IOException {
+    public ByteBuffer response(ResponseWireHandle handle) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
         byte index = ((ResponseWireHandleImpl) handle).getHandle();
-        var inputStream = new ByteArrayInputStream(responseBox.receive(index));
-        FrameworkResponseProtos.Header.parseDelimitedFrom(inputStream);
-        return inputStream;
+        var byteBuffer = ByteBuffer.wrap(responseBox.receive(index));
+        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        return byteBuffer;
     }
     @Override
-    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
-        throw new UnsupportedOperationException();
+    public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+        return response(handle);  // FIXME implement timeout
     }
 }

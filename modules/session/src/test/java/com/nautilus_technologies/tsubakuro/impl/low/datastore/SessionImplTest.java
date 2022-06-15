@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
+// import java.io.ByteArrayByteBuffer;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -45,17 +45,17 @@ class SessionImplTest {
         }
     
         @Override
-        public InputStream waitForMainResponse() throws IOException {
+        public ByteBuffer waitForMainResponse() throws IOException {
             if (isMainResponseReady()) {
-                return wire.responseStream(handle);
+                return wire.response(handle);
             }
             throw new IOException("response box is not available");
         }
     
         @Override
-        public InputStream waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
             if (isMainResponseReady()) {
-                return wire.responseStream(handle, timeout, unit);
+                return wire.response(handle, timeout, unit);
             }
             throw new IOException("response box is not available");  // FIXME arch. mismatch??
         }
@@ -119,7 +119,7 @@ class SessionImplTest {
         }
 
         @Override
-        public InputStream responseStream(ResponseWireHandle handle) {
+        public ByteBuffer response(ResponseWireHandle handle) {
             try (var buffer = new ByteArrayOutputStream()) {
                 var response = DatastoreResponseProtos.BackupBegin.newBuilder()
                     .setSuccess(DatastoreResponseProtos.BackupBegin.Success.newBuilder()
@@ -128,15 +128,15 @@ class SessionImplTest {
                     .build())
                 .build();
                 response.writeDelimitedTo(buffer);
-                return new ByteArrayInputStream(buffer.toByteArray());
+                return ByteBuffer.wrap(buffer.toByteArray());
             } catch (IOException e) {
                 System.out.println(e);
             }
             return null; // dummy as it is test for session
         }
 
-        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return responseStream(handle);
+        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return response(handle);
         }
         
         @Override

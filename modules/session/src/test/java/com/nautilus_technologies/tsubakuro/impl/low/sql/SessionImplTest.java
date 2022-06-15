@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
@@ -146,12 +145,12 @@ class SessionImplTest {
         }
 
         @Override
-        public InputStream responseStream(ResponseWireHandle handle) {
+        public ByteBuffer response(ResponseWireHandle handle) {
             return null; // dummy as it is test for session
         }
 
         @Override
-        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) {
             return null; // dummy as it is test for session
         }
 
