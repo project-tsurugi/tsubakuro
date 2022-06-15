@@ -2,7 +2,6 @@ package com.nautilus_technologies.tsubakuro.channel.ipc;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Objects;
@@ -364,17 +363,17 @@ public class SessionWireImpl implements SessionWire {
     }
 
     @Override
-    public InputStream responseStream(ResponseWireHandle handle) throws IOException {
+    public ByteBuffer response(ResponseWireHandle handle) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
         var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-        var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle));
-        FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-        return byteBufferInput;
+        var byteBuffer = receiveNative(responseHandle);
+        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        return byteBuffer;
     }
     @Override
-    public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
@@ -383,9 +382,9 @@ public class SessionWireImpl implements SessionWire {
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
         }
-        var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle, timeoutNano));
-        FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-        return byteBufferInput;
+        var byteBuffer = receiveNative(responseHandle, timeoutNano);
+        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        return byteBuffer;
     }
 
     /**

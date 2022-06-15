@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
 import java.io.InputStream;
-// import java.nio.ByteBuffer;
+import java.nio.ByteBuffer;
 // import java.text.MessageFormat;
 // import java.util.ArrayList;
 import java.util.Collection;
@@ -19,7 +19,7 @@ import javax.annotation.Nonnull;
 
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-// import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
+// import com.nautilus_technologies.tsubakuro.util.ByteBufferByteBuffer;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -65,17 +65,17 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public InputStream waitForMainResponse() throws IOException {
+    public ByteBuffer waitForMainResponse() throws IOException {
         if (isMainResponseReady()) {
-            return wire.responseStream(handle);
+            return wire.response(handle);
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
 
     @Override
-    public InputStream waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+    public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         if (isMainResponseReady()) {
-            return wire.responseStream(handle, timeout, unit);
+            return wire.response(handle, timeout, unit);
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
@@ -93,7 +93,7 @@ public class ChannelResponse implements Response {
 //        if (data == null) {
 //            throw new NoSuchElementException(id);
 //        }
-//        return new ByteBufferInputStream(data);
+//        return new ByteBufferByteBuffer(data);
         return null;
     }
 
@@ -116,7 +116,7 @@ public class ChannelResponse implements Response {
 //                main.remaining(),
 //                subs.keySet());
 //                main.remaining()
-//            "ChannelResponse"  // FIXME can not pirnt the contents of InputStream??
+//            "ChannelResponse"  // FIXME can not pirnt the contents of ByteBuffer??
 //        );
 //    }
 

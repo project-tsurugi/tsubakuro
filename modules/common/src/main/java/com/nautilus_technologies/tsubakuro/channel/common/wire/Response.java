@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.common.wire;
 
 import java.io.IOException;
 import java.io.InputStream;
-// import java.nio.ByteBuffer;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
@@ -31,26 +31,26 @@ public interface Response extends ServerResource {
     /**
      * Returns the main response body.
      * If the main response body is not ready, this operation was blocked until it would be ready.
-     * @return InputStream of the main response body
+     * @return ByteBuffer of the main response body
      * @throws IOException if I/O error was occurred while retrieving main response body
      * @throws ServerException if server error was occurred while retrieving main response body
      * @throws InterruptedException if interrupted while retrieving main response body
      */
-    InputStream waitForMainResponse() throws IOException, ServerException, InterruptedException;
+    ByteBuffer waitForMainResponse() throws IOException, ServerException, InterruptedException;
 
     /**
      * Returns the main response body.
      * If the main response body is not ready, this operation was blocked until it would be ready.
      * @param timeout the maximum time to wait
      * @param unit the time unit of {@code timeout}
-     * @return InputStream of the main response body
+     * @return ByteBuffer of the main response body
      * @throws IOException if I/O error was occurred while retrieving main response body
      * @throws ServerException if server error was occurred while retrieving main response body
      * @throws InterruptedException if interrupted while retrieving main response body
      * @throws TimeoutException if the wait time out;
      *      please attention that this exception may occur shorter time than the {@code timeout}
      */
-    InputStream waitForMainResponse(long timeout, TimeUnit unit)
+    ByteBuffer waitForMainResponse(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException;
 
     /**
