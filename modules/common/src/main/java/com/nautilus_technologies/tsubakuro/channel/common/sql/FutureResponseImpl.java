@@ -46,20 +46,22 @@ public class FutureResponseImpl<V> implements FutureResponse<V> {
     @Override
     public V get() throws IOException, ServerException {
         if (Objects.isNull(responseWireHandleImpl)) {
-            throw new IOException("request has not been send out");
+            throw new IOException("request has not been send out or get() called more than once");
         }
         V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl));
         isDone.set(true);
+        responseWireHandleImpl = null;
         return result;
     }
 
     @Override
     public V get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException {
         if (Objects.isNull(responseWireHandleImpl)) {
-            throw new IOException("request has not been send out");
+            throw new IOException("request has not been send out or get() called more than once");
         }
         V result = distiller.distill(sessionWireImpl.receive(responseWireHandleImpl, timeout, unit));
         isDone.set(true);
+        responseWireHandleImpl = null;
         return result;
     }
 
