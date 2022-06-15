@@ -64,13 +64,29 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Se
 /*
  * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    sendNative
- * Signature: (JI)V
+ * Signature: (J[B)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_sendNative
-(JNIEnv *, jclass, jlong handle, jint b)
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_sendNative__J_3B
+(JNIEnv *env, jclass, jlong handle, jbyteArray array)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-    swc->write(b);
+
+    auto address = env->GetByteArrayElements(array, nullptr);
+    swc->write(static_cast<signed char*>(address), env->GetArrayLength(array));
+    env->ReleaseByteArrayElements(array, address, JNI_ABORT);
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Method:    sendNative
+ * Signature: (JLjava/nio/ByteBuffer;)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_sendNative__JLjava_nio_ByteBuffer_2
+(JNIEnv *env, jclass, jlong handle, jobject buf)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    swc->write(static_cast<signed char*>(env->GetDirectBufferAddress(buf)), env->GetDirectBufferCapacity(buf));
 }
 
 /*

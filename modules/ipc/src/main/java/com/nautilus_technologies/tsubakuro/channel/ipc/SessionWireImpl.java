@@ -1,7 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Objects;
@@ -41,12 +41,12 @@ public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
     private final String dbName;
     private final long sessionID;
-    private final NativeOutputStream nativeOutputStream;
     private final Queue<QueueEntry<?>> queue;
 
     private static native long openNative(String name) throws IOException;
     private static native long getResponseHandleNative(long wireHandle);
-    private static native void sendNative(long wireHandle, int b);
+    private static native void sendNative(long sessionHandle, byte[] buffer);
+    private static native void sendNative(long sessionHandle, ByteBuffer buffer);
     private static native void flushNative(long wireHandle, long responseHandle, boolean isQuery);
     private static native ByteBuffer receiveNative(long responseHandle);
     private static native ByteBuffer receiveNative(long responseHandle, long timeout) throws TimeoutException;
@@ -58,28 +58,6 @@ public class SessionWireImpl implements SessionWire {
 
     static {
         System.loadLibrary("wire");
-    }
-
-    static class NativeOutputStream extends OutputStream {
-        private long wireHandle;
-
-        NativeOutputStream(long wireHandle) {
-            this.wireHandle = wireHandle;
-        }
-        public void write(int b) {
-            sendNative(wireHandle, b);
-        }
-        public void write(ByteBuffer bb) {
-            while (bb.hasRemaining()) {
-                sendNative(wireHandle, bb.get());
-            }
-        }
-        public long getResponseHandle() {
-            return getResponseHandleNative(wireHandle);
-        }
-        public void flush(long responseHandle, boolean isQuery) {
-            flushNative(wireHandle, responseHandle, isQuery);
-        }
     }
 
     enum RequestType {
@@ -134,7 +112,6 @@ public class SessionWireImpl implements SessionWire {
         wireHandle = openNative(dbName + "-" + String.valueOf(sessionID));
         this.dbName = dbName;
         this.sessionID = sessionID;
-        this.nativeOutputStream = new NativeOutputStream(wireHandle);
         this.queue = new ArrayDeque<>();
         logger.trace("begin Session via stream, id = " + sessionID);
     }
@@ -146,6 +123,23 @@ public class SessionWireImpl implements SessionWire {
     public void close() throws IOException {
         closeNative(wireHandle);
         wireHandle = 0;
+    }
+
+    byte[] toDelimitedByteArray(FrameworkRequestProtos.Header request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
+    }
+    byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 
     /**
@@ -163,11 +157,11 @@ public class SessionWireImpl implements SessionWire {
         var req = request.setSessionHandle(SqlCommon.Session.newBuilder().setHandle(sessionID)).build();
         var futureBody = new FutureResponseImpl<V>(this, distiller);
         synchronized (this) {
-            var handle = nativeOutputStream.getResponseHandle();
+            var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
-                header.writeDelimitedTo(nativeOutputStream);
-                req.writeDelimitedTo(nativeOutputStream);
-                nativeOutputStream.flush(handle, false);
+                sendNative(wireHandle, toDelimitedByteArray(header));
+                sendNative(wireHandle, toDelimitedByteArray(req));
+                flushNative(wireHandle, handle, false);
                 futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
             } else {
@@ -193,11 +187,11 @@ public class SessionWireImpl implements SessionWire {
         var left = new FutureQueryResponseImpl(this);
         var right = new FutureResponseImpl<SqlResponse.ResultOnly>(this, new ResultOnlyDistiller());
         synchronized (this) {
-            var handle = nativeOutputStream.getResponseHandle();
+            var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
-                header.writeDelimitedTo(nativeOutputStream);
-                req.writeDelimitedTo(nativeOutputStream);
-                nativeOutputStream.flush(handle, true);
+                sendNative(wireHandle, toDelimitedByteArray(header));
+                sendNative(wireHandle, toDelimitedByteArray(req));
+                flushNative(wireHandle, handle, true);
                 left.setResponseHandle(new ResponseWireHandleImpl(handle));
                 right.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);
@@ -228,19 +222,19 @@ public class SessionWireImpl implements SessionWire {
                 releaseNative(responseHandle);
                 var entry = queue.peek();
                 if (!Objects.isNull(entry)) {
-                    long responseBoxHandle = nativeOutputStream.getResponseHandle();
+                    long responseBoxHandle = getResponseHandleNative(wireHandle);
                     if (responseBoxHandle != 0) {
                         var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                         if (entry.getRequestType() == RequestType.STATEMENT) {
-                            header.writeDelimitedTo(nativeOutputStream);
-                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
-                            nativeOutputStream.flush(responseBoxHandle, false);
+                            sendNative(wireHandle, toDelimitedByteArray(header));
+                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
+                            flushNative(wireHandle, responseBoxHandle, false);
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
                         } else {
-                            header.writeDelimitedTo(nativeOutputStream);
-                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
-                            nativeOutputStream.flush(responseBoxHandle, true);
+                            sendNative(wireHandle, toDelimitedByteArray(header));
+                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
+                            flushNative(wireHandle, responseBoxHandle, true);
                             entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
@@ -278,19 +272,19 @@ public class SessionWireImpl implements SessionWire {
                 releaseNative(responseHandle);
                 var entry = queue.peek();
                 if (!Objects.isNull(entry)) {
-                    long responseBoxHandle = nativeOutputStream.getResponseHandle();
+                    long responseBoxHandle = getResponseHandleNative(wireHandle);
                     if (responseBoxHandle != 0) {
                         var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                         if (entry.getRequestType() == RequestType.STATEMENT) {
-                            header.writeDelimitedTo(nativeOutputStream);
-                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
-                            nativeOutputStream.flush(responseBoxHandle, false);
+                            sendNative(wireHandle, toDelimitedByteArray(header));
+                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
+                            flushNative(wireHandle, responseBoxHandle, false);
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
                         } else {
-                            header.writeDelimitedTo(nativeOutputStream);
-                            entry.getRequest().writeDelimitedTo(nativeOutputStream);
-                            nativeOutputStream.flush(responseBoxHandle, true);
+                            sendNative(wireHandle, toDelimitedByteArray(header));
+                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
+                            flushNative(wireHandle, responseBoxHandle, true);
                             entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
                             queue.poll();
@@ -319,11 +313,11 @@ public class SessionWireImpl implements SessionWire {
         var future = FutureResponse.wrap(Owner.of(response));
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
-            var handle = nativeOutputStream.getResponseHandle();
+            var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
-                header.writeDelimitedTo(nativeOutputStream);
-                nativeOutputStream.write(request);
-                nativeOutputStream.flush(handle, false);
+                sendNative(wireHandle, toDelimitedByteArray(header));
+                sendNative(wireHandle, request);
+                flushNative(wireHandle, handle, false);
                 response.setHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
@@ -333,7 +327,7 @@ public class SessionWireImpl implements SessionWire {
         return future;
     }
 
-        /**
+    /**
      * Send SqlRequest.Request to the SQL server via the native wire.
      * @param request the SqlRequest.Request message
      * @return a Future response message corresponding the request
@@ -348,11 +342,15 @@ public class SessionWireImpl implements SessionWire {
         var future = FutureResponse.wrap(Owner.of(response));
         var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
-            var handle = nativeOutputStream.getResponseHandle();
+            var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
-                header.writeDelimitedTo(nativeOutputStream);
-                nativeOutputStream.write(request);
-                nativeOutputStream.flush(handle, false);
+                sendNative(wireHandle, toDelimitedByteArray(header));
+                if (request.isDirect()) {
+                    sendNative(wireHandle, request);
+                } else {
+                    sendNative(wireHandle, request.array());
+                }
+                flushNative(wireHandle, handle, false);
                 response.setHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
@@ -372,6 +370,7 @@ public class SessionWireImpl implements SessionWire {
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
         return byteBuffer;
     }
+
     @Override
     public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
         if (wireHandle == 0) {
