@@ -23,10 +23,6 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
 
 class SessionImplTest {
@@ -71,35 +67,23 @@ class SessionImplTest {
         }
 
         @Override
+        public ResponseWireHandle responseWireHandle() {
+            return null;
+        }
+
+        @Override
         public void close() throws IOException, InterruptedException {
         }
     }
 
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
-        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(
-                long serviceID, SqlRequest.Request.Builder request) throws IOException {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null; // dummy as it is test for session
         }
 
         @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return null; // dummy as it is test for session
+        public void setQueryMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

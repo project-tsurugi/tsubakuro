@@ -113,8 +113,8 @@ class ResultSetImplTest {
     void receiveRecord() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -239,8 +239,8 @@ class ResultSetImplTest {
     void receiveAndRecordWithSkip() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -283,8 +283,8 @@ class ResultSetImplTest {
     void receiveAndRecordWithSkip2() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -325,8 +325,8 @@ class ResultSetImplTest {
     void getColumnWithoutNextColumn() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -347,8 +347,8 @@ class ResultSetImplTest {
     void getColumnInDifferntType() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -368,8 +368,8 @@ class ResultSetImplTest {
     void getColumnThatIsNull() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -400,8 +400,8 @@ class ResultSetImplTest {
     void getColumnThatIsNullPattern2() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -431,8 +431,8 @@ class ResultSetImplTest {
     void nextRecordAfterIsNull() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first record
             assertTrue(resultSetImpl.nextRecord());
@@ -462,8 +462,8 @@ class ResultSetImplTest {
     void getColumnWithoutNextRecord() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             assertTrue(resultSetImpl.nextRecord());
@@ -497,8 +497,8 @@ class ResultSetImplTest {
     void useAfterClose() throws Exception {
         ResultSet.RecordMeta recordMeta;
         try {
-            resultSetImpl = new ResultSetImpl(new ResultSetWireMock(), null);
-            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build());
+            resultSetImpl = new ResultSetImpl(new ResultSetWireMock());
+            resultSetImpl.connect("dummy", ProtosForTest.SchemaProtosChecker.builder().build(), null);
 
             // first column data
             resultSetImpl.nextRecord();

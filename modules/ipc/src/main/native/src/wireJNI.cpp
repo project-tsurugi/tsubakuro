@@ -91,19 +91,26 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 
 /*
  * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Method:    setQueryModeNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_setQueryModeNative
+(JNIEnv *, jclass, jlong responseHandle)
+{
+    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseHandle));
+    r->set_query_mode();
+}
+
+/*
+ * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    flushNative
  * Signature: (JJZ)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_flushNative
-(JNIEnv *, jclass, jlong handle, jlong responseHandle, jboolean is_query)
+(JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
     swc->flush();
-
-    if (is_query) {
-        response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseHandle));
-        r->set_query_mode();
-    }
 }
 
 /*

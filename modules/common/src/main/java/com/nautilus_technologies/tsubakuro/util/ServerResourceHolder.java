@@ -6,12 +6,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 /**
- * Holds {@link ServerResource}s and closes them in {@link ServerResourceHolder#close()}.
+ * Holds {@link ServerResource}s and closes them.
  */
 public class ServerResourceHolder implements ServerResource, ServerResource.CloseHandler {
+
+    static final Logger LOG = LoggerFactory.getLogger(ServerResourceHolder.class);
 
     private final ConcurrentHashMap<IdentityProvider, Boolean> entries = new ConcurrentHashMap<>();
 
@@ -41,10 +46,14 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
     }
 
     @Override
-    public void close() throws ServerException, IOException, InterruptedException {
+    public void close() throws IOException, ServerException, InterruptedException {
         for (var iter = entries.entrySet().iterator(); iter.hasNext();) {
-            iter.next().getKey().resource.close();
-            iter.remove();
+            try (var resource = iter.next().getKey().resource) {
+                LOG.trace("cleanup: {}", resource); //$NON-NLS-1$
+                iter.remove();
+            } catch (IOException | ServerException e) {
+                LOG.warn("error suppressed during cleanup", e);
+            }
         }
     }
 
