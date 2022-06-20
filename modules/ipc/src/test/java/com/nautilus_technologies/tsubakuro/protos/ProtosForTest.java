@@ -511,8 +511,7 @@ public final class ProtosForTest {
         }
         public static boolean check(SqlRequest.Request dst, long id) {
             return
-                (dst.getSessionHandle().getHandle() == id)
-                && SqlRequest.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
+                SqlRequest.Request.RequestCase.BEGIN.equals(dst.getRequestCase())
                 && BeginChecker.check(dst.getBegin());
         }
         
@@ -567,11 +566,10 @@ public final class ProtosForTest {
         }
         public static boolean check(SqlRequest.Request dst, long id) {
             return
-                (dst.getSessionHandle().getHandle() == id)
-                && SqlRequest.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
+                SqlRequest.Request.RequestCase.EXECUTE_STATEMENT.equals(dst.getRequestCase())
                 && ExecuteStatementChecker.check(dst.getExecuteStatement());
         }
-        
+
         void test() {
             try {
                 assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
@@ -595,8 +593,7 @@ public final class ProtosForTest {
         }
         public static boolean check(SqlRequest.Request dst, long id) {
             return
-                (dst.getSessionHandle().getHandle() == id)
-                && SqlRequest.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
+                SqlRequest.Request.RequestCase.EXECUTE_QUERY.equals(dst.getRequestCase())
                 && ExecuteQueryChecker.check(dst.getExecuteQuery());
         }
         

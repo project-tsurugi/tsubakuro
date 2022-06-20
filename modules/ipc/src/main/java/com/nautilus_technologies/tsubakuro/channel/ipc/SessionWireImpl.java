@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -15,21 +14,13 @@ import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureQueryResponseImpl;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.FutureResponseImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
-import com.nautilus_technologies.tsubakuro.protos.ResultOnlyDistiller;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 
 /**
@@ -47,7 +38,8 @@ public class SessionWireImpl implements SessionWire {
     private static native long getResponseHandleNative(long wireHandle);
     private static native void sendNative(long sessionHandle, byte[] buffer);
     private static native void sendNative(long sessionHandle, ByteBuffer buffer);
-    private static native void flushNative(long wireHandle, long responseHandle, boolean isQuery);
+    private static native void setQueryModeNative(long responseHandle);
+    private static native void flushNative(long wireHandle);
     private static native ByteBuffer receiveNative(long responseHandle);
     private static native ByteBuffer receiveNative(long responseHandle, long timeout) throws TimeoutException;
     private static native void unReceiveNative(long responseHandle);
@@ -60,45 +52,19 @@ public class SessionWireImpl implements SessionWire {
         System.loadLibrary("wire");
     }
 
-    enum RequestType {
-        STATEMENT,
-        QUERY
-    };
-
     static class QueueEntry<V> {
-        long serviceId;
-        RequestType type;
-        SqlRequest.Request request;
-        FutureResponseImpl<V> futureBody;
-        FutureQueryResponseImpl futureHead;
+        final long serviceId;
+        final byte[] request;
 
-        QueueEntry(long serviceId, SqlRequest.Request request, FutureQueryResponseImpl futureHead, FutureResponseImpl<V> futureBody) {
+        QueueEntry(long serviceId, byte[] request) {
             this.serviceId = serviceId;
-            this.type = RequestType.QUERY;
             this.request = request;
-            this.futureBody = futureBody;
-            this.futureHead = futureHead;
-        }
-        QueueEntry(long serviceId, SqlRequest.Request request, FutureResponseImpl<V> futureBody) {
-            this.serviceId = serviceId;
-            this.type = RequestType.STATEMENT;
-            this.request = request;
-            this.futureBody = futureBody;
         }
         long serviceId() {
             return serviceId;
         }
-        RequestType getRequestType() {
-            return type;
-        }
-        SqlRequest.Request getRequest() {
+        byte[] getRequest() {
             return request;
-        }
-        FutureQueryResponseImpl getFutureHead() {
-            return futureHead;
-        }
-        FutureResponseImpl<V> getFutureBody() {
-            return futureBody;
         }
     }
 
@@ -133,174 +99,10 @@ public class SessionWireImpl implements SessionWire {
             throw new IOException(e);
         }
     }
-    byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            request.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
-        }
-    }
 
     /**
-     * Send SqlRequest.Request to the SQL server via the native wire.
-     * @param request the SqlRequest.Request message
-     * @return a Future response message corresponding the request
-     * @throws IOException error occurred in sendNative()
-     */
-    @Override
-    public <V> FutureResponse<V> send(long serviceId, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
-        }
-        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
-        var req = request.setSessionHandle(SqlCommon.Session.newBuilder().setHandle(sessionID)).build();
-        var futureBody = new FutureResponseImpl<V>(this, distiller);
-        synchronized (this) {
-            var handle = getResponseHandleNative(wireHandle);
-            if (handle != 0) {
-                sendNative(wireHandle, toDelimitedByteArray(header));
-                sendNative(wireHandle, toDelimitedByteArray(req));
-                flushNative(wireHandle, handle, false);
-                futureBody.setResponseHandle(new ResponseWireHandleImpl(handle));
-                logger.trace("send " + request + ", handle = " + handle);
-            } else {
-                queue.add(new QueueEntry<V>(serviceId, req, futureBody));
-            }
-        }
-        return futureBody;
-    }
-
-    /**
-     * Send SqlRequest.Request to the SQL server via the native wire.
-     * @param request the SqlRequest.Request message
-     * @return a couple of Future response message corresponding the request
-     */
-    @Override
-    public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(
-            long serviceId, SqlRequest.Request.Builder request) throws IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
-        }
-        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
-        var req = request.setSessionHandle(SqlCommon.Session.newBuilder().setHandle(sessionID)).build();
-        var left = new FutureQueryResponseImpl(this);
-        var right = new FutureResponseImpl<SqlResponse.ResultOnly>(this, new ResultOnlyDistiller());
-        synchronized (this) {
-            var handle = getResponseHandleNative(wireHandle);
-            if (handle != 0) {
-                sendNative(wireHandle, toDelimitedByteArray(header));
-                sendNative(wireHandle, toDelimitedByteArray(req));
-                flushNative(wireHandle, handle, true);
-                left.setResponseHandle(new ResponseWireHandleImpl(handle));
-                right.setResponseHandle(new ResponseWireHandleImpl(handle));
-                logger.trace("send " + request + ", handle = " + handle);
-            } else {
-                queue.add(new QueueEntry<SqlResponse.ResultOnly>(serviceId, req, left, right));
-            }
-        }
-        return Pair.of(left, right);
-    }
-
-    /**
-     * Receive SqlResponse.Response from the SQL server via the native wire.
-     * @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     * @return ResposeProtos.Response message
-    */
-    @Override
-    public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
-        }
-        try {
-            var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-            var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle));
-            FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-            var response = SqlResponse.Response.parseDelimitedFrom(byteBufferInput);
-            logger.trace("receive " + response + ", hancle = " + handle);
-            synchronized (this) {
-                releaseNative(responseHandle);
-                var entry = queue.peek();
-                if (!Objects.isNull(entry)) {
-                    long responseBoxHandle = getResponseHandleNative(wireHandle);
-                    if (responseBoxHandle != 0) {
-                        var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                        if (entry.getRequestType() == RequestType.STATEMENT) {
-                            sendNative(wireHandle, toDelimitedByteArray(header));
-                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
-                            flushNative(wireHandle, responseBoxHandle, false);
-                            entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            queue.poll();
-                        } else {
-                            sendNative(wireHandle, toDelimitedByteArray(header));
-                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
-                            flushNative(wireHandle, responseBoxHandle, true);
-                            entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            queue.poll();
-                        }
-                    }
-                }
-            }
-            return response;
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw new IOException("error: SessionWireImpl.receive()", e);
-        }
-    }
-
-    /**
-     * Receive SqlResponse.Response from the SQL server via the native wire.
-     * @param handle the handle indicating the sent request message corresponding to the response message to be received.
-     * @return response message of ResposeProtos.Response type
-    */
-    @Override
-    public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit)
-            throws TimeoutException, IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
-        }
-        try {
-            var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-            var timeoutNano = unit.toNanos(timeout);
-            if (timeoutNano == Long.MIN_VALUE) {
-                throw new IOException("timeout duration overflow");
-            }
-            var byteBufferInput = new ByteBufferInputStream(receiveNative(responseHandle, timeoutNano));
-            FrameworkResponseProtos.Header.parseDelimitedFrom(byteBufferInput);
-            var response = SqlResponse.Response.parseDelimitedFrom(byteBufferInput);
-            synchronized (this) {
-                releaseNative(responseHandle);
-                var entry = queue.peek();
-                if (!Objects.isNull(entry)) {
-                    long responseBoxHandle = getResponseHandleNative(wireHandle);
-                    if (responseBoxHandle != 0) {
-                        var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                        if (entry.getRequestType() == RequestType.STATEMENT) {
-                            sendNative(wireHandle, toDelimitedByteArray(header));
-                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
-                            flushNative(wireHandle, responseBoxHandle, false);
-                            entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            queue.poll();
-                        } else {
-                            sendNative(wireHandle, toDelimitedByteArray(header));
-                            sendNative(wireHandle, toDelimitedByteArray(entry.getRequest()));
-                            flushNative(wireHandle, responseBoxHandle, true);
-                            entry.getFutureHead().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            entry.getFutureBody().setResponseHandle(new ResponseWireHandleImpl(responseBoxHandle));
-                            queue.poll();
-                        }
-                    }
-                }
-            }
-            return response;
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            throw new IOException("error: SessionWireImpl.receive()", e);
-        }
-    }
-
-    /**
-     * Send SqlRequest.Request to the SQL server via the native wire.
-     * @param request the SqlRequest.Request message
+     * Send a Request to the server via the native wire.
+     * @param request the Request message in byte[]
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
@@ -317,8 +119,8 @@ public class SessionWireImpl implements SessionWire {
             if (handle != 0) {
                 sendNative(wireHandle, toDelimitedByteArray(header));
                 sendNative(wireHandle, request);
-                flushNative(wireHandle, handle, false);
-                response.setHandle(new ResponseWireHandleImpl(handle));
+                flushNative(wireHandle);
+                response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
                 throw new IOException("no response box available");  // FIXME should queueing
@@ -328,8 +130,8 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * Send SqlRequest.Request to the SQL server via the native wire.
-     * @param request the SqlRequest.Request message
+     * Send a Request to the server via the native wire.
+     * @param request the Request message in ByteBuffer
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
@@ -350,8 +152,8 @@ public class SessionWireImpl implements SessionWire {
                 } else {
                     sendNative(wireHandle, request.array());
                 }
-                flushNative(wireHandle, handle, false);
-                response.setHandle(new ResponseWireHandleImpl(handle));
+                flushNative(wireHandle);
+                response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
                 throw new IOException("no response box available");  // FIXME should queueing
@@ -367,6 +169,7 @@ public class SessionWireImpl implements SessionWire {
         }
         var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = receiveNative(responseHandle);
+        releaseNative(responseHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
         return byteBuffer;
     }
@@ -381,9 +184,19 @@ public class SessionWireImpl implements SessionWire {
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
         }
+        System.out.println("import static org.junit.jupiter.api.Assertions.assertTrue;" + timeoutNano);
         var byteBuffer = receiveNative(responseHandle, timeoutNano);
+        releaseNative(responseHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
         return byteBuffer;
+    }
+
+    /**
+     * Set to receive a Query type response by response box
+     */
+    @Override
+    public void setQueryMode(ResponseWireHandle handle) {
+        setQueryModeNative(((ResponseWireHandleImpl) handle).getHandle());
     }
 
     /**

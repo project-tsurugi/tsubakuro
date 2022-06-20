@@ -120,7 +120,12 @@ public class ChannelResponse implements Response {
 //        );
 //    }
 
-    public void setHandle(ResponseWireHandle h) {
+    @Override
+    public ResponseWireHandle responseWireHandle() {
+        return handle;
+    }
+
+    public void setResponseHandle(ResponseWireHandle h) {
         handle = h;
     }
 }
