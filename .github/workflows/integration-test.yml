@@ -37,6 +37,9 @@ jobs:
       TG_IT_DBNAME: eisen-${{ github.run_id }}
       TG_IT_COMMON_CMAKE_OPTIONS: '-- -j'
 
+      GPR_USER: ${{ github.repository_owner }}
+      GPR_KEY: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - id: Setup_Java
         name: Setup_Java
@@ -49,7 +52,6 @@ jobs:
         name: Checkout
         uses: actions/checkout@v2
         with:
-          submodules: recursive
           token: ${{ secrets.GHA_PAT }}
           clean: false
 
@@ -102,12 +104,12 @@ jobs:
           token: ${{ secrets.GHA_PAT }}
           clean: false
 
-      - id: Install_Tsubakuro
-        name: Install_Tsubakuro
-        run: ${{ env.TG_IT_EISEN_PATH }}/scripts/install-tsubakuro.sh 2>&1 | tee ${TG_IT_RESULT_DIR}/install-tsubakuro.log
-        env:
-          TG_IT_TSUBAKURO_DIR: ${{ github.workspace }}/${{ env.TG_IT_TSUBAKURO_PATH }}
-          TG_IT_RESULT_DIR: ${{ github.workspace }}/${{ env.TG_IT_RESULT_PATH }}
+      # - id: Install_Tsubakuro
+      #   name: Install_Tsubakuro
+      #   run: ${{ env.TG_IT_EISEN_PATH }}/scripts/install-tsubakuro.sh 2>&1 | tee ${TG_IT_RESULT_DIR}/install-tsubakuro.log
+      #   env:
+      #     TG_IT_TSUBAKURO_DIR: ${{ github.workspace }}/${{ env.TG_IT_TSUBAKURO_PATH }}
+      #     TG_IT_RESULT_DIR: ${{ github.workspace }}/${{ env.TG_IT_RESULT_PATH }}
 
       - id: Install_Jogasaki
         name: Install_Jogasaki
@@ -146,6 +148,7 @@ jobs:
           TG_IT_INSTALL_DIR: ${{ github.workspace }}/${{ env.TG_IT_INSTALL_PATH }}
           TG_IT_RESULT_DIR: ${{ github.workspace }}/${{ env.TG_IT_RESULT_PATH }}
           GLOG_logtostderr: 1
+          GRADLE_CLI_OPTS: --refresh-dependencies
 
       - id: Prepare_Upload
         name: Prepare_Upload

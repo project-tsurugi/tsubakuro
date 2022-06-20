@@ -51,6 +51,15 @@ jobs:
         run: |
           ./gradlew -i check
 
+      - id: Publish
+        name: Publish
+        if: contains(github.ref, '/heads/master')
+        run: |
+          ./gradlew -i publish
+        env:
+          GPR_USER: ${{ github.repository_owner }}
+          GPR_KEY: ${{ secrets.GITHUB_TOKEN }}
+
       - id: Generate_Annotations
         name: Generate_Annotations
         uses: ./.github/actions/tsurugi-annotations-action

@@ -6,6 +6,16 @@ plugins {
 }
 
 publishing {
+    repositories {
+        maven {
+            name 'GitHubPackages'
+            url 'https://maven.pkg.github.com/project-tsurugi/tsubakuro'
+            credentials {
+                username findProperty('gpr.user') ?: System.getenv('GPR_USER')
+                password findProperty('gpr.key') ?: System.getenv('GPR_KEY')
+            }
+        }
+    }
     publications {
         mavenJava(MavenPublication) {
             artifactId = "${rootProject.name}-${project.name}"

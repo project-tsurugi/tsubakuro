@@ -23,7 +23,8 @@ publishing {
 }
 
 tasks.withType(AbstractPublishToMaven) { task ->
-    if (task.name == 'publishMavenNativePublicationToMavenLocal') {
+    if (task.name == 'publishMavenNativePublicationToMavenLocal' ||
+        task.name == 'publishMavenNativePublicationToGitHubPackagesRepository') {
         task.dependsOn nativeLib
     }
 }
