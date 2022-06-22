@@ -1,12 +1,7 @@
 package com.nautilus_technologies.tsubakuro.channel.common.wire;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.util.Collection;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -53,48 +48,6 @@ public interface Response extends ServerResource {
      */
     ByteBuffer waitForMainResponse(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException;
-
-    /**
-     * Returns the sub-response identifiers included in this response.
-     * @return the sub-response identifiers
-     * @throws IOException if I/O error was occurred while opening the sub-responses
-     * @throws ServerException if server error was occurred while opening the sub-responses
-     * @throws InterruptedException if interrupted by other threads while opening the sub-responses
-     */
-    Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException;
-
-    /**
-     * Retrieves sub-responses in this response.
-     * You can read each sub-responses data only once.
-     * Even if If sub-responses data have not been completed, you can retrieve them partially.
-     * The stream will be blocked when the stream position reached to the incomplete area of the sub-response.
-     * @param id the sub-responses name
-     * @return contents of body of the sub-response
-     * @throws NoSuchElementException if there is no such the data channel
-     * @throws IOException if I/O error was occurred while opening the sub-responses
-     * @throws ServerException if server error was occurred while opening the sub-responses
-     * @throws InterruptedException if interrupted by other threads while opening the sub-responses
-     * @see #getSubResponseIds()
-     */
-    InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException;
-
-    /**
-     * Retrieves sub-responses in this response.
-     * You can read each sub-responses data only once.
-     * Even if If sub-responses data have not been completed, you can retrieve them partially.
-     * The stream will be blocked when the stream position reached to the incomplete area of the sub-response.
-     * @param id the sub-responses name
-     * @return contents of body of the sub-response
-     * @throws NoSuchElementException if there is no such the data channel
-     * @throws IOException if I/O error was occurred while opening the sub-responses
-     * @throws ServerException if server error was occurred while opening the sub-responses
-     * @throws InterruptedException if interrupted by other threads while opening the sub-responses
-     * @see #getSubResponseIds()
-     */
-    default ReadableByteChannel openSubResponseAsChannel(String id)
-            throws IOException, ServerException, InterruptedException {
-        return Channels.newChannel(openSubResponse(id));
-    }
 
     /**
      * Provides responsesWireHandle throuch which the main response can be obrained.

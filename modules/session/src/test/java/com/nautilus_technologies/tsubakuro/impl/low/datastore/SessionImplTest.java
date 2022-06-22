@@ -3,12 +3,9 @@ package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.InputStream;
-// import java.io.ByteArrayByteBuffer;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -18,7 +15,6 @@ import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
@@ -54,16 +50,6 @@ class SessionImplTest {
                 return wire.response(handle, timeout, unit);
             }
             throw new IOException("response box is not available");  // FIXME arch. mismatch??
-        }
-    
-        @Override
-        public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
-            return null;
-        }
-    
-        @Override
-        public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
-            return null;
         }
 
         @Override

@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.Collection;
 
 import org.junit.jupiter.api.Test;
 
@@ -59,14 +57,6 @@ class TransactionExceptionTest {
         @Override
         public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
             return wire.response(handle);
-        }
-        @Override
-        public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
-            return null;
-        }
-        @Override
-        public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
-            return null;
         }
         @Override
         public void close() throws IOException, InterruptedException {

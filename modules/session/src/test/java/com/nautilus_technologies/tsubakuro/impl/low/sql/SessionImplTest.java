@@ -4,13 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.Collection;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -20,7 +18,6 @@ import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
@@ -59,14 +56,6 @@ class SessionImplTest {
         @Override
         public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
             return wire.response(handle);
-        }
-        @Override
-        public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
-            return null;
-        }
-        @Override
-        public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
-            return null;
         }
         @Override
         public void close() throws IOException, InterruptedException {
