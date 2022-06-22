@@ -197,7 +197,7 @@ public class TransactionImpl implements Transaction {
             dispose();
             return rv;
         }
-        return null;  // FIXME should return future of SqlResponse.ResultOnly.Success
+        return new FutureResultOnlySuccess();
     }
 
     private FutureResponse<SqlResponse.ResultOnly> submitRollback() throws IOException {
