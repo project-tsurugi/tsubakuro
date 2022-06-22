@@ -46,16 +46,19 @@ jobs:
         run: |
           ./gradlew -i clean assemble
 
-      - id: Test
-        name: Test
+      - id: Check
+        name: Check
         run: |
-          ./gradlew -i test
+          ./gradlew -i check
 
-      - id: Static_Analysis
-        name: Static_Analysis
+      - id: Publish
+        name: Publish
+        if: contains(github.ref, '/heads/master')
         run: |
-          ./gradlew -i checkstyleMain spotbugsMain
-        if: matrix.container-tag != 'ubuntu-18.04'
+          ./gradlew -i publish
+        env:
+          GPR_USER: ${{ github.repository_owner }}
+          GPR_KEY: ${{ secrets.GITHUB_TOKEN }}
 
       - id: Generate_Annotations
         name: Generate_Annotations
