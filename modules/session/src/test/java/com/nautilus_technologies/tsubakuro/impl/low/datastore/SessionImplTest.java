@@ -3,9 +3,12 @@ package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -15,10 +18,15 @@ import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
+import com.nautilus_technologies.tsubakuro.protos.Distiller;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.nautilus_technologies.tsubakuro.util.Pair;
 import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
 
 class SessionImplTest {
@@ -37,28 +45,29 @@ class SessionImplTest {
         }
     
         @Override
-        public ByteBuffer waitForMainResponse() throws IOException {
+        public InputStream waitForMainResponse() throws IOException {
             if (isMainResponseReady()) {
-                return wire.response(handle);
+                return wire.responseStream(handle);
             }
             throw new IOException("response box is not available");
         }
     
         @Override
-        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        public InputStream waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
             if (isMainResponseReady()) {
-                return wire.response(handle, timeout, unit);
+                return wire.responseStream(handle, timeout, unit);
             }
             throw new IOException("response box is not available");  // FIXME arch. mismatch??
         }
-
+    
         @Override
-        public ResponseWireHandle responseWireHandle() {
+        public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
             return null;
         }
-
+    
         @Override
-        public void setQueryMode() {
+        public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
+            return null;
         }
 
         @Override
@@ -68,12 +77,29 @@ class SessionImplTest {
 
     class SessionWireMock implements SessionWire {
         @Override
+        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
+        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(
+                long serviceID, SqlRequest.Request.Builder request) throws IOException {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
+        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
+            return null; // dummy as it is test for session
+        }
+
+        @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null; // dummy as it is test for session
         }
 
         @Override
-        public void setQueryMode(ResponseWireHandle responseWireHandle) {
+        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return null; // dummy as it is test for session
         }
 
         @Override
@@ -93,7 +119,7 @@ class SessionImplTest {
         }
 
         @Override
-        public ByteBuffer response(ResponseWireHandle handle) {
+        public InputStream responseStream(ResponseWireHandle handle) {
             try (var buffer = new ByteArrayOutputStream()) {
                 var response = DatastoreResponseProtos.BackupBegin.newBuilder()
                     .setSuccess(DatastoreResponseProtos.BackupBegin.Success.newBuilder()
@@ -102,15 +128,15 @@ class SessionImplTest {
                     .build())
                 .build();
                 response.writeDelimitedTo(buffer);
-                return ByteBuffer.wrap(buffer.toByteArray());
+                return new ByteArrayInputStream(buffer.toByteArray());
             } catch (IOException e) {
                 System.out.println(e);
             }
             return null; // dummy as it is test for session
         }
 
-        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return response(handle);
+        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
+            return responseStream(handle);
         }
         
         @Override

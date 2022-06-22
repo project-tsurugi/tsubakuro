@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -15,16 +14,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.ServerResource;
-import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.jogasaki.proto.SqlResponse.ResultOnly;
 
 /**
  * Transaction type.
@@ -33,63 +31,55 @@ public class TransactionImpl implements Transaction {
 
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
+    private SessionLinkImpl sessionLinkImpl;
     private final SqlCommon.Transaction transaction;
     private boolean cleanuped;
     private long timeout;
     private TimeUnit unit;
 
-    private final SqlService service;
-
-    private final ServerResource.CloseHandler closeHandler;
-
-    private Timeout closeTimeout = Timeout.DISABLED;
-
-    private final AtomicBoolean released = new AtomicBoolean();
-
     /**
      * Class constructor, called from  FutureTransactionImpl.
      @param transaction a handle for this transaction
-     @param service the caller of this constructor
+     @param sessionLinkImpl the caller of this constructor
      */
-    public TransactionImpl(SqlCommon.Transaction transaction, SqlService service) {
+    public TransactionImpl(SqlCommon.Transaction transaction, SessionLinkImpl sessionLinkImpl) {
+        this.sessionLinkImpl = sessionLinkImpl;
         this.transaction = transaction;
-        this.service = service;
+        this.sessionLinkImpl.add(this);
         this.cleanuped = false;
         this.timeout = 0;
-        this.closeHandler = null;
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+    public FutureResponse<ResultOnly> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
-        return service.send(SqlRequest.ExecuteStatement.newBuilder()
+        return sessionLinkImpl.send(SqlRequest.ExecuteStatement.newBuilder()
                 .setTransactionHandle(transaction)
-                .setSql(source)
-                .build());
+                .setSql(source));
     }
 
     @Override
     public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
-        return service.send(SqlRequest.ExecuteQuery.newBuilder()
+        var pair = sessionLinkImpl.send(SqlRequest.ExecuteQuery.newBuilder()
                 .setTransactionHandle(transaction)
-                .setSql(source)
-                .build());
+                .setSql(source));
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeStatement(
+    public FutureResponse<ResultOnly> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
@@ -98,7 +88,7 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        return service.send(pb.build());
+        return sessionLinkImpl.send(pb);
     }
 
     @Override
@@ -107,7 +97,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
@@ -116,7 +106,8 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        return service.send(pb.build());
+        var pair = sessionLinkImpl.send(pb);
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
@@ -135,7 +126,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
@@ -145,18 +136,19 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        return service.send(pb.build());
+        var pair = sessionLinkImpl.send(pb);
+        return new FutureResultSetImpl(pair.getLeft(), sessionLinkImpl, pair.getRight());
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeLoad(
+    public FutureResponse<ResultOnly> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(files);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
@@ -168,19 +160,18 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        return service.send(pb.build());
+        return sessionLinkImpl.send(pb);
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    public FutureResponse<ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
-        var rv = service.send(SqlRequest.Commit.newBuilder()
+        var rv = sessionLinkImpl.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction)
-                .setNotificationType(status)
-                .build());
+                .setNotificationType(status));
         cleanuped = true;
         dispose();
         return rv;
@@ -188,22 +179,18 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException {
-        if (Objects.isNull(service)) {
+        if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
-        if (!cleanuped) {
-            var rv = submitRollback();
-            cleanuped = true;
-            dispose();
-            return rv;
-        }
-        return new FutureResultOnlySuccess();
+        var rv = submitRollback();
+        cleanuped = true;
+        dispose();
+        return rv;
     }
 
-    private FutureResponse<SqlResponse.ResultOnly> submitRollback() throws IOException {
-        var rv = service.send(SqlRequest.Rollback.newBuilder()
-                .setTransactionHandle(transaction)
-                .build());
+    private FutureResponse<ResultOnly> submitRollback() throws IOException {
+        var rv = sessionLinkImpl.send(SqlRequest.Rollback.newBuilder()
+                .setTransactionHandle(transaction));
         return rv;
     }
 
@@ -220,7 +207,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(service)) {
+        if (Objects.nonNull(sessionLinkImpl)) {
             if (!cleanuped) {
                 // FIXME need to consider rollback is suitable here
                 try (var rollback = submitRollback()) {
@@ -237,7 +224,7 @@ public class TransactionImpl implements Transaction {
     }
 
     private void dispose() {
-//        service.remove(this);
-//        service = null;
+        sessionLinkImpl.remove(this);
+        sessionLinkImpl = null;
     }
 }

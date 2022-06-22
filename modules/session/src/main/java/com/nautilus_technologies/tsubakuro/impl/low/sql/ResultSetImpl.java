@@ -9,35 +9,17 @@ import org.msgpack.core.MessagePack.UnpackerConfig;
 import org.msgpack.core.MessageUnpacker;
 import org.msgpack.value.ValueType;
 
-import javax.annotation.Nonnull;
-
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 /**
  * ResultSetImpl type.
  */
 public class ResultSetImpl implements ResultSet {
-    /**
-     * Tests if the response is valid.
-     */
-    public interface ResponseTester {
-        /**
-         * Tests if the response is valid.
-         * @param response the response
-         * @throws IOException if I/O error was occurred while receiving response
-         * @throws ServerException if server error was occurred while processing the request
-         * @throws InterruptedException if interrupted while receiving response
-         */
-        void test(@Nonnull Response response) throws IOException, ServerException, InterruptedException;
-    }
-
     /**
      * Store the schema of the result set.
      */
@@ -120,8 +102,9 @@ public class ResultSetImpl implements ResultSet {
      * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
      * @throws IOException error occurred in class constructor
      */
-    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
+    public ResultSetImpl(ResultSetWire resultSetWire, FutureResponse<SqlResponse.ResultOnly> futureResponse) throws IOException {
         this.resultSetWire = resultSetWire;
+        this.futureResponse = futureResponse;
         unpackerConfig = new UnpackerConfig()
                 .withActionOnMalformedString(CodingErrorAction.IGNORE)
                 .withActionOnUnmappableString(CodingErrorAction.IGNORE);
@@ -133,11 +116,10 @@ public class ResultSetImpl implements ResultSet {
      * @param meta schema meta data for this result set.
      * @return recordMeta the metadata object
      */
-    public void connect(String name, SchemaProtos.RecordMeta meta, FutureResponse<SqlResponse.ResultOnly> future) throws IOException {
+    public void connect(String name, SchemaProtos.RecordMeta meta) throws IOException {
         recordMeta = new RecordMetaImpl(meta);
         columnIndex = recordMeta.fieldCount();
         resultSetWire.connect(name);
-        futureResponse = future;
         var byteBufferBackedInput = resultSetWire.getByteBufferBackedInput();
         if (Objects.nonNull(byteBufferBackedInput)) {
             unpacker = unpackerConfig.newUnpacker(byteBufferBackedInput);
@@ -147,10 +129,9 @@ public class ResultSetImpl implements ResultSet {
     /**
      * Notify this that an error has occurred.
      */
-    public void indicateError(FutureResponse<SqlResponse.ResultOnly> future) {
+    public void indicateError() {
         recordMeta = new RecordMetaImpl();
         resultSetWire = null;
-        futureResponse = future;
     }
 
     /**

@@ -2,7 +2,8 @@ package com.nautilus_technologies.tsubakuro.impl.low.datastore;
 
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
+import java.io.InputStream;
+// import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
@@ -33,7 +34,6 @@ import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResourceHolder;
-import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.google.protobuf.Message;
 
 /**
@@ -94,8 +94,8 @@ public class DatastoreServiceStub implements DatastoreService {
 
     class BackupBeginProcessor implements MainResponseProcessor<Backup> {
         @Override
-        public Backup process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupBegin.parseDelimitedFrom(new ByteBufferInputStream(payload));
+        public Backup process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupBegin.parseDelimitedFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -133,8 +133,8 @@ public class DatastoreServiceStub implements DatastoreService {
 
     static class BackupEndProcessor implements MainResponseProcessor<Void> {
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupEnd.parseDelimitedFrom(new ByteBufferInputStream(payload));
+        public Void process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupEnd.parseDelimitedFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -170,8 +170,8 @@ public class DatastoreServiceStub implements DatastoreService {
 
     static class BackupContinueProcessor implements MainResponseProcessor<Void> {
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupContinue.parseDelimitedFrom(new ByteBufferInputStream(payload));
+        public Void process(InputStream payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.BackupContinue.parseDelimitedFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:

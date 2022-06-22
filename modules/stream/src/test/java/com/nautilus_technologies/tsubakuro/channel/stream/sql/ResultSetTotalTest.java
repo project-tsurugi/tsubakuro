@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePacker;
@@ -14,9 +15,6 @@ import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
-import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 class ResultSetTotalTest {
     static final long SERVICE_ID_SQL = 3;
@@ -60,7 +58,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.ExecuteQueryRequestChecker.builder().build()));
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
@@ -73,18 +71,8 @@ class ResultSetTotalTest {
         // server side send SchemaMeta
         long rsHandle = server.createRSL(responseToBeSent.getExecuteQuery().getName());
 
-        // server side send Records
-        server.putRecordsRSL(rsHandle, createRecordsForTest(1));
-        server.putRecordsRSL(rsHandle, createRecordsForTest(2));
-        server.eorRSL(rsHandle);
-
-        // server side send query result on ResponseProtos ResultOnly
-        server.put(ProtosForTest.ResultOnlyResponseChecker.builder().build());
-
         // client side receive Response
-        var response = futureResponse.get();
-        client.setQueryMode(response.responseWireHandle());
-        var responseReceived =  SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse())).getExecuteQuery();
+        var responseReceived = futureResponse.getLeft().get();
         assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
 
         // client side receive SchemaMeta
@@ -92,6 +80,14 @@ class ResultSetTotalTest {
         resultSetWire.connect(responseReceived.getName());
         var schemaMeta = responseReceived.getRecordMeta();
         assertTrue(ProtosForTest.SchemaProtosChecker.check(schemaMeta));
+
+        // server side send Records
+        server.putRecordsRSL(rsHandle, createRecordsForTest(1));
+        server.putRecordsRSL(rsHandle, createRecordsForTest(2));
+        server.eorRSL(rsHandle);
+
+        // server side send query result on ResponseProtos ResultOnly
+        server.put(ProtosForTest.ResultOnlyResponseChecker.builder().build());
 
         // client side receive Records
         // first record data
@@ -143,13 +139,11 @@ class ResultSetTotalTest {
 
         // end of record
         unpacker = org.msgpack.core.MessagePack.newDefaultUnpacker(input);
-
         assertFalse(unpacker.hasNext());
 
+        var responseResultOnly = futureResponse.getRight().get();
+        assertTrue(ProtosForTest.ResultOnlyChecker.check(responseResultOnly));
         // RESPONSE test end
-        var channelResponse = new ChannelResponse(client);
-        channelResponse.setResponseHandle(response.responseWireHandle());
-        var responseResultOnly = SqlResponse.ResultOnly.parseDelimitedFrom(new ByteBufferInputStream(channelResponse.waitForMainResponse()));
 
         client.close();
         server.close();
@@ -162,7 +156,7 @@ class ResultSetTotalTest {
 
         // REQUEST test begin
         // client side send Request
-        var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.ExecuteQueryRequestChecker.builder().build()));
+        var futureResponse = client.sendQuery(SERVICE_ID_SQL, ProtosForTest.ExecuteQueryRequestChecker.builder());
         // server side receive Request
         assertTrue(ProtosForTest.ExecuteQueryRequestChecker.check(server.get(), sessionID));
         // REQUEST test end
@@ -173,15 +167,9 @@ class ResultSetTotalTest {
         server.put(ProtosForTest.ResultOnlyResponseChecker.builder().build());
 
         // client side receive Response
-        var response = futureResponse.get();
-        client.setQueryMode(response.responseWireHandle());
-        var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
-        assertFalse(SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(responseReceived.getResponseCase()));
+        assertTrue(Objects.isNull(futureResponse.getLeft().get()));
 
-        client.unReceive(response.responseWireHandle());
-        var channelResponse = new ChannelResponse(client);
-        channelResponse.setResponseHandle(response.responseWireHandle());
-        var responseResultOnly = SqlResponse.ResultOnly.parseDelimitedFrom(new ByteBufferInputStream(channelResponse.waitForMainResponse()));
+        var responseResultOnly = futureResponse.getRight().get();
         assertTrue(ProtosForTest.ResultOnlyChecker.check(responseResultOnly));
         // RESPONSE test end
 

@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
@@ -24,11 +24,12 @@ public class PreparedStatementImpl implements PreparedStatement {
     private long timeout = 0;
     private TimeUnit unit;
     SqlCommon.PreparedStatement handle;
-    private final SqlService service;
+    private SessionLinkImpl sessionLinkImpl;
 
-    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SqlService service) {
+    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SessionLinkImpl sessionLinkImpl) {
         this.handle = handle;
-        this.service = service;
+        this.sessionLinkImpl = sessionLinkImpl;
+        this.sessionLinkImpl.add(this);
     }
 
     public SqlCommon.PreparedStatement getHandle() throws IOException {
@@ -56,13 +57,15 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(handle) && Objects.nonNull(service)) {
+        if (Objects.nonNull(handle) && Objects.nonNull(sessionLinkImpl)) {
             try {
-                var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
+                var futureResponse = sessionLinkImpl.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle));
                 var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
                 if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
                     throw new IOException(response.getError().getDetail());
                 }
+                sessionLinkImpl.remove(this);
+                sessionLinkImpl = null;
             } catch (TimeoutException e) {
                 LOG.warn("closing resource is timeout", e);
             }

@@ -3,22 +3,18 @@ package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
+import com.nautilus_technologies.tsubakuro.protos.BeginDistiller;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
-import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 class SessionWireTest {
     static final long SERVICE_ID_SQL = 3;
@@ -57,7 +53,7 @@ class SessionWireTest {
 
             // REQUEST test begin
             // client side send Request
-            var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
+            var futureResponse = client.send(SERVICE_ID_SQL, ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
             // server side receive Request
             assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
             // REQUEST test end
@@ -67,19 +63,20 @@ class SessionWireTest {
             server.put(ProtosForTest.PrepareResponseChecker.builder().build());
 
             // client side receive Response, ends up an error
-            var response = futureResponse.get();
-            var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
-            assertFalse(SqlResponse.Response.ResponseCase.BEGIN.equals(responseReceived.getResponseCase()));
+            Throwable exception = assertThrows(IOException.class, () -> {
+                var message = futureResponse.get();
+            });
+            // FIXME: check error code instead of message
+            assertEquals("response type is inconsistent with the request type", exception.getMessage());
 
             client.close();
             server.close();
-        } catch (IOException | ServerException | InterruptedException e) {
+        } catch (IOException e) {
             fail("cought IOException");
         }
     }
 
-    @Disabled("time out is not handled")
-    @Test
+    //    @Test
     void timeout() {
         try {
             server = new ServerWireImpl(PORT, sessionID);
@@ -87,7 +84,7 @@ class SessionWireTest {
 
             // REQUEST test begin
             // client side send Request
-            var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
+            var futureResponse = client.send(SERVICE_ID_SQL, ProtosForTest.BeginRequestChecker.builder(), new BeginDistiller());
             // server side receive Request
             assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
             // REQUEST test end

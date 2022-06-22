@@ -60,7 +60,7 @@ public class ServerWireImpl implements Closeable {
     }
 
     public long getSessionID() {
-        return sessionID;
+    return sessionID;
     }
 
     /**
@@ -70,11 +70,9 @@ public class ServerWireImpl implements Closeable {
     public SqlRequest.Request get() throws IOException {
         try {
             var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
-            var header = FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
-            sessionID = header.getSessionId();
+            FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
             return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            e.printStackTrace();
             throw new IOException("error: ServerWireImpl.get()");
         }
     }

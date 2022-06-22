@@ -106,7 +106,7 @@ public class ServerStreamWire {
             info = inStream.readByte();
 
             // slot受信
-            slot = inStream.readByte();
+        slot = inStream.readByte();
 
             // length受信
             int length = 0;
@@ -126,10 +126,10 @@ public class ServerStreamWire {
             }
         } catch (EOFException e) {  // imply session close
             socket.close();
-            socket = null;
+        socket = null;
             return false;
         } catch (SocketException e) {
-            socket = null;
+        socket = null;
             return false;
         }
         return true;
