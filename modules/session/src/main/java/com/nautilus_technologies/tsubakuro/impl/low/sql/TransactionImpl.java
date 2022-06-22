@@ -18,11 +18,11 @@ import com.nautilus_technologies.tsubakuro.impl.low.common.SessionLinkImpl;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.tsurugidb.jogasaki.proto.SqlResponse.ResultOnly;
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * Transaction type.
@@ -164,12 +164,14 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> commit() throws IOException {
+    public FutureResponse<ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+        Objects.requireNonNull(status);
         if (Objects.isNull(sessionLinkImpl)) {
             throw new IOException("already closed");
         }
         var rv = sessionLinkImpl.send(SqlRequest.Commit.newBuilder()
-                .setTransactionHandle(transaction));
+                .setTransactionHandle(transaction)
+                .setNotificationType(status));
         cleanuped = true;
         dispose();
         return rv;

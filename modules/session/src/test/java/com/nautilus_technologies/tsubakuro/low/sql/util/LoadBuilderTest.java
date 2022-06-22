@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.TableMetadataAdapter;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -83,18 +82,6 @@ class LoadBuilderTest {
                     .sorted()
                     .collect(Collectors.toList());
             return FutureResponse.returns(null);
-        }
-        @Override
-        public FutureResponse<SqlResponse.ResultOnly> commit() throws IOException {
-            throw new AssertionError();
-        }
-        @Override
-        public FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException {
-            throw new AssertionError();
-        }
-        @Override
-        public void close() throws ServerException, IOException, InterruptedException {
-            throw new AssertionError();
         }
     };
 
