@@ -139,6 +139,20 @@ message TransactionOption {
     reserved 12 to 20;
 }
 
+// the transaction commit status.
+enum CommitStatus {
+    // the default commit status (rely on the database settings).
+    COMMIT_STATUS_UNSPECIFIED = 0;
+    // commit operation has accepted, and the transaction will never abort except system errors.
+    ACCEPTED = 10;
+    // commit data has been visible for others.
+    AVAILABLE = 20;
+    // commit data has been saved on the local disk.
+    STORED = 30;
+    // commit data has been propagated to the all suitable nodes.
+    PROPAGATED = 40;
+}
+
 /*
  * Each request message
  */
@@ -198,7 +212,10 @@ message ExecuteLoad {
 
 /* For commit request. */
 message Commit {
-  common.Transaction transaction_handle = 1;
+    common.Transaction transaction_handle = 1;
+
+    // response will be returned after reaching the commit status.
+    CommitStatus notification_type = 2;
 }
 
 /* For rollback request. */

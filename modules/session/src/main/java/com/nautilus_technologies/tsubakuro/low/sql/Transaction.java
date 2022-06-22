@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 
@@ -193,12 +194,33 @@ public interface Transaction extends ServerResource {
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in commit by the SQL service
      */
-    FutureResponse<SqlResponse.ResultOnly> commit() throws IOException;
+    default FutureResponse<SqlResponse.ResultOnly> commit() throws IOException {
+        return commit(SqlRequest.CommitStatus.COMMIT_STATUS_UNSPECIFIED);
+    }
+
+    /**
+     * Commits the current transaction.
+     * @param status the commit status which the request is waiting for
+     * @return a future response of this action:
+     *      the response will be returned after the transaction will reach the commit status,
+     *      or raise error if the commit operation was failed
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<SqlResponse.ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Request rollback to the SQL service
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in rollback by the SQL service
      */
-    FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException;
+    default FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default void close() throws ServerException, IOException, InterruptedException {
+        return;
+    }
 }
