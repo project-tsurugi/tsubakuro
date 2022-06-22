@@ -7,6 +7,7 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -32,7 +34,7 @@ public class SessionWireImpl implements SessionWire {
     private long wireHandle = 0;  // for c++
     private final String dbName;
     private final long sessionID;
-    private final Queue<QueueEntry<?>> queue;
+    private final Queue<QueueEntry> queue;
 
     private static native long openNative(String name) throws IOException;
     private static native long getResponseHandleNative(long wireHandle);
@@ -52,19 +54,24 @@ public class SessionWireImpl implements SessionWire {
         System.loadLibrary("wire");
     }
 
-    static class QueueEntry<V> {
+    static class QueueEntry {
         final long serviceId;
         final byte[] request;
+        final FutureResponse future;
 
-        QueueEntry(long serviceId, byte[] request) {
+        QueueEntry(long serviceId, byte[] request, FutureResponse future) {
             this.serviceId = serviceId;
             this.request = request;
+            this.future = future;
         }
         long serviceId() {
             return serviceId;
         }
         byte[] getRequest() {
             return request;
+        }
+        FutureResponse getFuture() {
+            return future;
         }
     }
 
@@ -80,24 +87,6 @@ public class SessionWireImpl implements SessionWire {
         this.sessionID = sessionID;
         this.queue = new ArrayDeque<>();
         logger.trace("begin Session via stream, id = " + sessionID);
-    }
-
-    /**
-     * Close the wire
-     */
-    @Override
-    public void close() throws IOException {
-        closeNative(wireHandle);
-        wireHandle = 0;
-    }
-
-    byte[] toDelimitedByteArray(FrameworkRequestProtos.Header request) throws IOException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            request.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
-        }
     }
 
     /**
@@ -123,7 +112,7 @@ public class SessionWireImpl implements SessionWire {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
-                throw new IOException("no response box available");  // FIXME should queueing
+                queue.add(new QueueEntry(serviceId, request, future));
             }
         }
         return future;
@@ -156,7 +145,7 @@ public class SessionWireImpl implements SessionWire {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
             } else {
-                throw new IOException("no response box available");  // FIXME should queueing
+                queue.add(new QueueEntry(serviceId, request.array(), future));  // FIXME in case of Direct ByteBuffer
             }
         }
         return future;
@@ -169,8 +158,33 @@ public class SessionWireImpl implements SessionWire {
         }
         var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = receiveNative(responseHandle);
-        releaseNative(responseHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+
+        synchronized (this) {
+            releaseNative(responseHandle);
+            var entry = queue.peek();
+            if (Objects.nonNull(entry)) {
+                var nextHandle = getResponseHandleNative(wireHandle);
+                ChannelResponse response;
+                if (nextHandle != 0) {
+                    var future = entry.getFuture();
+                    try {
+                        response = (ChannelResponse) future.get();  // FIXME provides some method to obtain response without exception for FutureResponse
+                    } catch (ServerException | InterruptedException e) {
+                        throw new IOException(e);
+                    }
+                    response.setResponseHandle(new ResponseWireHandleImpl(nextHandle));
+
+                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
+                    sendNative(nextHandle, toDelimitedByteArray(header));
+                    sendNative(nextHandle, entry.getRequest());
+                    flushNative(nextHandle);
+                    queue.poll();
+                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                }
+            }
+        }
+
         return byteBuffer;
     }
 
@@ -188,6 +202,32 @@ public class SessionWireImpl implements SessionWire {
         var byteBuffer = receiveNative(responseHandle, timeoutNano);
         releaseNative(responseHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+
+        synchronized (this) {
+            releaseNative(responseHandle);
+            var entry = queue.peek();
+            if (Objects.nonNull(entry)) {
+                var nextHandle = getResponseHandleNative(wireHandle);
+                ChannelResponse response;
+                if (nextHandle != 0) {
+                    var future = entry.getFuture();
+                    try {
+                        response = (ChannelResponse) future.get();  // FIXME provides some method to obtain response without exception for FutureResponse
+                    } catch (ServerException | InterruptedException e) {
+                        throw new IOException(e);
+                    }
+                    response.setResponseHandle(new ResponseWireHandleImpl(nextHandle));
+
+                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
+                    sendNative(nextHandle, toDelimitedByteArray(header));
+                    sendNative(nextHandle, entry.getRequest());
+                    flushNative(nextHandle);
+                    queue.poll();
+                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                }
+            }
+        }
+
         return byteBuffer;
     }
 
@@ -221,6 +261,24 @@ public class SessionWireImpl implements SessionWire {
             throw new IOException("already closed");
         }
         return new ResultSetWireImpl(wireHandle);
+    }
+
+    /**
+     * Close the wire
+     */
+    @Override
+    public void close() throws IOException {
+        closeNative(wireHandle);
+        wireHandle = 0;
+    }
+
+    byte[] toDelimitedByteArray(FrameworkRequestProtos.Header request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 
     public String getDbName() {
