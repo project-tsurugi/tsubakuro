@@ -115,6 +115,10 @@ enum TransactionPriority {
     INTERRUPT = 1;
     // prevents new transactions and waits for the running transactions will end.
     WAIT = 2;
+    // halts the running transactions immediately, and keep lock-out until its end.
+    INTERRUPT_EXCLUDE = 3;
+    // prevents new transactions and waits for the running transactions will end, and keep lock-out until its end.
+    WAIT_EXCLUDE = 4;
 }
 
 // individual write preservation entry.
