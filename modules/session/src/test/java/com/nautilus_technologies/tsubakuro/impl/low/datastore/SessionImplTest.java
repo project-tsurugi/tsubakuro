@@ -72,6 +72,10 @@ class SessionImplTest {
         }
 
         @Override
+        public void setQueryMode() {
+        }
+
+        @Override
         public void close() throws IOException, InterruptedException {
         }
     }

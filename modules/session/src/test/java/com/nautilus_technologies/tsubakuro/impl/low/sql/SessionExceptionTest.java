@@ -73,6 +73,9 @@ class SesstionExceptionTest {
         public ResponseWireHandle responseWireHandle() {
             return handle;
         }
+        @Override
+        public void setQueryMode() {
+        }
     }
 
     class SessionWireMock implements SessionWire {

@@ -96,5 +96,16 @@ public interface Response extends ServerResource {
         return Channels.newChannel(openSubResponse(id));
     }
 
+    /**
+     * Provides responsesWireHandle throuch which the main response can be obrained.
+     * @return responsesWireHandle for the main response
+     */
     ResponseWireHandle responseWireHandle();
+
+    /**
+     * Set query mode for this response channel.
+     * @note Classes inheriting this interface must be implemented so that queryMode is set in responseWire 
+     * regardless of whether responseWireHandle is set or setQueryMode() is executed first.
+     */
+    void setQueryMode();
 }

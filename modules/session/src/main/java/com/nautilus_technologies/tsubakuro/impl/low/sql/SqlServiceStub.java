@@ -371,7 +371,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-            wire.setQueryMode(response.responseWireHandle());
+            response.setQueryMode();
 
             var resultSetImpl = new ResultSetImpl(wire.createResultSetWire());
 //            var owner = Owner.of(response);

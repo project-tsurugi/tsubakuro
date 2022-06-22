@@ -28,6 +28,7 @@ public class ChannelResponse implements Response {
 
     private final SessionWire wire;
     private ResponseWireHandle handle;
+    private boolean queryMode;
 //    private final ByteBuffer main;
 
 //    private final Map<String, ByteBuffer> subs;
@@ -45,6 +46,7 @@ public class ChannelResponse implements Response {
 //        Objects.requireNonNull(subMap);
         this.wire = wire;
         this.handle = null;
+        this.queryMode = false;
 //        this.subs = new TreeMap<>();
 //        for (var entry : subMap.entrySet()) {
 //            this.subs.put(entry.getKey(), entry.getValue().duplicate());
@@ -60,12 +62,12 @@ public class ChannelResponse implements Response {
 //    }
 
     @Override
-    public boolean isMainResponseReady() {
+    public synchronized boolean isMainResponseReady() {
         return Objects.nonNull(handle);
     }
 
     @Override
-    public ByteBuffer waitForMainResponse() throws IOException {
+    public synchronized ByteBuffer waitForMainResponse() throws IOException {
         if (isMainResponseReady()) {
             return wire.response(handle);
         }
@@ -73,7 +75,7 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+    public synchronized ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         if (isMainResponseReady()) {
             return wire.response(handle, timeout, unit);
         }
@@ -121,11 +123,22 @@ public class ChannelResponse implements Response {
 //    }
 
     @Override
-    public ResponseWireHandle responseWireHandle() {
+    public synchronized ResponseWireHandle responseWireHandle() {
         return handle;
     }
 
-    public void setResponseHandle(ResponseWireHandle h) {
+    @Override
+    public synchronized void setQueryMode() {
+        queryMode = true;
+        if (Objects.nonNull(handle)) {
+            wire.setQueryMode(handle);
+        }
+    }
+
+    public synchronized void setResponseHandle(ResponseWireHandle h) {
         handle = h;
+        if (queryMode) {
+            wire.setQueryMode(handle);
+        }
     }
 }
