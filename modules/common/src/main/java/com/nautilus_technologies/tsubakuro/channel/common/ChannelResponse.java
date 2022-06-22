@@ -19,13 +19,13 @@ public class ChannelResponse implements Response {
     private final SessionWire wire;
     private ResponseWireHandle handle;
     private boolean queryMode;
-    private final ByteBuffer main;
+    private ByteBuffer main;
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Creates a new instance.
-     * @param main the main response data
+     * Creates a new instance with a SessionWire
+     * @param wire the SessionWire from which a main response will come
      */
     public ChannelResponse(@Nonnull SessionWire wire) {
         Objects.requireNonNull(wire);
@@ -36,7 +36,7 @@ public class ChannelResponse implements Response {
     }
 
     /**
-     * Creates a new instance, without any attached data.
+     * Creates a new instance, without any attached channel.
      * @param main the main response data
      */
     public ChannelResponse(@Nonnull ByteBuffer main) {
@@ -55,7 +55,8 @@ public class ChannelResponse implements Response {
             return main;
         }
         if (isMainResponseReady()) {
-            return wire.response(handle);
+            main = wire.response(handle);
+            return main;
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
@@ -66,7 +67,8 @@ public class ChannelResponse implements Response {
             return main;
         }
         if (isMainResponseReady()) {
-            return wire.response(handle, timeout, unit);
+            main = wire.response(handle, timeout, unit);
+            return main;
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
