@@ -47,8 +47,11 @@ public class DatastoreClientImpl implements DatastoreClient {
     }
 
     @Override
-    public FutureResponse<Backup> beginBackup() throws IOException {
+    public FutureResponse<Backup> beginBackup(@Nullable String label) throws IOException {
         var builder = DatastoreRequestProtos.BackupBegin.newBuilder();
+        if (label != null) {
+            builder.setLabel(label);
+        }
         return service.send(builder.build());
     }
 

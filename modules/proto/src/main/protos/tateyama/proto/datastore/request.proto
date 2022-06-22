@@ -41,7 +41,10 @@ message Request {
 }
 
 // starts backup operation.
-message BackupBegin {}
+message BackupBegin {
+    // the backup label.
+    string label = 1;
+}
 
 // completes backup operation.
 message BackupEnd {
@@ -68,12 +71,18 @@ message RestoreBackup {
 
     // whether or not keeps the backup data.
     bool keep_backup = 2;
+
+    // the restore label.
+    string label = 3;
 }
 
 // restores datastore from Point-in-Time recovery tag.
 message RestoreTag {
     // the tag name.
     string name = 1;
+
+    // the restore label.
+    string label = 2;
 }
 
 // retrieves the list of registered Point-in-Time recovery tags.
