@@ -17,7 +17,7 @@ task cmakeConfigure {
     inputs.files(fileTree(nativeRootDir) {
         exclude 'build/**'
     })
-    .skipWhenEmpty()
+    .ignoreEmptyDirectories()
     .withPropertyName('nativeRootDir')
 
     outputs.dir(nativeBuildDir)
@@ -36,7 +36,7 @@ task cmakeTestConfigure {
     inputs.files(fileTree(nativeTestRootDir) {
         exclude 'build/**'
     })
-    .skipWhenEmpty()
+    .ignoreEmptyDirectories()
     .withPropertyName('nativeTestRootDir')
 
     outputs.dir(nativeTestBuildDir)
@@ -55,7 +55,7 @@ task cmakeBuild {
     inputs.files(fileTree(nativeRootDir) {
         exclude 'build/**'
     })
-    .skipWhenEmpty()
+    .ignoreEmptyDirectories()
     .withPropertyName('nativeRootDir')
 
     outputs.dir(nativeBuildDir)
@@ -91,7 +91,7 @@ task cmakeTestBuild {
     inputs.files(fileTree(nativeTestRootDir) {
         exclude 'build/**'
     })
-    .skipWhenEmpty()
+    .ignoreEmptyDirectories()
     .withPropertyName('nativeTestRootDir')
 
     outputs.dir(nativeTestBuildDir)
