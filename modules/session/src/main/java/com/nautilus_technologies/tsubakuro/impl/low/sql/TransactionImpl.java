@@ -25,7 +25,6 @@ import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SqlResponse.ResultOnly;
 
 /**
  * Transaction type.
@@ -61,7 +60,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
@@ -85,7 +84,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultOnly> executeStatement(
+    public FutureResponse<SqlResponse.ResultOnly> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -150,7 +149,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultOnly> executeLoad(
+    public FutureResponse<SqlResponse.ResultOnly> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
@@ -173,7 +172,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    public FutureResponse<SqlResponse.ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
@@ -192,13 +191,16 @@ public class TransactionImpl implements Transaction {
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
         }
-        var rv = submitRollback();
-        cleanuped = true;
-        dispose();
-        return rv;
+        if (!cleanuped) {
+            var rv = submitRollback();
+            cleanuped = true;
+            dispose();
+            return rv;
+        }
+        return null;  // FIXME should return future of SqlResponse.ResultOnly.Success
     }
 
-    private FutureResponse<ResultOnly> submitRollback() throws IOException {
+    private FutureResponse<SqlResponse.ResultOnly> submitRollback() throws IOException {
         var rv = service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction)
                 .build());
