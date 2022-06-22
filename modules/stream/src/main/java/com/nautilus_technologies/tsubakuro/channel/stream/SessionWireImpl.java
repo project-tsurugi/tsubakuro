@@ -19,7 +19,6 @@ import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -42,12 +41,12 @@ public class SessionWireImpl implements SessionWire {
     static class QueueEntry {
         final long serviceId;
         final byte[] request;
-        final FutureResponse future;
+        final ChannelResponse response;
 
-        QueueEntry(long serviceId, byte[] request, FutureResponse future) {
+        QueueEntry(long serviceId, byte[] request, ChannelResponse response) {
             this.serviceId = serviceId;
             this.request = request;
-            this.future = future;
+            this.response = response;
         }
         long serviceId() {
             return serviceId;
@@ -55,8 +54,8 @@ public class SessionWireImpl implements SessionWire {
         byte[] getRequest() {
             return request;
         }
-        FutureResponse getFuture() {
-            return future;
+        ChannelResponse getResponse() {
+            return response;
         }
     }
 
@@ -87,7 +86,7 @@ public class SessionWireImpl implements SessionWire {
                 response.setResponseHandle(new ResponseWireHandleImpl(slot));
                 streamWire.send(slot, toDelimitedByteArray(header), request);
             } else {
-                queue.add(new QueueEntry(serviceID, request, future));
+                queue.add(new QueueEntry(serviceID, request, response));
             }
         }
         return future;
@@ -119,15 +118,8 @@ public class SessionWireImpl implements SessionWire {
             var entry = queue.peek();
             if (Objects.nonNull(entry)) {
                 var nextSlot = responseBox.lookFor();
-                ChannelResponse response;
                 if (nextSlot >= 0) {
-                    var future = entry.getFuture();
-                    try {
-                        response = (ChannelResponse) future.get();  // FIXME provides some method to obtain response without exception for FutureResponse
-                    } catch (ServerException | InterruptedException e) {
-                        throw new IOException(e);
-                    }
-                    response.setResponseHandle(new ResponseWireHandleImpl(nextSlot));
+                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextSlot));
 
                     var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                     streamWire.send(nextSlot, toDelimitedByteArray(header), entry.getRequest());
