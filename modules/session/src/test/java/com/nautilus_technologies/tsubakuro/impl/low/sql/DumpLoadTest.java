@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,23 +15,23 @@ import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
 import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 
 class DumpLoadTest {
+
     SqlResponse.Response nextResponse;
     
     private class PreparedStatementMock implements PreparedStatement {
@@ -52,89 +52,81 @@ class DumpLoadTest {
         public void close() throws IOException {
         }
     }
-    
-    class FutureResponseTestMock<V> implements FutureResponse<V> {
+
+    class ChannelResponseMock implements Response {
         private final SessionWireTestMock wire;
-        private final Distiller<V> distiller;
-        private ResponseWireHandle handle; // dummy
-        FutureResponseTestMock(SessionWireTestMock wire, Distiller<V> distiller) {
+        private ResponseWireHandle handle;
+
+        ChannelResponseMock(SessionWireTestMock wire) {
             this.wire = wire;
-            this.distiller = distiller;
-        }
-        
-        @Override
-        public V get() throws IOException, ServerException {
-            var response = wire.receive(handle);
-            if (Objects.isNull(response)) {
-                throw new IOException("received null response at FutureResponseTestMock, probably test program is incomplete");
-            }
-            return distiller.distill(response);
         }
         @Override
-        public V get(long timeout, TimeUnit unit) throws IOException, ServerException {
-            return get();  // FIXME need to be implemented properly, same as below
+        public boolean isMainResponseReady() {
+            return Objects.nonNull(handle);
         }
-        
         @Override
-        public boolean isDone() {
-            return true;
+        public ByteBuffer waitForMainResponse() throws IOException {
+            return wire.response(handle);
         }
-        
         @Override
-        public void close() throws IOException, ServerException, InterruptedException {
+        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
+            return wire.response(handle);
+        }
+        @Override
+        public void close() throws IOException, InterruptedException {
+        }
+        @Override
+        public ResponseWireHandle responseWireHandle() {
+            return handle;
+        }
+        @Override
+        public void release() {
+        }
+        @Override
+        public void setQueryMode() {
         }
     }
     
     class SessionWireTestMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
-            switch (request.getRequestCase()) {
-            case BEGIN:
-                nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
-                return new FutureResponseTestMock<V>(this, distiller);
-            case DISCONNECT:
-                nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                return new FutureResponseTestMock<V>(this, distiller);
-            default:
-                return null;  // dummy as it is test for session
-            }
-        }
-        @Override
-        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
-            return null;  // dummy as it is test for session
-        }
-        @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
-            var r = nextResponse;
-            nextResponse = null;
-            return r;
-        }
-        @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
         }
         @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return null;  // dummy as it is test for session
+        public void release(ResponseWireHandle responseWireHandle) {
+        }
+        @Override
+        public void setQueryMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
-            return null; // dummy as it is test for session
+        public FutureResponse<? extends Response> send(long serviceID, byte[] byteArray) throws IOException {
+            var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
+            switch (request.getRequestCase()) {
+                case BEGIN:
+                    nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
+                    break;
+                case DISCONNECT:
+                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                    break;
+                default:
+                    return null;  // dummy as it is test for session
+            }
+            return FutureResponse.wrap(Owner.of(new ChannelResponse(this)));
         }
         @Override
         public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
             return null; // dummy as it is test for session
         }
         @Override
-        public InputStream responseStream(ResponseWireHandle handle) {
-            return null; // dummy as it is test for session
+        public ByteBuffer response(ResponseWireHandle handle) throws IOException {
+            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
         }
         @Override
-        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return null; // dummy as it is test for session
+        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws IOException {
+            return response(handle); // dummy as it is test for session
         }
         @Override
         public void close() throws IOException {

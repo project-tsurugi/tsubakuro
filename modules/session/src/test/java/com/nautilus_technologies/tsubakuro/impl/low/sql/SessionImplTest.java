@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -19,104 +18,113 @@ import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.nautilus_technologies.tsubakuro.protos.Distiller;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
-import com.nautilus_technologies.tsubakuro.util.Pair;
 
 class SessionImplTest {
-
     SqlResponse.Response nextResponse;
     private final long specialTimeoutValue = 9999;
 
-    class FutureResponseMock<V> implements FutureResponse<V> {
-        private final SessionWireMock wire;
-        private final Distiller<V> distiller;
-        private ResponseWireHandle handle; // dummey
-        FutureResponseMock(SessionWireMock wire, Distiller<V> distiller) {
-            this.wire = wire;
-            this.distiller = distiller;
+    class ResponseWireHandleDummy extends ResponseWireHandle {
+        ResponseWireHandleDummy() {
         }
+    }
 
-        @Override
-        public V get() throws IOException, ServerException {
-            var response = wire.receive(handle);
-            if (Objects.isNull(response)) {
-                throw new IOException("received null response at FutureResponseMock, probably test program is incomplete");
-            }
-            return distiller.distill(response);
+    class ChannelResponseMock implements Response {
+        private final SessionWireMock wire;
+        private ResponseWireHandle handle;
+
+        ChannelResponseMock(SessionWireMock wire) {
+            this.wire = wire;
+            this.handle = new ResponseWireHandleDummy();
         }
         @Override
-        public V get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException {
-            if (timeout == specialTimeoutValue) {
-                throw new TimeoutException("timeout for test");
-            }
-            return get();  // FIXME need to be implemented properly, same as below
+        public boolean isMainResponseReady() {
+            return Objects.nonNull(handle);
         }
         @Override
-        public boolean isDone() {
-            return true;
+        public ByteBuffer waitForMainResponse() throws IOException {
+            return wire.response(handle);
         }
         @Override
-        public void close() throws IOException, ServerException, InterruptedException {
+        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
+            return wire.response(handle);
+        }
+        @Override
+        public void close() throws IOException, InterruptedException {
+        }
+        @Override
+        public ResponseWireHandle responseWireHandle() {
+            return handle;
+        }
+        @Override
+        public void release() {
+        }
+        @Override
+        public void setQueryMode() {
         }
     }
 
     class SessionWireMock implements SessionWire {
         @Override
-        public <V> FutureResponse<V> send(long serviceID, SqlRequest.Request.Builder request, Distiller<V> distiller) throws IOException {
+        public FutureResponse<? extends Response> send(long serviceID, byte[] byteArray) throws IOException {
+            var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {
-            case BEGIN:
-                nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case PREPARE:
-                nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case DISPOSE_PREPARED_STATEMENT:
-                nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case ROLLBACK:
-                nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case DISCONNECT:
-                nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case EXPLAIN:
-                nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
-                return new FutureResponseMock<>(this, distiller);
-            case DESCRIBE_TABLE:
-                nextResponse =  SqlResponse.Response.newBuilder()
-                .setDescribeTable(SqlResponse.DescribeTable.newBuilder()
-                    .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
-                         .setDatabaseName("D")
-                         .setSchemaName("S")
-                         .setTableName(request.getDescribeTable().getName())
-                         .addColumns(Types.column("a", Types.of(int.class)))
-                    )
-                ).build();
-                return new FutureResponseMock<>(this, distiller);
-            default:
-                return null;  // dummy as it is test for session
+                case BEGIN:
+                    nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
+                    break;
+                case PREPARE:
+                    nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
+                    break;
+                case DISPOSE_PREPARED_STATEMENT:
+                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                    break;
+                case ROLLBACK:
+                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                    break;
+                case DISCONNECT:
+                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                    break;
+                case EXPLAIN:
+                    nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
+                    break;
+                case DESCRIBE_TABLE:
+                    nextResponse =  SqlResponse.Response.newBuilder()
+                    .setDescribeTable(SqlResponse.DescribeTable.newBuilder()
+                        .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
+                             .setDatabaseName("D")
+                             .setSchemaName("S")
+                             .setTableName(request.getDescribeTable().getName())
+                             .addColumns(Types.column("a", Types.of(int.class)))
+                        )
+                    ).build();
+                    break;
+                default:
+                    return null;  // dummy as it is test for session
             }
+            return FutureResponse.wrap(Owner.of(new ChannelResponseMock(this)));
         }
 
         @Override
-        public Pair<FutureResponse<SqlResponse.ExecuteQuery>, FutureResponse<SqlResponse.ResultOnly>> sendQuery(long serviceID, SqlRequest.Request.Builder request) throws IOException {
-            return null;  // dummy as it is test for session
+        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) throws IOException {
+            return null; // dummy as it is test for session
         }
 
         @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle) throws IOException {
-            var r = nextResponse;
-            nextResponse = null;
-            return r;
+        public ByteBuffer response(ResponseWireHandle handle) throws IOException {
+            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
+        }
+
+        @Override
+        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws IOException {
+            return response(handle); // dummy as it is test for session
         }
 
         @Override
@@ -125,34 +133,15 @@ class SessionImplTest {
         }
 
         @Override
-        public SqlResponse.Response receive(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            var r = nextResponse;
-            nextResponse = null;
-            return r;
+        public void release(ResponseWireHandle responseWireHandle) {
+        }
+
+        @Override
+        public void setQueryMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override
         public void unReceive(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
-        public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
-        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
-        public InputStream responseStream(ResponseWireHandle handle) {
-            return null; // dummy as it is test for session
-        }
-
-        @Override
-        public InputStream responseStream(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return null; // dummy as it is test for session
         }
 
         @Override
