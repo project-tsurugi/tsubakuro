@@ -71,6 +71,7 @@ public class SqlClientImpl implements SqlClient {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         var resuest = SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .addAllParameters(parameters)
                 .build();
         return service.send(resuest);
     }
