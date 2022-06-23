@@ -97,6 +97,20 @@ message DescribeTable {
   }
 }
 
+// execute a statement with 2-D parameter table.
+message Batch {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // engine error was occurred.
+        Error error = 12;
+    }
+}
+
 /* For response message from the SQL service. */
 message Response {
   oneof response {
@@ -106,5 +120,6 @@ message Response {
     ExecuteQuery execute_query = 4;
     Explain explain = 5;
     DescribeTable describe_table = 6;
+    Batch batch = 7;
   }
 }

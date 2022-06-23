@@ -423,6 +423,38 @@ public class SqlServiceStub implements SqlService {
                 new ResultSetProcessor(session.getWire()));
     }
 
+    static class BatchProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+        @Override
+        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                // FIXME log error message
+                throw new IOException("response type is inconsistent with the request type");
+            }
+            var detailResponse = response.getResultOnly();
+            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+            }
+            return detailResponse;
+        }
+    }
+
+    @Override
+    public FutureResponse<SqlResponse.ResultOnly> send(
+            @Nonnull SqlRequest.Batch request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequest.Request.newBuilder()
+                    .setBatch(request)
+                    .build()
+                    .toByteArray(),
+                new BatchProcessor().asResponseProcessor());
+    }
+
     @Override
     public FutureResponse<ResultSet> send(
             @Nonnull SqlRequest.ExecuteDump request) throws IOException {
