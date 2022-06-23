@@ -1,8 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.auth;
 
 import java.io.IOException;
-// import java.nio.ByteBuffer;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Objects;
 
@@ -24,6 +23,7 @@ import com.nautilus_technologies.tsubakuro.channel.common.wire.MainResponseProce
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 
 /**
  * An implementation of {@link AuthService} communicate to the auth service.
@@ -65,8 +65,8 @@ public class AuthServiceStub implements AuthService {
 
     static class AuthInfoProcessor implements MainResponseProcessor<AuthInfo> {
         @Override
-        public AuthInfo process(InputStream payload) throws IOException, ServerException, InterruptedException {
-            var message = AuthResponse.AuthInfo.parseDelimitedFrom(payload);
+        public AuthInfo process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = AuthResponse.AuthInfo.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:

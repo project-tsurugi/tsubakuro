@@ -84,6 +84,12 @@ public:
         void brand_new() {
             wire_->brand_new();
         }
+        void write(const signed char* from, std::size_t length) {
+            const char *ptr = reinterpret_cast<const char*>(from);
+            for (std::size_t i = 0; i < length; i++) {
+                wire_->write(bip_buffer_, *ptr++);
+            }
+        }
         void write(const int b) {
             wire_->write(bip_buffer_, b);
         }
@@ -141,6 +147,13 @@ public:
             }
         }
         return nullptr;
+    }
+    void write(signed char* msg, std::size_t length) {
+        if (!header_processed_) {
+            request_wire_.brand_new();
+            header_processed_ = true;
+        }
+        request_wire_.write(msg, length);
     }
     void write(const int b) {
         if (!header_processed_) {

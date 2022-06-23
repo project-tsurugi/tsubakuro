@@ -1,16 +1,8 @@
 package com.nautilus_technologies.tsubakuro.channel.common;
 
 import java.io.IOException;
-import java.io.InputStream;
-// import java.nio.ByteBuffer;
-// import java.text.MessageFormat;
-// import java.util.ArrayList;
-import java.util.Collection;
-// import java.util.Collections;
-// import java.util.Map;
-// import java.util.NoSuchElementException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
-// import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,8 +10,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
 
 import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-// import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -28,99 +18,91 @@ public class ChannelResponse implements Response {
 
     private final SessionWire wire;
     private ResponseWireHandle handle;
-//    private final ByteBuffer main;
-
-//    private final Map<String, ByteBuffer> subs;
+    private boolean queryMode;
+    private ByteBuffer main;
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Creates a new instance.
-     * @param main the main response data
-     * @param subMap map of sub response ID and its data
+     * Creates a new instance with a SessionWire
+     * @param wire the SessionWire from which a main response will come
      */
-//    public ChannelResponse(@Nonnull ByteBuffer main, @Nonnull Map<String, ByteBuffer> subMap) {
     public ChannelResponse(@Nonnull SessionWire wire) {
         Objects.requireNonNull(wire);
-//        Objects.requireNonNull(subMap);
         this.wire = wire;
         this.handle = null;
-//        this.subs = new TreeMap<>();
-//        for (var entry : subMap.entrySet()) {
-//            this.subs.put(entry.getKey(), entry.getValue().duplicate());
-//        }
+        this.queryMode = false;
+        main = null;
     }
 
     /**
-     * Creates a new instance, without any attached data.
+     * Creates a new instance, without any attached channel.
      * @param main the main response data
      */
-//    public ChannelResponse(@Nonnull ByteBuffer main) {
-//        this(main, Collections.emptyMap());
-//    }
+    public ChannelResponse(@Nonnull ByteBuffer main) {
+        this.main = main;
+        this.wire = null;
+    }
 
     @Override
-    public boolean isMainResponseReady() {
+    public synchronized boolean isMainResponseReady() {
         return Objects.nonNull(handle);
     }
 
     @Override
-    public InputStream waitForMainResponse() throws IOException {
+    public synchronized ByteBuffer waitForMainResponse() throws IOException {
+        if (Objects.nonNull(main)) {
+            return main;
+        }
         if (isMainResponseReady()) {
-            return wire.responseStream(handle);
+            main = wire.response(handle);
+            return main;
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
 
     @Override
-    public InputStream waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+    public synchronized ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        if (Objects.nonNull(main)) {
+            return main;
+        }
         if (isMainResponseReady()) {
-            return wire.responseStream(handle, timeout, unit);
+            main = wire.response(handle, timeout, unit);
+            return main;
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
-
-    @Override
-    public Collection<String> getSubResponseIds() throws IOException, ServerException, InterruptedException {
-//        return new ArrayList<>(subs.keySet());
-        return null;
-    }
-
-    @Override
-    public InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
-//        checkOpen();
-//        var data = subs.remove(id);
-//        if (data == null) {
-//            throw new NoSuchElementException(id);
-//        }
-//        return new ByteBufferInputStream(data);
-        return null;
-    }
-
-//    private void checkOpen() {
-//        if (closed.get()) {
-//            throw new IllegalStateException("response was already closed");
-//        }
-//    }
 
     @Override
     public void close() throws IOException, InterruptedException {
-//        subs.clear();
         closed.set(true);
     }
 
-//    @Override
-//    public String toString() {
-//        return MessageFormat.format(
-//                "ChannelResponse(main={0}, sub={1})",
-//                main.remaining(),
-//                subs.keySet());
-//                main.remaining()
-//            "ChannelResponse"  // FIXME can not pirnt the contents of InputStream??
-//        );
-//    }
+    @Override
+    public synchronized ResponseWireHandle responseWireHandle() {
+        return handle;
+    }
 
-    public void setHandle(ResponseWireHandle h) {
+    @Override
+    public synchronized void release() {
+        if (Objects.nonNull(handle)) {
+            wire.release(handle);
+            handle = null;
+        }
+    }
+
+    @Override
+    public synchronized void setQueryMode() {
+        queryMode = true;
+        if (Objects.nonNull(handle)) {
+            wire.setQueryMode(handle);
+        }
+    }
+
+    public synchronized void setResponseHandle(ResponseWireHandle h) {
         handle = h;
+        if (queryMode) {
+            wire.setQueryMode(handle);
+        }
     }
 }

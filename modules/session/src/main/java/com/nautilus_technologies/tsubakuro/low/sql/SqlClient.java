@@ -27,24 +27,24 @@ public interface SqlClient extends ServerResource {
      */
     static SqlClient attach(@Nonnull Session session) {
         Objects.requireNonNull(session);
-        return new SqlClientImpl(session);
+        return SqlClientImpl.attach(session);
     }
 
-
     /**
-     * Begins a new transaction.
-     * @return a FutureResponse of the transaction
-     * @throws IOException error occurred in BEGIN
+     * Starts a new transaction with default transaction options.
+     * @return a future response of transaction object
+     * @throws IOException if I/O error was occurred while sending request
+     * @see #createTransaction(com.tsurugidb.jogasaki.proto.SqlRequest.TransactionOption)
      */
     default FutureResponse<Transaction> createTransaction() throws IOException {
         return createTransaction(SqlRequest.TransactionOption.getDefaultInstance());
     }
 
     /**
-     * Begins a new transaction.
-     * @param option the transaction options
-     * @return a FutureResponse of the transaction
-     * @throws IOException error occurred in BEGIN
+     * Starts a new transaction.
+     * @param option the transaction option
+     * @return a future response of transaction object
+     * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Transaction> createTransaction(
             @Nonnull SqlRequest.TransactionOption option) throws IOException {
@@ -123,7 +123,7 @@ public interface SqlClient extends ServerResource {
         throw new UnsupportedOperationException();
     }
 
-        /**
+    /**
      * Retrieves metadata for a table.
      * @param tableName the target table name
      * @return a future response of table metadata
