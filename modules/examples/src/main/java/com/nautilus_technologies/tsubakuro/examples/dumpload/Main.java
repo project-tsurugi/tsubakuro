@@ -56,63 +56,7 @@ public final class Main {
                 SqlClient client = SqlClient.attach(session);) {
 
             if (prepareTables) {
-
-                try (Transaction transaction = client.createTransaction().await()) {
-                    // create table
-                    var responseCreateTable = transaction.executeStatement("CREATE TABLE dump_source (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
-                        throw new IOException("error in create table");
-                    }
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
-                        throw new IOException("error in commit");
-                    }
-                }
-
-                try (Transaction transaction = client.createTransaction().await()) {
-                    // create table
-                    var responseCreateTable = transaction.executeStatement("CREATE TABLE load_target (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
-                        throw new IOException("error in create table");
-                    }
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
-                        throw new IOException("error in commit");
-                    }
-                }
-
-                // insert initial data
-                try (
-                        var prep = client.prepare(
-                                "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5) VALUES(:p0, :p1, :p2, :p3, :p4, :p5)",
-                                Placeholders.of("p0", int.class),
-                                Placeholders.of("p1", int.class),
-                                Placeholders.of("p2", long.class),
-                                Placeholders.of("p3", float.class),
-                                Placeholders.of("p4", double.class),
-                                Placeholders.of("p5", String.class)
-                        ).await();
-                        Transaction tx = client.createTransaction().await()
-                ) {
-                    for (int i = 0; i < 10; ++i) {
-                        var result = tx.executeStatement(
-                                prep,
-                                List.of(
-                                        Parameters.of("p0", i),
-                                        Parameters.of("p1", 10 * i),
-                                        Parameters.of("p2", 100L * i),
-                                        Parameters.of("p3", 1000.0f * i),
-                                        Parameters.of("p4", 10000.0 * i),
-                                        Parameters.of("p5", String.valueOf(i*100000))
-                                )
-                        ).await();
-                        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                            throw new IOException("error executeStatement");
-                        }
-                    }
-                    var status = tx.commit().await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                        throw new IOException("error in commit");
-                    }
-                }
+                prepareData(client);
             }
 
             // dump
@@ -136,19 +80,7 @@ public final class Main {
             }
 
             // clean target table
-            try (
-                    var prep = client.prepare("DELETE FROM load_target").await();
-                    Transaction tx = client.createTransaction().await()
-            ) {
-                var result = tx.executeStatement(prep).await();
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                    throw new IOException("error executeStatement");
-                }
-                var status = tx.commit().await();
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                    throw new IOException("error in commit");
-                }
-            }
+            clean(client);
 
             // load
             if (buildStatement) {
@@ -216,6 +148,81 @@ public final class Main {
 
             // verify
             Select.prepareAndSelect(client, "SELECT * FROM load_target ORDER BY pk");
+        }
+    }
+
+    public static void prepareData(SqlClient client) throws Exception {
+        try (Transaction transaction = client.createTransaction().await()) {
+            // create table
+            var responseCreateTable = transaction.executeStatement("CREATE TABLE dump_source (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
+                throw new IOException("error in create table");
+            }
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
+                throw new IOException("error in commit");
+            }
+        }
+
+        try (Transaction transaction = client.createTransaction().await()) {
+            // create table
+            var responseCreateTable = transaction.executeStatement("CREATE TABLE load_target (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
+                throw new IOException("error in create table");
+            }
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
+                throw new IOException("error in commit");
+            }
+        }
+
+        // insert initial data
+        try (
+                var prep = client.prepare(
+                        "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5) VALUES(:p0, :p1, :p2, :p3, :p4, :p5)",
+                        Placeholders.of("p0", int.class),
+                        Placeholders.of("p1", int.class),
+                        Placeholders.of("p2", long.class),
+                        Placeholders.of("p3", float.class),
+                        Placeholders.of("p4", double.class),
+                        Placeholders.of("p5", String.class)
+                ).await();
+                Transaction tx = client.createTransaction().await()
+        ) {
+            for (int i = 0; i < 10; ++i) {
+                var result = tx.executeStatement(
+                        prep,
+                        List.of(
+                                Parameters.of("p0", i),
+                                Parameters.of("p1", 10 * i),
+                                Parameters.of("p2", 100L * i),
+                                Parameters.of("p3", 1000.0f * i),
+                                Parameters.of("p4", 10000.0 * i),
+                                Parameters.of("p5", String.valueOf(100000 * i))
+                        )
+                ).await();
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
+                    throw new IOException("error executeStatement");
+                }
+            }
+            var status = tx.commit().await();
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
+                throw new IOException("error in commit");
+            }
+        }
+    }
+
+    public static void clean(SqlClient client) throws Exception {
+        try (
+                var prep = client.prepare("DELETE FROM load_target").await();
+                Transaction tx = client.createTransaction().await()
+        ) {
+            var result = tx.executeStatement(prep).await();
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
+                throw new IOException("error executeStatement");
+            }
+            var status = tx.commit().await();
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
+                throw new IOException("error in commit");
+            }
         }
     }
 }

@@ -1,8 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples.dumpload;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
@@ -51,7 +49,7 @@ public class Select {
         }
     }
 
-    static public void prepareAndSelect(SqlClient sqlClient, String sql) throws IOException, ServerException, InterruptedException {
+    static void prepareAndSelect(SqlClient sqlClient, String sql) throws IOException, ServerException, InterruptedException {
         try (var preparedStatement = sqlClient.prepare(sql).await();
              var transaction = sqlClient.createTransaction().await()) {
             var resultSet = transaction.executeQuery(preparedStatement).get();
