@@ -144,10 +144,6 @@ class SesstionExceptionTest {
         }
 
         @Override
-        public void unReceive(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
         public void close() throws IOException {
         }
     }

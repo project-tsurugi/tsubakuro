@@ -222,18 +222,6 @@ public class SessionWireImpl implements SessionWire {
     }
 
     /**
-     * UnReceive one SqlResponse.Response
-     * @param handle the handle to the response box
-    */
-    @Override
-    public void unReceive(ResponseWireHandle handle) throws IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
-        }
-        unReceiveNative(((ResponseWireHandleImpl) handle).getHandle());
-    }
-
-    /**
      * release the message in the response box
      * @param handle the handle to the response box
     */

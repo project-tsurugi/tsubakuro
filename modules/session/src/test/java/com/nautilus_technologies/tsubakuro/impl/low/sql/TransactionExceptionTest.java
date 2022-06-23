@@ -29,7 +29,6 @@ import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 
 class TransactionExceptionTest {
     SqlResponse.Response nextResponse;
-    SqlResponse.Response processedResponse;
     private final long specialTimeoutValue = 9999;
     private final String messageForTheTest = "this is a error message for the test";
 
@@ -142,8 +141,7 @@ class TransactionExceptionTest {
 
         @Override
         public ByteBuffer response(ResponseWireHandle handle) throws IOException {
-            processedResponse = nextResponse;  // FIXME should do clone()
-            return ByteBuffer.wrap(DelimitedConverter.toByteArray(processedResponse));
+            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
         }
 
         @Override
@@ -160,10 +158,6 @@ class TransactionExceptionTest {
         }
         @Override
         public void setQueryMode(ResponseWireHandle responseWireHandle) {
-        }
-        @Override
-        public void unReceive(ResponseWireHandle responseWireHandle) {
-            nextResponse = processedResponse;
         }
         @Override
         public void close() throws IOException {

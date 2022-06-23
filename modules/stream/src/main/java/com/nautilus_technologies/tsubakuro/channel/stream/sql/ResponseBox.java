@@ -69,20 +69,6 @@ public class ResponseBox {
         expected[slot] = 2;
     }
 
-    public void unreceive(int slot) {
-        if (expected[slot] == 0) {
-            System.err.println("unused slot");
-        }
-        if (expected[slot] != 2) {
-            System.err.println("not a slot for query");
-        }
-        if (used[slot] == 0) {
-            System.err.println("unused slot");
-        }
-        expected[slot]--;
-        used[slot]--;
-    }
-
     public void release(int slot) {
         if (used[slot] == 0) {
             used[slot]++;

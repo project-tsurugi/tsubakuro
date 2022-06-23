@@ -85,10 +85,6 @@ class SessionImplTest {
         }
 
         @Override
-        public void unReceive(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
         public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
             var response = new TestResponse(this);
             return FutureResponse.wrap(Owner.of(response));

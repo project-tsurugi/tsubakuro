@@ -181,11 +181,8 @@ class ResultSetTotalTest {
         client.release(response.responseWireHandle());
         assertFalse(SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(responseReceived.getResponseCase()));
 
-        client.unReceive(response.responseWireHandle());
-        var channelResponse = new ChannelResponse(client);
-        channelResponse.setResponseHandle(response.responseWireHandle());
-        var responseResultOnly = SqlResponse.ResultOnly.parseDelimitedFrom(new ByteBufferInputStream(channelResponse.waitForMainResponse()));
-        client.release(channelResponse.responseWireHandle());
+        assertTrue(SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(responseReceived.getResponseCase()));
+        var responseResultOnly = responseReceived.getResultOnly();
         assertTrue(ProtosForTest.ResultOnlyChecker.check(responseResultOnly));
         // RESPONSE test end
 

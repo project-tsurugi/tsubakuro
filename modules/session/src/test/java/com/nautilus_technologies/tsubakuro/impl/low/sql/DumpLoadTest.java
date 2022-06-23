@@ -99,9 +99,6 @@ class DumpLoadTest {
         public void setQueryMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public void unReceive(ResponseWireHandle responseWireHandle) {
-        }
-        @Override
         public FutureResponse<? extends Response> send(long serviceID, byte[] byteArray) throws IOException {
             var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {

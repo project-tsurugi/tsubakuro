@@ -33,13 +33,6 @@ public interface SessionWire extends ServerResource {
     void setQueryMode(ResponseWireHandle handle);
 
     /**
-     * Treat the latest response message received as not having been read
-     * @param handle the handle of communication wire to receive incoming message
-     * @throws IOException error occurred in the unReceive operation
-     */
-    void unReceive(ResponseWireHandle handle) throws IOException;
-
-    /**
      * release the message in the response box
      * @param handle the handle to the response box
     */
