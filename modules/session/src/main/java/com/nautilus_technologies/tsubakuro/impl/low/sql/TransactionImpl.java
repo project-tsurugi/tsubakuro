@@ -128,6 +128,28 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public FutureResponse<SqlResponse.ResultOnly> batch(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
+                    throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameterTable);
+        if (Objects.isNull(service)) {
+            throw new IOException("already closed");
+        }
+        var request = SqlRequest.Batch.newBuilder()
+                .setTransactionHandle(transaction)
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .addAllParameterSets(parameterTable.stream()
+                        .map(it -> SqlRequest.ParameterSet.newBuilder()
+                                .addAllElements(it)
+                                .build())
+                        .collect(Collectors.toList()))
+                .build();
+        return service.send(request);
+    }
+
+    @Override
     public FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,

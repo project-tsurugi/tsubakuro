@@ -115,6 +115,27 @@ public interface Transaction extends ServerResource {
     }
 
     /**
+     * Executes a SQL statement with 2-dimension parameter table.
+     * <p>
+     * This operation may raise {@link IOException} if the 2-D parameter table is too large to send a request.
+     * Please split the parameter table and execute {@link #batch(PreparedStatement, Collection) batch()} for the
+     * individual fragment of the parameter table.
+     * For large parameter tables, please consider to use
+     * {@link #load(PreparedStatement, Collection, Collection) load()} instead.
+     * </p>
+     * @param statement the prepared statement to execute for each 1-D parameter set
+     * @param parameterTable 2-D parameter table (list of 1-D parameter set) for place-holders in the prepared statement
+     * @return a future response of the action
+     * @throws IOException if I/O error was occurred while sending request, or the parameter table is too large
+     */
+    default FutureResponse<SqlResponse.ResultOnly> batch(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
+                    throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Executes a dump action.
      * <p>
      * This operation just executes a query, but will write the resulting relation data into dump files

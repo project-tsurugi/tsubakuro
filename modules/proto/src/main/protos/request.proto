@@ -95,6 +95,12 @@ message Parameter {
     reserved 12, 13, 20, 22, 24, 29 to 40, 41 to 50, 53 to 99;
 }
 
+// the parameter set for the statement.
+message ParameterSet {
+    // a list of parameters.
+    repeated Parameter elements = 1;
+}
+
 // the transaction type.
 enum TransactionType {
     // use default transaction type.
@@ -201,16 +207,18 @@ message ExecutePreparedQuery {
   repeated Parameter parameters = 3;
 }
 
-// Option for output files on dump failure
-enum DumpFailBehavior {
-    // use default behavior
-    DUMP_FAIL_BEHAVIOR_UNSPECIFIED = 0;
+// execute a statement with 2-D parameter table.
+message Batch {
+    reserved 1 to 10;
 
-    // delete output files for the failed execution
-    DELETE_FILES = 1;
+    // the transaction ID.
+    common.Transaction transaction_handle = 11;
 
-    // keep output files even if the dump execution fails
-    KEEP_FILES = 2;
+    // the statement ID.
+    common.PreparedStatement prepared_statement_handle = 12;
+
+    // the 2-D parameter table.
+    repeated ParameterSet parameter_sets = 13;
 }
 
 // options for dump request
@@ -222,7 +230,6 @@ message DumpOption {
 
     // record count limit for dump output file
     uint64 max_record_count_per_file = 12;
-}
 
 /* For execute dump request. */
 message ExecuteDump {
@@ -295,5 +302,6 @@ message Request {
     ExecuteDump execute_dump = 13;
     ExecuteLoad execute_load = 14;
     DescribeTable describe_table = 15;
+    Batch batch = 16;
   }
 }
