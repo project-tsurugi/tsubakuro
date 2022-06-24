@@ -8,7 +8,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import  com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;

@@ -18,7 +18,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tateyama.proto.DatastoreCommonProtos;
 import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;

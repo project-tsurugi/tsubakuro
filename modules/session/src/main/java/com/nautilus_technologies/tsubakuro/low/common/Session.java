@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package com.nautilus_technologies.tsubakuro.low.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -15,6 +15,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
+import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
 

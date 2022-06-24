@@ -9,7 +9,6 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
 import  com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
 import  com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import  com.nautilus_technologies.tsubakuro.channel.common.connection.NullCredential;

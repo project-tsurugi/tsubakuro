@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;

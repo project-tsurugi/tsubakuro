@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;

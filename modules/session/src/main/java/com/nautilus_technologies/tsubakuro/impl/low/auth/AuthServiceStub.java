@@ -18,7 +18,7 @@ import com.nautilus_technologies.tsubakuro.low.auth.AuthService;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthServiceCode;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthServiceException;
 import  com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
