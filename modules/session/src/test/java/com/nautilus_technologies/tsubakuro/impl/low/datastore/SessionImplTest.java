@@ -11,10 +11,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
@@ -70,7 +70,7 @@ class SessionImplTest {
         }
     }
 
-    class SessionWireMock implements SessionWire {
+    class SessionWireMock implements Wire {
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null; // dummy as it is test for session
@@ -85,13 +85,13 @@ class SessionImplTest {
         }
 
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, byte[] request) {
+        public FutureResponse<? extends Response> send(int serviceID, byte[] request) {
             var response = new TestResponse(this);
             return FutureResponse.wrap(Owner.of(response));
         }
 
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
+        public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) {
             var response = new TestResponse(this);
             return FutureResponse.wrap(Owner.of(response));
         }

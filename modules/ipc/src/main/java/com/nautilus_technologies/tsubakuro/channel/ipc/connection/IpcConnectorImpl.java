@@ -7,9 +7,9 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
@@ -40,7 +40,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(Credential credential) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         handle = getConnectorNative(name);
@@ -48,13 +48,13 @@ public final class IpcConnectorImpl implements Connector {
         return new FutureSessionWireImpl(this);
     }
 
-    public SessionWire getSessionWire() throws IOException {
+    public Wire getSessionWire() throws IOException {
         waitNative(handle, id);
         close();
         return new SessionWireImpl(name, id);
     }
 
-    public SessionWire getSessionWire(long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    public Wire getSessionWire(long timeout, TimeUnit unit) throws TimeoutException, IOException {
         var timeoutNano = unit.toNanos(timeout);
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");

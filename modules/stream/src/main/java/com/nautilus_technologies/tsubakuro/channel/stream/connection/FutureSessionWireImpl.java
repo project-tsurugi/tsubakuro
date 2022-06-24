@@ -3,7 +3,7 @@ package com.nautilus_technologies.tsubakuro.channel.stream.connection;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 /**
  * FutureSessionWireImpl type.
  */
-public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
+public class FutureSessionWireImpl implements FutureResponse<Wire> {
 
     StreamWire streamWire;
 
@@ -21,7 +21,7 @@ public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
     }
 
     @Override
-    public SessionWire get() throws IOException {
+    public Wire get() throws IOException {
         streamWire.receive();
         var rc = streamWire.getInfo();
         var rv = streamWire.getString();
@@ -33,7 +33,7 @@ public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
     }
 
     @Override
-    public SessionWire get(long timeout, TimeUnit unit) throws IOException {
+    public Wire get(long timeout, TimeUnit unit) throws IOException {
         // FIXME: consider SO_TIMEOUT
         streamWire.receive();
         var rc = streamWire.getInfo();

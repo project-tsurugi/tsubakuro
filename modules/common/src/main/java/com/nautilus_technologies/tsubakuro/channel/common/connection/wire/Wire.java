@@ -1,8 +1,10 @@
-package com.nautilus_technologies.tsubakuro.channel.common.wire;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
@@ -10,6 +12,7 @@ import javax.annotation.concurrent.ThreadSafe;
 import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
  * An abstract interface of communication path to the server.
@@ -55,6 +58,43 @@ public interface Wire extends ServerResource {
         Objects.requireNonNull(payload);
         return send(serviceId, ByteBuffer.wrap(payload));
     }
+
+    /**
+     * Receive the message corresponding to the given ResponseHandle from the SQL server
+     * @param handle the handle of communication wire to receive incoming message
+     * @return SqlResponse.Response the response message received from the SQL server
+     * @throws IOException error occurred in responce receive
+     */
+    ByteBuffer response(ResponseWireHandle handle) throws IOException;
+
+    /**
+     * Receive the message corresponding to the given ResponseHandle from the SQL server
+     * @param handle the handle of communication wire to receive incoming message
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of {@code timeout}
+     * @return SqlResponse.Response the response message received from the SQL server
+     * @throws IOException error occurred in responce receive
+     */
+    ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
+
+    /**
+     * Set to receive a Query type response by response box
+     */
+    void setQueryMode(ResponseWireHandle handle);
+
+    /**
+     * release the message in the response box
+     * This method can also be executed before receiving a response. However, at this time, 
+     * such usage is only possible when a command using a ResultSet fails.
+     * @param handle the handle to the response box
+     */
+    void release(ResponseWireHandle handle);
+
+    /**
+     * Create a ResultSetWire without a name, meaning that this wire is not connected
+     * @return ResultSetWireImpl
+    */
+    ResultSetWire createResultSetWire() throws IOException;
 
     /**
      * Closes this connection.

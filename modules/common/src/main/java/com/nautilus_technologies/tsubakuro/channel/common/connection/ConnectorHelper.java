@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package  com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.net.URI;
 import java.text.MessageFormat;

@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 
 public final class CommunicationChecker {
-    static final long SERVICE_ID_SQL = 3;
+    static final int SERVICE_ID_SQL = 3;
     private CommunicationChecker() {
     }
 

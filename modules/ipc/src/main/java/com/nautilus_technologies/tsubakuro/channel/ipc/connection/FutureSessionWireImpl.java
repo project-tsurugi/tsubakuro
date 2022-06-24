@@ -4,14 +4,14 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * FutureSessionWireImpl type.
  */
-public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
+public class FutureSessionWireImpl implements FutureResponse<Wire> {
 
     IpcConnectorImpl connector;
 
@@ -20,12 +20,12 @@ public class FutureSessionWireImpl implements FutureResponse<SessionWire> {
     }
 
     @Override
-    public SessionWire get() throws IOException {
+    public Wire get() throws IOException {
         return connector.getSessionWire();
     }
 
     @Override
-    public SessionWire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
+    public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
         return connector.getSessionWire(timeout, unit);
     }
 

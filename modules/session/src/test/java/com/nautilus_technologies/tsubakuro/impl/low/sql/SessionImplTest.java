@@ -13,10 +13,10 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
@@ -72,9 +72,9 @@ class SessionImplTest {
         }
     }
 
-    class SessionWireMock implements SessionWire {
+    class SessionWireMock implements Wire {
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, byte[] byteArray) throws IOException {
+        public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
             var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {
                 case BEGIN:
@@ -113,7 +113,7 @@ class SessionImplTest {
         }
 
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) throws IOException {
+        public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) throws IOException {
             return null; // dummy as it is test for session
         }
 

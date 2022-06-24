@@ -6,9 +6,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -19,7 +19,6 @@ public class SessionImpl extends Session {
 
     private long timeout;
     private TimeUnit unit;
-    private SessionWire sessionWire;
 
     /**
      * Connect this session to the SQL server.
@@ -27,15 +26,14 @@ public class SessionImpl extends Session {
      * Note. How to connect to a SQL server is implementation dependent.
      * This implementation assumes that the session wire connected to the database is given.
      *
-     * @param sessionWire the wire that connects to the Database
+     * @param Wire the wire that connects to the Database
      */
-    public void connect(SessionWire wire) {
+    public void connect(Wire wire) {
         super.wire = wire;
-        sessionWire = wire;
     }
 
-    public FutureResponse<? extends Response> send(long id, byte[] request) throws IOException {
-        return sessionWire.send(id, request);
+    public FutureResponse<? extends Response> send(int id, byte[] request) throws IOException {
+        return super.wire.send(id, request);
     }
 
     /**

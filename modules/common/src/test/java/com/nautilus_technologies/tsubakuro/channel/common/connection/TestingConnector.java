@@ -1,9 +1,9 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package  com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 import java.net.URI;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 class TestingConnector implements Connector {
@@ -15,7 +15,7 @@ class TestingConnector implements Connector {
     }
 
     @Override
-    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(Credential credential) throws IOException {
         throw new UnsupportedOperationException();
     }
 }

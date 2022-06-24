@@ -20,7 +20,7 @@ import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 class SessionWireTest {
-    static final long SERVICE_ID_SQL = 3;
+    static final int SERVICE_ID_SQL = 3;
     private SessionWireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";

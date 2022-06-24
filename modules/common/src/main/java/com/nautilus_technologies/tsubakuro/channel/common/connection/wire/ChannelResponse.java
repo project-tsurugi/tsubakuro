@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,14 +9,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-
 /**
  * A simple implementation of {@link Response} which just returns payload data.
  */
 public class ChannelResponse implements Response {
 
-    private final SessionWire wire;
+    private final Wire wire;
     private ResponseWireHandle handle;
     private boolean queryMode;
     private ByteBuffer main;
@@ -24,10 +22,10 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Creates a new instance with a SessionWire
-     * @param wire the SessionWire from which a main response will come
+     * Creates a new instance with a Wire
+     * @param wire the Wire from which a main response will come
      */
-    public ChannelResponse(@Nonnull SessionWire wire) {
+    public ChannelResponse(@Nonnull Wire wire) {
         Objects.requireNonNull(wire);
         this.wire = wire;
         this.handle = null;
@@ -46,7 +44,7 @@ public class ChannelResponse implements Response {
 
     @Override
     public synchronized boolean isMainResponseReady() {
-        return Objects.nonNull(handle);
+        return Objects.nonNull(handle) || Objects.nonNull(main);
     }
 
     @Override
@@ -79,8 +77,11 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public synchronized ResponseWireHandle responseWireHandle() {
-        return handle;
+    public synchronized void setQueryMode() {
+        queryMode = true;
+        if (Objects.nonNull(handle)) {
+            wire.setQueryMode(handle);
+        }
     }
 
     @Override
@@ -92,11 +93,8 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public synchronized void setQueryMode() {
-        queryMode = true;
-        if (Objects.nonNull(handle)) {
-            wire.setQueryMode(handle);
-        }
+    public synchronized ResponseWireHandle responseWireHandle() {
+        return handle;
     }
 
     public synchronized void setResponseHandle(ResponseWireHandle h) {

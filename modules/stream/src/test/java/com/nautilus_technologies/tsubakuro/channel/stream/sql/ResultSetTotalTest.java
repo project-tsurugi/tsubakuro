@@ -15,11 +15,11 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 class ResultSetTotalTest {
-    static final long SERVICE_ID_SQL = 3;
+    static final int SERVICE_ID_SQL = 3;
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
 

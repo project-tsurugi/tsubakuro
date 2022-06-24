@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common;
+package com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -12,8 +12,8 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 

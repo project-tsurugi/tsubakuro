@@ -1,8 +1,8 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package  com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.connection.IpcConnectorImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.connection.StreamConnectorImpl;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
@@ -40,7 +40,7 @@ public final class ConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(Credential credential) throws IOException {
         return connector.connect(credential);
     }
 }
