@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.msgpack.core.MessagePacker;
 import org.msgpack.core.buffer.ByteBufferInput;
 
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;

@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.wire;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

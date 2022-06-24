@@ -5,9 +5,9 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
@@ -28,7 +28,7 @@ public final class StreamConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<SessionWire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(Credential credential) throws IOException {
         LOG.trace("will connect to {}:{}", hostname, port); //$NON-NLS-1$
 
         var streamWire = new StreamWire(hostname, port);

@@ -8,7 +8,7 @@ import java.util.ServiceLoader;
 
 import org.junit.jupiter.api.Test;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorFactory;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorFactory;
 
 class StreamConnectorFactoryTest {
 

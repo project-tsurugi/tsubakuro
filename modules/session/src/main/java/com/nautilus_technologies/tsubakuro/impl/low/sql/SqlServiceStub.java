@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.MainResponseProcessor;
+import  com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -29,11 +29,11 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResourceHolder;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Owner;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.ResponseProcessor;
-import com.nautilus_technologies.tsubakuro.channel.common.ForegroundFutureResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
 
 /**
  * An interface to communicate with SQL service.
@@ -360,10 +360,10 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class ResultSetProcessor  implements ResponseProcessor<ResultSet> {
-        private final SessionWire wire;    
+        private final Wire wire;    
 
         ResultSetProcessor(
-            @Nonnull SessionWire wire) {
+            @Nonnull Wire wire) {
             Objects.requireNonNull(wire);
             this.wire = wire;
         }
@@ -379,16 +379,16 @@ public class SqlServiceStub implements SqlService {
             var responseHandle = response.responseWireHandle();
             response.release();
 
+            var channelResponse = new ChannelResponse(wire);
+            channelResponse.setResponseHandle(responseHandle);
             if (SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(sqlResponse.getResponseCase())) {
-                var channelResponse = new ChannelResponse(wire);
-                channelResponse.setResponseHandle(responseHandle);
                 var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
                 var future = new ForegroundFutureResponse<SqlResponse.ResultOnly>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
 
                 var detailResponse = sqlResponse.getExecuteQuery();
                 resultSetImpl.connect(detailResponse.getName(), detailResponse.getRecordMeta(), future);
             } else if (SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(sqlResponse.getResponseCase())) {
-                response.release();
+                channelResponse.release();
                 resultSetImpl.indicateError(new FutureResultOnly(sqlResponse.getResultOnly()));
             } else {
                 throw new IOException("response type is inconsistent with the request type");

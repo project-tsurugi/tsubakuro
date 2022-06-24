@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package  com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

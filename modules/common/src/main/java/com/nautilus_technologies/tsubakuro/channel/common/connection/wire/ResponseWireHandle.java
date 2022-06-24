@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 /**
  * ResponseHandle type.

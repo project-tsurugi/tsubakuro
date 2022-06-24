@@ -13,11 +13,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
@@ -87,7 +87,7 @@ class DumpLoadTest {
         }
     }
     
-    class SessionWireTestMock implements SessionWire {
+    class SessionWireTestMock implements Wire {
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
@@ -99,7 +99,7 @@ class DumpLoadTest {
         public void setQueryMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, byte[] byteArray) throws IOException {
+        public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
             var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {
                 case BEGIN:
@@ -114,7 +114,7 @@ class DumpLoadTest {
             return FutureResponse.wrap(Owner.of(new ChannelResponse(this)));
         }
         @Override
-        public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) {
+        public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) {
             return null; // dummy as it is test for session
         }
         @Override

@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.wire;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -7,7 +7,6 @@ import java.util.concurrent.TimeoutException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
 
 /**
  * Represents unparsed response from the Tsurugi OLTP server.

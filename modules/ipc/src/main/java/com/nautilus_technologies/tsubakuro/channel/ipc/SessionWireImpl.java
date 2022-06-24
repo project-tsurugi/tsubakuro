@@ -9,14 +9,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
 import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
@@ -27,7 +29,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
 /**
  * SessionWireImpl type.
  */
-public class SessionWireImpl implements SessionWire {
+public class SessionWireImpl implements Wire {
     static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
 
     private long wireHandle = 0;  // for c++
@@ -90,12 +92,13 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Send a Request to the server via the native wire.
-     * @param request the Request message in byte[]
+     * @param serviceId the destination service ID
+     * @param payload the Request message in byte[]
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public FutureResponse<? extends Response> send(long serviceId, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
@@ -107,11 +110,11 @@ public class SessionWireImpl implements SessionWire {
             if (handle != 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 sendNative(wireHandle, toDelimitedByteArray(header));
-                sendNative(wireHandle, request);
+                sendNative(wireHandle, payload);
                 flushNative(wireHandle);
-                logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
+                logger.trace("send " + payload + ", handle = " + handle);  // FIXME use formatted message
             } else {
-                queue.add(new QueueEntry(serviceId, request, response));
+                queue.add(new QueueEntry(serviceId, payload, response));
             }
         }
         return future;
@@ -119,12 +122,13 @@ public class SessionWireImpl implements SessionWire {
 
     /**
      * Send a Request to the server via the native wire.
-     * @param request the Request message in ByteBuffer
+     * @param serviceId the destination service ID
+     * @param payload the Request message in ByteBuffer
      * @return a Future response message corresponding the request
      * @throws IOException error occurred in sendNative()
      */
     @Override
-    public FutureResponse<? extends Response> send(long serviceId, ByteBuffer request) throws IOException {
+    public  FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
@@ -136,15 +140,15 @@ public class SessionWireImpl implements SessionWire {
             if (handle != 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
                 sendNative(wireHandle, toDelimitedByteArray(header));
-                if (request.isDirect()) {
-                    sendNative(wireHandle, request);
+                if (payload.isDirect()) {
+                    sendNative(wireHandle, payload);
                 } else {
-                    sendNative(wireHandle, request.array());
+                    sendNative(wireHandle, payload.array());
                 }
                 flushNative(wireHandle);
-                logger.trace("send " + request + ", handle = " + handle);  // FIXME use formatted message
+                logger.trace("send " + payload + ", handle = " + handle);  // FIXME use formatted message
             } else {
-                queue.add(new QueueEntry(serviceId, request.array(), response));  // FIXME in case of Direct ByteBuffer
+                queue.add(new QueueEntry(serviceId, payload.array(), response));  // FIXME in case of Direct ByteBuffer
             }
         }
         return future;

@@ -1,4 +1,4 @@
-package com.nautilus_technologies.tsubakuro.channel.common.connection;
+package  com.nautilus_technologies.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 import java.net.URI;
@@ -6,7 +6,7 @@ import java.util.NoSuchElementException;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
@@ -40,7 +40,7 @@ public interface Connector {
      * @return future session wire
      * @throws IOException connection error
      */
-    default FutureResponse<SessionWire> connect() throws IOException {
+    default FutureResponse<Wire> connect() throws IOException {
         return connect(NullCredential.INSTANCE);
     }
 
@@ -50,5 +50,5 @@ public interface Connector {
      * @return future session wire
      * @throws IOException connection error
      */
-    FutureResponse<SessionWire> connect(@Nonnull Credential credential) throws IOException;
+    FutureResponse<Wire> connect(@Nonnull Credential credential) throws IOException;
 }

@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.msgpack.core.buffer.MessageBuffer;
 import org.msgpack.core.buffer.ByteBufferInput;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
 /**
@@ -45,7 +45,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Class constructor, called from FutureResultWireImpl.
-     * @param streamWire the stream object of the sessionWire
+     * @param streamWire the stream object of the Wire
      */
     public ResultSetWireImpl(StreamWire streamWire) {
     this.streamWire = streamWire;

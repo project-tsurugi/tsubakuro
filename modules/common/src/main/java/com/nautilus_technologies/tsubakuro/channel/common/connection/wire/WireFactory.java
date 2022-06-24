@@ -1,10 +1,10 @@
-package com.nautilus_technologies.tsubakuro.channel.common.wire;
+package com.nautilus_technologies.tsubakuro.channel.common.connection.wire;
 
 import java.net.URI;
 
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.nautilus_technologies.tsubakuro.channel.common.Credential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.exception.ConnectionException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.tateyama.proto.AuthRequest;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthInfo;
 import com.nautilus_technologies.tsubakuro.low.auth.AuthService;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 class AuthClientImplTest {

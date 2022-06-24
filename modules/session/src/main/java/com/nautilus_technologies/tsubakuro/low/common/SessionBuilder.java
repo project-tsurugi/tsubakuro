@@ -9,10 +9,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.NullCredential;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.NullCredential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 
@@ -109,7 +109,7 @@ public final class SessionBuilder {
         }
     }
 
-    private static Session create0(SessionWire wire) throws IOException, ServerException, InterruptedException {
+    private static Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
         var session = new SessionImpl();
         boolean green = false;

@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorFactory;
+import  com.nautilus_technologies.tsubakuro.channel.common.connection.ConnectorFactory;
 
 /**
  * An implementation of {@link ConnectorFactory} which provides instances of {@link StreamConnectorImpl}.

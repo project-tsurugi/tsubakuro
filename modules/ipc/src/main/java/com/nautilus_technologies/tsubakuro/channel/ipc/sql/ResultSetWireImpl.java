@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.msgpack.core.buffer.MessageBuffer;
 import org.msgpack.core.buffer.ByteBufferInput;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
  * ResultSetWireImpl type.
@@ -47,7 +47,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Class constructor, called from FutureResultWireImpl.
-     * @param sessionWireHandle the handle of the sessionWire to which the transaction that created this object belongs
+     * @param sessionWireHandle the handle of the Wire to which the transaction that created this object belongs
      */
     public ResultSetWireImpl(long sessionWireHandle) {
     this.sessionWireHandle = sessionWireHandle;

@@ -11,13 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;  // FIXME shoule delete
-// import com.nautilus_technologies.tsubakuro.channel.common.wire.Wire;  // FIXME shoule use it
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.ResponseProcessor;
-import com.nautilus_technologies.tsubakuro.channel.common.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
-import com.nautilus_technologies.tsubakuro.channel.common.BackgroundFutureResponse;  // FIXME same
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
+import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
 
@@ -41,7 +40,7 @@ public class Session implements ServerResource {
     };
 
 //    private final Wire wire;
-    public SessionWire wire;  // FIXME use Wire
+    public Wire wire;  // FIXME use Wire
 
     private final ExecutorService executor;
 
@@ -49,7 +48,7 @@ public class Session implements ServerResource {
      * Creates a new instance.
      * @param wire the underlying wire
      */
-    public Session(@Nonnull SessionWire wire) {
+    public Session(@Nonnull Wire wire) {
         this(wire, Executors.newCachedThreadPool(THREAD_FACTORY));
     }
 
@@ -58,7 +57,7 @@ public class Session implements ServerResource {
      * @param wire the underlying wire
      * @param executor worker threads to process responses
      */
-    public Session(@Nonnull SessionWire wire, @Nonnull ExecutorService executor) {
+    public Session(@Nonnull Wire wire, @Nonnull ExecutorService executor) {
         Objects.requireNonNull(wire);
         Objects.requireNonNull(executor);
         this.wire = wire;
@@ -187,11 +186,11 @@ public class Session implements ServerResource {
      * Connect this session to the Database
      * @param sessionWire the wire that connects to the Database
      */
-    public void connect(SessionWire sessionWire) {
+    public void connect(Wire sessionWire) {
     }
 
     /**
-     * Send a request via sessionWire
+     * Send a request via Wire
      * @param id identifies the service
      * @param request the request to the service
      * @return a FutureInputStream for response
@@ -205,7 +204,7 @@ public class Session implements ServerResource {
      * Provides wire to tha caller, exists as a temporal measure for sessionLink
      * @return the wire that this session uses
      */
-    public SessionWire getWire() {
+    public Wire getWire() {
         return wire;
     }
 }

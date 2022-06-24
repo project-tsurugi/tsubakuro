@@ -1,6 +1,6 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc;
 
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 
 /**
  * ResponseWireHandleImpl type, where the type of the handle that this class stores is long.

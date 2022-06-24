@@ -12,11 +12,11 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
-import com.nautilus_technologies.tsubakuro.channel.common.ChannelResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
 import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
@@ -28,7 +28,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
 /**
  * SessionWireImpl type.
  */
-public class SessionWireImpl implements SessionWire {
+public class SessionWireImpl implements Wire {
     static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
 
     private StreamWire streamWire;
@@ -73,7 +73,7 @@ public class SessionWireImpl implements SessionWire {
     }
 
     @Override
-    public FutureResponse<? extends Response> send(long serviceID, byte[] request) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceID, byte[] request) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
@@ -93,7 +93,7 @@ public class SessionWireImpl implements SessionWire {
     }
 
     @Override
-    public FutureResponse<? extends Response> send(long serviceID, ByteBuffer request) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) throws IOException {
         if (Objects.isNull(streamWire)) {
             throw new IOException("already closed");
         }
