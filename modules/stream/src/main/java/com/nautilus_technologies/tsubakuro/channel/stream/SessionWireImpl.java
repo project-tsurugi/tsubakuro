@@ -139,8 +139,8 @@ public class SessionWireImpl implements Wire {
      * Set to receive a Query type response by response box
      */
     @Override
-    public void setQueryMode(ResponseWireHandle handle) {
-        responseBox.setQueryMode(((ResponseWireHandleImpl) handle).getHandle());
+    public void setResultSetMode(ResponseWireHandle handle) {
+        responseBox.setResultSetMode(((ResponseWireHandleImpl) handle).getHandle());
     }
 
     /**

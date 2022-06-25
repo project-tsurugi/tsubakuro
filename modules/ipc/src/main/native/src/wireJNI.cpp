@@ -95,9 +95,9 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_setQueryModeNative
-(JNIEnv *, jclass, jlong responseHandle)
+(JNIEnv *, jclass, jlong responseWireHandle)
 {
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseHandle));
+    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseWireHandle));
     r->set_query_mode();
 }
 
@@ -147,18 +147,6 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_
         env->DeleteLocalRef(classj);
         return nullptr;
     }
-}
-
-/*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    unReceiveNative
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_unReceiveNative
-  (JNIEnv *, jclass, jlong handle)
-{
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
-    r->un_receive();
 }
 
 pthread_mutex_t release_mutex = PTHREAD_MUTEX_INITIALIZER;

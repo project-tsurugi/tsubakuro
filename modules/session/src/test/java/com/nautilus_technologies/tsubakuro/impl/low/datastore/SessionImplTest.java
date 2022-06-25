@@ -53,16 +53,16 @@ class SessionImplTest {
         }
 
         @Override
-        public ResponseWireHandle responseWireHandle() {
+        public TestResponse duplicate() {
             return null;
         }
 
         @Override
-        public void release() {
+        public void setResultSetMode() {
         }
 
         @Override
-        public void setQueryMode() {
+        public void release() {
         }
 
         @Override
@@ -81,7 +81,7 @@ class SessionImplTest {
         }
 
         @Override
-        public void setQueryMode(ResponseWireHandle responseWireHandle) {
+        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

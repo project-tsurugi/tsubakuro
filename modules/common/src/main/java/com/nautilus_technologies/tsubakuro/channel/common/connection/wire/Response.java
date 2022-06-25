@@ -49,17 +49,15 @@ public interface Response extends ServerResource {
             throws IOException, ServerException, InterruptedException, TimeoutException;
 
     /**
-     * Provides responsesWireHandle throuch which the main response can be obrained.
-     * @return responsesWireHandle for the main response
+     * Clone the Response without using super.clone(). It is usesd when QueryMode has been set.
+     * @return Response  to receive the second response forwarded from the server when using query mode.
      */
-    ResponseWireHandle responseWireHandle();
+    Response duplicate();
 
     /**
-     * Set query mode for this response channel.
-     * @note Classes inheriting this interface must be implemented so that queryMode is set in responseWire 
-     * regardless of whether responseWireHandle is set or setQueryMode() is executed first.
+     * Set this response to involve data transfer using resultSet.
      */
-    void setQueryMode();
+    void setResultSetMode();
 
     void release();
 }

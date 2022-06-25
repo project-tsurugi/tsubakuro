@@ -76,12 +76,25 @@ public class ChannelResponse implements Response {
         closed.set(true);
     }
 
+    /**
+     * @implNote Either this method or setResponseHandle() can be called first.
+     */
     @Override
-    public synchronized void setQueryMode() {
+    public synchronized void setResultSetMode() {
         queryMode = true;
         if (Objects.nonNull(handle)) {
-            wire.setQueryMode(handle);
+            wire.setResultSetMode(handle);
         }
+    }
+
+    /**
+     * @implNote It must be called before release() is called.
+     */
+    @Override
+    public synchronized Response duplicate() {
+        ChannelResponse channelResponse = new ChannelResponse(wire);
+        channelResponse.setResponseHandle(handle);
+        return channelResponse;
     }
 
     @Override
@@ -92,15 +105,10 @@ public class ChannelResponse implements Response {
         }
     }
 
-    @Override
-    public synchronized ResponseWireHandle responseWireHandle() {
-        return handle;
-    }
-
     public synchronized void setResponseHandle(ResponseWireHandle h) {
         handle = h;
         if (queryMode) {
-            wire.setQueryMode(handle);
+            wire.setResultSetMode(handle);
         }
     }
 }

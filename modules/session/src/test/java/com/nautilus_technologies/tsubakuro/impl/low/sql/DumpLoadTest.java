@@ -76,14 +76,14 @@ class DumpLoadTest {
         public void close() throws IOException, InterruptedException {
         }
         @Override
-        public ResponseWireHandle responseWireHandle() {
-            return handle;
+        public ChannelResponseMock duplicate() {
+            return null;
         }
         @Override
         public void release() {
         }
         @Override
-        public void setQueryMode() {
+        public void setResultSetMode() {
         }
     }
     
@@ -96,7 +96,7 @@ class DumpLoadTest {
         public void release(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public void setQueryMode(ResponseWireHandle responseWireHandle) {
+        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
         public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {

@@ -61,15 +61,15 @@ class TransactionExceptionTest {
         public void close() throws IOException, InterruptedException {
         }
         @Override
-        public ResponseWireHandle responseWireHandle() {
-            return handle;
+        public ChannelResponseMock duplicate() {
+            var rv = new ChannelResponseMock(wire);
+            return rv;
         }
-        
         @Override
         public void release() {
         }
         @Override
-        public void setQueryMode() {
+        public void setResultSetMode() {
         }
     }
 
@@ -157,7 +157,7 @@ class TransactionExceptionTest {
         public void release(ResponseWireHandle responseWireHandle) {
         }
         @Override
-        public void setQueryMode(ResponseWireHandle responseWireHandle) {
+        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
         public void close() throws IOException {

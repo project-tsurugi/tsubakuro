@@ -60,14 +60,14 @@ class SesstionExceptionTest {
         public void close() throws IOException, InterruptedException {
         }
         @Override
-        public ResponseWireHandle responseWireHandle() {
-            return handle;
+        public ChannelResponseMock duplicate() {
+            return null;
         }
         @Override
         public void release() {
         }
         @Override
-        public void setQueryMode() {
+        public void setResultSetMode() {
         }
     }
 
@@ -140,7 +140,7 @@ class SesstionExceptionTest {
         }
 
         @Override
-        public void setQueryMode(ResponseWireHandle responseWireHandle) {
+        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

@@ -60,7 +60,7 @@ public interface Wire extends ServerResource {
     }
 
     /**
-     * Receive the message corresponding to the given ResponseHandle from the SQL server
+     * Receive the message corresponding to the given responseWireHandle from the SQL server
      * @param handle the handle of communication wire to receive incoming message
      * @return SqlResponse.Response the response message received from the SQL server
      * @throws IOException error occurred in responce receive
@@ -68,7 +68,7 @@ public interface Wire extends ServerResource {
     ByteBuffer response(ResponseWireHandle handle) throws IOException;
 
     /**
-     * Receive the message corresponding to the given ResponseHandle from the SQL server
+     * Receive the message corresponding to the given responseWireHandle from the SQL server
      * @param handle the handle of communication wire to receive incoming message
      * @param timeout the maximum time to wait
      * @param unit the time unit of {@code timeout}
@@ -80,7 +80,7 @@ public interface Wire extends ServerResource {
     /**
      * Set to receive a Query type response by response box
      */
-    void setQueryMode(ResponseWireHandle handle);
+    void setResultSetMode(ResponseWireHandle handle);
 
     /**
      * release the message in the response box
