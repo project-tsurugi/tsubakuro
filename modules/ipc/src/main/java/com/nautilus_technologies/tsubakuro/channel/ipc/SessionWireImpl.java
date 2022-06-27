@@ -41,12 +41,11 @@ public class SessionWireImpl implements Wire {
     private static native long getResponseHandleNative(long wireHandle);
     private static native void sendNative(long sessionHandle, byte[] buffer);
     private static native void sendNative(long sessionHandle, ByteBuffer buffer);
-    private static native void setQueryModeNative(long responseHandle);
+    private static native void setQueryModeNative(long responseWireHandle);
     private static native void flushNative(long wireHandle);
-    private static native ByteBuffer receiveNative(long responseHandle);
-    private static native ByteBuffer receiveNative(long responseHandle, long timeout) throws TimeoutException;
-    private static native void unReceiveNative(long responseHandle);
-    private static native void releaseNative(long responseHandle);
+    private static native ByteBuffer receiveNative(long responseWireHandle);
+    private static native ByteBuffer receiveNative(long responseWireHandle, long timeout) throws TimeoutException;
+    private static native void releaseNative(long responseWireHandle);
     private static native void closeNative(long wireHandle);
 
     final Logger logger = LoggerFactory.getLogger(SessionWireImpl.class);
@@ -159,8 +158,8 @@ public class SessionWireImpl implements Wire {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
-        var byteBuffer = receiveNative(responseHandle);
+        var responseWireHandle = ((ResponseWireHandleImpl) handle).getHandle();
+        var byteBuffer = receiveNative(responseWireHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
 
         synchronized (this) {
@@ -188,13 +187,13 @@ public class SessionWireImpl implements Wire {
         if (wireHandle == 0) {
             throw new IOException("already closed");
         }
-        var responseHandle = ((ResponseWireHandleImpl) handle).getHandle();
+        var responseWireHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var timeoutNano = unit.toNanos(timeout);
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
         }
-        var byteBuffer = receiveNative(responseHandle, timeoutNano);
-        releaseNative(responseHandle);
+        var byteBuffer = receiveNative(responseWireHandle, timeoutNano);
+        releaseNative(responseWireHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
 
         synchronized (this) {
@@ -221,7 +220,7 @@ public class SessionWireImpl implements Wire {
      * Set to receive a Query type response by response box
      */
     @Override
-    public void setQueryMode(ResponseWireHandle handle) {
+    public void setResultSetMode(ResponseWireHandle handle) {
         setQueryModeNative(((ResponseWireHandleImpl) handle).getHandle());
     }
 

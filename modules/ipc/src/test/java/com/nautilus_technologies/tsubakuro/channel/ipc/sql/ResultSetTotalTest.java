@@ -14,7 +14,6 @@ import org.msgpack.value.ValueType;
 import com.nautilus_technologies.tsubakuro.channel.ipc.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 class ResultSetTotalTest {
@@ -80,9 +79,10 @@ class ResultSetTotalTest {
 
         // client side receive Response
         var response = futureResponse.get();
-        client.setQueryMode(response.responseWireHandle());
+        response.setResultSetMode();
         var responseReceived =  SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse())).getExecuteQuery();
-        client.release(response.responseWireHandle());
+        var channelResponse = response.duplicate();
+        response.release();
         assertTrue(ProtosForTest.ResMessageExecuteQueryChecker.check(responseReceived));
 
         // client side receive SchemaMeta
@@ -145,10 +145,8 @@ class ResultSetTotalTest {
         assertFalse(unpacker.hasNext());
 
         // RESPONSE test end
-        var channelResponse = new ChannelResponse(client);
-        channelResponse.setResponseHandle(response.responseWireHandle());
         var responseResultOnly = SqlResponse.ResultOnly.parseDelimitedFrom(new ByteBufferInputStream(channelResponse.waitForMainResponse()));
-        client.release(channelResponse.responseWireHandle());
+        channelResponse.release();
     
         client.close();
         server.close();
@@ -174,9 +172,8 @@ class ResultSetTotalTest {
 
         // client side receive Response
         var response = futureResponse.get();
-        client.setQueryMode(response.responseWireHandle());
+        response.setResultSetMode();
         var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
-        client.release(response.responseWireHandle());
         assertFalse(SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(responseReceived.getResponseCase()));
 
         assertTrue(SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(responseReceived.getResponseCase()));

@@ -65,7 +65,7 @@ public class ResponseBox {
         }
     }
 
-    public void setQueryMode(int slot) {
+    public void setResultSetMode(int slot) {
         expected[slot] = 2;
     }
 

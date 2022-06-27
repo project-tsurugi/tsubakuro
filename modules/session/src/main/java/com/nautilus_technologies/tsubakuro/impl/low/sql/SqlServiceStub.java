@@ -33,7 +33,6 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ChannelResponse;
 
 /**
  * An interface to communicate with SQL service.
@@ -371,16 +370,14 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-            response.setQueryMode();
+            response.setResultSetMode();
 
             var resultSetImpl = new ResultSetImpl(wire.createResultSetWire());
             var payload = response.waitForMainResponse();
             var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            var responseHandle = response.responseWireHandle();
+            var channelResponse = response.duplicate();
             response.release();
 
-            var channelResponse = new ChannelResponse(wire);
-            channelResponse.setResponseHandle(responseHandle);
             if (SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(sqlResponse.getResponseCase())) {
                 var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
                 var future = new ForegroundFutureResponse<SqlResponse.ResultOnly>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
