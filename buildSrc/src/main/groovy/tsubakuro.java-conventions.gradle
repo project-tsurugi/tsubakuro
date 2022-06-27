@@ -53,9 +53,19 @@ task testsJar(type: Jar) {
     from sourceSets.test.output
 }
 
+jar {
+    manifest.attributes (
+        'Build-Timestamp': new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+        'Build-Revision' : System.getenv("GITHUB_SHA") ?: "",
+        'Created-By'     : "Gradle ${gradle.gradleVersion}",
+        'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+        'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+    )
+}
+
 artifacts {
     archives tasks.sourcesJar
-    archives tasks.testsJar
+    //archives tasks.testsJar
 }
 
 tasks.named('test') {
