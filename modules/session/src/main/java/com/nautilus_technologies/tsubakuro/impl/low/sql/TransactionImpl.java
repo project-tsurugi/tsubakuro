@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
+import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
@@ -46,6 +49,25 @@ public class TransactionImpl implements Transaction {
 
     private final AtomicBoolean released = new AtomicBoolean();
 
+
+    /**
+     * Creates a new instance.
+     * @param transactionId the transaction ID
+     * @param service the SQL service
+     * @param closeHandler handles {@link #close()} was invoked
+     */
+    public TransactionImpl(
+            SqlCommon.Transaction transaction,
+            @Nonnull SqlService service,
+            @Nullable ServerResource.CloseHandler closeHandler) {
+        Objects.requireNonNull(service);
+        this.transaction = transaction;
+        this.service = service;
+        this.closeHandler = closeHandler;
+        this.cleanuped = false;
+        this.timeout = 0;
+    }
+
     /**
      * Class constructor, called from  FutureTransactionImpl.
      @param transaction a handle for this transaction
@@ -54,9 +76,9 @@ public class TransactionImpl implements Transaction {
     public TransactionImpl(SqlCommon.Transaction transaction, SqlService service) {
         this.transaction = transaction;
         this.service = service;
+        this.closeHandler = null;
         this.cleanuped = false;
         this.timeout = 0;
-        this.closeHandler = null;
     }
 
     @Override
@@ -267,14 +289,33 @@ public class TransactionImpl implements Transaction {
                     }
                 } catch (TimeoutException e) {
                     LOG.warn("disposing transaction is timeout", e);
+                } finally {
+                    cleanuped = true;
                 }
             }
             dispose();
+        }
+        if (Objects.nonNull(closeHandler)) {
+            Lang.suppress(
+                    e -> LOG.warn("error occurred while collecting garbage", e),
+                    () -> closeHandler.onClosed(this));
         }
     }
 
     private void dispose() {
 //        service.remove(this);
 //        service = null;
+    }
+
+    /**
+     * Extracts transaction ID.
+     * @param transaction the target transaction
+     * @return the transaction ID, or empty if extraction is failed
+     */
+    public static OptionalLong getId(@Nullable Transaction transaction) {
+        if (transaction instanceof TransactionImpl) {
+            return OptionalLong.of(((TransactionImpl) transaction).transaction.getHandle());
+        }
+        return OptionalLong.empty();
     }
 }
