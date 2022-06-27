@@ -65,7 +65,7 @@ jar {
 
 artifacts {
     archives tasks.sourcesJar
-    archives tasks.testsJar
+    //archives tasks.testsJar
 }
 
 tasks.named('test') {
