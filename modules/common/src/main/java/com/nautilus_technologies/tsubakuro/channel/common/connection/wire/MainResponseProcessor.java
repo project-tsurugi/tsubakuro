@@ -42,9 +42,9 @@ public interface MainResponseProcessor<T> {
             public T process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
                 Objects.requireNonNull(response);
                 try (response) {
-                    var rv = self.process(response.waitForMainResponse());
+                    return self.process(response.waitForMainResponse());
+                } finally {
                     response.release();
-                    return rv;
                 }
             }
 
