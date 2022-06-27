@@ -193,7 +193,6 @@ public class SessionWireImpl implements Wire {
             throw new IOException("timeout duration overflow");
         }
         var byteBuffer = receiveNative(responseWireHandle, timeoutNano);
-        releaseNative(responseWireHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
 
         synchronized (this) {
