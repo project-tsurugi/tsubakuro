@@ -28,7 +28,6 @@ checkstyle {
 }
 
 spotbugsMain {
-    ignoreFailures = true
     reports {
         xml {
             enabled = true
