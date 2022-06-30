@@ -220,10 +220,8 @@ message DumpOption {
     // Behavior on failure
     DumpFailBehavior fail_behavior = 11;
 
-    // limit for dump output file
-    oneof file_limit {
-        uint64 max_record_count = 12;
-    }
+    // record count limit for dump output file
+    uint64 max_record_count_per_file = 12;
 }
 
 /* For execute dump request. */
