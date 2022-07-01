@@ -25,10 +25,12 @@ dependencies {
 
 checkstyle {
     configFile = rootProject.file('buildSrc/src/main/resources/checkstyle.xml')
+    if ('strict' == findProperty('checkMode')) {
+        maxWarnings = 0
+    }
 }
 
 spotbugsMain {
-    ignoreFailures = true
     reports {
         xml {
             enabled = true

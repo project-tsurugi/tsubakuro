@@ -49,7 +49,7 @@ jobs:
       - id: Check
         name: Check
         run: |
-          ./gradlew -i check
+          ./gradlew -i check --continue
 
       - id: Publish
         name: Publish
