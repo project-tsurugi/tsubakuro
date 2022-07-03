@@ -201,12 +201,36 @@ message ExecutePreparedQuery {
   repeated Parameter parameters = 3;
 }
 
+// Option for output files on dump failure
+enum DumpFailBehavior {
+    // use default behavior
+    DUMP_FAIL_BEHAVIOR_UNSPECIFIED = 0;
+
+    // delete output files for the failed execution
+    DELETE_FILES = 1;
+
+    // keep output files even if the dump execution fails
+    KEEP_FILES = 2;
+}
+
+// options for dump request
+message DumpOption {
+    reserved 1 to 10;
+
+    // Behavior on failure
+    DumpFailBehavior fail_behavior = 11;
+
+    // record count limit for dump output file
+    uint64 max_record_count_per_file = 12;
+}
+
 /* For execute dump request. */
 message ExecuteDump {
   common.Transaction transaction_handle = 1;
   common.PreparedStatement prepared_statement_handle = 2;
   repeated Parameter parameters = 3;
   string directory = 4;
+  DumpOption option = 5;
 }
 
 /* For execute load request. */
