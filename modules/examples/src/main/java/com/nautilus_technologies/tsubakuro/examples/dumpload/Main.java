@@ -31,10 +31,12 @@ public final class Main {
         boolean buildStatement = false;
         boolean prepareTables = false;
         long recordsPerFile = 0;
+        boolean keepFilesOnError = false;
         Options options = new Options();
         options.addOption(Option.builder("s").argName("statement_builder").desc("Use statement utility for load.").build());
         options.addOption(Option.builder("t").argName("prepare_tables").desc("Create tables and prepare data for dump/load test.").build());
         options.addOption(Option.builder("r").argName("records_per_file").hasArg().desc("Specify the maximum records count per file.").build());
+        options.addOption(Option.builder("k").argName("keep_files_on_error").desc("Keep the dump output files even when dump failed.").build());
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
@@ -50,6 +52,10 @@ public final class Main {
             if (cmd.hasOption("r")) {
                 recordsPerFile = Long.parseLong(cmd.getOptionValue("r"));
                 System.out.println("max records per file set : "+recordsPerFile);
+            }
+            if (cmd.hasOption("k")) {
+                keepFilesOnError = true;
+                System.out.println("will keep files on error");
             }
         } catch (ParseException e) {
             System.err.printf("cmd parser failed." + e);
@@ -69,7 +75,13 @@ public final class Main {
 
             // dump
             var files = new ArrayList<Path>();
-            var option = SqlRequest.DumpOption.newBuilder().setMaxRecordCountPerFile(recordsPerFile).build();
+            var option = SqlRequest.DumpOption.newBuilder()
+                    .setMaxRecordCountPerFile(recordsPerFile)
+                    .setFailBehaviorValue(
+                            keepFilesOnError ?
+                                    SqlRequest.DumpFailBehavior.KEEP_FILES_VALUE :
+                                    SqlRequest.DumpFailBehavior.DELETE_FILES_VALUE)
+                    .build();
             try (
                     var prep = client.prepare("SELECT * FROM dump_source").await();
                     var tx = client.createTransaction().await();
