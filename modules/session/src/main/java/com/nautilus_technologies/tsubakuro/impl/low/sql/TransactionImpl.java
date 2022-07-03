@@ -135,18 +135,32 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
+        return executeDump(statement, parameters, directory, null);
+    }
+
+    @Override
+    public FutureResponse<ResultSet> executeDump(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
+            @Nonnull Path directory,
+            SqlRequest.DumpOption option) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
+        Objects.requireNonNull(directory);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
-            .setTransactionHandle(transaction)
-            .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
-            .setDirectory(directory.toString());
+                .setTransactionHandle(transaction)
+                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+                .setDirectory(directory.toString());
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
+        pb.setOption(option);
         return service.send(pb.build());
     }
+
 
     @Override
     public FutureResponse<SqlResponse.ResultOnly> executeLoad(
