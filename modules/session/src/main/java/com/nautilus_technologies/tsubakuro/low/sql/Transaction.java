@@ -132,7 +132,7 @@ public interface Transaction extends ServerResource {
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory) throws IOException {
-        throw new UnsupportedOperationException();
+        return executeDump(statement, parameters, directory, SqlRequest.DumpOption.getDefaultInstance());
     }
 
     /**
@@ -154,7 +154,7 @@ public interface Transaction extends ServerResource {
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory,
-            SqlRequest.DumpOption option) throws IOException {
+            @Nonnull SqlRequest.DumpOption option) throws IOException {
         throw new UnsupportedOperationException();
     }
 

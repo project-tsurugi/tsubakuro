@@ -135,7 +135,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
-        return executeDump(statement, parameters, directory, null);
+        return executeDump(statement, parameters, directory, SqlRequest.DumpOption.getDefaultInstance());
     }
 
     @Override
@@ -143,10 +143,11 @@ public class TransactionImpl implements Transaction {
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory,
-            SqlRequest.DumpOption option) throws IOException {
+            @Nonnull SqlRequest.DumpOption option) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
+        Objects.requireNonNull(option);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
         }
@@ -157,9 +158,7 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        if (option != null) {
-            pb.setOption(option);
-        }
+        pb.setOption(option);
         return service.send(pb.build());
     }
 
