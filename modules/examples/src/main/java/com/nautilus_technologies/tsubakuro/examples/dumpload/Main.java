@@ -1,7 +1,7 @@
 package com.nautilus_technologies.tsubakuro.examples.dumpload;
 
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
-import  com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -51,7 +50,7 @@ public final class Main {
             }
             if (cmd.hasOption("r")) {
                 recordsPerFile = Long.parseLong(cmd.getOptionValue("r"));
-                System.out.println("max records per file set : "+recordsPerFile);
+                System.out.println("max records per file set : " + recordsPerFile);
             }
             if (cmd.hasOption("k")) {
                 keepFilesOnError = true;
@@ -77,10 +76,9 @@ public final class Main {
             var files = new ArrayList<Path>();
             var option = SqlRequest.DumpOption.newBuilder()
                     .setMaxRecordCountPerFile(recordsPerFile)
-                    .setFailBehaviorValue(
-                            keepFilesOnError ?
-                                    SqlRequest.DumpFailBehavior.KEEP_FILES_VALUE :
-                                    SqlRequest.DumpFailBehavior.DELETE_FILES_VALUE)
+                    .setFailBehaviorValue(keepFilesOnError
+                            ? SqlRequest.DumpFailBehavior.KEEP_FILES_VALUE
+                            : SqlRequest.DumpFailBehavior.DELETE_FILES_VALUE)
                     .build();
             try (
                     var prep = client.prepare("SELECT * FROM dump_source").await();

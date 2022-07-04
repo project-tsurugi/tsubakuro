@@ -157,7 +157,7 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
-        if(option != null) {
+        if (option != null) {
             pb.setOption(option);
         }
         return service.send(pb.build());
