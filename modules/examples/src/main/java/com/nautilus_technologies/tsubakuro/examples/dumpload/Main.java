@@ -1,13 +1,14 @@
 package com.nautilus_technologies.tsubakuro.examples.dumpload;
 
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
-import  com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.util.LoadBuilder;
+import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import org.apache.commons.cli.*;
 
@@ -28,9 +29,13 @@ public final class Main {
     public static void main(String[] args) throws Exception {
         boolean buildStatement = false;
         boolean prepareTables = false;
+        long recordsPerFile = 0;
+        boolean keepFilesOnError = false;
         Options options = new Options();
         options.addOption(Option.builder("s").argName("statement_builder").desc("Use statement utility for load.").build());
         options.addOption(Option.builder("t").argName("prepare_tables").desc("Create tables and prepare data for dump/load test.").build());
+        options.addOption(Option.builder("r").argName("records_per_file").hasArg().desc("Specify the maximum records count per file.").build());
+        options.addOption(Option.builder("k").argName("keep_files_on_error").desc("Keep the dump output files even when dump failed.").build());
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
@@ -42,6 +47,14 @@ public final class Main {
             if (cmd.hasOption("t")) {
                 prepareTables = true;
                 System.out.println("create table for testing");
+            }
+            if (cmd.hasOption("r")) {
+                recordsPerFile = Long.parseLong(cmd.getOptionValue("r"));
+                System.out.println("max records per file set : " + recordsPerFile);
+            }
+            if (cmd.hasOption("k")) {
+                keepFilesOnError = true;
+                System.out.println("will keep files on error");
             }
         } catch (ParseException e) {
             System.err.printf("cmd parser failed." + e);
@@ -61,10 +74,16 @@ public final class Main {
 
             // dump
             var files = new ArrayList<Path>();
+            var option = SqlRequest.DumpOption.newBuilder()
+                    .setMaxRecordCountPerFile(recordsPerFile)
+                    .setFailBehaviorValue(keepFilesOnError
+                            ? SqlRequest.DumpFailBehavior.KEEP_FILES_VALUE
+                            : SqlRequest.DumpFailBehavior.DELETE_FILES_VALUE)
+                    .build();
             try (
                     var prep = client.prepare("SELECT * FROM dump_source").await();
                     var tx = client.createTransaction().await();
-                    var results = tx.executeDump(prep, List.of(), Path.of(tmpDir.toString())).await();
+                    var results = tx.executeDump(prep, List.of(), Path.of(tmpDir.toString()), option).await();
             ) {
                 while (results.nextRecord()) {
                     while (results.nextColumn()) {

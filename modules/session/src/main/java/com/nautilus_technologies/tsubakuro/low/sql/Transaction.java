@@ -136,6 +136,29 @@ public interface Transaction extends ServerResource {
     }
 
     /**
+     * Executes a dump action.
+     * <p>
+     * This operation just executes a query, but will write the resulting relation data into dump files
+     * onto the specified directory.
+     * This will provide a result set that only contains the created dump file path,
+     * in the first column of the relation.
+     * </p>
+     * @param statement the prepared statement to execute, which must be a query like (e.g. {@code SELECT} statement)
+     * @param parameters parameter list for place-holders in the prepared statement
+     * @param directory the destination directory, which SQL service can create dump files onto it
+     * @param option the options to customize dump execution
+     * @return a future response of the result set
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<ResultSet> executeDump(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
+            @Nonnull Path directory,
+            SqlRequest.DumpOption option) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Executes a load action.
      * <p>
      * This operation performs like as following:
