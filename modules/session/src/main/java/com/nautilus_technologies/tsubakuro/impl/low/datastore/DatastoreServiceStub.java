@@ -7,10 +7,10 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-// import java.util.Collections;
-// import java.util.List;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
-// import java.util.Optional;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -125,9 +125,9 @@ public class DatastoreServiceStub implements DatastoreService {
         return session.send(
             SERVICE_ID,
             toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-            .setMessageVersion(Constants.MESSAGE_VERSION)
-            .setBackupBegin(request)
-            .build()),
+                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+                                 .setBackupBegin(request)
+                                 .build()),
             new BackupBeginProcessor().asResponseProcessor());
     }
 
@@ -162,9 +162,9 @@ public class DatastoreServiceStub implements DatastoreService {
         return session.send(
             SERVICE_ID,
             toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-            .setMessageVersion(Constants.MESSAGE_VERSION)
-            .setBackupEnd(request)
-            .build()),
+                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+                                 .setBackupEnd(request)
+                                 .build()),
             new BackupEndProcessor().asResponseProcessor());
     }
 
@@ -199,13 +199,169 @@ public class DatastoreServiceStub implements DatastoreService {
         return session.send(
             SERVICE_ID,
             toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-            .setMessageVersion(Constants.MESSAGE_VERSION)
-            .setBackupContine(request)
-            .build()),
+                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+                                 .setBackupContine(request)
+                                 .build()),
             new BackupContinueProcessor().asResponseProcessor());
     }
 
-    // FIXME user response processor
+    static class TagListProcessor implements MainResponseProcessor<List<Tag>> {
+        @Override
+        public List<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.TagList.parseFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                var list = new ArrayList<Tag>(message.getSuccess().getTagsCount());
+                for (var tag : message.getSuccess().getTagsList()) {
+                    list.add(convert(tag));
+                }
+                return Collections.unmodifiableList(list);
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<List<Tag>> send(@Nonnull DatastoreRequestProtos.TagList request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                     .setTagList(request)
+                                     .build()),
+                new TagListProcessor().asResponseProcessor());
+    }
+
+    static class TagAddProcessor implements MainResponseProcessor<Tag> {
+        @Override
+        public Tag process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.TagAdd.parseFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return convert(message.getSuccess().getTag());
+
+            case ALREADY_EXISTS:
+                throw new DatastoreServiceException(
+                        DatastoreServiceCode.TAG_ALREADY_EXISTS,
+                        MessageFormat.format(
+                                "tag is already exists: '{0}'",
+                                message.getAlreadyExists().getName()));
+
+            case TOO_LONG_NAME:
+                throw new DatastoreServiceException(
+                        DatastoreServiceCode.TAG_NAME_TOO_LONG,
+                        MessageFormat.format(
+                                "tag name length is exceeded (max {1} characters): '{0}'",
+                                message.getTooLongName().getName(),
+                                message.getTooLongName().getMaxCharacters()));
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Tag> send(@Nonnull DatastoreRequestProtos.TagAdd request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                     .setTagAdd(request)
+                                     .build()),
+                new TagAddProcessor().asResponseProcessor());
+    }
+
+    static class TagGetProcessor implements MainResponseProcessor<Optional<Tag>> {
+        @Override
+        public Optional<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.TagGet.parseFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return Optional.of(convert(message.getSuccess().getTag()));
+
+            case NOT_FOUND:
+                return Optional.empty();
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Optional<Tag>> send(@Nonnull DatastoreRequestProtos.TagGet request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                     .setTagGet(request)
+                                     .build()),
+                new TagGetProcessor().asResponseProcessor());
+    }
+
+    static class TagRemoveProcessor implements MainResponseProcessor<Boolean> {
+        @Override
+        public Boolean process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponseProtos.TagRemove.parseFrom(payload);
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return Boolean.TRUE;
+
+            case NOT_FOUND:
+                return Boolean.FALSE;
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Boolean> send(@Nonnull DatastoreRequestProtos.TagRemove request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                                     .setTagRemove(request)
+                                     .build()),
+                new TagRemoveProcessor().asResponseProcessor());
+    }
+
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
