@@ -103,8 +103,8 @@ public class SessionWireImpl implements Wire {
         }
         var response = new ChannelResponse(this);
         var future = FutureResponse.wrap(Owner.of(response));
-        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
+            var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
             var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
@@ -133,8 +133,8 @@ public class SessionWireImpl implements Wire {
         }
         var response = new ChannelResponse(this);
         var future = FutureResponse.wrap(Owner.of(response));
-        var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
         synchronized (this) {
+            var header = HEADER_BUILDER.setServiceId(serviceId).setSessionId(sessionID).build();
             var handle = getResponseHandleNative(wireHandle);
             if (handle != 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(handle));
