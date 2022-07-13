@@ -11,14 +11,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
-import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.nautilus_technologies.tsubakuro.util.ServerResource;
+import com.nautilus_technologies.tsubakuro.util.Timeout;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
 import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.nautilus_technologies.tsubakuro.util.Timeout;
 
 /**
  * Represents a connection to Tsurugi server.
@@ -154,6 +156,21 @@ public class Session implements ServerResource {
             return f;
         }
         return new ForegroundFutureResponse<>(response, processor);
+    }
+
+    /**
+     * updates credential information of this session, and retries authenticate it.
+     * <p>
+     * This is designed for credentials with time limit, like as temporary token based credentials.
+     * </p>
+     * @param credential the new credential information
+     * @return a future of the authentication result:
+     *      it may throw {@link CoreServiceException} if authentication was failed.
+     * @throws IOException if I/O error was occurred while sending message
+     */
+    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+        Objects.requireNonNull(credential);
+        return wire.updateCredential(credential);
     }
 
     @Override

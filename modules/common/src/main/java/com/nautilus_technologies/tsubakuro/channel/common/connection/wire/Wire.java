@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -57,6 +58,18 @@ public interface Wire extends ServerResource {
     default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
         Objects.requireNonNull(payload);
         return send(serviceId, ByteBuffer.wrap(payload));
+    }
+
+    /**
+     * updates credential information of this connection, and retries authenticate it.
+     * @param credential the new credential information
+     * @return a future of the authentication result:
+     *      it may throw {@link CoreServiceException} if authentication was failed.
+     * @throws IOException if I/O error was occurred while sending message
+     */
+    default FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+        Objects.requireNonNull(credential);
+        return FutureResponse.returns(null);
     }
 
     /**
