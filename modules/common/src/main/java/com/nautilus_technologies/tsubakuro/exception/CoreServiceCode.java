@@ -58,6 +58,21 @@ public enum CoreServiceCode implements DiagnosticCode {
     PERMISSION_ERROR(2_02, DiagnosticsProtos.Code.PERMISSION_ERROR),
 
     /**
+     * access right has been expired.
+     */
+    ACCESS_EXPIRED(2_03, DiagnosticsProtos.Code.ACCESS_EXPIRED),
+
+    /**
+     * refresh right has been expired.
+     */
+    REFRESH_EXPIRED(2_04, DiagnosticsProtos.Code.REFRESH_EXPIRED),
+
+    /**
+     * credential information is broken.
+     */
+    BROKEN_CREDENTIAL(2_05, DiagnosticsProtos.Code.BROKEN_CREDENTIAL),
+
+    /**
      * the current session is already closed.
      */
     SESSION_CLOSED(3_01, DiagnosticsProtos.Code.SESSION_CLOSED),

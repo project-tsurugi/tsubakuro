@@ -25,6 +25,15 @@ enum Code {
     // request is not permitted.
     PERMISSION_ERROR = 12;
 
+    // access right is expired.
+    ACCESS_EXPIRED = 13;
+
+    // refresh right is expired.
+    REFRESH_EXPIRED = 14;
+
+    // credential information is broken.
+    BROKEN_CREDENTIAL = 15;
+
     // I/O error was occurred.
     IO_ERROR = 21;
 

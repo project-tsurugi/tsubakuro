@@ -7,6 +7,7 @@ dependencies {
 
     implementation 'org.msgpack:msgpack-core:0.8.24'
     implementation 'org.firebirdsql:decimal-java:1.0.0'
+    implementation 'com.auth0:java-jwt:3.19.2'
 
     testImplementation 'org.slf4j:slf4j-nop:1.7.32'
 
