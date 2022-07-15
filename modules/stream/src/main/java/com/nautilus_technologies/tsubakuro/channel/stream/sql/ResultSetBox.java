@@ -49,43 +49,43 @@ public class ResultSetBox {
     }
 
     public ResultSetResponse receive(int slot) throws IOException {
-    while (true) {
-        if (!queues[slot].isEmpty()) {
-        return queues[slot].poll();
+        while (true) {
+            if (!queues[slot].isEmpty()) {
+                return queues[slot].poll();
+            }
+            if (eor[slot]) {
+                return new ResultSetResponse(0, null);
+            }
+            streamWire.pull();
         }
-        if (eor[slot]) {
-        return new ResultSetResponse(0, null);
-        }
-        streamWire.pull();
-    }
     }
 
     public byte hello(String name) throws IOException {
-    while (true) {
-        if (map.containsKey(name)) {
-        var slot = (byte) map.get(name).intValue();
-        map.remove(name);
-        return  slot;
+        while (true) {
+            if (map.containsKey(name)) {
+            var slot = (byte) map.get(name).intValue();
+            map.remove(name);
+            return  slot;
+            }
+            streamWire.pull();
         }
-        streamWire.pull();
-    }
     }
 
     public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
-    if (map.containsKey(name)) {
-        map.replace(name, slot);
-    } else {
-        map.put(name, slot);
-    }
-    eor[slot] = false;
-    queues[slot].clear();
+        if (map.containsKey(name)) {
+            map.replace(name, slot);
+        } else {
+            map.put(name, slot);
+        }
+        eor[slot] = false;
+        queues[slot].clear();
     }
 
     public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
-    queues[slot].add(new ResultSetResponse(writerId, payload));
+        queues[slot].add(new ResultSetResponse(writerId, payload));
     }
-
+    
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
-    eor[slot] = true;
+        eor[slot] = true;
     }
 }

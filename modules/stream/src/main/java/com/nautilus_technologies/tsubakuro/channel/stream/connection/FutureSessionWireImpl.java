@@ -22,10 +22,9 @@ public class FutureSessionWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException {
-        streamWire.receive();
-        var rc = streamWire.getInfo();
-        var rv = streamWire.getString();
-        streamWire.release();
+        var message = streamWire.receive();
+        var rc = message.getInfo();
+        var rv = message.getString();
         if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {
             return new SessionWireImpl(streamWire, Long.parseLong(rv));
         }
@@ -35,10 +34,9 @@ public class FutureSessionWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException {
         // FIXME: consider SO_TIMEOUT
-        streamWire.receive();
-        var rc = streamWire.getInfo();
-        var rv = streamWire.getString();
-        streamWire.release();
+        var message = streamWire.receive();
+        var rc = message.getInfo();
+        var rv = message.getString();
         if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {
             return new SessionWireImpl(streamWire, Long.parseLong(rv));
         }

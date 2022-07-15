@@ -79,8 +79,8 @@ public class SessionWireImpl implements Wire {
         }
         var response = new ChannelResponse(this);
         var future = FutureResponse.wrap(Owner.of(response));
-        var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
         synchronized (this) {
+            var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
             var slot = responseBox.lookFor();
             if (slot >= 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(slot));
