@@ -50,11 +50,13 @@ public class ResultSetBox {
 
     public ResultSetResponse receive(int slot) throws IOException {
         while (true) {
-            if (!queues[slot].isEmpty()) {
-                return queues[slot].poll();
-            }
-            if (eor[slot]) {
-                return new ResultSetResponse(0, null);
+            synchronized (queues[slot]) {
+                if (!queues[slot].isEmpty()) {
+                    return queues[slot].poll();
+                }
+                if (eor[slot]) {
+                    return new ResultSetResponse(0, null);
+                }
             }
             streamWire.pull();
         }
@@ -62,30 +64,38 @@ public class ResultSetBox {
 
     public byte hello(String name) throws IOException {
         while (true) {
-            if (map.containsKey(name)) {
-            var slot = (byte) map.get(name).intValue();
-            map.remove(name);
-            return  slot;
+            synchronized (map) {
+                if (map.containsKey(name)) {
+                    var slot = (byte) map.get(name).intValue();
+                    map.remove(name);
+                    return  slot;
+                }
             }
             streamWire.pull();
         }
     }
 
     public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
-        if (map.containsKey(name)) {
-            map.replace(name, slot);
-        } else {
-            map.put(name, slot);
+        synchronized (map) {
+            if (map.containsKey(name)) {
+                map.replace(name, slot);
+            } else {
+                map.put(name, slot);
+            }
+            eor[slot] = false;
+            queues[slot].clear();
         }
-        eor[slot] = false;
-        queues[slot].clear();
     }
 
     public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
-        queues[slot].add(new ResultSetResponse(writerId, payload));
+        synchronized (queues[slot]) {
+            queues[slot].add(new ResultSetResponse(writerId, payload));
+        }
     }
     
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
-        eor[slot] = true;
+        synchronized (queues[slot]) {
+            eor[slot] = true;
+        }
     }
 }

@@ -11,6 +11,7 @@ public class ResponseBox {
     private static final int SIZE = 16;
 
     private StreamWire streamWire;
+    private Object[] lockObject;
     private byte[][] firstResponse;
     private byte[][] secondResponse;
     private int[] expected;
@@ -22,23 +23,27 @@ public class ResponseBox {
         this.secondResponse = new byte[SIZE][];
         this.expected = new int[SIZE];
         this.used = new int[SIZE];
+        this.lockObject = new Object[SIZE];
         for (int i = 0; i < SIZE; i++) {
             firstResponse[i] = null;
             secondResponse[i] = null;
             expected[i] = 0;
             used[i] = 0;
+            lockObject[i] = new Object();
         }
     }
 
     public byte[] receive(int slot) throws IOException {
         while (true) {
-            if (used[slot] == 0) {
-                if (Objects.nonNull(firstResponse[slot])) {
-                    return firstResponse[slot];
-                }
-            } else {
-                if (Objects.nonNull(secondResponse[slot])) {
-                    return secondResponse[slot];
+            synchronized (lockObject[slot]) {
+                if (used[slot] == 0) {
+                    if (Objects.nonNull(firstResponse[slot])) {
+                        return firstResponse[slot];
+                    }
+                } else {
+                    if (Objects.nonNull(secondResponse[slot])) {
+                        return secondResponse[slot];
+                    }
                 }
             }
             streamWire.pull();
@@ -46,10 +51,12 @@ public class ResponseBox {
     }
 
     public void push(int slot, byte[] payload) {
-        if (Objects.isNull(firstResponse[slot])) {
-            firstResponse[slot] = payload;
-        } else {
-            secondResponse[slot] = payload;
+        synchronized (lockObject[slot]) {
+            if (Objects.isNull(firstResponse[slot])) {
+                firstResponse[slot] = payload;
+            } else {
+                secondResponse[slot] = payload;
+            }
         }
     }
 
@@ -66,24 +73,28 @@ public class ResponseBox {
     }
 
     public void setResultSetMode(int slot) {
-        expected[slot] = 2;
+        synchronized (lockObject[slot]) {
+            expected[slot] = 2;
+        }
     }
 
     public void release(int slot) {
-        if (used[slot] == 0) {
-            used[slot]++;
-            if (expected[slot] == used[slot]) {
-                expected[slot] = 0;
-                used[slot] = 0;
-                firstResponse[slot] = null;
-            }
-        } else {
-            used[slot]++;
-            if (expected[slot] == used[slot]) {
-                expected[slot] = 0;
-                used[slot] = 0;
-                firstResponse[slot] = null;
-                secondResponse[slot] = null;
+        synchronized (lockObject[slot]) {
+            if (used[slot] == 0) {
+                used[slot]++;
+                if (expected[slot] == used[slot]) {
+                    expected[slot] = 0;
+                    used[slot] = 0;
+                    firstResponse[slot] = null;
+                }
+            } else {
+                used[slot]++;
+                if (expected[slot] == used[slot]) {
+                    expected[slot] = 0;
+                    used[slot] = 0;
+                    firstResponse[slot] = null;
+                    secondResponse[slot] = null;
+                }
             }
         }
     }
