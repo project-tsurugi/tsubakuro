@@ -9,20 +9,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.SessionWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.ResultSetWireMock;
 
 /**
  * Mock implementation of {@link Wire}.
  */
-public class MockWire implements SessionWire {
+public class MockWire implements Wire {
 
     private final Queue<RequestHandler> handlers = new ConcurrentLinkedQueue<>();
 
@@ -36,13 +36,13 @@ public class MockWire implements SessionWire {
     private ByteBuffer resultSetData;
 
     @Override
-    public FutureResponse<Response> send(long serviceId, ByteBuffer payload) throws IOException {
+    public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
         var next = handlers.poll();
         if (next == null) {
             next = defaultHandler.get();
         }
         try {
-            var response = next.handle((int) serviceId, payload);
+            var response = next.handle(serviceId, payload);
             resultSetData = ((SimpleResponse) response).getSub();
             return FutureResponse.wrap(Owner.of(response));    
 //            return FutureResponse.wrap(Owner.of(next.handle((int) serviceId, payload)));
@@ -52,7 +52,7 @@ public class MockWire implements SessionWire {
     }
 
     @Override
-    public FutureResponse<Response> send(long serviceId, byte[] payload) throws IOException {
+    public FutureResponse<Response> send(int serviceId, byte[] payload) throws IOException {
         return send(serviceId, ByteBuffer.wrap(payload));
     }
 
@@ -101,7 +101,7 @@ public class MockWire implements SessionWire {
     }
 
     @Override
-    public void setQueryMode(ResponseWireHandle handle) {
+    public void setResultSetMode(ResponseWireHandle handle) {
     }
 
     @Override

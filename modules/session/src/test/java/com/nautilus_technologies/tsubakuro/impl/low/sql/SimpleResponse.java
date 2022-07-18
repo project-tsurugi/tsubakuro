@@ -3,15 +3,11 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
-// import java.util.Collections;
-// import java.util.Map;
-// import java.util.TreeMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.nautilus_technologies.tsubakuro.channel.common.ResponseWireHandle;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -78,12 +74,12 @@ public class SimpleResponse implements Response {
     }
 
     @Override
-    public ResponseWireHandle responseWireHandle() {
-        return null;
+    public Response duplicate() {
+        return new SimpleResponse(main);
     }
 
     @Override
-    public void setQueryMode() {
+    public void setResultSetMode() {
     }
 
     @Override

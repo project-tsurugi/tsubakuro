@@ -6,7 +6,7 @@ import java.util.Objects;
 
 import org.msgpack.core.buffer.ByteBufferInput;
 
-import com.nautilus_technologies.tsubakuro.channel.common.sql.ResultSetWire;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 public class ResultSetWireMock implements ResultSetWire {
     private ByteBufferBackedInputMock byteBufferInput;

@@ -221,6 +221,18 @@ message Batch {
     repeated ParameterSet parameter_sets = 13;
 }
 
+// Option for output files on dump failure
+enum DumpFailBehavior {
+    // use default behavior
+    DUMP_FAIL_BEHAVIOR_UNSPECIFIED = 0;
+
+    // delete output files for the failed execution
+    DELETE_FILES = 1;
+
+    // keep output files even if the dump execution fails
+    KEEP_FILES = 2;
+}
+
 // options for dump request
 message DumpOption {
     reserved 1 to 10;
@@ -230,6 +242,7 @@ message DumpOption {
 
     // record count limit for dump output file
     uint64 max_record_count_per_file = 12;
+}
 
 /* For execute dump request. */
 message ExecuteDump {

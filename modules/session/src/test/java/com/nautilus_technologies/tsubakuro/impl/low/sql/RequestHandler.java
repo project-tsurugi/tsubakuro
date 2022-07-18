@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 // import java.util.Map;
 import java.util.Objects;
 
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
 import com.tsurugidb.jogasaki.proto.SqlResponse;

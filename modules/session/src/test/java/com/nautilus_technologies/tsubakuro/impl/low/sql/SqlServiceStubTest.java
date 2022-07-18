@@ -25,7 +25,7 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.tsurugidb.jogasaki.proto.StatusProtos;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tsubakuro.channel.common.wire.Response;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
