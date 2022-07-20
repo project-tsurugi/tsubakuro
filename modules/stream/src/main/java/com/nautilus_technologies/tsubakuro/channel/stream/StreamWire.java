@@ -12,8 +12,6 @@ import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetBox;
 
 public class StreamWire {
-    public byte[] bytes;
-
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
@@ -60,11 +58,11 @@ public class StreamWire {
 
             if (info == RESPONSE_SESSION_PAYLOAD) {
                 logger.trace("receive SESSION_PAYLOAD, slot = ", slot);
-                responseBox.push(slot, bytes);
+                responseBox.push(slot, message.bytes());
             } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
                 byte writer = message.getWriter();
                 logger.trace("receive RESULT_SET_PAYLOAD, slot = ", slot, ", writer = ", writer);
-                resultSetBox.push(slot, writer, bytes);
+                resultSetBox.push(slot, writer, message.bytes());
             } else if (info == RESPONSE_RESULT_SET_HELLO) {
                 resultSetBox.pushHello(message.getString(), slot);
             } else if (info == RESPONSE_RESULT_SET_BYE) {
@@ -149,6 +147,7 @@ public class StreamWire {
 
     public StreamMessage receive() throws IOException {
         try {
+            byte[] bytes;
             byte writer = 0;
             byte info = 0;
 

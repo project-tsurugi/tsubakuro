@@ -30,6 +30,9 @@ public class StreamMessage {
         }
         return "";
     }
+    public byte[] bytes() {
+        return bytes;
+    }
     public byte getSlot() {
         return slot;
     }
