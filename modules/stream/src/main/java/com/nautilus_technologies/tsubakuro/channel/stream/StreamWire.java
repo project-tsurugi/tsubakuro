@@ -58,11 +58,11 @@ public class StreamWire {
 
             if (info == RESPONSE_SESSION_PAYLOAD) {
                 logger.trace("receive SESSION_PAYLOAD, slot = ", slot);
-                responseBox.push(slot, message.bytes());
+                responseBox.push(slot, message.getBytes());
             } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
                 byte writer = message.getWriter();
                 logger.trace("receive RESULT_SET_PAYLOAD, slot = ", slot, ", writer = ", writer);
-                resultSetBox.push(slot, writer, message.bytes());
+                resultSetBox.push(slot, writer, message.getBytes());
             } else if (info == RESPONSE_RESULT_SET_HELLO) {
                 resultSetBox.pushHello(message.getString(), slot);
             } else if (info == RESPONSE_RESULT_SET_BYE) {
