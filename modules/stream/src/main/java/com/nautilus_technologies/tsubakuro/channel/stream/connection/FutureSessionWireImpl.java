@@ -22,7 +22,7 @@ public class FutureSessionWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException {
-        var message = streamWire.receive();
+        var message = streamWire.receive();  // mutual exclusion is unnecessay here
         var rc = message.getInfo();
         var rv = message.getString();
         if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {
@@ -34,7 +34,7 @@ public class FutureSessionWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException {
         // FIXME: consider SO_TIMEOUT
-        var message = streamWire.receive();
+        var message = streamWire.receive();  // mutual exclusion is unnecessay here
         var rc = message.getInfo();
         var rv = message.getString();
         if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {

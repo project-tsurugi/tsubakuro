@@ -1,9 +1,11 @@
 package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
 /**
@@ -12,53 +14,67 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 public class ResultSetBox {
     private static final int SIZE = 16;
 
-    private static class MessageQueue {
-    ArrayDeque<ResultSetResponse> queue;
-
-    MessageQueue() {
-        this.queue = new ArrayDeque<ResultSetResponse>();
-    }
-    public boolean isEmpty() {
-        return queue.isEmpty();
-    }
-    public void add(ResultSetResponse e) {
-        queue.add(e);
-    }
-    public ResultSetResponse poll() {
-        return queue.poll();
-    }
-    public void clear() {
-        queue.clear();
-    }
-    }
-
     private StreamWire streamWire;
-    private MessageQueue[] queues;
-    private boolean[] eor;
+    private Abox[] boxes;
     private Map<String, Integer> map;
+    private AtomicReference<Boolean> available;
+
+    private static class MessageQueue {
+        ArrayDeque<ResultSetResponse> queue;
+
+        MessageQueue() {
+            this.queue = new ArrayDeque<ResultSetResponse>();
+        }
+        public boolean isEmpty() {
+            return queue.isEmpty();
+        }
+        public void add(ResultSetResponse e) {
+            queue.add(e);
+        }
+        public ResultSetResponse poll() {
+            return queue.poll();
+        }
+        public void clear() {
+            queue.clear();
+        }
+    }
+
+    private static class Abox {
+        private AtomicReference<Boolean> available;
+        private MessageQueue queues;
+        private boolean eor;
+
+        Abox() {
+            this.available = new AtomicReference<Boolean>();
+            this.available.set(false);
+            this.eor = false;
+            this.queues = new MessageQueue();
+        }
+    }
 
     public ResultSetBox(StreamWire streamWire) {
-    this.streamWire = streamWire;
-    this.queues = new MessageQueue[SIZE];
-    this.eor = new boolean[SIZE];
-    this.map = new HashMap<>();
-    for (int i = 0; i < SIZE; i++) {
-        eor[i] = false;
-        queues[i] = new MessageQueue();
-    }
+        this.streamWire = streamWire;
+        this.map = new HashMap<>();
+        this.available = new AtomicReference<Boolean>();
+        this.available.set(false);
+        this.boxes = new Abox[SIZE];
+
+        for (int i = 0; i < SIZE; i++) {
+            boxes[i] = new Abox();
+        }
     }
 
     public ResultSetResponse receive(int slot) throws IOException {
         while (true) {
-            synchronized (queues[slot]) {
-                if (!queues[slot].isEmpty()) {
-                    return queues[slot].poll();
+            synchronized (boxes[slot]) {
+                if (!boxes[slot].queues.isEmpty()) {
+                    return boxes[slot].queues.poll();
                 }
-                if (eor[slot]) {
+                if (boxes[slot].eor) {
                     return new ResultSetResponse(0, null);
                 }
             }
-            streamWire.pull();
+            streamWire.pull(boxes[slot].available);
         }
     }
 
@@ -70,8 +86,9 @@ public class ResultSetBox {
                     map.remove(name);
                     return  slot;
                 }
+                available.set(false);
             }
-            streamWire.pull();
+            streamWire.pull(available);
         }
     }
 
@@ -82,20 +99,23 @@ public class ResultSetBox {
             } else {
                 map.put(name, slot);
             }
-            eor[slot] = false;
-            queues[slot].clear();
+            available.set(true);
+            synchronized (boxes[slot]) {
+                boxes[slot].eor = false;
+                boxes[slot].queues.clear();
+            }
         }
     }
 
     public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
-        synchronized (queues[slot]) {
-            queues[slot].add(new ResultSetResponse(writerId, payload));
+        synchronized (boxes[slot]) {
+            boxes[slot].queues.add(new ResultSetResponse(writerId, payload));
         }
     }
     
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
-        synchronized (queues[slot]) {
-            eor[slot] = true;
+        synchronized (boxes[slot]) {
+            boxes[slot].eor = true;
         }
     }
 }

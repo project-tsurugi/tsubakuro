@@ -1,7 +1,9 @@
 package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
-import java.util.Objects;
 import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
 /**
@@ -11,60 +13,71 @@ public class ResponseBox {
     private static final int SIZE = 16;
 
     private StreamWire streamWire;
-    private Object[] lockObject;
-    private byte[][] firstResponse;
-    private byte[][] secondResponse;
-    private int[] expected;
-    private int[] used;
+    private Abox[] boxes;
+
+    private static class Abox {
+        private AtomicReference<Boolean> available;
+        private byte[] firstResponse;
+        private byte[] secondResponse;
+        private int expected;
+        private int used;
+
+        Abox() {
+            available = new AtomicReference<Boolean>();
+            clear();
+        }
+
+        void clear() {
+            available.set(false);
+            firstResponse = null;
+            secondResponse = null;
+            expected = 0;
+            used = 0;
+        }
+    }
 
     public ResponseBox(StreamWire streamWire) {
         this.streamWire = streamWire;
-        this.firstResponse = new byte[SIZE][];
-        this.secondResponse = new byte[SIZE][];
-        this.expected = new int[SIZE];
-        this.used = new int[SIZE];
-        this.lockObject = new Object[SIZE];
+        this.boxes = new Abox[SIZE];
+
         for (int i = 0; i < SIZE; i++) {
-            firstResponse[i] = null;
-            secondResponse[i] = null;
-            expected[i] = 0;
-            used[i] = 0;
-            lockObject[i] = new Object();
+            boxes[i] = new Abox();
         }
     }
 
     public byte[] receive(int slot) throws IOException {
         while (true) {
-            synchronized (lockObject[slot]) {
-                if (used[slot] == 0) {
-                    if (Objects.nonNull(firstResponse[slot])) {
-                        return firstResponse[slot];
+            synchronized (boxes[slot]) {
+                if (boxes[slot].used == 0) {
+                    if (Objects.nonNull(boxes[slot].firstResponse)) {
+                        return boxes[slot].firstResponse;
                     }
                 } else {
-                    if (Objects.nonNull(secondResponse[slot])) {
-                        return secondResponse[slot];
+                    if (Objects.nonNull(boxes[slot].secondResponse)) {
+                        return boxes[slot].secondResponse;
                     }
                 }
             }
-            streamWire.pull();
+            streamWire.pull(boxes[slot].available);
         }
     }
 
     public void push(int slot, byte[] payload) {
-        synchronized (lockObject[slot]) {
-            if (Objects.isNull(firstResponse[slot])) {
-                firstResponse[slot] = payload;
+        synchronized (boxes[slot]) {
+            if (Objects.isNull(boxes[slot].firstResponse)) {
+                boxes[slot].firstResponse = payload;
             } else {
-                secondResponse[slot] = payload;
+                boxes[slot].secondResponse = payload;
             }
+            boxes[slot].available.set(true);
         }
     }
 
     public byte lookFor() {
         synchronized (this) {
             for (byte i = 0; i < SIZE; i++) {
-                if (expected[i] == 0) {
-                    expected[i] = 1;
+                if (boxes[i].expected == 0) {
+                    boxes[i].expected = 1;
                     return i;
                 }
             }
@@ -73,28 +86,16 @@ public class ResponseBox {
     }
 
     public void setResultSetMode(int slot) {
-        synchronized (lockObject[slot]) {
-            expected[slot] = 2;
+        synchronized (boxes[slot]) {
+            boxes[slot].expected = 2;
         }
     }
 
     public void release(int slot) {
-        synchronized (lockObject[slot]) {
-            if (used[slot] == 0) {
-                used[slot]++;
-                if (expected[slot] == used[slot]) {
-                    expected[slot] = 0;
-                    used[slot] = 0;
-                    firstResponse[slot] = null;
-                }
-            } else {
-                used[slot]++;
-                if (expected[slot] == used[slot]) {
-                    expected[slot] = 0;
-                    used[slot] = 0;
-                    firstResponse[slot] = null;
-                    secondResponse[slot] = null;
-                }
+        synchronized (boxes[slot]) {
+            boxes[slot].used++;
+            if (boxes[slot].expected == boxes[slot].used) {
+                boxes[slot].clear();
             }
         }
     }

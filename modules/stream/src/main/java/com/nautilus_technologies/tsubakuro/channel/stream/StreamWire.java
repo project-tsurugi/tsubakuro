@@ -6,8 +6,10 @@ import java.io.IOException;
 import java.io.EOFException;
 import java.net.Socket;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetBox;
 
@@ -49,33 +51,39 @@ public class StreamWire {
     public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, 0);
     }
-    public boolean pull() throws IOException {
-        var message = receive();
-
-        if (Objects.nonNull(message)) {
-            byte info = message.getInfo();
-            byte slot = message.getSlot();
-
-            if (info == RESPONSE_SESSION_PAYLOAD) {
-                logger.trace("receive SESSION_PAYLOAD, slot = ", slot);
-                responseBox.push(slot, message.getBytes());
-            } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
-                byte writer = message.getWriter();
-                logger.trace("receive RESULT_SET_PAYLOAD, slot = ", slot, ", writer = ", writer);
-                resultSetBox.push(slot, writer, message.getBytes());
-            } else if (info == RESPONSE_RESULT_SET_HELLO) {
-                resultSetBox.pushHello(message.getString(), slot);
-            } else if (info == RESPONSE_RESULT_SET_BYE) {
-                resultSetBox.pushBye(slot);
-            } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
-                logger.trace("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-                valid = true;
-            } else {
-                throw new IOException("invalid info in the response");
+    public boolean pull(AtomicReference<Boolean> available) throws IOException {
+        synchronized (inStream) {
+            if (available.get()) {
+                available.set(false);
+                return true;
             }
-            return true;
+
+            var message = receive();
+            if (Objects.nonNull(message)) {
+                byte info = message.getInfo();
+                byte slot = message.getSlot();
+
+                if (info == RESPONSE_SESSION_PAYLOAD) {
+                    logger.trace("receive SESSION_PAYLOAD, slot = ", slot);
+                    responseBox.push(slot, message.getBytes());
+                } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
+                    byte writer = message.getWriter();
+                    logger.trace("receive RESULT_SET_PAYLOAD, slot = ", slot, ", writer = ", writer);
+                    resultSetBox.push(slot, writer, message.getBytes());
+                } else if (info == RESPONSE_RESULT_SET_HELLO) {
+                    resultSetBox.pushHello(message.getString(), slot);
+                } else if (info == RESPONSE_RESULT_SET_BYE) {
+                    resultSetBox.pushBye(slot);
+                } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
+                    logger.trace("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                    valid = true;
+                } else {
+                    throw new IOException("invalid info in the response");
+                }
+                return true;
+            }
+            return false;
         }
-        return false;
     }
     public ResponseBox getResponseBox() {
         return responseBox;
@@ -151,35 +159,33 @@ public class StreamWire {
             byte writer = 0;
             byte info = 0;
 
-            synchronized (inStream) {
-                // info受信
-                info = inStream.readByte();
+            // info受信
+            info = inStream.readByte();
 
-                // slot受信
-                byte slot = inStream.readByte();
-    
-                if (info ==  RESPONSE_RESULT_SET_PAYLOAD) {
-                    writer = inStream.readByte();
-                }
-    
-                // length受信
-                int length = 0;
-                for (int i = 0; i < 4; i++) {
-                    int inData = inStream.readByte() & 0xff;
-                    length |= inData << (i * 8);
-                }
-                if (length > 0) {
-                    // payload受信
-                    bytes = new byte[length];
-                    int size = 0;
-                    while (size < length) {
-                        size += inStream.read(bytes, size, length - size);
-                    }
-                } else {
-                    bytes = null;
-                }
-                return new StreamMessage(info, bytes, slot, writer);
+            // slot受信
+            byte slot = inStream.readByte();
+
+            if (info ==  RESPONSE_RESULT_SET_PAYLOAD) {
+                writer = inStream.readByte();
             }
+
+            // length受信
+            int length = 0;
+            for (int i = 0; i < 4; i++) {
+                int inData = inStream.readByte() & 0xff;
+                length |= inData << (i * 8);
+            }
+            if (length > 0) {
+                // payload受信
+                bytes = new byte[length];
+                int size = 0;
+                while (size < length) {
+                    size += inStream.read(bytes, size, length - size);
+                }
+            } else {
+                bytes = null;
+            }
+            return new StreamMessage(info, bytes, slot, writer);
         } catch (EOFException e) {  // imply session close
             socket.close();
             closed = true;
