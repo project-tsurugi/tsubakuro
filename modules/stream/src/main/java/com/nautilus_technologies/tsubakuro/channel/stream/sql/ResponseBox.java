@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
@@ -16,14 +16,14 @@ public class ResponseBox {
     private Abox[] boxes;
 
     private static class Abox {
-        private AtomicReference<Boolean> available;
+        private AtomicBoolean available;
         private byte[] firstResponse;
         private byte[] secondResponse;
         private int expected;
         private int used;
 
         Abox() {
-            available = new AtomicReference<Boolean>();
+            available = new AtomicBoolean();
             clear();
         }
 

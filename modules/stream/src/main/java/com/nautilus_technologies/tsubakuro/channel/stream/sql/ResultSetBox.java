@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 
@@ -17,7 +17,7 @@ public class ResultSetBox {
     private StreamWire streamWire;
     private Abox[] boxes;
     private Map<String, Integer> map;
-    private AtomicReference<Boolean> available;
+    private AtomicBoolean available;
 
     private static class MessageQueue {
         ArrayDeque<ResultSetResponse> queue;
@@ -40,12 +40,12 @@ public class ResultSetBox {
     }
 
     private static class Abox {
-        private AtomicReference<Boolean> available;
+        private AtomicBoolean available;
         private MessageQueue queues;
         private boolean eor;
 
         Abox() {
-            this.available = new AtomicReference<Boolean>();
+            this.available = new AtomicBoolean();
             this.available.set(false);
             this.eor = false;
             this.queues = new MessageQueue();
@@ -55,7 +55,7 @@ public class ResultSetBox {
     public ResultSetBox(StreamWire streamWire) {
         this.streamWire = streamWire;
         this.map = new HashMap<>();
-        this.available = new AtomicReference<Boolean>();
+        this.available = new AtomicBoolean();
         this.available.set(false);
         this.boxes = new Abox[SIZE];
 

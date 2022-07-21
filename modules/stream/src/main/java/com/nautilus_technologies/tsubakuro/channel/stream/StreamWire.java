@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.EOFException;
 import java.net.Socket;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,7 @@ public class StreamWire {
     public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, 0);
     }
-    public boolean pull(AtomicReference<Boolean> available) throws IOException {
+    public boolean pull(AtomicBoolean available) throws IOException {
         synchronized (inStream) {
             if (available.get()) {
                 available.set(false);
