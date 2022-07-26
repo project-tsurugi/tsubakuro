@@ -207,25 +207,25 @@ public class Payment {
         var resultSet2 = future2.get();
         try {
         if (!Objects.isNull(resultSet2)) {
-            if (!resultSet2.nextRecord()) {
+            if (!resultSet2.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet2.nextColumn();
-            wName = resultSet2.getCharacter();
+            wName = resultSet2.fetchCharacterValue();
             resultSet2.nextColumn();
-            wStreet1 = resultSet2.getCharacter();
+            wStreet1 = resultSet2.fetchCharacterValue();
             resultSet2.nextColumn();
-            wStreet2 = resultSet2.getCharacter();
+            wStreet2 = resultSet2.fetchCharacterValue();
             resultSet2.nextColumn();
-            wCity = resultSet2.getCharacter();
+            wCity = resultSet2.fetchCharacterValue();
             resultSet2.nextColumn();
-            wState = resultSet2.getCharacter();
+            wState = resultSet2.fetchCharacterValue();
             resultSet2.nextColumn();
-            wZip = resultSet2.getCharacter();
-            if (resultSet2.nextRecord()) {
+            wZip = resultSet2.fetchCharacterValue();
+            if (resultSet2.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                 }
@@ -267,25 +267,25 @@ public class Payment {
         var resultSet4 = future4.get();
         try {
         if (!Objects.isNull(resultSet4)) {
-            if (!resultSet4.nextRecord()) {
+            if (!resultSet4.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet4.nextColumn();
-            dStreet1 = resultSet4.getCharacter();
+            dStreet1 = resultSet4.fetchCharacterValue();
             resultSet4.nextColumn();
-            dStreet2 = resultSet4.getCharacter();
+            dStreet2 = resultSet4.fetchCharacterValue();
             resultSet4.nextColumn();
-            dCity = resultSet4.getCharacter();
+            dCity = resultSet4.fetchCharacterValue();
             resultSet4.nextColumn();
-            dState = resultSet4.getCharacter();
+            dState = resultSet4.fetchCharacterValue();
             resultSet4.nextColumn();
-            dZip = resultSet4.getCharacter();
+            dZip = resultSet4.fetchCharacterValue();
             resultSet4.nextColumn();
-            dName = resultSet4.getCharacter();
-            if (resultSet4.nextRecord()) {
+            dName = resultSet4.fetchCharacterValue();
+            if (resultSet4.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
@@ -327,41 +327,41 @@ public class Payment {
         var resultSet7 = future7.get();
         try {
         if (!Objects.isNull(resultSet7)) {
-            if (!resultSet7.nextRecord()) {
+            if (!resultSet7.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet7.nextColumn();
-            cFirst = resultSet7.getCharacter();  // c_first(0)
+            cFirst = resultSet7.fetchCharacterValue();  // c_first(0)
             resultSet7.nextColumn();
-            cMiddle = resultSet7.getCharacter();  // c_middle(1)
+            cMiddle = resultSet7.fetchCharacterValue();  // c_middle(1)
             resultSet7.nextColumn();
-            cLast = resultSet7.getCharacter();  // c_last(2)
+            cLast = resultSet7.fetchCharacterValue();  // c_last(2)
             resultSet7.nextColumn();
-            cStreet1 = resultSet7.getCharacter();  // c_street_1(3)
+            cStreet1 = resultSet7.fetchCharacterValue();  // c_street_1(3)
             resultSet7.nextColumn();
-            cStreet2 = resultSet7.getCharacter();  // c_street_1(4)
+            cStreet2 = resultSet7.fetchCharacterValue();  // c_street_1(4)
             resultSet7.nextColumn();
-            cCity = resultSet7.getCharacter();  // c_city(5)
+            cCity = resultSet7.fetchCharacterValue();  // c_city(5)
             resultSet7.nextColumn();
-            cState = resultSet7.getCharacter();  // c_state(6)
+            cState = resultSet7.fetchCharacterValue();  // c_state(6)
             resultSet7.nextColumn();
-            cZip = resultSet7.getCharacter();  // c_zip(7)
+            cZip = resultSet7.fetchCharacterValue();  // c_zip(7)
             resultSet7.nextColumn();
-            cPhone = resultSet7.getCharacter();  // c_phone(8)
+            cPhone = resultSet7.fetchCharacterValue();  // c_phone(8)
             resultSet7.nextColumn();
-            cCredit = resultSet7.getCharacter();  // c_credit(9)
+            cCredit = resultSet7.fetchCharacterValue();  // c_credit(9)
             resultSet7.nextColumn();
-            cCreditLim = resultSet7.getFloat8();  // c_credit_lim(10)
+            cCreditLim = resultSet7.fetchFloat8Value();  // c_credit_lim(10)
             resultSet7.nextColumn();
-            cDiscount = resultSet7.getFloat8();  // c_discount(11)
+            cDiscount = resultSet7.fetchFloat8Value();  // c_discount(11)
             resultSet7.nextColumn();
-            cBalance = resultSet7.getFloat8();  // c_balance(12)
+            cBalance = resultSet7.fetchFloat8Value();  // c_balance(12)
             resultSet7.nextColumn();
-            cSince = resultSet7.getCharacter();  // c_since(13)
-            if (resultSet7.nextRecord()) {
+            cSince = resultSet7.fetchCharacterValue();  // c_since(13)
+            if (resultSet7.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
@@ -394,15 +394,15 @@ public class Payment {
         var resultSet8 = future8.get();
         try {
             if (!Objects.isNull(resultSet8)) {
-            if (!resultSet8.nextRecord()) {
+            if (!resultSet8.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet8.nextColumn();
-            cData = resultSet8.getCharacter();
-            if (resultSet8.nextRecord()) {
+            cData = resultSet8.fetchCharacterValue();
+            if (resultSet8.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet8.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }

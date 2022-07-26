@@ -3,7 +3,6 @@ package com.nautilus_technologies.tsubakuro.protos;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.tsurugidb.jogasaki.proto.StatusProtos;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -1071,49 +1070,43 @@ public final class ProtosForTest {
      * Check of Schema meta data
      */
     public static class SchemaProtosChecker {
-        public static SchemaProtos.RecordMeta.Builder builder() {
+        public static SqlResponse.ResultSetMetadata.Builder builder() {
             return
-                SchemaProtos.RecordMeta.newBuilder()
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v1").setType(SqlCommon.AtomType.INT8))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v2").setType(SqlCommon.AtomType.FLOAT8).setNullable(false))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setName("v3").setType(SqlCommon.AtomType.CHARACTER).setNullable(true))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.INT8))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.FLOAT8).setNullable(false))
-                .addColumns(SchemaProtos.RecordMeta.Column.newBuilder().setType(SqlCommon.AtomType.CHARACTER).setNullable(true));
+                SqlResponse.ResultSetMetadata.newBuilder()
+                .addColumns(SqlCommon.Column.newBuilder().setName("v1").setAtomType(SqlCommon.AtomType.INT8))
+                .addColumns(SqlCommon.Column.newBuilder().setName("v2").setAtomType(SqlCommon.AtomType.FLOAT8))
+                .addColumns(SqlCommon.Column.newBuilder().setName("v3").setAtomType(SqlCommon.AtomType.CHARACTER))
+                .addColumns(SqlCommon.Column.newBuilder().setAtomType(SqlCommon.AtomType.INT8))
+                .addColumns(SqlCommon.Column.newBuilder().setAtomType(SqlCommon.AtomType.FLOAT8))
+                .addColumns(SqlCommon.Column.newBuilder().setAtomType(SqlCommon.AtomType.CHARACTER));
         }
-        public static boolean check(SchemaProtos.RecordMeta dst) {
-            SchemaProtos.RecordMeta.Column v1 = dst.getColumnsList().get(0);
-            SchemaProtos.RecordMeta.Column v2 = dst.getColumnsList().get(1);
-            SchemaProtos.RecordMeta.Column v3 = dst.getColumnsList().get(2);
-            SchemaProtos.RecordMeta.Column v4 = dst.getColumnsList().get(3);
-            SchemaProtos.RecordMeta.Column v5 = dst.getColumnsList().get(4);
-            SchemaProtos.RecordMeta.Column v6 = dst.getColumnsList().get(5);
+        public static boolean check(SqlResponse.ResultSetMetadata dst) {
+            SqlCommon.Column v1 = dst.getColumnsList().get(0);
+            SqlCommon.Column v2 = dst.getColumnsList().get(1);
+            SqlCommon.Column v3 = dst.getColumnsList().get(2);
+            SqlCommon.Column v4 = dst.getColumnsList().get(3);
+            SqlCommon.Column v5 = dst.getColumnsList().get(4);
+            SqlCommon.Column v6 = dst.getColumnsList().get(5);
             
             return
                 v1.getName().equals("v1")
-                && v1.getType().equals(SqlCommon.AtomType.INT8)
-                && (v1.getNullable() ==  false)
+                && v1.getAtomType().equals(SqlCommon.AtomType.INT8)
                 && v2.getName().equals("v2")
-                && v2.getType().equals(SqlCommon.AtomType.FLOAT8)
-                && (v2.getNullable() ==  false)
+                && v2.getAtomType().equals(SqlCommon.AtomType.FLOAT8)
                 && v3.getName().equals("v3")
-                && v3.getType().equals(SqlCommon.AtomType.CHARACTER)
-                && (v3.getNullable() ==  true)
-                && v4.getType().equals(SqlCommon.AtomType.INT8)
+                && v3.getAtomType().equals(SqlCommon.AtomType.CHARACTER)
+                && v4.getAtomType().equals(SqlCommon.AtomType.INT8)
                 && v4.getName().equals("")
-                && (v4.getNullable() ==  false)
                 && v5.getName().equals("")
-                && v5.getType().equals(SqlCommon.AtomType.FLOAT8)
-                && (v5.getNullable() ==  false)
+                && v5.getAtomType().equals(SqlCommon.AtomType.FLOAT8)
                 && v6.getName().equals("")
-                && v6.getType().equals(SqlCommon.AtomType.CHARACTER)
-                && (v6.getNullable() ==  true)
+                && v6.getAtomType().equals(SqlCommon.AtomType.CHARACTER)
                 && (dst.getColumnsList().size() == 6);
         }
-        
+
         void test() {
             try {
-                assertTrue(check(SchemaProtos.RecordMeta.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlResponse.ResultSetMetadata.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }

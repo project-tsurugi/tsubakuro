@@ -85,15 +85,15 @@ public class StockLevel {
         var resultSet1 = future1.get();
         try {
         if (!Objects.isNull(resultSet1)) {
-            if (!resultSet1.nextRecord()) {
+            if (!resultSet1.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet1.nextColumn();
-            oId = resultSet1.getInt8();
-            if (resultSet1.nextRecord()) {
+            oId = resultSet1.fetchInt8Value();
+            if (resultSet1.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
@@ -126,15 +126,15 @@ public class StockLevel {
         var resultSet2 = future2.get();
         try {
         if (!Objects.isNull(resultSet2)) {
-            if (!resultSet2.nextRecord()) {
+            if (!resultSet2.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet2.nextColumn();
-            queryResult = resultSet2.getInt8();
-            if (resultSet2.nextRecord()) {
+            queryResult = resultSet2.fetchInt8Value();
+            if (resultSet2.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }

@@ -1,10 +1,10 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.msgpack.core.buffer.MessageBuffer;
-import org.msgpack.core.buffer.ByteBufferInput;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
@@ -23,26 +23,55 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean eor;
 
-    class ByteBufferBackedInput extends ByteBufferInput {
-    ByteBufferBackedInput(ByteBuffer byteBuffer) {
-        super(byteBuffer);
-    }
+    class ByteBufferBackedInput extends InputStream {
+        private ByteBuffer source;
 
-    public MessageBuffer next() {
-        var rv = super.next();
-        if (!Objects.isNull(rv)) {
-        return rv;
+        /**
+         * Creates a new instance.
+         * @param source the source buffer
+         */
+        ByteBufferBackedInput(ByteBuffer source) {
+            Objects.requireNonNull(source);
+            this.source = source;
         }
-        if (!eor) {
-        var buffer = getChunkNative(wireHandle);
-        if (Objects.isNull(buffer)) {
-            return null;
+    
+        @Override
+        public int read() {
+            while (true) {
+                if (source.hasRemaining()) {
+                    return source.get() & 0xff;
+                }
+                if (!next()) {
+                    return -1;
+                }
+            }
         }
-        super.reset(buffer);
-        return super.next();
+    
+        @Override
+        public int read(byte[] b, int off, int len) {
+            int read = 0;
+            while (true) {
+                int count = Math.min((len - read), source.remaining());
+                if (count > 0) {
+                    source.get(b, (off + read), count);
+                    read += count;
+                    if (read == len) {
+                        return read;
+                    }
+                }
+                if (!next()) {
+                    return -1;
+                }
+            }
         }
-        return null;
-    }
+    
+        boolean next() {
+            source = getChunkNative(wireHandle);
+            if (Objects.isNull(source)) {
+                return false;
+            }
+            return true;
+        }
     }
 
     /**
@@ -61,48 +90,48 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @throws IOException connection error
      */
     public void connect(String name) throws IOException {
-    if (name.length() == 0) {
-        throw new IOException("ResultSet wire name is empty");
-    }
-    wireHandle = createNative(sessionWireHandle);
-    connectNative(wireHandle, name);
+        if (name.length() == 0) {
+            throw new IOException("ResultSet wire name is empty");
+        }
+        wireHandle = createNative(sessionWireHandle);
+        connectNative(wireHandle, name);
     }
 
     /**
      * Provides the Input to retrieve the received data.
      * @return ByteBufferInput contains the record data from the SQL server.
      */
-    public ByteBufferInput getByteBufferBackedInput() {
-    if (Objects.isNull(byteBufferBackedInput)) {
-        var buffer = getChunkNative(wireHandle);
-        if (Objects.isNull(buffer)) {
-        eor = true;
-        return null;
+    public InputStream getByteBufferBackedInput() {
+        if (Objects.isNull(byteBufferBackedInput)) {
+            var buffer = getChunkNative(wireHandle);
+            if (Objects.isNull(buffer)) {
+                eor = true;
+                return null;
+                }
+            byteBufferBackedInput = new ByteBufferBackedInput(buffer);
         }
-        byteBufferBackedInput = new ByteBufferBackedInput(buffer);
-    }
-    return byteBufferBackedInput;
+        return byteBufferBackedInput;
     }
 
     public boolean disposeUsedData(long length) throws IOException {
-    disposeUsedDataNative(wireHandle, length);
-    var buffer = getChunkNative(wireHandle);
-    if (Objects.isNull(buffer)) {
-        eor = true;
-        return false;
-    }
-    byteBufferBackedInput.reset(buffer);
-    return true;
+        disposeUsedDataNative(wireHandle, length);
+        var buffer = getChunkNative(wireHandle);
+        if (Objects.isNull(buffer)) {
+            eor = true;
+            return false;
+        }
+//        byteBufferBackedInput.reset(buffer);
+        return true;
     }
 
     /**
      * Close the wire
      */
     public void close() throws IOException {
-    closeNative(wireHandle);
-    wireHandle = 0;
-    if (!Objects.isNull(byteBufferBackedInput)) {
-        byteBufferBackedInput.close();
-    }
+        closeNative(wireHandle);
+        wireHandle = 0;
+        if (!Objects.isNull(byteBufferBackedInput)) {
+            byteBufferBackedInput.close();
+        }
     }
 }

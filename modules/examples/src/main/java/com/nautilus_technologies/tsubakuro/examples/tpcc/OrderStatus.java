@@ -149,21 +149,21 @@ public class OrderStatus {
         var resultSet3 = future3.get();
         try {
             if (Objects.nonNull(resultSet3)) {
-            if (!resultSet3.nextRecord()) {
+            if (!resultSet3.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet3.nextColumn();
-            cBalance = resultSet3.getFloat8();
+            cBalance = resultSet3.fetchFloat8Value();
             resultSet3.nextColumn();
-            cFirst = resultSet3.getCharacter();
+            cFirst = resultSet3.fetchCharacterValue();
             resultSet3.nextColumn();
-            cMiddle = resultSet3.getCharacter();
+            cMiddle = resultSet3.fetchCharacterValue();
             resultSet3.nextColumn();
-            cLast = resultSet3.getCharacter();
-            if (resultSet3.nextRecord()) {
+            cLast = resultSet3.fetchCharacterValue();
+            if (resultSet3.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
@@ -193,14 +193,14 @@ public class OrderStatus {
         var resultSet4 = future4.get();
         try {
             if (Objects.nonNull(resultSet4)) {
-            if (!resultSet4.nextRecord()) {
+            if (!resultSet4.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet4.nextColumn();
-            oId = resultSet4.getInt8();
+            oId = resultSet4.fetchInt8Value();
             }
             var status4 = resultSet4.getResponse().get();
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
@@ -232,7 +232,7 @@ public class OrderStatus {
         var resultSet5 = future5.get();
         try {
             if (Objects.nonNull(resultSet5)) {
-            if (!resultSet5.nextRecord()) {
+            if (!resultSet5.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
@@ -240,13 +240,13 @@ public class OrderStatus {
             }
             resultSet5.nextColumn();
             if (!resultSet5.isNull()) {
-                oCarrierId = resultSet5.getInt8();
+                oCarrierId = resultSet5.fetchInt8Value();
             }
             resultSet5.nextColumn();
-            oEntryD = resultSet5.getCharacter();
+            oEntryD = resultSet5.fetchCharacterValue();
             resultSet5.nextColumn();
-            oOlCnt = resultSet5.getInt8();
-            if (resultSet5.nextRecord()) {
+            oOlCnt = resultSet5.fetchInt8Value();
+            if (resultSet5.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
@@ -277,18 +277,18 @@ public class OrderStatus {
         try {
             if (Objects.nonNull(resultSet6)) {
             int i = 0;
-            while (resultSet6.nextRecord()) {
+            while (resultSet6.nextRow()) {
                 resultSet6.nextColumn();
-                olIid[i] = resultSet6.getInt8();
+                olIid[i] = resultSet6.fetchInt8Value();
                 resultSet6.nextColumn();
-                olSupplyWid[i] = resultSet6.getInt8();
+                olSupplyWid[i] = resultSet6.fetchInt8Value();
                 resultSet6.nextColumn();
-                olQuantity[i] = resultSet6.getInt8();
+                olQuantity[i] = resultSet6.fetchInt8Value();
                 resultSet6.nextColumn();
-                olAmount[i] = resultSet6.getFloat8();
+                olAmount[i] = resultSet6.fetchFloat8Value();
                 resultSet6.nextColumn();
                 if (!resultSet6.isNull()) {
-                olDeliveryD[i] = resultSet6.getCharacter();
+                olDeliveryD[i] = resultSet6.fetchCharacterValue();
                 }
                 i++;
             }

@@ -50,11 +50,11 @@ public class Q6 {
 
     try {
         if (Objects.nonNull(resultSet)) {
-            if (resultSet.nextRecord()) {
+            if (resultSet.nextRow()) {
                 resultSet.nextColumn();
                 if (!resultSet.isNull()) {
                 System.out.println("REVENUE");
-                System.out.println(resultSet.getInt8());
+                System.out.println(resultSet.fetchInt8Value());
                 } else {
                 System.out.println("REVENUE is null");
                 }

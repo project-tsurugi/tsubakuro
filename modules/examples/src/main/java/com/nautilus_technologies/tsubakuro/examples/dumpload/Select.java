@@ -15,29 +15,31 @@ public class Select {
         this.sqlClient = sqlClient;
     }
 
-    static void printResultset(ResultSet resultSet) throws InterruptedException, IOException {
+    static void printResultset(ResultSet resultSet) throws InterruptedException, IOException, ServerException {
         int count = 1;
 
-        while (resultSet.nextRecord()) {
+        while (resultSet.nextRow()) {
             System.out.println("---- ( " + count + " )----");
             count++;
+            int columnIndex = 0;
+            var metadata = resultSet.getMetadata().getColumns();
             while (resultSet.nextColumn()) {
                 if (!resultSet.isNull()) {
-                    switch (resultSet.type()) {
+                    switch (metadata.get(columnIndex).getAtomType()) {
                         case INT4:
-                            System.out.println(resultSet.getInt4());
+                            System.out.println(resultSet.fetchInt4Value());
                             break;
                         case INT8:
-                            System.out.println(resultSet.getInt8());
+                            System.out.println(resultSet.fetchInt8Value());
                             break;
                         case FLOAT4:
-                            System.out.println(resultSet.getFloat4());
+                            System.out.println(resultSet.fetchFloat4Value());
                             break;
                         case FLOAT8:
-                            System.out.println(resultSet.getFloat8());
+                            System.out.println(resultSet.fetchFloat8Value());
                             break;
                         case CHARACTER:
-                            System.out.println(resultSet.getCharacter());
+                            System.out.println(resultSet.fetchCharacterValue());
                             break;
                         default:
                             throw new IOException("the column type is invalid");
@@ -45,6 +47,7 @@ public class Select {
                 } else {
                     System.out.println("the column is NULL");
                 }
+                columnIndex++;
             }
         }
     }

@@ -80,10 +80,10 @@ public class Q19 {
 
     try {
         if (Objects.nonNull(resultSet)) {
-        if (resultSet.nextRecord()) {
+        if (resultSet.nextRow()) {
             resultSet.nextColumn();
             if (!resultSet.isNull()) {
-            System.out.println("REVENUE " + resultSet.getInt8());
+            System.out.println("REVENUE " + resultSet.fetchInt8Value());
             } else {
             System.out.println("REVENUE is null");
             }

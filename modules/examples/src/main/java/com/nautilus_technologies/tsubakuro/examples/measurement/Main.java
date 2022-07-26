@@ -37,9 +37,9 @@ public final class Main {
                 var future = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE");
                 var resultSet = future.get();
                 long count = 0;
-                if (resultSet.nextRecord()) {
+                if (resultSet.nextRow()) {
                     if (resultSet.nextColumn()) {
-                        count = resultSet.getInt8();
+                        count = resultSet.fetchInt8Value();
                     }
                 }
                 resultSet.close();

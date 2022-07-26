@@ -14,24 +14,24 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import  com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
+import com.nautilus_technologies.tsubakuro.exception.SqlServiceException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
-import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
-import com.nautilus_technologies.tsubakuro.exception.SqlServiceException;
 import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResourceHolder;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Owner;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueInput;
+//import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 
 /**
@@ -194,7 +194,7 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<PreparedStatement> send(
-            @Nonnull SqlRequest.Prepare request) throws IOException {
+            SqlRequest.Prepare request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
@@ -358,39 +358,72 @@ public class SqlServiceStub implements SqlService {
         }
     }
 
-    static class ResultSetProcessor  implements ResponseProcessor<ResultSet> {
-        private final Wire wire;    
+    class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
 
-        ResultSetProcessor(
-            @Nonnull Wire wire) {
-            Objects.requireNonNull(wire);
-            this.wire = wire;
+        QueryProcessor() {
+            super(resources);
+        }
+
+        @Override
+        SqlResponse.Response parse(@Nonnull ByteBuffer payload) throws IOException {
+            var message = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            return message;
+        }
+
+        @Override
+        void doTest(@Nonnull SqlResponse.Response message) throws IOException, ServerException, InterruptedException {
+            if (SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(message.getResponseCase())) {
+                return; // OK
+            } else if (SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(message.getResponseCase())) {
+                var detailResponse = message.getResultOnly();
+                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                }
+            }
+            throw new AssertionError(); // may not occur
         }
 
         @Override
         public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-            response.setResultSetMode();
+    //        validateMetadata(response);
+            try (
+                var owner = Owner.of(response);
+            ) {
+                response.setResultSetMode();
+    
+                test(response);
+                var sqlResponse = cache.get();
+                var channelResponse = response.duplicate();
+                response.release();
+                var detailResponse = sqlResponse.getExecuteQuery();
+                var metadata = new ResultSetMetadataAdapter(detailResponse.getRecordMeta());
+                SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
+    
+                var input = session.getWire().createResultSetWire();
+                input.connect(detailResponse.getName());
+                var dataInput = input.getByteBufferBackedInput();
+                var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
 
-            var resultSetImpl = new ResultSetImpl(wire.createResultSetWire());
-            var payload = response.waitForMainResponse();
-            var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            var channelResponse = response.duplicate();
-            response.release();
-
-            if (SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(sqlResponse.getResponseCase())) {
                 var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
                 var future = new ForegroundFutureResponse<SqlResponse.ResultOnly>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
 
-                var detailResponse = sqlResponse.getExecuteQuery();
-                resultSetImpl.connect(detailResponse.getName(), detailResponse.getRecordMeta(), future);
-            } else if (SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(sqlResponse.getResponseCase())) {
-                channelResponse.release();
-                resultSetImpl.indicateError(new FutureResultOnly(sqlResponse.getResultOnly()));
-            } else {
-                throw new IOException("response type is inconsistent with the request type");
+                var resultSetImpl = new ResultSetImpl(metadata, cursor, owner.release(), this, future);
+                return resources.register(resultSetImpl);
+            } catch (SqlServiceException e) {
+                return resources.register(new ResultSetImpl(new FutureResultOnly(e)));
+            } catch (Exception e) {
+                // if sub-response seems broken, check main-response for detect errors.
+                try {
+                    test(response);
+                } catch (Throwable t) {
+                    t.addSuppressed(e);
+                    throw t;
+                }
+                throw e;
             }
-            return resultSetImpl;
         }
     }
 
@@ -404,7 +437,11 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecuteQuery(request)
                     .build()),
-                new ResultSetProcessor(session.getWire()));
+                    new QueryProcessor());
+// FIXME  use backgroundResponseProcessor
+//                new QueryProcessor(session.getWire()),
+//                true);
+
     }
 
     @Override
@@ -417,7 +454,10 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecutePreparedQuery(request)
                     .build()),
-                new ResultSetProcessor(session.getWire()));
+                    new QueryProcessor());
+// FIXME  use backgroundResponseProcessor
+//                new QueryProcessor(session.getWire()),
+//                true);
     }
 
     static class BatchProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
@@ -462,7 +502,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecuteDump(request)
                     .build()),
-                    new ResultSetProcessor(session.getWire()));
+                    new QueryProcessor());
     }
 
     static class LoadProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {

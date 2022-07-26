@@ -37,9 +37,9 @@ public final class Main {
                 var future = transaction.executeQuery("SELECT no_o_id FROM NEW_ORDER WHERE no_w_id = 1 AND no_d_id = 1 ORDER by no_o_id DESC");
                 var resultSet = future.get();
                 long count = 0;
-                if (resultSet.nextRecord()) {
+                if (resultSet.nextRow()) {
                     if (resultSet.nextColumn()) {
-                        count = resultSet.getInt8();
+                        count = resultSet.fetchInt8Value();
                     }
                 }
                 resultSet.close();

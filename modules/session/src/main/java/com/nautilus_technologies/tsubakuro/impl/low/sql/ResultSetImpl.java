@@ -1,33 +1,53 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.IOException;
-import java.nio.charset.CodingErrorAction;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Objects;
-
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePack.UnpackerConfig;
-import org.msgpack.core.MessageUnpacker;
-import org.msgpack.value.ValueType;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
+import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
+import com.nautilus_technologies.tsubakuro.util.Timeout;
+import com.nautilus_technologies.tsubakuro.util.FutureResponse;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
- * ResultSetImpl type.
+ * A basic implementation of {@link ResultSet} which just delegate operations to
+ * {@link RelationCursor}.
  */
 public class ResultSetImpl implements ResultSet {
+
+    static final Logger LOG = LoggerFactory.getLogger(ResultSetImpl.class);
+
+    private final ResultSetMetadata metadata;
+
+    private final RelationCursor cursor;
+
+    private final Response response;
+
+    private final ResponseTester tester;
+
+    private final AtomicBoolean tested = new AtomicBoolean();
+
+    private final FutureResponse<SqlResponse.ResultOnly> futureResponse;
+
     /**
      * Tests if the response is valid.
      */
     public interface ResponseTester {
+
         /**
          * Tests if the response is valid.
          * @param response the response
@@ -39,418 +59,307 @@ public class ResultSetImpl implements ResultSet {
     }
 
     /**
-     * Store the schema of the result set.
+     * Creates a new instance.
+     * @param metadata the metadata
+     * @param cursor the relation cursor to delegate
+     * @param response the original response
+     * @param checker tests if response is normal
      */
-    private class RecordMetaImpl implements RecordMeta {
-        private final SchemaProtos.RecordMeta recordMeta;
-
-        RecordMetaImpl(SchemaProtos.RecordMeta recordMeta) {
-            this.recordMeta = recordMeta;
-        }
-        RecordMetaImpl() {
-            this.recordMeta = null;
-        }
-        @Override
-        public SqlCommon.AtomType type(int index) throws IOException {
-            if (index < 0 || fieldCount() <= index) {
-                throw new IOException("index is out of the range");
-            }
-            return recordMeta.getColumnsList().get(index).getType();
-        }
-        @Override
-        public String name(int index) throws IOException {
-            if (index < 0 || fieldCount() <= index) {
-                throw new IOException("index is out of the range");
-            }
-            return recordMeta.getColumnsList().get(index).getName();
-        }
-        @Override
-        public boolean nullable(int index) throws IOException {
-            if (index < 0 || fieldCount() <= index) {
-                throw new IOException("index is out of the range");
-            }
-            return recordMeta.getColumnsList().get(index).getNullable();
-        }
-        @Override
-        public int fieldCount() {
-            if (Objects.isNull(recordMeta)) {
-                return 0;
-            }
-            return recordMeta.getColumnsList().size();
-        }
-        @Override
-        @Deprecated
-        public SqlCommon.AtomType at(int index) throws IOException {
-            if (index < 0 || fieldCount() <= index) {
-                throw new IOException("index is out of the range");
-            }
-            return recordMeta.getColumnsList().get(index).getType();
-        }
-        @Override
-        @Deprecated
-        public SqlCommon.AtomType at() throws IOException {
-            if (!columnReady) {
-                throw new IOException("the column is not ready to be read");
-            }
-            return recordMeta.getColumnsList().get(columnIndex).getType();
-        }
-        @Override
-        @Deprecated
-        public boolean nullable() throws IOException {
-            if (!columnReady) {
-                throw new IOException("the column is not ready to be read");
-            }
-            return recordMeta.getColumnsList().get(columnIndex).getNullable();
-        }
-    }
-
-    private ResultSetWire resultSetWire;
-    private RecordMetaImpl recordMeta;
-    private UnpackerConfig unpackerConfig;
-    private MessageUnpacker unpacker;
-    private int columnIndex;
-    private boolean detectNull;
-    private boolean columnReady;
-    private boolean recordReady;
-    private boolean closed;
-    private FutureResponse<SqlResponse.ResultOnly> futureResponse;
-
-    /**
-     * Class constructor, called from FutureResultSetImpl.
-     * @param resultSetWire the wire to transfer schema meta data and contents for this result set.
-     * @throws IOException error occurred in class constructor
-     */
-    public ResultSetImpl(ResultSetWire resultSetWire) throws IOException {
-        this.resultSetWire = resultSetWire;
-        unpackerConfig = new UnpackerConfig()
-                .withActionOnMalformedString(CodingErrorAction.IGNORE)
-                .withActionOnUnmappableString(CodingErrorAction.IGNORE);
+    public ResultSetImpl(
+            @Nonnull ResultSetMetadata metadata,
+            @Nonnull RelationCursor cursor,
+            @Nonnull Response response,
+            @Nonnull ResponseTester checker,
+            @Nonnull FutureResponse<SqlResponse.ResultOnly> futureResponse) {
+        Objects.requireNonNull(metadata);
+        Objects.requireNonNull(cursor);
+        Objects.requireNonNull(response);
+        Objects.requireNonNull(checker);
+        Objects.requireNonNull(futureResponse);
+        this.metadata = metadata;
+        this.cursor = cursor;
+        this.response = response;
+        this.tester = checker;
+        this.futureResponse = futureResponse;
     }
 
     /**
-     * Connect this to the wire indicated by name.
-     * @param name the name of the wire.
-     * @param meta schema meta data for this result set.
-     * @return recordMeta the metadata object
+     * Creates a new instance when error occured.
      */
-    public void connect(String name, SchemaProtos.RecordMeta meta, FutureResponse<SqlResponse.ResultOnly> future) throws IOException {
-        recordMeta = new RecordMetaImpl(meta);
-        columnIndex = recordMeta.fieldCount();
-        resultSetWire.connect(name);
-        futureResponse = future;
-        var byteBufferBackedInput = resultSetWire.getByteBufferBackedInput();
-        if (Objects.nonNull(byteBufferBackedInput)) {
-            unpacker = unpackerConfig.newUnpacker(byteBufferBackedInput);
-        }
+    public ResultSetImpl(@Nonnull FutureResponse<SqlResponse.ResultOnly> futureResponse) {
+        Objects.requireNonNull(futureResponse);
+        this.metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder().build());
+        this.cursor = null;
+        this.response = null;
+        this.tester = null;
+        this.futureResponse = futureResponse;
     }
 
-    /**
-     * Notify this that an error has occurred.
-     */
-    public void indicateError(FutureResponse<SqlResponse.ResultOnly> future) {
-        recordMeta = new RecordMetaImpl();
-        resultSetWire = null;
-        futureResponse = future;
-    }
-
-    /**
-     * Provide the metadata object.
-     * @return recordMeta the metadata object
-     */
     @Override
-    public RecordMeta getRecordMeta() {
-        return recordMeta;
+    public ResultSetMetadata getMetadata() {
+        return metadata;
     }
 
-    /**
-     * Skips column data in the middle of a record.
-     */
-    void skipRestOfColumns() throws IOException {
-        if (!columnReady) {
-            if (!nextColumn()) {
-                return;
+    @Override
+    public boolean nextRow() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            checkResponse();
+            try {
+                return cursor.nextRow();
+            } catch (IOException | ServerException e) {
+                checkResponse(e);
+                throw e;
             }
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        do {
-            if (!isNull()) {
-                switch (recordMeta.at(columnIndex)) {
-                case INT4:
-                    getInt4();
-                    break;
-                case INT8:
-                    getInt8();
-                    break;
-                case FLOAT4:
-                    getFloat4();
-                    break;
-                case FLOAT8:
-                    getFloat8();
-                    break;
-                case CHARACTER:
-                    getCharacter();
-                    break;
-                default:
-                    throw new IOException("the column type is invalid");
-                }
-            }
-        } while (nextColumn());
     }
 
-    /**
-     * Move the read target to the next record.
-     * @throws IOException error occurred in record receive
-     */
     @Override
-    public boolean nextRecord() throws IOException {
-        if (closed) {
-            throw new IOException("already closed");
+    public boolean nextColumn() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.nextColumn();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        if (Objects.isNull(resultSetWire)) {
-            return false;
-        }
-        if (Objects.isNull(unpacker)) {  // means the query returns no record
-            return false;
-        }
-        if (columnIndex != recordMeta.fieldCount()) {
-            skipRestOfColumns();
-        }
-        var length = unpacker.getTotalReadBytes();
-        if (length > 0) {
-            if (!resultSetWire.disposeUsedData(unpacker.getTotalReadBytes())) {
-                return false;
-            }
-            unpacker.reset(resultSetWire.getByteBufferBackedInput());
-        }
-        columnIndex = -1;
-        columnReady = false;
-        recordReady = false;
-        return unpacker.hasNext();
     }
 
-    /**
-     * Move the read target to the next column of current record.
-     *
-     * Reading all columns of all records that a recordSet has is done in the following way.
-     *
-     *   while (resultSet.nextRecord()) {
-     *     while (resultSet.nextColumn()) {
-     *       columnData = resultSet.getXXX();
-     *       do some processing using columnData;
-     *     }
-     *   }
-     */
     @Override
-    public boolean nextColumn() {
-        detectNull = false;
-        columnIndex++;
-        if (columnIndex < recordMeta.fieldCount()) {
-            columnReady = true;
-            recordReady = true;
-            return true;
-        }
-        columnReady = false;
-        recordReady = false;
-        return false;
+    public boolean isNull() {
+        return cursor.isNull();
     }
 
-    /**
-     * Get the current field type
-     * @return current field type
-     */
     @Override
-    public SqlCommon.AtomType type() throws IOException {
-        if (!recordReady) {
-            throw new IOException("the column is not ready to be read");
+    public boolean fetchBooleanValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchBooleanValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        return recordMeta.type(columnIndex);
     }
 
-    /**
-     * Get the current field type
-     * @return current field type
-     */
     @Override
-    public String name() throws IOException {
-        if (!recordReady) {
-            throw new IOException("the column is not ready to be read");
+    public int fetchInt4Value() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchInt4Value();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        return recordMeta.name(columnIndex);
     }
 
-    /**
-     * Get the nullability for the current field
-     * @return true if the current field is nullable
-     */
     @Override
-    public boolean nullable() throws IOException {
-        if (!recordReady) {
-            throw new IOException("the column is not ready to be read");
+    public long fetchInt8Value() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchInt8Value();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        return recordMeta.nullable(columnIndex);
     }
 
-    /**
-     * Check if the current column is null.
-     * @return true if the current column is null.
-     * @throws IOException error occurred in column check
-     */
     @Override
-    public boolean isNull() throws IOException {
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
+    public float fetchFloat4Value() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchFloat4Value();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
         }
-        if (recordMeta.nullable(columnIndex)) {
-            MessageFormat format = unpacker.getNextFormat();
-            ValueType type = format.getValueType();
-            if (type == ValueType.NIL) {
-                detectNull = true;
-                columnReady = false;
-                unpacker.unpackNil();
-                return true;
-            }
-        }
-        return false;
-    }
-    /**
-     * Get the value of the current column as an Int4.
-     * @return the value of current column in Int4
-     * @throws IOException error occurred in retrieving column data
-     */
-    @Override
-    public int getInt4() throws IOException {
-        if (detectNull) {
-            throw new IOException("the column is Null");
-        }
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
-        }
-        MessageFormat format = unpacker.getNextFormat();
-        ValueType type = format.getValueType();
-        if (type != ValueType.INTEGER) {
-            if (type == ValueType.NIL) {
-                throw new IOException("the column is Null");
-            }
-            throw new IOException("the column type is not what is expected");
-        }
-        columnReady = false;
-        return unpacker.unpackInt();
-    }
-    /**
-     * Get the value of the current column as an Int8.
-     * @return the value of current column in Int8
-     * @throws IOException error occurred in retrieving column data
-     */
-    @Override
-    public long getInt8() throws IOException {
-        if (detectNull) {
-            throw new IOException("the column is Null");
-        }
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
-        }
-        MessageFormat format = unpacker.getNextFormat();
-        ValueType type = format.getValueType();
-        if (type != ValueType.INTEGER) {
-            if (type == ValueType.NIL) {
-                throw new IOException("the column is Null");
-            }
-            throw new IOException("the column type is not what is expected");
-        }
-        columnReady = false;
-        return unpacker.unpackLong();
-    }
-    /**
-     * Get the value of the current column as an Float4.
-     * @return the value of current column in Float4
-     * @throws IOException error occurred in retrieving column data
-     */
-    @Override
-    public float getFloat4() throws IOException {
-        if (detectNull) {
-            throw new IOException("the column is Null");
-        }
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
-        }
-        MessageFormat format = unpacker.getNextFormat();
-        ValueType type = format.getValueType();
-        if (!(type == ValueType.FLOAT && format == MessageFormat.FLOAT32)) {
-            if (type == ValueType.NIL) {
-                throw new IOException("the column is Null");
-            }
-            throw new IOException("the column type is not what is expected");
-        }
-        columnReady = false;
-        return unpacker.unpackFloat();
-    }
-    /**
-     * Get the value of the current column as an Float8.
-     * @return the value of current column in Float8
-     * @throws IOException error occurred in retrieving column data
-     */
-    @Override
-    public double getFloat8() throws IOException {
-        if (detectNull) {
-            throw new IOException("the column is Null");
-        }
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
-        }
-        MessageFormat format = unpacker.getNextFormat();
-        ValueType type = format.getValueType();
-        if (!(type == ValueType.FLOAT && format == MessageFormat.FLOAT64)) {
-            if (type == ValueType.NIL) {
-                throw new IOException("the column is Null");
-            }
-            throw new IOException("the column type is not what is expected");
-        }
-        columnReady = false;
-        return unpacker.unpackDouble();
-    }
-    /**
-     * Get the value of the current column as an Character string.
-     * @return the value of current column in Character string.
-     * @throws IOException error occurred in retrieving column data
-     */
-    @Override
-    public String getCharacter() throws IOException {
-        if (detectNull) {
-            throw new IOException("the column is Null");
-        }
-        if (!columnReady) {
-            throw new IOException("the column is not ready to be read");
-        }
-        MessageFormat format = unpacker.getNextFormat();
-        ValueType type = format.getValueType();
-        if (type != ValueType.STRING) {
-            if (type == ValueType.NIL) {
-                throw new IOException("the column is Null");
-            }
-            throw new IOException("the column type is not what is expected");
-        }
-        columnReady = false;
-        return unpacker.unpackString();
     }
 
-    /**
-     * Get a FutureResponse of the response returned from the SQL service
-     * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the SQL service has successfully completed processing or not
-     */
+    @Override
+    public double fetchFloat8Value() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchFloat8Value();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public BigDecimal fetchDecimalValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchDecimalValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public String fetchCharacterValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchCharacterValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public byte[] fetchOctetValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchOctetValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public boolean[] fetchBitValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchBitValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public LocalDate fetchDateValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchDateValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public LocalTime fetchTimeOfDayValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchTimeOfDayValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public Instant fetchTimePointValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchTimePointValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchDateTimeIntervalValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public int beginArrayValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.beginArrayValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public void endArrayValue() throws IOException, ServerException, InterruptedException {
+        cursor.endArrayValue();
+    }
+
+    @Override
+    public int beginRowValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.beginRowValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public void endRowValue() throws IOException, ServerException, InterruptedException {
+        cursor.endRowValue();
+    }
+
+    private void checkResponse() throws IOException, ServerException, InterruptedException {
+        if (response.isMainResponseReady()) {
+            tested.set(true);
+            tester.test(response);
+        }
+    }
+
+    private void checkResponse(Exception e) throws IOException, ServerException, InterruptedException {
+        try {
+            // first, close upstream input
+            cursor.close();
+        } catch (Exception suppress) {
+            // the exception in closing stream should be suppressed
+            e.addSuppressed(suppress);
+        }
+        try {
+            // then, check the main response
+            tested.set(true);
+            tester.test(response);
+        } catch (Throwable inMain) {
+            // throw exceptions in main response instead of
+            inMain.addSuppressed(e);
+            throw inMain;
+        }
+    }
+
+    @Override
+    public void setCloseTimeout(Timeout timeout) {
+        cursor.setCloseTimeout(timeout);
+    }
+
     @Override
     public FutureResponse<SqlResponse.ResultOnly> getResponse() {
-        return futureResponse;
+        return futureResponse;   
     }
 
-    /**
-     * Close the ResultSetImpl
-     * @throws IOException error occurred in close of the resultSet
-     */
     @Override
-    public void close() throws IOException {
-        if (Objects.nonNull(resultSetWire)) {
-            resultSetWire.close();
-            resultSetWire = null;
+    public void close() throws ServerException, IOException, InterruptedException {
+        if (Objects.nonNull(response)) {
+            try (response) {
+                try {
+                    cursor.close();
+                } catch (Exception e) {
+                    // suppresses exception while closing the sub-response
+                    LOG.warn("error occurred while closing result set", e);
+                }
+    
+                // check main response whether to finish the request normally
+                if (tested.compareAndSet(false, true)) {
+                    tester.test(response);
+                }
+            }
         }
-        closed = true;
     }
 }

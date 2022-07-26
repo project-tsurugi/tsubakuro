@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.tsurugidb.jogasaki.proto.StatusProtos;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
@@ -68,17 +67,22 @@ class SqlServiceStubTest {
                 .build();
     }
 
-    private SchemaProtos.RecordMeta toResultSetMetadata(SqlCommon.Column... columns) {
-        var builder = SchemaProtos.RecordMeta.newBuilder();
-        for (var e: Arrays.asList(columns)) {
-            var column = SchemaProtos.RecordMeta.Column.newBuilder()
-            .setName(e.getName())
-            .setType(e.getAtomType());
-            builder.addColumns(column);
-
-        }
-        return builder.build();
+    private static SqlResponse.ResultSetMetadata toResultSetMetadata(SqlCommon.Column... columns) {
+        return SqlResponse.ResultSetMetadata.newBuilder()
+                .addAllColumns(Arrays.asList(columns))
+                .build();
     }
+//    private SchemaProtos.RecordMeta toResultSetMetadata(SqlCommon.Column... columns) {
+//        var builder = SchemaProtos.RecordMeta.newBuilder();
+//        for (var e: Arrays.asList(columns)) {
+//            var column = SchemaProtos.RecordMeta.Column.newBuilder()
+//            .setName(e.getName())
+//            .setType(e.getAtomType());
+//            builder.addColumns(column);
+//
+//        }
+//        return builder.build();
+//    }
 
     void acceptDisconnect() {
         wire.next(accepts(SqlRequest.Request.RequestCase.DISCONNECT,
@@ -566,16 +570,14 @@ class SqlServiceStubTest {
                                 .setName(RS_RD)
                                 .setRecordMeta(
                                     toResultSetMetadata(
-//                                        Types.column("a", Types.of(BigDecimal.class)),
-                                        Types.column("a", Types.of(long.class)),
+                                        Types.column("a", Types.of(BigDecimal.class)),
                                         Types.column("b", Types.of(String.class)),
                                         Types.column("c", Types.of(double.class)))
                                 )
                                 .build(),
                         Relation.of(new Object[][] {
                             {
-//                                new BigDecimal("3.14"),
-                                314,
+                                new BigDecimal("3.14"),
                                 "Hello, world!",
                                 1.25,
                             },
@@ -592,23 +594,19 @@ class SqlServiceStubTest {
             var future = service.send(message);
             var rs = future.await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
 
             assertTrue(rs.nextColumn());
-//            assertEquals(new BigDecimal("3.14"), rs.fetchDecimalValue());
-            assertEquals(314, rs.getInt8());
-            assertEquals("a", rs.name());
+            assertEquals(new BigDecimal("3.14"), rs.fetchDecimalValue());
 
             assertTrue(rs.nextColumn());
-            assertEquals("Hello, world!", rs.getCharacter());
-            assertEquals("b", rs.name());
+            assertEquals("Hello, world!", rs.fetchCharacterValue());
 
             assertTrue(rs.nextColumn());
-            assertEquals(1.25d, rs.getFloat8());
-            assertEquals("c", rs.name());
+            assertEquals(1.25d, rs.fetchFloat8Value());
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -680,8 +678,7 @@ class SqlServiceStubTest {
                             .build(),
                         Relation.of(new Object[][] {
                             {
-//                                new BigDecimal("3.14"),
-                                314,
+                                new BigDecimal("3.14"),
                                 "Hello, world!",
                                 1.25,
                             },
@@ -920,22 +917,22 @@ class SqlServiceStubTest {
             var future = service.send(message);
             var rs = future.await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals("a", rs.getCharacter());
+            assertEquals("a", rs.fetchCharacterValue());
             assertFalse(rs.nextColumn());
 
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals("b", rs.getCharacter());
+            assertEquals("b", rs.fetchCharacterValue());
             assertFalse(rs.nextColumn());
 
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals("c", rs.getCharacter());
+            assertEquals("c", rs.fetchCharacterValue());
             assertFalse(rs.nextColumn());
 
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertFalse(wire.hasRemaining());
     }

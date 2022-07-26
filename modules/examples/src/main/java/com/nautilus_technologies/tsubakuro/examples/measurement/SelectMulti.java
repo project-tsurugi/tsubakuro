@@ -79,9 +79,9 @@ public class SelectMulti extends Thread {
                 prev = now;
                 try {
                     if (!Objects.isNull(resultSet1)) {
-                        while (resultSet1.nextRecord()) {
+                        while (resultSet1.nextRow()) {
                             resultSet1.nextColumn();
-                            var noOid = resultSet1.getInt8();
+                            var noOid = resultSet1.fetchInt8Value();
                             profile.records++;
                         }
                     }

@@ -68,10 +68,10 @@ public class Q2 {
 
             try {
                 if (Objects.nonNull(resultSet)) {
-                    if (resultSet.nextRecord()) {
+                    if (resultSet.nextRow()) {
                         resultSet.nextColumn();
                         if (!resultSet.isNull()) {
-                            q2intermediate.put(partkey, resultSet.getInt8());
+                            q2intermediate.put(partkey, resultSet.fetchInt8Value());
                         }
                     } else {
                         throw new IOException("no record");
@@ -103,21 +103,21 @@ public class Q2 {
 
             try {
                 if (Objects.nonNull(resultSet)) {
-                    if (resultSet.nextRecord()) {
+                    if (resultSet.nextRow()) {
                         resultSet.nextColumn();
-                        var sAcctbal = resultSet.getInt8();
+                        var sAcctbal = resultSet.fetchInt8Value();
                         resultSet.nextColumn();
-                        var sName = resultSet.getCharacter();
+                        var sName = resultSet.fetchCharacterValue();
                         resultSet.nextColumn();
-                        var nName = resultSet.getCharacter();
+                        var nName = resultSet.fetchCharacterValue();
                         resultSet.nextColumn();
-                        var pMfgr = resultSet.getCharacter();
+                        var pMfgr = resultSet.fetchCharacterValue();
                         resultSet.nextColumn();
-                        var sAddress = resultSet.getCharacter();
+                        var sAddress = resultSet.fetchCharacterValue();
                         resultSet.nextColumn();
-                        var sPhone = resultSet.getCharacter();
+                        var sPhone = resultSet.fetchCharacterValue();
                         resultSet.nextColumn();
-                        var sCommnent = resultSet.getCharacter();
+                        var sCommnent = resultSet.fetchCharacterValue();
 
                         System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
                     }

@@ -203,21 +203,21 @@ public class NewOrder {
         var resultSet1 = future1.get();
         try {
         if (!Objects.isNull(resultSet1)) {
-            if (!resultSet1.nextRecord()) {
+            if (!resultSet1.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet1.nextColumn();
-            wTax = resultSet1.getFloat8();
+            wTax = resultSet1.fetchFloat8Value();
             resultSet1.nextColumn();
-            cDiscount = resultSet1.getFloat8();
+            cDiscount = resultSet1.fetchFloat8Value();
             resultSet1.nextColumn();
-            cLast = resultSet1.getCharacter();
+            cLast = resultSet1.fetchCharacterValue();
             resultSet1.nextColumn();
-            cCredit = resultSet1.getCharacter();
-            if (resultSet1.nextRecord()) {
+            cCredit = resultSet1.fetchCharacterValue();
+            if (resultSet1.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
@@ -246,17 +246,17 @@ public class NewOrder {
         var resultSet2 = future2.get();
         try {
         if (!Objects.isNull(resultSet2)) {
-            if (!resultSet2.nextRecord()) {
+            if (!resultSet2.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
             throw new IOException("no record");
             }
             resultSet2.nextColumn();
-            dNextOid = resultSet2.getInt8();
+            dNextOid = resultSet2.fetchInt8Value();
             resultSet2.nextColumn();
-            dTax = resultSet2.getFloat8();
-            if (resultSet2.nextRecord()) {
+            dTax = resultSet2.fetchFloat8Value();
+            if (resultSet2.nextRow()) {
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
             }
@@ -335,19 +335,19 @@ public class NewOrder {
         var resultSet6 = future6.get();
         try {
             if (!Objects.isNull(resultSet6)) {
-            if (!resultSet6.nextRecord()) {
+            if (!resultSet6.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet6.nextColumn();
-            iPrice = resultSet6.getFloat8();
+            iPrice = resultSet6.fetchFloat8Value();
             resultSet6.nextColumn();
-            iName = resultSet6.getCharacter();
+            iName = resultSet6.fetchCharacterValue();
             resultSet6.nextColumn();
-            iData = resultSet6.getCharacter();
-            if (resultSet6.nextRecord()) {
+            iData = resultSet6.fetchCharacterValue();
+            if (resultSet6.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
@@ -373,21 +373,21 @@ public class NewOrder {
         var resultSet7 = future7.get();
         try {
             if (!Objects.isNull(resultSet7)) {
-            if (!resultSet7.nextRecord()) {
+            if (!resultSet7.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }
                 throw new IOException("no record");
             }
             resultSet7.nextColumn();
-            sQuantity = resultSet7.getInt8();
+            sQuantity = resultSet7.fetchInt8Value();
             resultSet7.nextColumn();
-            sData = resultSet7.getCharacter();
+            sData = resultSet7.fetchCharacterValue();
             for (int i = 0; i < 10; i++) {
                 resultSet7.nextColumn();
-                sDistData[i] = resultSet7.getCharacter();
+                sDistData[i] = resultSet7.fetchCharacterValue();
             }
-            if (resultSet7.nextRecord()) {
+            if (resultSet7.nextRow()) {
                 if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet7.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
                 }

@@ -4,15 +4,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-import org.msgpack.core.buffer.ByteBufferInput;
-
+import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 public class ResultSetWireMock implements ResultSetWire {
     private ByteBufferBackedInputMock byteBufferInput;
     private ByteBuffer buf;
 
-    class ByteBufferBackedInputMock extends ByteBufferInput {
+    class ByteBufferBackedInputMock extends ByteBufferInputStream {
         ByteBufferBackedInputMock(ByteBuffer byteBuffer) {
             super(byteBuffer);
         }
@@ -27,7 +26,7 @@ public class ResultSetWireMock implements ResultSetWire {
             newBuf.put(buf.array(), (int) length, size);
             newBuf.rewind();
             buf = newBuf;
-            reset(newBuf);
+//            reset(newBuf);
             return true;
         }
     }
@@ -42,7 +41,7 @@ public class ResultSetWireMock implements ResultSetWire {
     }
 
     @Override
-    public ByteBufferInput getByteBufferBackedInput() {
+    public ByteBufferInputStream getByteBufferBackedInput() {
         if (Objects.isNull(byteBufferInput)) {
             byteBufferInput = new ByteBufferBackedInputMock(buf);
         }

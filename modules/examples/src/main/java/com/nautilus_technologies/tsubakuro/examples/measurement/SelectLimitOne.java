@@ -79,14 +79,14 @@ public class SelectLimitOne extends Thread {
                 prev = now;
                 try {
                     if (!Objects.isNull(resultSet1)) {
-                        if (!resultSet1.nextRecord()) {
+                        if (!resultSet1.nextRow()) {
                             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                                 throw new IOException("SQL error");
                             }
                             continue;  // noOid is exhausted, it's OK and continue this transaction
                         }
                         resultSet1.nextColumn();
-                        var noOid = resultSet1.getInt8();
+                        var noOid = resultSet1.fetchInt8Value();
                     }
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");

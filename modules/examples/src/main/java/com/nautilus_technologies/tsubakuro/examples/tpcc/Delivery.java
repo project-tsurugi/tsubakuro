@@ -126,14 +126,14 @@ public class Delivery {
         var resultSet1 = future1.get();
         try {
             if (!Objects.isNull(resultSet1)) {
-                if (!resultSet1.nextRecord()) {
+                if (!resultSet1.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                     }
                     continue;  // noOid is exhausted, it's OK and continue this transaction
                 }
                 resultSet1.nextColumn();
-                noOid = resultSet1.getInt8();
+                noOid = resultSet1.fetchInt8Value();
             }
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");
@@ -167,15 +167,15 @@ public class Delivery {
         var resultSet3 = future3.get();
         try {
             if (!Objects.isNull(resultSet3)) {
-                if (!resultSet3.nextRecord()) {
+                if (!resultSet3.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");
                     }
                     throw new IOException("no record");
                 }
                 resultSet3.nextColumn();
-                cId = resultSet3.getInt8();
-                if (resultSet3.nextRecord()) {
+                cId = resultSet3.fetchInt8Value();
+                if (resultSet3.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
                     throw new IOException("SQL error");
                     }
@@ -227,15 +227,15 @@ public class Delivery {
         var resultSet6 = future6.get();
         try {
             if (!Objects.isNull(resultSet6)) {
-                if (!resultSet6.nextRecord()) {
+                if (!resultSet6.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");
                     }
                     continue;
                 }
                 resultSet6.nextColumn();
-                olTotal = resultSet6.getFloat8();
-                if (resultSet6.nextRecord()) {
+                olTotal = resultSet6.fetchFloat8Value();
+                if (resultSet6.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");
                     }

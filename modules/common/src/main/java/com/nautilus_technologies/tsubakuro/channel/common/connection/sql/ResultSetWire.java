@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.channel.common.connection.sql;
 
 import java.io.Closeable;
 import java.io.IOException;
-import org.msgpack.core.buffer.ByteBufferInput;
+import java.io.InputStream;
 
 /**
  * ResultSetWire type.
@@ -17,9 +17,9 @@ public interface ResultSetWire extends Closeable {
 
     /**
      * Provides an InputStream to retrieve the received data.
-     * @return ByteBufferInput contains the record data from the SQL server.
+     * @return InputStream throuth which the record data from the SQL server will be provided.
      */
-    ByteBufferInput getByteBufferBackedInput();
+    InputStream getByteBufferBackedInput();
 
     /**
      * Disposes the received data in this ResultSetWire

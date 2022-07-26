@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
@@ -125,14 +124,10 @@ class TransactionImplTest {
                             request.getTransactionHandle().getHandle(),
                             request.getSql(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("text")
-                                .setType(Types.of(String.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                                        .addColumns(Types.column("text", Types.of(String.class)))
+                                        .build())));
                 }
                 @Override
                 public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
@@ -141,14 +136,14 @@ class TransactionImplTest {
             }, null);
             var rs = client.executeQuery("SELECT 1").await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getCharacter(), "SELECT 1");
+            assertEquals(rs.fetchCharacterValue(), "SELECT 1");
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }
@@ -166,14 +161,10 @@ class TransactionImplTest {
                             request.getTransactionHandle().getHandle(),
                             request.getPreparedStatementHandle().getHandle(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("statement")
-                                .setType(Types.of(long.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                        .addColumns(Types.column("text", Types.of(String.class)))
+                        .build())));
                 }
                 @Override
                 public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
@@ -182,14 +173,14 @@ class TransactionImplTest {
             }, null);
             var rs = client.executeQuery(prepared(200)).await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 200);
+            assertEquals(rs.fetchInt8Value(), 200);
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }
@@ -249,17 +240,11 @@ class TransactionImplTest {
                             request.getPreparedStatementHandle().getHandle(),
                             request.getDirectory(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("statement")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("path")
-                                .setType(Types.of(String.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                        .addColumns(Types.column("text", Types.of(String.class)))
+                        .addColumns(Types.column("path", Types.of(String.class)))
+                        .build())));
                 }
                 @Override
                 public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
@@ -268,16 +253,16 @@ class TransactionImplTest {
             }, null);
             var rs = client.executeDump(prepared(200), List.of(), Path.of("/path/to/dump")).await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 200);
+            assertEquals(rs.fetchInt8Value(), 200);
             assertTrue(rs.nextColumn());
-            assertEquals(path(rs.getCharacter()), path("/path/to/dump"));
+            assertEquals(path(rs.fetchCharacterValue()), path("/path/to/dump"));
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }

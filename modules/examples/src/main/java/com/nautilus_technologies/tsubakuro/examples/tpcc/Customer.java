@@ -27,15 +27,15 @@ public final class Customer {
         var resultSet1 = future1.get();
         try {
             if (!Objects.isNull(resultSet1)) {
-                if (!resultSet1.nextRecord()) {
+                if (!resultSet1.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");
                     }
                     throw new IOException("no record");
                 }
                 resultSet1.nextColumn();
-                nameCnt = resultSet1.getInt8();
-                if (resultSet1.nextRecord()) {
+                nameCnt = resultSet1.fetchInt8Value();
+                if (resultSet1.nextRow()) {
                     if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
                         throw new IOException("SQL error");
                     }
@@ -71,7 +71,7 @@ public final class Customer {
                     nameCnt++;
                 }
                 for (long i = 0; i < (nameCnt / 2); i++) {
-                    if (!resultSet2.nextRecord()) {
+                    if (!resultSet2.nextRow()) {
                         if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                             throw new IOException("SQL error");
                         }
@@ -79,7 +79,7 @@ public final class Customer {
                     }
                 }
                 resultSet2.nextColumn();
-                rv = resultSet2.getInt8();
+                rv = resultSet2.fetchInt8Value();
             }
             if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
                 throw new IOException("SQL error");

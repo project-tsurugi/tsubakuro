@@ -85,9 +85,9 @@ public final class Main {
                     var tx = client.createTransaction().await();
                     var results = tx.executeDump(prep, List.of(), Path.of(tmpDir.toString()), option).await();
             ) {
-                while (results.nextRecord()) {
+                while (results.nextRow()) {
                     while (results.nextColumn()) {
-                        var s = results.getCharacter();
+                        var s = results.fetchCharacterValue();
                         System.out.println(s);
                         files.add(Path.of(s));
                     }

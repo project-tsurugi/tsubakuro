@@ -57,10 +57,10 @@ public class Q14 {
     var resultSetT = futureT.get();
     try {
         if (Objects.nonNull(resultSetT)) {
-        if (resultSetT.nextRecord()) {
+        if (resultSetT.nextRow()) {
             resultSetT.nextColumn();
             if (!resultSetT.isNull()) {
-            t = resultSetT.getInt8();
+            t = resultSetT.fetchInt8Value();
             } else {
             System.out.println("REVENUE is null");
             throw new IOException("column is null");
@@ -88,10 +88,10 @@ public class Q14 {
     var resultSetB = futureB.get();
     try {
         if (Objects.nonNull(resultSetB)) {
-        if (resultSetB.nextRecord()) {
+        if (resultSetB.nextRow()) {
             resultSetB.nextColumn();
             if (!resultSetB.isNull()) {
-            b = resultSetB.getInt8();
+            b = resultSetB.fetchInt8Value();
             System.out.println("PROMO_REVENUE");
             System.out.println(t + " / " + b + " = " + (100.0 * (double) t) / (double) b + " (%)");
             } else {

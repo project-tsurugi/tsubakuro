@@ -33,9 +33,9 @@ public final class Main {
             var future = transaction.executeQuery("SELECT COUNT(S_SUPPKEY) FROM SUPPLIER");
             var resultSet = future.get();
             long count = 0;
-            if (resultSet.nextRecord()) {
+            if (resultSet.nextRow()) {
                 if (resultSet.nextColumn()) {
-                count = resultSet.getInt8();
+                count = resultSet.fetchInt8Value();
                 }
             }
             resultSet.close();
