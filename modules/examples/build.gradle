@@ -4,7 +4,6 @@ plugins {
 }
 
 dependencies {
-    implementation 'org.msgpack:msgpack-core:0.8.24'
     implementation 'commons-cli:commons-cli:1.4'
     implementation 'org.slf4j:slf4j-simple:1.7.32'
 
