@@ -17,49 +17,13 @@ public class ResultSetWireImpl implements ResultSetWire {
     private int slot;
     private ByteBufferBackedInput byteBufferBackedInput;
 
-    class ByteBufferBackedInput extends InputStream {
-        private ByteBuffer source;
-
-        /**
-         * Creates a new instance.
-         * @param source the source buffer
-         */
-        ByteBufferBackedInput(ByteBuffer source) {
-            Objects.requireNonNull(source);
-            this.source = source;
-        }
-    
-        @Override
-        public int read() {
-            while (true) {
-                if (source.hasRemaining()) {
-                    return source.get() & 0xff;
-                }
-                if (!next()) {
-                    return -1;
-                }
-            }
-        }
-    
-        @Override
-        public int read(byte[] b, int off, int len) {
-            int read = 0;
-            while (true) {
-                int count = Math.min((len - read), source.remaining());
-                if (count > 0) {
-                    source.get(b, (off + read), count);
-                    read += count;
-                    if (read == len) {
-                        return read;
-                    }
-                }
-                if (!next()) {
-                    return -1;
-                }
-            }
+    class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
+        ByteBufferBackedInputForStream(ByteBuffer source) {
+            super(source);
         }
 
-        boolean next() {
+        @Override
+        protected boolean next() {
             try {
                 var buffer = resultSetBox.receive(slot).getPayload();
                 if (Objects.isNull(buffer)) {
@@ -108,7 +72,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 if (Objects.isNull(buffer)) {
                     return null;
                 }
-                byteBufferBackedInput = new ByteBufferBackedInput(ByteBuffer.wrap(buffer));
+                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer));
             } catch (IOException e) {
                 System.err.println(e);
                 e.printStackTrace();
@@ -116,12 +80,6 @@ public class ResultSetWireImpl implements ResultSetWire {
             }
         }
         return byteBufferBackedInput;
-    }
-
-    public boolean disposeUsedData(long length) throws IOException {
-    // FIXME
-    // When multiple writer is implemented, this becomes necessary.
-    return true;
     }
 
     /**

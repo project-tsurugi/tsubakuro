@@ -49,11 +49,6 @@ public class ResultSetWireMock implements ResultSetWire {
     }
 
     @Override
-    public boolean disposeUsedData(long length) {
-        return byteBufferInput.disposeUsedData(length);
-    }
-
-    @Override
     public void connect(String name) throws IOException {
     }
 

@@ -23,49 +23,12 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean eor;
 
-    class ByteBufferBackedInput extends InputStream {
-        private ByteBuffer source;
+    class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
+        ByteBufferBackedInputForIpc(ByteBuffer source) {
+            super(source);
+        }
 
-        /**
-         * Creates a new instance.
-         * @param source the source buffer
-         */
-        ByteBufferBackedInput(ByteBuffer source) {
-            Objects.requireNonNull(source);
-            this.source = source;
-        }
-    
-        @Override
-        public int read() {
-            while (true) {
-                if (source.hasRemaining()) {
-                    return source.get() & 0xff;
-                }
-                if (!next()) {
-                    return -1;
-                }
-            }
-        }
-    
-        @Override
-        public int read(byte[] b, int off, int len) {
-            int read = 0;
-            while (true) {
-                int count = Math.min((len - read), source.remaining());
-                if (count > 0) {
-                    source.get(b, (off + read), count);
-                    read += count;
-                    if (read == len) {
-                        return read;
-                    }
-                }
-                if (!next()) {
-                    return -1;
-                }
-            }
-        }
-    
-        boolean next() {
+        protected boolean next() {
             source = getChunkNative(wireHandle);
             if (Objects.isNull(source)) {
                 return false;
@@ -108,20 +71,9 @@ public class ResultSetWireImpl implements ResultSetWire {
                 eor = true;
                 return null;
                 }
-            byteBufferBackedInput = new ByteBufferBackedInput(buffer);
+            byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer);
         }
         return byteBufferBackedInput;
-    }
-
-    public boolean disposeUsedData(long length) throws IOException {
-        disposeUsedDataNative(wireHandle, length);
-        var buffer = getChunkNative(wireHandle);
-        if (Objects.isNull(buffer)) {
-            eor = true;
-            return false;
-        }
-//        byteBufferBackedInput.reset(buffer);
-        return true;
     }
 
     /**
