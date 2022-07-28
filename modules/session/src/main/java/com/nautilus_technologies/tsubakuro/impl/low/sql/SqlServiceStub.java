@@ -403,9 +403,7 @@ public class SqlServiceStub implements SqlService {
                 var metadata = new ResultSetMetadataAdapter(detailResponse.getRecordMeta());
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
 
-                var input = session.getWire().createResultSetWire();
-                input.connect(detailResponse.getName());
-                var dataInput = input.getByteBufferBackedInput();
+                var dataInput = session.getWire().createResultSetWire().connect(detailResponse.getName()).getByteBufferBackedInput();
                 RelationCursor cursor;
                 if (Objects.nonNull(dataInput)) {
                     cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));

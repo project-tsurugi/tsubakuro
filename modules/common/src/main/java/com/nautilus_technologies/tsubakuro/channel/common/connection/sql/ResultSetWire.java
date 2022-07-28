@@ -64,12 +64,17 @@ public interface ResultSetWire extends Closeable {
      * Connect this to the wire specifiec by the name.
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
+     * @return ResultSetWire
      */
-    void connect(String name) throws IOException;
+    default ResultSetWire connect(String name) throws IOException {
+        return this;
+    }
 
     /**
      * Provides an InputStream to retrieve the received data.
      * @return InputStream throuth which the record data from the SQL server will be provided.
      */
-    InputStream getByteBufferBackedInput();
+    default InputStream getByteBufferBackedInput() {
+        throw new UnsupportedOperationException();
+    }
 }

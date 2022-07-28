@@ -52,12 +52,13 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
      */
-    public void connect(String name) throws IOException {
+    public ResultSetWire connect(String name) throws IOException {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
         wireHandle = createNative(sessionWireHandle);
         connectNative(wireHandle, name);
+        return this;
     }
 
     /**
