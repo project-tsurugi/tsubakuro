@@ -38,7 +38,7 @@ public final class Placeholders {
         Objects.requireNonNull(type);
         return SqlRequest.PlaceHolder.newBuilder()
                 .setName(name)
-                .setType(type)
+                .setAtomType(type)
                 .build();
     }
 
@@ -55,7 +55,7 @@ public final class Placeholders {
                 .setName(name);
         switch (type.getTypeInfoCase()) {
         case ATOM_TYPE:
-            builder.setType(type.getAtomType());
+            builder.setAtomType(type.getAtomType());
             break;
         case ROW_TYPE:
             builder.setRowType(type.getRowType());

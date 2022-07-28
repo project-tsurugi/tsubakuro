@@ -108,7 +108,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
         assertEquals(
@@ -133,7 +133,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals(3, as.get(0).getReferenceColumnPosition());
 
         assertEquals(
@@ -160,13 +160,13 @@ class LoadBuilderTest {
         assertEquals(3, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
-        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(1).getType());
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(1).getAtomType());
         assertEquals("L1", as.get(1).getReferenceColumnName());
 
-        assertEquals(SqlCommon.AtomType.DECIMAL, ps.get(2).getType());
+        assertEquals(SqlCommon.AtomType.DECIMAL, ps.get(2).getAtomType());
         assertEquals("L2", as.get(2).getReferenceColumnName());
 
         assertEquals(
@@ -246,7 +246,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
         assertEquals(

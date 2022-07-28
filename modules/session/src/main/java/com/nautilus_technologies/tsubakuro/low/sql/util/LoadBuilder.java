@@ -317,7 +317,7 @@ public class LoadBuilder {
         case TYPEINFO_NOT_SET:
             return result.build();
         case ATOM_TYPE:
-            return result.setType(destinationColumn.getAtomType()).build();
+            return result.setAtomType(destinationColumn.getAtomType()).build();
         case ROW_TYPE:
             return result.setRowType(destinationColumn.getRowType()).build();
         case USER_TYPE:
@@ -525,7 +525,7 @@ public class LoadBuilder {
             }
             switch (column.getTypeInfoCase()) {
             case ATOM_TYPE:
-                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.TYPE) {
+                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.ATOM_TYPE) {
                     return false;
                 }
                 break;
@@ -546,7 +546,7 @@ public class LoadBuilder {
             case TYPEINFO_NOT_SET:
                 return true;
             case ATOM_TYPE:
-                return column.getAtomType() == from.getType();
+                return column.getAtomType() == from.getAtomType();
             case ROW_TYPE:
                 return Objects.equals(column.getRowType(), column.getRowType());
             case USER_TYPE:

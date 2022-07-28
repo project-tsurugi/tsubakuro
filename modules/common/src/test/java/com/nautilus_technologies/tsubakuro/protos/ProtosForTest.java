@@ -63,12 +63,12 @@ public final class ProtosForTest {
         static SqlRequest.PlaceHolder.Builder builder() {
             return
                 SqlRequest.PlaceHolder.newBuilder()
-                .setName("v1").setType(SqlCommon.AtomType.INT8);
+                .setName("v1").setAtomType(SqlCommon.AtomType.INT8);
         }
         static boolean check(SqlRequest.PlaceHolder dst) {
             return
                 dst.getName().equals("v1")
-                && dst.getType().equals(SqlCommon.AtomType.INT8);
+                && dst.getAtomType().equals(SqlCommon.AtomType.INT8);
         }
         @Test
         void test() {
@@ -82,12 +82,12 @@ public final class ProtosForTest {
     static class PlaceHolderChecker2 {
         static SqlRequest.PlaceHolder.Builder builder() {
             return
-                SqlRequest.PlaceHolder.newBuilder().setName("v2").setType(SqlCommon.AtomType.FLOAT8);
+                SqlRequest.PlaceHolder.newBuilder().setName("v2").setAtomType(SqlCommon.AtomType.FLOAT8);
         }
         static boolean check(SqlRequest.PlaceHolder dst) {
             return
                 dst.getName().equals("v2")
-                && dst.getType().equals(SqlCommon.AtomType.FLOAT8);
+                && dst.getAtomType().equals(SqlCommon.AtomType.FLOAT8);
         }
         @Test
         void test() {
