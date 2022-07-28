@@ -7,7 +7,6 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Customer {
     private Customer() {
@@ -28,23 +27,17 @@ public final class Customer {
         try {
             if (!Objects.isNull(resultSet1)) {
                 if (!resultSet1.nextRow()) {
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
+                    resultSet1.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet1.nextColumn();
                 nameCnt = resultSet1.fetchInt8Value();
                 if (resultSet1.nextRow()) {
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
+                    resultSet1.getResponse().get();
                     throw new IOException("found multiple records");
                 }
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
+            resultSet1.getResponse().get();
         } catch (ServerException e) {
             return -1;
         } finally {
@@ -72,18 +65,14 @@ public final class Customer {
                 }
                 for (long i = 0; i < (nameCnt / 2); i++) {
                     if (!resultSet2.nextRow()) {
-                        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                            throw new IOException("SQL error");
-                        }
+                        resultSet2.getResponse().get();
                         throw new IOException("no record");
                     }
                 }
                 resultSet2.nextColumn();
                 rv = resultSet2.fetchInt8Value();
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
+            resultSet2.getResponse().get();
             return rv;
         } catch (ServerException e) {
             return -1;

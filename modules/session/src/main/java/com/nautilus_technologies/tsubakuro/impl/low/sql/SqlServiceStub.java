@@ -25,6 +25,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResourceHolder;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
@@ -113,9 +114,9 @@ public class SqlServiceStub implements SqlService {
                 new TransactionBeginProcessor().asResponseProcessor());
     }
 
-    static class TransactionCommitProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class TransactionCommitProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -127,12 +128,12 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.Commit request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -144,9 +145,9 @@ public class SqlServiceStub implements SqlService {
                 new TransactionCommitProcessor().asResponseProcessor());
     }
 
-    static class TransactionRollbackProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
         @Override
-        public  SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -158,12 +159,12 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.Rollback request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -205,9 +206,9 @@ public class SqlServiceStub implements SqlService {
                 new StatementPrepareProcessor().asResponseProcessor());
     }
 
-    static class StatementDisposeProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class StatementDisposeProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -219,12 +220,12 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.DisposePreparedStatement request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -296,9 +297,9 @@ public class SqlServiceStub implements SqlService {
                 new DescribeTableProcessor().asResponseProcessor());
     }
 
-    static class ExecuteProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class ExecuteProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -310,12 +311,12 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -328,7 +329,7 @@ public class SqlServiceStub implements SqlService {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -340,9 +341,9 @@ public class SqlServiceStub implements SqlService {
                 new ExecuteProcessor().asResponseProcessor());
     }
 
-    static class SecondResponseProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class SecondResponseProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -354,7 +355,7 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
-            return detailResponse;
+            return null;
         }
     }
 
@@ -401,15 +402,18 @@ public class SqlServiceStub implements SqlService {
                 var detailResponse = sqlResponse.getExecuteQuery();
                 var metadata = new ResultSetMetadataAdapter(detailResponse.getRecordMeta());
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
-    
+
                 var input = session.getWire().createResultSetWire();
                 input.connect(detailResponse.getName());
                 var dataInput = input.getByteBufferBackedInput();
-                var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
-
+                RelationCursor cursor;
+                if (Objects.nonNull(dataInput)) {
+                    cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
+                } else {
+                    cursor = new EmptyRelationCursor();
+                }
                 var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
-                var future = new ForegroundFutureResponse<SqlResponse.ResultOnly>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
-
+                var future = new ForegroundFutureResponse<Void>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
                 var resultSetImpl = new ResultSetImpl(metadata, cursor, owner.release(), this, future);
                 return resources.register(resultSetImpl);
             } catch (SqlServiceException e) {
@@ -460,9 +464,9 @@ public class SqlServiceStub implements SqlService {
 //                true);
     }
 
-    static class BatchProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class BatchProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -474,12 +478,12 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.Batch request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -505,9 +509,9 @@ public class SqlServiceStub implements SqlService {
                     new QueryProcessor());
     }
 
-    static class LoadProcessor implements MainResponseProcessor<SqlResponse.ResultOnly> {
+    static class LoadProcessor implements MainResponseProcessor<Void> {
         @Override
-        public SqlResponse.ResultOnly process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -519,12 +523,12 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return detailResponse;
+            return null;
         }
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecuteLoad request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -538,7 +542,7 @@ public class SqlServiceStub implements SqlService {
 
     // for compatibility
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> send(
+    public FutureResponse<Void> send(
             @Nonnull SqlRequest.Disconnect request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send: {}", request); //$NON-NLS-1$
@@ -554,10 +558,7 @@ public class SqlServiceStub implements SqlService {
     public void close() throws ServerException, IOException, InterruptedException {
         var futureResponse = send(SqlRequest.Disconnect.newBuilder().build());
         if (Objects.nonNull(futureResponse)) {
-            var response = futureResponse.get();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-                throw new IOException(response.getError().getDetail());
-            }
+            futureResponse.get();
         }
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
         resources.close();

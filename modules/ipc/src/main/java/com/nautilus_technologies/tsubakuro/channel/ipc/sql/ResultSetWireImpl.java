@@ -70,7 +70,7 @@ public class ResultSetWireImpl implements ResultSetWire {
             if (Objects.isNull(buffer)) {
                 eor = true;
                 return null;
-                }
+            }
             byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer);
         }
         return byteBufferBackedInput;

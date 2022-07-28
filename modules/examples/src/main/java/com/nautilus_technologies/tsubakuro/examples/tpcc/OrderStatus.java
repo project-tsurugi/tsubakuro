@@ -10,8 +10,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.StatusProtos;
 
 public class OrderStatus {
     SqlClient sqlClient;
@@ -118,184 +116,171 @@ public class OrderStatus {
     }
 
     void rollback() throws IOException, ServerException, InterruptedException {
-    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-        throw new IOException("error in rollback");
-    }
-    transaction = null;
+        try {
+            transaction.rollback().get();
+        } finally {
+            transaction = null;
+        }
     }
 
     @SuppressWarnings("checkstyle:methodlength")
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
-    while (!stop.get()) {
-        transaction = sqlClient.createTransaction().get();
-        profile.invocation.orderStatus++;
-        if (!paramsByName) {
-                cId = paramsCid;
-        } else {
-                cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
-                if (cId < 0) {
-                    profile.retryOnStatement.orderStatus++;
-                    profile.customerTable.orderStatus++;
-                    rollback();
-                    continue;
-                }
-        }
-        if (cId != 0) {
-        // "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
-        var future3 = transaction.executeQuery(prepared3,
-		Parameters.of("c_id", (long) cId),
-        Parameters.of("c_d_id", (long) paramsDid),
-        Parameters.of("c_w_id", (long) paramsWid));
-        var resultSet3 = future3.get();
-        try {
-            if (Objects.nonNull(resultSet3)) {
-            if (!resultSet3.nextRow()) {
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-                }
-                throw new IOException("no record");
+        while (!stop.get()) {
+            transaction = sqlClient.createTransaction().get();
+            profile.invocation.orderStatus++;
+            if (!paramsByName) {
+                    cId = paramsCid;
+            } else {
+                    cId = Customer.chooseCustomer(transaction, prepared1, prepared2, paramsWid, paramsDid, paramsClast);
+                    if (cId < 0) {
+                        profile.retryOnStatement.orderStatus++;
+                        profile.customerTable.orderStatus++;
+                        rollback();
+                        continue;
+                    }
             }
-            resultSet3.nextColumn();
-            cBalance = resultSet3.fetchFloat8Value();
-            resultSet3.nextColumn();
-            cFirst = resultSet3.fetchCharacterValue();
-            resultSet3.nextColumn();
-            cMiddle = resultSet3.fetchCharacterValue();
-            resultSet3.nextColumn();
-            cLast = resultSet3.fetchCharacterValue();
-            if (resultSet3.nextRow()) {
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-                }
-                throw new IOException("found multiple records");
-            }
-            }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet3.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-            }
+            if (cId != 0) {
+                // "SELECT c_balance, c_first, c_middle, c_last FROM CUSTOMER WHERE c_id = :c_id AND c_d_id = :c_d_id AND c_w_id = :c_w_id"
+                var future3 = transaction.executeQuery(prepared3,
+                    Parameters.of("c_id", (long) cId),
+                    Parameters.of("c_d_id", (long) paramsDid),
+                    Parameters.of("c_w_id", (long) paramsWid));
+                var resultSet3 = future3.get();
+                try {
+                    if (Objects.nonNull(resultSet3)) {
+                        if (!resultSet3.nextRow()) {
+                            resultSet3.getResponse().get();
+                            throw new IOException("no record");
+                        }
+                        resultSet3.nextColumn();
+                        cBalance = resultSet3.fetchFloat8Value();
+                        resultSet3.nextColumn();
+                        cFirst = resultSet3.fetchCharacterValue();
+                        resultSet3.nextColumn();
+                        cMiddle = resultSet3.fetchCharacterValue();
+                        resultSet3.nextColumn();
+                        cLast = resultSet3.fetchCharacterValue();
+                        if (resultSet3.nextRow()) {
+                            resultSet3.getResponse().get();
+                            throw new IOException("found multiple records");
+                        }
+                    }
+                    resultSet3.getResponse().get();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
                     continue;
                 } finally {
-            if (Objects.nonNull(resultSet3)) {
-            resultSet3.close();
-            resultSet3 = null;
-            }
+                    if (Objects.nonNull(resultSet3)) {
+                        resultSet3.close();
+                        resultSet3 = null;
+                    }
                 }
-
-        // "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
-        var future4 = transaction.executeQuery(prepared4,
-		Parameters.of("o_d_id", (long) paramsDid),
-        Parameters.of("o_w_id", (long) paramsWid),
-        Parameters.of("o_c_id", (long) cId));
-        var resultSet4 = future4.get();
-        try {
-            if (Objects.nonNull(resultSet4)) {
-            if (!resultSet4.nextRow()) {
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet4.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-                }
-                throw new IOException("no record");
-            }
-            resultSet4.nextColumn();
-            oId = resultSet4.fetchInt8Value();
-            }
-            var status4 = resultSet4.getResponse().get();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(status4.getResultCase())) {
-            if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
-                if (profile.inconsistentIndexCount == 0) {
-                System.out.println("inconsistent_index");
-                }
-                profile.inconsistentIndexCount++;
-            }
-            throw new IOException("SQL error");
-            }
+    
+                // "SELECT o_id FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_c_id = :o_c_id ORDER by o_id DESC"
+                var future4 = transaction.executeQuery(prepared4,
+                    Parameters.of("o_d_id", (long) paramsDid),
+                    Parameters.of("o_w_id", (long) paramsWid),
+                    Parameters.of("o_c_id", (long) cId));
+                var resultSet4 = future4.get();
+                try {
+                    if (Objects.nonNull(resultSet4)) {
+                        if (!resultSet4.nextRow()) {
+                            resultSet4.getResponse().get();
+                            throw new IOException("no record");
+                        }
+                        resultSet4.nextColumn();
+                        oId = resultSet4.fetchInt8Value();
+                    }
+                    try {
+                        resultSet4.getResponse().get();
+                    } catch (ServerException e) {
+                        // FIXME treat InconsistentInde
+                        //                    if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
+                        //                        if (profile.inconsistentIndexCount == 0) {
+                        //                            System.out.println("inconsistent_index");
+                        //                        }
+                        //                        profile.inconsistentIndexCount++;
+                        //                    }
+                        throw e;
+                    }
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
                     continue;
                 } finally {
-            if (Objects.nonNull(resultSet4)) {
-            resultSet4.close();
-            resultSet4 = null;
-            }
+                    if (Objects.nonNull(resultSet4)) {
+                        resultSet4.close();
+                        resultSet4 = null;
+                    }
                 }
-
-        // "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
-        var future5 = transaction.executeQuery(prepared5,
-		Parameters.of("o_d_id", (long) paramsDid),
-        Parameters.of("o_w_id", (long) paramsWid),
-        Parameters.of("o_id", (long) oId));
-        var resultSet5 = future5.get();
-        try {
-            if (Objects.nonNull(resultSet5)) {
-            if (!resultSet5.nextRow()) {
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-                }
-                throw new IOException("no record");
-            }
-            resultSet5.nextColumn();
-            if (!resultSet5.isNull()) {
-                oCarrierId = resultSet5.fetchInt8Value();
-            }
-            resultSet5.nextColumn();
-            oEntryD = resultSet5.fetchCharacterValue();
-            resultSet5.nextColumn();
-            oOlCnt = resultSet5.fetchInt8Value();
-            if (resultSet5.nextRow()) {
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-                }
-                throw new IOException("found multiple records");
-            }
-            }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet5.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-            }
+    
+                // "SELECT o_carrier_id, o_entry_d, o_ol_cnt FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id"
+                var future5 = transaction.executeQuery(prepared5,
+                    Parameters.of("o_d_id", (long) paramsDid),
+                    Parameters.of("o_w_id", (long) paramsWid),
+                    Parameters.of("o_id", (long) oId));
+                var resultSet5 = future5.get();
+                try {
+                    if (Objects.nonNull(resultSet5)) {
+                        if (!resultSet5.nextRow()) {
+                            resultSet5.getResponse().get();
+                            throw new IOException("no record");
+                        }
+                        resultSet5.nextColumn();
+                        if (!resultSet5.isNull()) {
+                            oCarrierId = resultSet5.fetchInt8Value();
+                        }
+                        resultSet5.nextColumn();
+                        oEntryD = resultSet5.fetchCharacterValue();
+                        resultSet5.nextColumn();
+                        oOlCnt = resultSet5.fetchInt8Value();
+                        if (resultSet5.nextRow()) {
+                            resultSet5.getResponse().get();
+                            throw new IOException("found multiple records");
+                        }
+                    }
+                    resultSet5.getResponse();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
                     rollback();
                     continue;
                 } finally {
-            if (Objects.nonNull(resultSet5)) {
-            resultSet5.close();
-            resultSet5 = null;
-            }
+                    if (Objects.nonNull(resultSet5)) {
+                        resultSet5.close();
+                        resultSet5 = null;
+                    }
                 }
-
-        // "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
-        var future6 = transaction.executeQuery(prepared6,
-		Parameters.of("ol_o_id", (long) oId),
-        Parameters.of("ol_d_id", (long) paramsDid),
-        Parameters.of("ol_w_id", (long) paramsWid));
-        var resultSet6 = future6.get();
-        try {
-            if (Objects.nonNull(resultSet6)) {
-            int i = 0;
-            while (resultSet6.nextRow()) {
-                resultSet6.nextColumn();
-                olIid[i] = resultSet6.fetchInt8Value();
-                resultSet6.nextColumn();
-                olSupplyWid[i] = resultSet6.fetchInt8Value();
-                resultSet6.nextColumn();
-                olQuantity[i] = resultSet6.fetchInt8Value();
-                resultSet6.nextColumn();
-                olAmount[i] = resultSet6.fetchFloat8Value();
-                resultSet6.nextColumn();
-                if (!resultSet6.isNull()) {
-                olDeliveryD[i] = resultSet6.fetchCharacterValue();
-                }
-                i++;
-            }
-            }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet6.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-            }
+    
+                // "SELECT ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_delivery_d FROM ORDER_LINE WHERE ol_o_id = :ol_o_id AND ol_d_id = :ol_d_id AND ol_w_id = :ol_w_id"
+                var future6 = transaction.executeQuery(prepared6,
+                    Parameters.of("ol_o_id", (long) oId),
+                    Parameters.of("ol_d_id", (long) paramsDid),
+                    Parameters.of("ol_w_id", (long) paramsWid));
+                var resultSet6 = future6.get();
+                try {
+                    if (Objects.nonNull(resultSet6)) {
+                        int i = 0;
+                        while (resultSet6.nextRow()) {
+                            resultSet6.nextColumn();
+                            olIid[i] = resultSet6.fetchInt8Value();
+                            resultSet6.nextColumn();
+                            olSupplyWid[i] = resultSet6.fetchInt8Value();
+                            resultSet6.nextColumn();
+                            olQuantity[i] = resultSet6.fetchInt8Value();
+                            resultSet6.nextColumn();
+                            olAmount[i] = resultSet6.fetchFloat8Value();
+                            resultSet6.nextColumn();
+                            if (!resultSet6.isNull()) {
+                                olDeliveryD[i] = resultSet6.fetchCharacterValue();
+                            }
+                            i++;
+                        }
+                    }
+                    resultSet6.getResponse().get();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
@@ -306,20 +291,21 @@ public class OrderStatus {
                     rollback();
                     continue;
                 } finally {
-            if (Objects.nonNull(resultSet6)) {
-            resultSet6.close();
-            resultSet6 = null;
-            }
+                    if (Objects.nonNull(resultSet6)) {
+                        resultSet6.close();
+                        resultSet6 = null;
+                    }
                 }
-        }
-
-        var commitResponse = transaction.commit().get();
-        if (SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+            }
+    
+            try {
+                transaction.commit().get();
                 profile.completion.orderStatus++;
                 return;
+            } catch (ServerException e) {
+                profile.retryOnCommit.orderStatus++;
+                transaction = null;
+            }
         }
-        profile.retryOnCommit.orderStatus++;
-        transaction = null;
-    }
     }
 }

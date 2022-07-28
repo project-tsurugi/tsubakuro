@@ -10,7 +10,7 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.exception.SqlServiceCode;
 import com.nautilus_technologies.tsubakuro.exception.SqlServiceException;
 
-public final class FutureResultOnly implements FutureResponse<SqlResponse.ResultOnly> {
+public final class FutureResultOnly implements FutureResponse<Void> {
     /**
      * The service ID of SQL service ({@value}).
      */
@@ -32,19 +32,19 @@ public final class FutureResultOnly implements FutureResponse<SqlResponse.Result
         this.message = null;
     }
 
-    public SqlResponse.ResultOnly get() throws SqlServiceException {
+    public Void get() throws SqlServiceException {
         if (Objects.nonNull(message)) {
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(message.getResultCase())) {
                 var errorResponse = message.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return message;
+            return null;
         }
         throw exception;
     }
 
-    public SqlResponse.ResultOnly get(long timeout, TimeUnit unit) throws SqlServiceException {
-        return get();
+    public Void get(long timeout, TimeUnit unit) throws SqlServiceException {
+        return get();  // timeout control is unnecessary because the result is already available.
     }
 
     public boolean isDone() {

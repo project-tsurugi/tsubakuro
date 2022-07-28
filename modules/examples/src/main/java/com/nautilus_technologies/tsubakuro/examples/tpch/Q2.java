@@ -11,7 +11,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q2 {
     SqlClient sqlClient;
@@ -76,15 +75,13 @@ public class Q2 {
                     } else {
                         throw new IOException("no record");
                     }
+                    resultSet.getResponse().get();
                 } else {
                     throw new IOException("no resultSet");
                 }
             } finally {
-                if (!Objects.isNull(resultSet)) {
+                if (Objects.nonNull(resultSet)) {
                     resultSet.close();
-                }
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                    throw new IOException("SQL error");
                 }
             }
         }
@@ -121,6 +118,7 @@ public class Q2 {
 
                         System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
                     }
+                    resultSet.getResponse().get();
                 } else {
                     throw new IOException("no resultSet");
                 }
@@ -128,9 +126,6 @@ public class Q2 {
             } finally {
                 if (!Objects.isNull(resultSet)) {
                     resultSet.close();
-                }
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                    throw new IOException("SQL error");
                 }
             }
         }
@@ -141,11 +136,8 @@ public class Q2 {
         var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
         q21(profile.queryValidation, transaction);
+        transaction.commit().get();
 
-        var commitResponse = transaction.commit().get();
-        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
-            throw new IOException("commit error");
-        }
         profile.q21 = System.currentTimeMillis() - start;
     }
 
@@ -156,10 +148,7 @@ public class Q2 {
         q21(profile.queryValidation, transaction);
         q22(profile.queryValidation, transaction);
 
-        var commitResponse = transaction.commit().get();
-        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
-            throw new IOException("commit error");
-        }
+        transaction.commit().get();
         profile.q22 = System.currentTimeMillis() - start;
     }
 }

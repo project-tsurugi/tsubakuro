@@ -16,7 +16,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * A basic implementation of {@link ResultSet} which just delegate operations to {@link RelationCursor}.
@@ -153,7 +152,7 @@ public class BasicResultSet implements ResultSet {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> getResponse() {
+    public FutureResponse<Void> getResponse() {
         return futureResultOnly;
     }
 

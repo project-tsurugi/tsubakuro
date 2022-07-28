@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class SelectMulti extends Thread {
     CyclicBarrier barrier;
@@ -85,13 +84,9 @@ public class SelectMulti extends Thread {
                             profile.records++;
                         }
                     }
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
+                    resultSet1.getResponse().get();
                 } catch (ServerException e) {
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-                        throw new IOException("error in rollback");
-                    }
+                    transaction.rollback().get();
                     transaction = null;
                     continue;
                 } finally {

@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Update extends Thread {
     CyclicBarrier barrier;
@@ -79,11 +78,10 @@ public class Update extends Thread {
                     Parameters.of("s_i_id", (long) olIid),
                     Parameters.of("s_w_id", (long) olSupplyWid));
 
-                var result8 = future8.get();
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(result8.getResultCase())) {
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-                        throw new IOException("error in rollback");
-                    }
+                try {
+                    future8.get();
+                } catch (ServerException e) {
+                    transaction.rollback().get();
                     transaction = null;
                     continue;
                 }

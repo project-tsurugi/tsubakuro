@@ -8,7 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q6 {
     SqlClient sqlClient;
@@ -61,24 +60,19 @@ public class Q6 {
             } else {
                 throw new IOException("no record");
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            } else {
+            resultSet.getResponse().get();
+        } else {
             throw new IOException("no resultSet");
-            }
-
-            var commitResponse = transaction.commit().get();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
-            throw new IOException("commit error");
-            }
-        } catch (ServerException e) {
-            throw new IOException(e);
-        } finally {
-            if (!Objects.isNull(resultSet)) {
-            resultSet.close();
-            }
         }
-        profile.q6 = System.currentTimeMillis() - start;
+
+        transaction.commit().get();
+    } catch (ServerException e) {
+        throw new IOException(e);
+    } finally {
+        if (!Objects.isNull(resultSet)) {
+            resultSet.close();
+        }
+    }
+    profile.q6 = System.currentTimeMillis() - start;
     }
 }

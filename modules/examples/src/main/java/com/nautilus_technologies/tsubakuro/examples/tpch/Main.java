@@ -17,7 +17,6 @@ import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
     private static String url = "ipc:tateyama";
@@ -39,9 +38,7 @@ public final class Main {
                 }
             }
             resultSet.close();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                throw new IOException("select error");
-            }
+            resultSet.getResponse().get();
             transaction.commit().get();
             session.close();
             return count / 10000;

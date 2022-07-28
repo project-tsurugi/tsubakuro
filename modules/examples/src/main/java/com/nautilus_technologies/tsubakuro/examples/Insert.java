@@ -8,7 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Insert {
     SqlClient sqlClient;
@@ -31,24 +30,19 @@ public class Insert {
         Placeholders.of("o_all_local", long.class)).get();
 
         try (Transaction transaction = sqlClient.createTransaction().await()) {
-            var result = transaction.executeStatement(preparedStatement,
-                Parameters.of("o_id", (long) 99999999),
-                Parameters.of("o_c_id", (long) 1234),
-                Parameters.of("o_d_id", (long) 3),
-                Parameters.of("o_w_id", (long) 1),
-                Parameters.of("o_entry_d", "20210620"),
-                Parameters.of("o_carrier_id", (long) 3),
-                Parameters.of("o_ol_cnt", (long) 7),
-                Parameters.of("o_all_local", (long) 0)).get();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(result.getResultCase())) {
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-                    throw new IOException("error in rollback");
-                }
-                throw new IOException("insert error");
-            }
-            var commitResponse = transaction.commit().get();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-                throw new IOException("commit (insert) error");
+            try {
+                var result = transaction.executeStatement(preparedStatement,
+                    Parameters.of("o_id", (long) 99999999),
+                    Parameters.of("o_c_id", (long) 1234),
+                    Parameters.of("o_d_id", (long) 3),
+                    Parameters.of("o_w_id", (long) 1),
+                    Parameters.of("o_entry_d", "20210620"),
+                    Parameters.of("o_carrier_id", (long) 3),
+                    Parameters.of("o_ol_cnt", (long) 7),
+                    Parameters.of("o_all_local", (long) 0)).get();
+                transaction.commit().get();
+            } catch (ServerException e) {
+                transaction.rollback().get();
             }
         } finally {
             preparedStatement.close();

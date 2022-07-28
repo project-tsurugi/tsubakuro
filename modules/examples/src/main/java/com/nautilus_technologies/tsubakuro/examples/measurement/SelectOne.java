@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class SelectOne extends Thread {
     CyclicBarrier barrier;
@@ -77,29 +76,19 @@ public class SelectOne extends Thread {
                 try {
                     if (!Objects.isNull(resultSet2)) {
                         if (!resultSet2.nextRow()) {
-                            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                                throw new IOException("SQL error");
-                            }
-                            throw new IOException("no record");
+                            resultSet2.getResponse().get();
                         }
                         resultSet2.nextColumn();
                         var dNextOid = resultSet2.fetchInt8Value();
                         resultSet2.nextColumn();
                         var dTax = resultSet2.fetchFloat8Value();
                         if (resultSet2.nextRow()) {
-                            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                                throw new IOException("SQL error");
-                            }
-                            throw new IOException("found multiple records");
+                            resultSet2.getResponse().get();
                         }
                     }
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
+                    resultSet2.getResponse().get();
                 } catch (ServerException e) {
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-                        throw new IOException("error in rollback");
-                    }
+                    transaction.rollback().get();
                     transaction = null;
                     continue;
                 } finally {

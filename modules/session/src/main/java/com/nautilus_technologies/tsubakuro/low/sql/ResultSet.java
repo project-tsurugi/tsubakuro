@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Represents a server side SQL result set.
@@ -24,7 +23,7 @@ public interface ResultSet extends RelationCursor {
      * Get a FutureResponse of the response returned from the SQL service
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the SQL service has successfully completed processing or not
      */
-    FutureResponse<SqlResponse.ResultOnly> getResponse();
+    FutureResponse<Void> getResponse();
 
     @Override
     default void close() throws ServerException, IOException, InterruptedException {

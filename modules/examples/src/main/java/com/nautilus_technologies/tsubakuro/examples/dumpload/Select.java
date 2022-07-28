@@ -3,7 +3,6 @@ package com.nautilus_technologies.tsubakuro.examples.dumpload;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -60,13 +59,8 @@ public class Select {
                 printResultset(resultSet);
                 resultSet.close();
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                throw new IOException("select error");
-            }
-            var commitResponse = transaction.commit().get();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-                throw new IOException("commit (select) error");
-            }
+            resultSet.getResponse().get();
+            transaction.commit().get();
         }
     }
 }

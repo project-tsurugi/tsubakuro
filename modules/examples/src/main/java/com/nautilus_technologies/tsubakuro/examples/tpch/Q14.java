@@ -8,7 +8,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q14 {
     SqlClient sqlClient;
@@ -57,22 +56,20 @@ public class Q14 {
     var resultSetT = futureT.get();
     try {
         if (Objects.nonNull(resultSetT)) {
-        if (resultSetT.nextRow()) {
-            resultSetT.nextColumn();
-            if (!resultSetT.isNull()) {
-            t = resultSetT.fetchInt8Value();
+            if (resultSetT.nextRow()) {
+                resultSetT.nextColumn();
+                if (!resultSetT.isNull()) {
+                    t = resultSetT.fetchInt8Value();
+                } else {
+                    System.out.println("REVENUE is null");
+                    throw new IOException("column is null");
+                }
             } else {
-            System.out.println("REVENUE is null");
-            throw new IOException("column is null");
+                throw new IOException("no record");
             }
+            resultSetT.getResponse().get();
         } else {
-            throw new IOException("no record");
-        }
-        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSetT.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-        }
-        } else {
-        throw new IOException("no resultSet");
+            throw new IOException("no resultSet");
         }
     } catch (ServerException e) {
         throw new IOException(e);
@@ -88,37 +85,32 @@ public class Q14 {
     var resultSetB = futureB.get();
     try {
         if (Objects.nonNull(resultSetB)) {
-        if (resultSetB.nextRow()) {
-            resultSetB.nextColumn();
-            if (!resultSetB.isNull()) {
-            b = resultSetB.fetchInt8Value();
-            System.out.println("PROMO_REVENUE");
-            System.out.println(t + " / " + b + " = " + (100.0 * (double) t) / (double) b + " (%)");
+            if (resultSetB.nextRow()) {
+                resultSetB.nextColumn();
+                if (!resultSetB.isNull()) {
+                    b = resultSetB.fetchInt8Value();
+                    System.out.println("PROMO_REVENUE");
+                    System.out.println(t + " / " + b + " = " + (100.0 * (double) t) / (double) b + " (%)");
+                } else {
+                    System.out.println("REVENUE is null");
+                }
             } else {
-            System.out.println("REVENUE is null");
+                throw new IOException("no record");
             }
+            resultSetB.getResponse().get();
         } else {
-            throw new IOException("no record");
-        }
-        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSetB.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-        }
-        } else {
-        throw new IOException("no resultSet");
+            throw new IOException("no resultSet");
         }
     } catch (ServerException e) {
         throw new IOException(e);
     } finally {
         if (!Objects.isNull(resultSetB)) {
-        resultSetB.close();
+            resultSetB.close();
         }
     }
 
     try {
-        var commitResponse = transaction.commit().get();
-        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
-        throw new IOException("commit error");
-        }
+        transaction.commit().get();
     } catch (ServerException e) {
         throw new IOException(e);
     }

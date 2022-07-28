@@ -9,10 +9,8 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.util.LoadBuilder;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 import org.apache.commons.cli.*;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -92,10 +90,7 @@ public final class Main {
                         files.add(Path.of(s));
                     }
                 }
-                var status = tx.commit().await();
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                    throw new IOException("error in commit");
-                }
+                tx.commit().await();
             }
 
             // clean target table
@@ -119,16 +114,8 @@ public final class Main {
                             .mapping(cols.get(5), 5)
                             .errorOnCoflict().style(LoadBuilder.Style.ERROR).build(client);
                     var load = l.await();
-
-                    var result = load.submit(tx, files).get();
-
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                        throw new IOException("error loading");
-                    }
-                    var status = tx.commit().await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                        throw new IOException("error in commit");
-                    }
+                    load.submit(tx, files).get();
+                    tx.commit().await();
                 }
             } else {
                 try (
@@ -143,7 +130,7 @@ public final class Main {
                         ).await();
                         Transaction tx = client.createTransaction().await()
                 ) {
-                    var result = tx.executeLoad(
+                    tx.executeLoad(
                                     prep,
                                     List.of(
                                             Parameters.referenceColumn("p0", "pk"),
@@ -155,13 +142,7 @@ public final class Main {
                                     ),
                                     files)
                             .await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                        throw new IOException("error executeLoad");
-                    }
-                    var status = tx.commit().await();
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                        throw new IOException("error in commit");
-                    }
+                    tx.commit().await();
                 }
             }
 
@@ -173,24 +154,14 @@ public final class Main {
     public static void prepareData(SqlClient client) throws Exception {
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            var responseCreateTable = transaction.executeStatement("CREATE TABLE dump_source (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
-                throw new IOException("error in create table");
-            }
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
-                throw new IOException("error in commit");
-            }
+            transaction.executeStatement("CREATE TABLE dump_source (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            transaction.commit().get();
         }
 
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            var responseCreateTable = transaction.executeStatement("CREATE TABLE load_target (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(responseCreateTable.getResultCase())) {
-                throw new IOException("error in create table");
-            }
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.commit().get().getResultCase())) {
-                throw new IOException("error in commit");
-            }
+            transaction.executeStatement("CREATE TABLE load_target (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            transaction.commit().get();
         }
 
         // insert initial data
@@ -207,7 +178,7 @@ public final class Main {
                 Transaction tx = client.createTransaction().await()
         ) {
             for (int i = 0; i < 10; ++i) {
-                var result = tx.executeStatement(
+                tx.executeStatement(
                         prep,
                         List.of(
                                 Parameters.of("p0", i),
@@ -218,14 +189,8 @@ public final class Main {
                                 Parameters.of("p5", String.valueOf(100000 * i))
                         )
                 ).await();
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                    throw new IOException("error executeStatement");
-                }
             }
-            var status = tx.commit().await();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                throw new IOException("error in commit");
-            }
+            tx.commit().await();
         }
     }
 
@@ -234,14 +199,8 @@ public final class Main {
                 var prep = client.prepare("DELETE FROM load_target").await();
                 Transaction tx = client.createTransaction().await()
         ) {
-            var result = tx.executeStatement(prep).await();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(result.getResultCase())) {
-                throw new IOException("error executeStatement");
-            }
-            var status = tx.commit().await();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(status.getResultCase())) {
-                throw new IOException("error in commit");
-            }
+            tx.executeStatement(prep).await();
+            tx.commit().await();
         }
     }
 }

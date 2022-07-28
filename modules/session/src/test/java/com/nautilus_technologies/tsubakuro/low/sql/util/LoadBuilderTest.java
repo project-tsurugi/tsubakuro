@@ -71,7 +71,7 @@ class LoadBuilderTest {
 
     private final Transaction transaction = new Transaction() {
         @Override
-        public FutureResponse<SqlResponse.ResultOnly> executeLoad(
+        public FutureResponse<Void> executeLoad(
                 PreparedStatement statement,
                 Collection<? extends SqlRequest.Parameter> parameters,
                 Collection<? extends Path> files) throws IOException {

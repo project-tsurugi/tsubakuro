@@ -29,7 +29,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Commit request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Commit request) throws IOException {
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     return FutureResponse.returns(null);
                 }
@@ -49,7 +49,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     return FutureResponse.returns(null);
@@ -70,15 +70,15 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecuteStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals("SELECT 100", request.getSql());
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -93,15 +93,15 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(100, request.getPreparedStatementHandle().getHandle());
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -130,8 +130,8 @@ class TransactionImplTest {
                                         .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeQuery("SELECT 1").await();
@@ -167,8 +167,8 @@ class TransactionImplTest {
                         .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeQuery(prepared(200)).await();
@@ -206,7 +206,7 @@ class TransactionImplTest {
 //                            .build())));
 //                }
 //                @Override
-//                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+//                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
 //                    return FutureResponse.returns(null);
 //                }
 //            }, null);
@@ -247,8 +247,8 @@ class TransactionImplTest {
                         .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeDump(prepared(200), List.of(), Path.of("/path/to/dump")).await();
@@ -273,7 +273,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteLoad request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecuteLoad request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(200, request.getPreparedStatementHandle().getHandle());
@@ -281,8 +281,8 @@ class TransactionImplTest {
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -300,10 +300,10 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                    return FutureResponse.returns(null);
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
@@ -322,10 +322,10 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                    return FutureResponse.returns(null);
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
@@ -344,11 +344,6 @@ class TransactionImplTest {
 
     private static String path(String string) {
         return Path.of(string).toAbsolutePath().toString();
-    }
-
-    private static SqlResponse.Success newVoid() {
-        return SqlResponse.Success.newBuilder()
-                .build();
     }
 
     private static byte[] toDelimitedByteArray(SqlResponse.ResultOnly response) {

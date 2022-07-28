@@ -12,7 +12,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class SelectLimitOne extends Thread {
     CyclicBarrier barrier;
@@ -80,21 +79,15 @@ public class SelectLimitOne extends Thread {
                 try {
                     if (!Objects.isNull(resultSet1)) {
                         if (!resultSet1.nextRow()) {
-                            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                                throw new IOException("SQL error");
-                            }
+                            resultSet1.getResponse().get();
                             continue;  // noOid is exhausted, it's OK and continue this transaction
                         }
                         resultSet1.nextColumn();
                         var noOid = resultSet1.fetchInt8Value();
                     }
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
+                    resultSet1.getResponse().get();
                 } catch (ServerException e) {
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-                        throw new IOException("error in rollback");
-                    }
+                    transaction.rollback().get();
                     transaction = null;
                     continue;
                 } finally {

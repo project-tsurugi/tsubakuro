@@ -13,7 +13,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * PreparedStatementImpl type.
@@ -57,11 +56,11 @@ public class PreparedStatementImpl implements PreparedStatement {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (Objects.nonNull(handle) && Objects.nonNull(service)) {
-            try {
-                var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
-                var response = (timeout == 0) ? futureResponse.get() : futureResponse.get(timeout, unit);
-                if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-                    throw new IOException(response.getError().getDetail());
+            try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
+                if (timeout == 0) {
+                    futureResponse.get();
+                } else {
+                    futureResponse.get(timeout, unit);
                 }
             } catch (TimeoutException e) {
                 LOG.warn("closing resource is timeout", e);

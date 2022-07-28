@@ -10,7 +10,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class StockLevel {
     SqlClient sqlClient;
@@ -67,102 +66,92 @@ public class StockLevel {
     }
 
     void rollback() throws IOException, ServerException, InterruptedException {
-        if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(transaction.rollback().get().getResultCase())) {
-            throw new IOException("error in rollback");
+        try {
+            transaction.rollback().get();
+        } finally {
+            transaction = null;
         }
-        transaction = null;
     }
 
     public void transaction(AtomicBoolean stop) throws IOException, ServerException, InterruptedException {
-    while (!stop.get()) {
-        profile.invocation.stockLevel++;
-        transaction = sqlClient.createTransaction().get();
+        while (!stop.get()) {
+            profile.invocation.stockLevel++;
+            transaction = sqlClient.createTransaction().get();
 
-        // "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id"
-        var future1 = transaction.executeQuery(prepared1,
-        Parameters.of("d_w_id", (long) paramsWid),
-        Parameters.of("d_id", (long) paramsDid));
-        var resultSet1 = future1.get();
-        try {
-        if (!Objects.isNull(resultSet1)) {
-            if (!resultSet1.nextRow()) {
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            throw new IOException("no record");
-            }
-            resultSet1.nextColumn();
-            oId = resultSet1.fetchInt8Value();
-            if (resultSet1.nextRow()) {
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            throw new IOException("found multiple records");
-            }
-        }
-        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-        }
-        } catch (ServerException e) {
+            // "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id"
+            var future1 = transaction.executeQuery(prepared1,
+                Parameters.of("d_w_id", (long) paramsWid),
+                Parameters.of("d_id", (long) paramsDid));
+            var resultSet1 = future1.get();
+            try {
+                if (!Objects.isNull(resultSet1)) {
+                    if (!resultSet1.nextRow()) {
+                        resultSet1.getResponse().get();
+                        throw new IOException("no record");
+                    }
+                    resultSet1.nextColumn();
+                    oId = resultSet1.fetchInt8Value();
+                    if (resultSet1.nextRow()) {
+                        resultSet1.getResponse().get();
+                        throw new IOException("found multiple records");
+                    }
+                }
+                resultSet1.getResponse().get();
+            } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.districtTable.stockLevel++;
                 rollback();
                 continue;
-        } finally {
-        if (!Objects.isNull(resultSet1)) {
-            resultSet1.close();
-            resultSet1 = null;
-        }
-        }
+            } finally {
+                if (!Objects.isNull(resultSet1)) {
+                    resultSet1.close();
+                    resultSet1 = null;
+                }
+            }
 
-        // "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
-        var future2 = transaction.executeQuery(prepared2,
-        Parameters.of("ol_w_id", (long) paramsWid),
-        Parameters.of("ol_d_id", (long) paramsDid),
-        Parameters.of("ol_o_id_high", (long) oId),
-        Parameters.of("ol_o_id_low", (long) (oId - OID_RANGE)),
-        Parameters.of("s_w_id", (long) paramsWid),
-        Parameters.of("s_quantity", (long) paramsThreshold));
-        var resultSet2 = future2.get();
-        try {
-        if (!Objects.isNull(resultSet2)) {
-            if (!resultSet2.nextRow()) {
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            throw new IOException("no record");
-            }
-            resultSet2.nextColumn();
-            queryResult = resultSet2.fetchInt8Value();
-            if (resultSet2.nextRow()) {
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            throw new IOException("found multiple records");
-            }
-        }
-        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-            throw new IOException("SQL error");
-        }
-        } catch (ServerException e) {
+            // "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
+            var future2 = transaction.executeQuery(prepared2,
+            Parameters.of("ol_w_id", (long) paramsWid),
+            Parameters.of("ol_d_id", (long) paramsDid),
+            Parameters.of("ol_o_id_high", (long) oId),
+            Parameters.of("ol_o_id_low", (long) (oId - OID_RANGE)),
+            Parameters.of("s_w_id", (long) paramsWid),
+            Parameters.of("s_quantity", (long) paramsThreshold));
+            var resultSet2 = future2.get();
+            try {
+                if (!Objects.isNull(resultSet2)) {
+                    if (!resultSet2.nextRow()) {
+                        resultSet2.getResponse().get();
+                        throw new IOException("no record");
+                    }
+                    resultSet2.nextColumn();
+                    queryResult = resultSet2.fetchInt8Value();
+                    if (resultSet2.nextRow()) {
+                        resultSet2.getResponse().get();
+                        throw new IOException("found multiple records");
+                    }
+                }
+                resultSet2.getResponse().get();
+            } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.stockTable.stockLevel++;
                 rollback();
                 continue;
-        } finally {
-        if (!Objects.isNull(resultSet2)) {
-            resultSet2.close();
-            resultSet2 = null;
-        }
-        }
-
-        var commitResponse = transaction.commit().get();
-        if (SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
+            } finally {
+                if (!Objects.isNull(resultSet2)) {
+                    resultSet2.close();
+                    resultSet2 = null;
+                }
+            }
+    
+            try {
+                transaction.commit().get();
                 profile.completion.stockLevel++;
                 return;
+            } catch (ServerException e) {
+                profile.retryOnCommit.stockLevel++;
+                transaction = null;
+            }
         }
-        profile.retryOnCommit.stockLevel++;
-        transaction = null;
-    }
     }
 }

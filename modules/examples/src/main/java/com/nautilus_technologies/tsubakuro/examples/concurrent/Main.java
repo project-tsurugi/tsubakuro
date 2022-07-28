@@ -17,7 +17,6 @@ import  com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
     private static String url = "ipc:tateyama";
@@ -43,14 +42,8 @@ public final class Main {
                     }
                 }
                 resultSet.close();
-                var r = resultSet.getResponse().get();
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(r.getResultCase())) {
-                    throw new IOException("select error");
-                }
-                var commitResponse = transaction.commit().get();
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-                    throw new IOException("commit (select) error");
-                }
+                resultSet.getResponse().get();
+                transaction.commit().get();
                 session.close();
                 return count;
 

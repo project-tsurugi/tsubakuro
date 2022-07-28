@@ -41,7 +41,7 @@ public class ResultSetImpl implements ResultSet {
 
     private final AtomicBoolean tested = new AtomicBoolean();
 
-    private final FutureResponse<SqlResponse.ResultOnly> futureResponse;
+    private final FutureResponse<Void> futureResponse;
 
     /**
      * Tests if the response is valid.
@@ -70,7 +70,7 @@ public class ResultSetImpl implements ResultSet {
             @Nonnull RelationCursor cursor,
             @Nonnull Response response,
             @Nonnull ResponseTester checker,
-            @Nonnull FutureResponse<SqlResponse.ResultOnly> futureResponse) {
+            @Nonnull FutureResponse<Void> futureResponse) {
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(cursor);
         Objects.requireNonNull(response);
@@ -86,7 +86,7 @@ public class ResultSetImpl implements ResultSet {
     /**
      * Creates a new instance when error occured.
      */
-    public ResultSetImpl(@Nonnull FutureResponse<SqlResponse.ResultOnly> futureResponse) {
+    public ResultSetImpl(@Nonnull FutureResponse<Void> futureResponse) {
         Objects.requireNonNull(futureResponse);
         this.metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder().build());
         this.cursor = null;
@@ -340,7 +340,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> getResponse() {
+    public FutureResponse<Void> getResponse() {
         return futureResponse;   
     }
 
