@@ -305,12 +305,12 @@ public class LoadBuilder {
         return String.format(FORMAT_PLACEHOLDER_NAME_SHORT, index);
     }
 
-    private static SqlRequest.PlaceHolder createPlaceHolder(
+    private static SqlRequest.Placeholder createPlaceHolder(
             @Nonnull String name,
             @Nonnull SqlCommon.Column destinationColumn) {
         assert name != null;
         assert destinationColumn != null;
-        var result = SqlRequest.PlaceHolder.newBuilder()
+        var result = SqlRequest.Placeholder.newBuilder()
                 .setName(name)
                 .setDimension(destinationColumn.getDimension());
         switch (destinationColumn.getTypeInfoCase()) {
@@ -503,13 +503,13 @@ public class LoadBuilder {
 
         final SqlCommon.Column column;
 
-        final SqlRequest.PlaceHolder from;
+        final SqlRequest.Placeholder from;
 
         final SqlRequest.Parameter to;
 
         Entry(
                 @Nonnull SqlCommon.Column column,
-                @Nonnull SqlRequest.PlaceHolder from,
+                @Nonnull SqlRequest.Placeholder from,
                 @Nonnull SqlRequest.Parameter to) {
             assert column != null;
             assert from != null;
@@ -525,17 +525,17 @@ public class LoadBuilder {
             }
             switch (column.getTypeInfoCase()) {
             case ATOM_TYPE:
-                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.ATOM_TYPE) {
+                if (from.getTypeInfoCase() != SqlRequest.Placeholder.TypeInfoCase.ATOM_TYPE) {
                     return false;
                 }
                 break;
             case ROW_TYPE:
-                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.ROW_TYPE) {
+                if (from.getTypeInfoCase() != SqlRequest.Placeholder.TypeInfoCase.ROW_TYPE) {
                     return false;
                 }
                 break;
             case USER_TYPE:
-                if (from.getTypeInfoCase() != SqlRequest.PlaceHolder.TypeInfoCase.USER_TYPE) {
+                if (from.getTypeInfoCase() != SqlRequest.Placeholder.TypeInfoCase.USER_TYPE) {
                     return false;
                 }
                 break;

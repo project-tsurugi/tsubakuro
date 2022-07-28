@@ -45,7 +45,7 @@ class LoadBuilderTest {
         @Override
         public FutureResponse<PreparedStatement> prepare(
                 String source,
-                Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
+                Collection<? extends SqlRequest.Placeholder> placeholders) throws IOException {
             captureSource = tokenize(source);
             capturePlaceholders = placeholders.stream()
                     .sorted((a, b) -> a.getName().compareTo(b.getName()))
@@ -87,7 +87,7 @@ class LoadBuilderTest {
 
     private List<String> captureSource;
 
-    private List<? extends SqlRequest.PlaceHolder> capturePlaceholders;
+    private List<? extends SqlRequest.Placeholder> capturePlaceholders;
 
     private List<? extends SqlRequest.Parameter> captureParameters;
 
@@ -344,7 +344,7 @@ class LoadBuilderTest {
                 captureSource);
     }
 
-    private static String ph(SqlRequest.PlaceHolder ps) {
+    private static String ph(SqlRequest.Placeholder ps) {
         return String.format(":%s", ps.getName());
     }
 

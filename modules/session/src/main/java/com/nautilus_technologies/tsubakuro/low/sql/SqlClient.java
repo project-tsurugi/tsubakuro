@@ -62,7 +62,7 @@ public interface SqlClient extends ServerResource {
      */
     default FutureResponse<PreparedStatement> prepare(
             @Nonnull String source,
-            @Nonnull SqlRequest.PlaceHolder... placeholders) throws IOException {
+            @Nonnull SqlRequest.Placeholder... placeholders) throws IOException {
         Objects.requireNonNull(source);
         Objects.requireNonNull(placeholders);
         return prepare(source, Arrays.asList(placeholders));
@@ -78,7 +78,7 @@ public interface SqlClient extends ServerResource {
      */
     default FutureResponse<PreparedStatement> prepare(
             @Nonnull String source,
-            @Nonnull Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.Placeholder> placeholders) throws IOException {
         throw new UnsupportedOperationException();
     }
 

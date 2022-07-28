@@ -55,7 +55,7 @@ public class SqlClientImpl implements SqlClient {
     @Override
     public FutureResponse<PreparedStatement> prepare(
             @Nonnull String source,
-            @Nonnull Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
+            @Nonnull Collection<? extends SqlRequest.Placeholder> placeholders) throws IOException {
         Objects.requireNonNull(source);
         Objects.requireNonNull(placeholders);
         var resuest = SqlRequest.Prepare.newBuilder()

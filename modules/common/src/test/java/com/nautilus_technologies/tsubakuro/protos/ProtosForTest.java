@@ -60,12 +60,12 @@ public final class ProtosForTest {
      * Check of Request parts
      */
     static class PlaceHolderChecker {
-        static SqlRequest.PlaceHolder.Builder builder() {
+        static SqlRequest.Placeholder.Builder builder() {
             return
-                SqlRequest.PlaceHolder.newBuilder()
+                SqlRequest.Placeholder.newBuilder()
                 .setName("v1").setAtomType(SqlCommon.AtomType.INT8);
         }
-        static boolean check(SqlRequest.PlaceHolder dst) {
+        static boolean check(SqlRequest.Placeholder dst) {
             return
                 dst.getName().equals("v1")
                 && dst.getAtomType().equals(SqlCommon.AtomType.INT8);
@@ -73,18 +73,18 @@ public final class ProtosForTest {
         @Test
         void test() {
             try {
-                assertTrue(check(SqlRequest.PlaceHolder.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Placeholder.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
         }
     }
     static class PlaceHolderChecker2 {
-        static SqlRequest.PlaceHolder.Builder builder() {
+        static SqlRequest.Placeholder.Builder builder() {
             return
-                SqlRequest.PlaceHolder.newBuilder().setName("v2").setAtomType(SqlCommon.AtomType.FLOAT8);
+                SqlRequest.Placeholder.newBuilder().setName("v2").setAtomType(SqlCommon.AtomType.FLOAT8);
         }
-        static boolean check(SqlRequest.PlaceHolder dst) {
+        static boolean check(SqlRequest.Placeholder dst) {
             return
                 dst.getName().equals("v2")
                 && dst.getAtomType().equals(SqlCommon.AtomType.FLOAT8);
@@ -92,7 +92,7 @@ public final class ProtosForTest {
         @Test
         void test() {
             try {
-                assertTrue(check(SqlRequest.PlaceHolder.parseFrom(builder().build().toByteArray())));
+                assertTrue(check(SqlRequest.Placeholder.parseFrom(builder().build().toByteArray())));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }

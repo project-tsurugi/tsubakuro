@@ -9,7 +9,7 @@ import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 
 /**
- * Utilities to build {@link com.tsurugidb.jogasaki.proto.SqlRequest.PlaceHolder Placeholder}.
+ * Utilities to build {@link com.tsurugidb.jogasaki.proto.SqlRequest.Placeholder Placeholder}.
  */
 public final class Placeholders {
 
@@ -21,7 +21,7 @@ public final class Placeholders {
      * @throws IllegalArgumentException if there is no corresponding type
      * @see Types#typeOf(Class)
      */
-    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull Class<?> aClass) {
+    public static SqlRequest.Placeholder of(@Nonnull String name, @Nonnull Class<?> aClass) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(aClass);
         return of(name, Types.typeOf(aClass));
@@ -33,10 +33,10 @@ public final class Placeholders {
      * @param type the place-holder type
      * @return the created place-holder
      */
-    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull SqlCommon.AtomType type) {
+    public static SqlRequest.Placeholder of(@Nonnull String name, @Nonnull SqlCommon.AtomType type) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(type);
-        return SqlRequest.PlaceHolder.newBuilder()
+        return SqlRequest.Placeholder.newBuilder()
                 .setName(name)
                 .setAtomType(type)
                 .build();
@@ -48,10 +48,10 @@ public final class Placeholders {
      * @param type the place-holder type
      * @return the created place-holder
      */
-    public static SqlRequest.PlaceHolder of(@Nonnull String name, @Nonnull SqlCommon.TypeInfo type) {
+    public static SqlRequest.Placeholder of(@Nonnull String name, @Nonnull SqlCommon.TypeInfo type) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(type);
-        var builder = SqlRequest.PlaceHolder.newBuilder()
+        var builder = SqlRequest.Placeholder.newBuilder()
                 .setName(name);
         switch (type.getTypeInfoCase()) {
         case ATOM_TYPE:
