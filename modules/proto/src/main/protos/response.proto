@@ -7,7 +7,6 @@ option java_package = "com.tsurugidb.jogasaki.proto";
 option java_outer_classname = "SqlResponse";
 
 import "common.proto";
-import "schema.proto";
 import "status.proto";
 
 /*
@@ -56,7 +55,7 @@ message Prepare {
 /* For response to ExecuteQuery and/or ExecutePreparedQuery. */
 message ExecuteQuery {
   string name = 1;  /* The name of the channel to which the ResultSet set will be sent. */
-  schema.RecordMeta record_meta = 2;
+  ResultSetMetadata record_meta = 2;
 }
 
 /* For response to Explain. */
@@ -122,4 +121,11 @@ message Response {
     DescribeTable describe_table = 6;
     Batch batch = 7;
   }
+}
+
+// metadata of result sets.
+message ResultSetMetadata {
+
+  // the column information.
+  repeated common.Column columns = 1;
 }

@@ -12,7 +12,7 @@ public final class BitBuilder {
 
     private static final byte[] EMPTY = new byte[0];
 
-    public byte[] buffer = EMPTY;  // exposed externally by getData()
+    public byte[] buffer = EMPTY;
 
     private int size;
 

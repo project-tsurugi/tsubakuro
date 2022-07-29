@@ -45,7 +45,7 @@ class LoadBuilderTest {
         @Override
         public FutureResponse<PreparedStatement> prepare(
                 String source,
-                Collection<? extends SqlRequest.PlaceHolder> placeholders) throws IOException {
+                Collection<? extends SqlRequest.Placeholder> placeholders) throws IOException {
             captureSource = tokenize(source);
             capturePlaceholders = placeholders.stream()
                     .sorted((a, b) -> a.getName().compareTo(b.getName()))
@@ -71,7 +71,7 @@ class LoadBuilderTest {
 
     private final Transaction transaction = new Transaction() {
         @Override
-        public FutureResponse<SqlResponse.ResultOnly> executeLoad(
+        public FutureResponse<Void> executeLoad(
                 PreparedStatement statement,
                 Collection<? extends SqlRequest.Parameter> parameters,
                 Collection<? extends Path> files) throws IOException {
@@ -87,7 +87,7 @@ class LoadBuilderTest {
 
     private List<String> captureSource;
 
-    private List<? extends SqlRequest.PlaceHolder> capturePlaceholders;
+    private List<? extends SqlRequest.Placeholder> capturePlaceholders;
 
     private List<? extends SqlRequest.Parameter> captureParameters;
 
@@ -108,7 +108,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
         assertEquals(
@@ -133,7 +133,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals(3, as.get(0).getReferenceColumnPosition());
 
         assertEquals(
@@ -160,13 +160,13 @@ class LoadBuilderTest {
         assertEquals(3, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.INT4, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
-        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(1).getType());
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(1).getAtomType());
         assertEquals("L1", as.get(1).getReferenceColumnName());
 
-        assertEquals(SqlCommon.AtomType.DECIMAL, ps.get(2).getType());
+        assertEquals(SqlCommon.AtomType.DECIMAL, ps.get(2).getAtomType());
         assertEquals("L2", as.get(2).getReferenceColumnName());
 
         assertEquals(
@@ -246,7 +246,7 @@ class LoadBuilderTest {
         assertEquals(1, ps.size());
         assertEquals(ps.size(), as.size());
 
-        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getType());
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getAtomType());
         assertEquals("L0", as.get(0).getReferenceColumnName());
 
         assertEquals(
@@ -344,7 +344,7 @@ class LoadBuilderTest {
                 captureSource);
     }
 
-    private static String ph(SqlRequest.PlaceHolder ps) {
+    private static String ph(SqlRequest.Placeholder ps) {
         return String.format(":%s", ps.getName());
     }
 

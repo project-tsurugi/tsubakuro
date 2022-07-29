@@ -17,7 +17,6 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Executes load operations.
@@ -64,7 +63,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see Transaction#executeLoad(PreparedStatement, Collection, Collection)
      */
-    public FutureResponse<SqlResponse.ResultOnly> submit(
+    public FutureResponse<Void> submit(
             @Nonnull Transaction transaction,
             @Nonnull Collection<? extends Path> files) throws IOException {
         Objects.requireNonNull(transaction);
@@ -80,7 +79,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see #submit(Transaction, Collection)
      */
-    public FutureResponse<SqlResponse.ResultOnly> submit(
+    public FutureResponse<Void> submit(
             @Nonnull Transaction transaction,
             @Nonnull Path... files) throws IOException {
         Objects.requireNonNull(transaction);

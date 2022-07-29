@@ -5,7 +5,6 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -34,7 +33,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.Commit request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.Commit request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -45,7 +44,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.Rollback request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.Rollback request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -69,7 +68,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.DisposePreparedStatement request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.DisposePreparedStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -104,10 +103,10 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.ExecuteStatement request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -133,7 +132,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.Batch request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.Batch request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -156,7 +155,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.ExecuteLoad request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.ExecuteLoad request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -167,7 +166,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<SqlResponse.ResultOnly> send(@Nonnull SqlRequest.Disconnect request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.Disconnect request) throws IOException {
         throw new UnsupportedOperationException();
     }
 

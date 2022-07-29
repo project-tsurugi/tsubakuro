@@ -1,5 +1,7 @@
 package com.nautilus_technologies.tsubakuro.low.sql.io;
 
+import java.math.BigInteger;
+
 /**
  * The constant values for this package.
  */
@@ -27,13 +29,13 @@ final class Constants {
 
     public static final int HEADER_FLOAT8 = 0xeb;
 
-    public static final int HEADER_RESERVED_EC = 0xec;
+    public static final int HEADER_DECIMAL_COMPACT = 0xec;
 
-    public static final int HEADER_DECIMAL4 = 0xed;
+    public static final int HEADER_DECIMAL = 0xed;
 
-    public static final int HEADER_DECIMAL8 = 0xee;
+    public static final int HEADER_RESERVED_EE = 0xee;
 
-    public static final int HEADER_DECIMAL16 = 0xef;
+    public static final int HEADER_RESERVED_EF = 0xef;
 
     public static final int HEADER_CHARACTER = 0xf0;
 
@@ -116,6 +118,12 @@ final class Constants {
     public static final int MIN_EMBED_ARRAY_SIZE = 0x01;
 
     public static final int MAX_EMBED_ARRAY_SIZE = MASK_EMBED_ARRAY + MIN_EMBED_ARRAY_SIZE;
+
+
+    public static final BigInteger MIN_DECIMAL_COMPACT_COEFFICIENT = BigInteger.valueOf(Long.MIN_VALUE);
+
+    public static final BigInteger MAX_DECIMAL_COMPACT_COEFFICIENT = BigInteger.valueOf(Long.MAX_VALUE);
+
 
     private Constants() {
         throw new AssertionError();

@@ -11,7 +11,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 public class Insert extends Thread {
@@ -34,14 +33,14 @@ public class Insert extends Thread {
     void prepare() throws IOException, ServerException, InterruptedException {
         String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
         prepared5 = sqlClient.prepare(sql5,
-        Placeholders.of("no_o_id", long.class),
-        Placeholders.of("no_d_id", long.class),
-        Placeholders.of("no_w_id", long.class)).await();
+            Placeholders.of("no_o_id", long.class),
+            Placeholders.of("no_d_id", long.class),
+            Placeholders.of("no_w_id", long.class)).await();
     }
 
     @Override
     public void run() {
-        List<FutureResponse<SqlResponse.ResultOnly>> futures = new ArrayList<>();
+        List<FutureResponse<Void>> futures = new ArrayList<>();
 
         try {
             if (Objects.isNull(transaction)) {
@@ -64,15 +63,9 @@ public class Insert extends Thread {
                 }
             }
             for (int j = 0; j < i; j++) {
-                var result5 = futures.get(j).get();
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(result5.getResultCase())) {
-                    throw new IOException("error in sql");
-                }
+                futures.get(j).get();
             }
-            var commitResponse = transaction.commit().get();
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(commitResponse.getResultCase())) {
-                throw new IOException("commit (insert) error");
-            }
+            transaction.commit().get();
         } catch (IOException | ServerException | InterruptedException e) {
             System.out.println(e);
         } finally {

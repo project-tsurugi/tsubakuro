@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
 import com.tsurugidb.jogasaki.proto.SqlCommon.AtomType;
-import com.tsurugidb.jogasaki.proto.SqlRequest.PlaceHolder.TypeInfoCase;
+import com.tsurugidb.jogasaki.proto.SqlRequest.Placeholder.TypeInfoCase;
 
 class PlaceholdersTest {
     
@@ -16,8 +16,8 @@ class PlaceholdersTest {
         var result = Placeholders.of("a", AtomType.INT4);
     
         assertEquals("a", result.getName());
-        assertEquals(TypeInfoCase.TYPE, result.getTypeInfoCase());
-        assertEquals(AtomType.INT4, result.getType());
+        assertEquals(TypeInfoCase.ATOM_TYPE, result.getTypeInfoCase());
+        assertEquals(AtomType.INT4, result.getAtomType());
         assertEquals(0, result.getDimension());
     }
     
@@ -29,8 +29,8 @@ class PlaceholdersTest {
     @Test
     void ofInfoArray() {
         var result = Placeholders.of("x", Types.array(int.class));
-        assertEquals(TypeInfoCase.TYPE, result.getTypeInfoCase());
-        assertEquals(AtomType.INT4, result.getType());
+        assertEquals(TypeInfoCase.ATOM_TYPE, result.getTypeInfoCase());
+        assertEquals(AtomType.INT4, result.getAtomType());
         assertEquals(1, result.getDimension());
     }
     

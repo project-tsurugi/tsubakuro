@@ -1,7 +1,6 @@
-package com.nautilus_technologies.tsubakuro.impl.low.sql.testing;
+package  com.nautilus_technologies.tsubakuro.impl.low.sql.testing;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
@@ -14,25 +13,18 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-import org.msgpack.core.MessagePacker;
-
 // import javax.annotation.Nonnull;
 // import javax.annotation.Nullable;
 
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ResultSetImpl;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
-// import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
+import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-// import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
-// import com.nautilus_technologies.tsubakuro.low.sql.BasicResultSet;
-// import com.nautilus_technologies.tsubakuro.low.sql.ValueInputBackedRelationCursor;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.BasicResultSet;
+import com.nautilus_technologies.tsubakuro.impl.low.sql.ValueInputBackedRelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueInput;
-// import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueOutput;
+import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueOutput;
 import com.nautilus_technologies.tsubakuro.low.sql.io.ValueInput;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.FutureResultOnly;
 
 /**
  * Represents a relation data.
@@ -134,58 +126,56 @@ public final class Relation {
      */
     public byte[] getBytes() {
         try (
-//            var buf = new ByteArrayOutputStream();
-//            var output = new StreamBackedValueOutput(buf);
             var buf = new ByteArrayOutputStream();
-            MessagePacker packer = org.msgpack.core.MessagePack.newDefaultPacker(buf);
+            var output = new StreamBackedValueOutput(buf);
         ) {
             for (var entry : entries) {
                 switch (entry.getType()) {
                 case NULL:
-                    packer.packNil();
+                    output.writeNull();
                     break;
                 case INT:
-                    packer.packLong(entry.getIntValue());
+                    output.writeInt(entry.getIntValue());
                     break;
                 case FLOAT4:
-                    packer.packFloat(entry.getFloat4Value());
+                    output.writeFloat4(entry.getFloat4Value());
                     break;
                 case FLOAT8:
-                    packer.packDouble(entry.getFloat8Value());
-                    break;
-                case CHARACTER:
-                    packer.packString(entry.getCharacterValue());
+                    output.writeFloat8(entry.getFloat8Value());
                     break;
                 case DECIMAL:
-//                    packer.writeDecimal(entry.getDecimalValue());
-//                    break;
+                    output.writeDecimal(entry.getDecimalValue());
+                    break;
+                case CHARACTER:
+                    output.writeCharacter(entry.getCharacterValue());
+                    break;
                 case OCTET:
-//                    packer.writeOctet(entry.getOctetValue());
-//                    break;
+                    output.writeOctet(entry.getOctetValue());
+                    break;
                 case BIT:
-//                    packer.writeBit(entry.getBitValue());
-//                    break;
+                    output.writeBit(entry.getBitValue());
+                    break;
                 case DATE:
-//                    packer.writeDate(entry.getDateValue());
-//                    break;
+                    output.writeDate(entry.getDateValue());
+                    break;
                 case TIME_OF_DAY:
-//                    packer.writeTimeOfDay(entry.getTimeOfDayValue());
-//                    break;
+                    output.writeTimeOfDay(entry.getTimeOfDayValue());
+                    break;
                 case TIME_POINT:
-//                    packer.writeTimePoint(entry.getTimePointValue());
-//                    break;
+                    output.writeTimePoint(entry.getTimePointValue());
+                    break;
                 case DATETIME_INTERVAL:
-//                    packer.writeDateTimeInterval(entry.getDateTimeIntervalValue());
-//                    break;
+                    output.writeDateTimeInterval(entry.getDateTimeIntervalValue());
+                    break;
                 case ROW:
-//                    packer.writeRowBegin(entry.getRowSize());
+                    output.writeRowBegin(entry.getRowSize());
                     break;
                 case ARRAY:
-//                    packer.writeArrayBegin(entry.getArraySize());
-//                    break;
+                    output.writeArrayBegin(entry.getArraySize());
+                    break;
                 case END_OF_CONTENTS:
-//                    packer.writeEndOfContents();
-//                    break;
+                    output.writeEndOfContents();
+                    break;
 
                 case CLOB:
                 case BLOB:
@@ -194,7 +184,7 @@ public final class Relation {
                     throw new UnsupportedOperationException(entry.toString());
                 }
             }
-            packer.flush();
+            output.flush();
             return buf.toByteArray();
         } catch (Exception e) {
             // may not occur
@@ -215,16 +205,9 @@ public final class Relation {
      * @param metadata the metadata of the result set
      * @return the {@link ResultSet} to retrieve contents
      */
-    public ResultSet getResultSet(SchemaProtos.RecordMeta meta, FutureResultOnly future) {
-        Objects.requireNonNull(meta);
-        try {
-            var resultSet = new ResultSetImpl(new ResultSetWireMock(getByteBuffer()));
-            resultSet.connect("name", meta, future);
-            return resultSet;
-        } catch (IOException e) {
-            fail("cought IOException");
-        }
-        return null;
+    public ResultSet getResultSet(ResultSetMetadata metadata) {
+        Objects.requireNonNull(metadata);
+        return new BasicResultSet(metadata, new ValueInputBackedRelationCursor(getValueInput()));
     }
 
     /**

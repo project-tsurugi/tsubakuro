@@ -190,7 +190,7 @@ class TransactionExceptionTest {
         var transaction = sqlClient.createTransaction().get();
 
         String sql = "INSERT INTO tbl (c1, c2, c3) VALUES (123, 456.789, 'abcdef')";
-        var ph = SqlRequest.PlaceHolder.newBuilder().build();
+        var ph = SqlRequest.Placeholder.newBuilder().build();
         var preparedStatement = sqlClient.prepare(sql, ph).get();
 
         Throwable exception = assertThrows(ServerException.class, () -> {
@@ -209,10 +209,10 @@ class TransactionExceptionTest {
         var sqlClient = SqlClient.attach(session);
 
         var transaction = sqlClient.createTransaction().get();
-        var resultSet = transaction.executeQuery("SELECT * FROM ORDERS WHERE o_id = 1").get();
+        var futureResultSet = transaction.executeQuery("SELECT * FROM ORDERS WHERE o_id = 1");
 
         Throwable exception = assertThrows(ServerException.class, () -> {
-                resultSet.getResponse().get();
+                futureResultSet.get();
         });
         // FIXME: check structured error code instead of message
         assertTrue(exception.getMessage().contains(messageForTheTest));
@@ -227,13 +227,14 @@ class TransactionExceptionTest {
         var sqlClient = SqlClient.attach(session);
 
         String sql = "SELECT * FROM ORDERS WHERE o_id = 1";
-        var ph = SqlRequest.PlaceHolder.newBuilder().build();
+        var ph = SqlRequest.Placeholder.newBuilder().build();
         var preparedStatement = sqlClient.prepare(sql, ph).get();
 
         var transaction = sqlClient.createTransaction().get();
-        var resultSet = transaction.executeQuery(preparedStatement).get();
+        var futureResultSet = transaction.executeQuery(preparedStatement);
+
         Throwable exception = assertThrows(ServerException.class, () -> {
-                resultSet.getResponse().get();
+                futureResultSet.get();
         });
         // FIXME: check structured error code instead of message
         assertTrue(exception.getMessage().contains(messageForTheTest));

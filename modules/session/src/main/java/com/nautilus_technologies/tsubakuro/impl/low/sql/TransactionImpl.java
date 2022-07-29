@@ -27,7 +27,6 @@ import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.nautilus_technologies.tsubakuro.util.Lang;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Transaction type.
@@ -82,7 +81,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+    public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
@@ -106,7 +105,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeStatement(
+    public FutureResponse<Void> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -150,7 +149,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> batch(
+    public FutureResponse<Void> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {
@@ -208,7 +207,7 @@ public class TransactionImpl implements Transaction {
 
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> executeLoad(
+    public FutureResponse<Void> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
@@ -231,7 +230,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
@@ -246,7 +245,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException {
+    public FutureResponse<Void> rollback() throws IOException {
         if (Objects.isNull(service)) {
             throw new IOException("already closed");
         }
@@ -259,7 +258,7 @@ public class TransactionImpl implements Transaction {
         return new FutureResultOnly();
     }
 
-    private FutureResponse<SqlResponse.ResultOnly> submitRollback() throws IOException {
+    private FutureResponse<Void> submitRollback() throws IOException {
         var rv = service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction)
                 .build());
@@ -283,9 +282,10 @@ public class TransactionImpl implements Transaction {
             if (!cleanuped) {
                 // FIXME need to consider rollback is suitable here
                 try (var rollback = submitRollback()) {
-                    var response = (timeout == 0) ? rollback.get() : rollback.get(timeout, unit);
-                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(response.getResultCase())) {
-                        throw new IOException(response.getError().getDetail());
+                    if (timeout == 0) {
+                        rollback.get();
+                    } else {
+                        rollback.get(timeout, unit);
                     }
                 } catch (TimeoutException e) {
                     LOG.warn("disposing transaction is timeout", e);

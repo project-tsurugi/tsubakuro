@@ -21,7 +21,6 @@ import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Main {
     private static String url = "ipc:tateyama";
@@ -37,15 +36,13 @@ public final class Main {
                 var future = transaction.executeQuery("SELECT COUNT(w_id) FROM WAREHOUSE");
                 var resultSet = future.get();
                 long count = 0;
-                if (resultSet.nextRecord()) {
+                if (resultSet.nextRow()) {
                     if (resultSet.nextColumn()) {
-                        count = resultSet.getInt8();
+                        count = resultSet.fetchInt8Value();
                     }
                 }
                 resultSet.close();
-                if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                    throw new IOException("select error");
-                }
+                resultSet.getResponse().get();
                 transaction.commit().get();
                 return count;
             }

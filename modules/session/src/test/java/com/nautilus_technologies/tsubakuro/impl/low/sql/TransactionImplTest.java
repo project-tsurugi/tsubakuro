@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.SchemaProtos;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
@@ -30,7 +29,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Commit request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Commit request) throws IOException {
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     return FutureResponse.returns(null);
                 }
@@ -50,7 +49,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     return FutureResponse.returns(null);
@@ -71,15 +70,15 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecuteStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals("SELECT 100", request.getSql());
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -94,15 +93,15 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(100, request.getPreparedStatementHandle().getHandle());
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -125,30 +124,26 @@ class TransactionImplTest {
                             request.getTransactionHandle().getHandle(),
                             request.getSql(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("text")
-                                .setType(Types.of(String.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                                        .addColumns(Types.column("text", Types.of(String.class)))
+                                        .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeQuery("SELECT 1").await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getCharacter(), "SELECT 1");
+            assertEquals(rs.fetchCharacterValue(), "SELECT 1");
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }
@@ -166,30 +161,26 @@ class TransactionImplTest {
                             request.getTransactionHandle().getHandle(),
                             request.getPreparedStatementHandle().getHandle(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("statement")
-                                .setType(Types.of(long.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                        .addColumns(Types.column("text", Types.of(String.class)))
+                        .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeQuery(prepared(200)).await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 200);
+            assertEquals(rs.fetchInt8Value(), 200);
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }
@@ -215,7 +206,7 @@ class TransactionImplTest {
 //                            .build())));
 //                }
 //                @Override
-//                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+//                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
 //                    return FutureResponse.returns(null);
 //                }
 //            }, null);
@@ -249,35 +240,29 @@ class TransactionImplTest {
                             request.getPreparedStatementHandle().getHandle(),
                             request.getDirectory(),
                         }
-                    }).getResultSet(SchemaProtos.RecordMeta.newBuilder()
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("transaction")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("statement")
-                                .setType(Types.of(long.class).getAtomType()))
-                            .addColumns(SchemaProtos.RecordMeta.Column.newBuilder()
-                                .setName("path")
-                                .setType(Types.of(String.class).getAtomType())).build(),
-                            new FutureResultOnly()));
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                        .addColumns(Types.column("transaction", Types.of(long.class)))
+                        .addColumns(Types.column("text", Types.of(String.class)))
+                        .addColumns(Types.column("path", Types.of(String.class)))
+                        .build())));
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
             var rs = client.executeDump(prepared(200), List.of(), Path.of("/path/to/dump")).await();
         ) {
-            assertTrue(rs.nextRecord());
+            assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 100);
+            assertEquals(rs.fetchInt8Value(), 100);
             assertTrue(rs.nextColumn());
-            assertEquals(rs.getInt8(), 200);
+            assertEquals(rs.fetchInt8Value(), 200);
             assertTrue(rs.nextColumn());
-            assertEquals(path(rs.getCharacter()), path("/path/to/dump"));
+            assertEquals(path(rs.fetchCharacterValue()), path("/path/to/dump"));
 
             assertFalse(rs.nextColumn());
-            assertFalse(rs.nextRecord());
+            assertFalse(rs.nextRow());
         }
         assertEquals(1, count.get());
     }
@@ -288,7 +273,7 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.ExecuteLoad request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecuteLoad request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(200, request.getPreparedStatementHandle().getHandle());
@@ -296,8 +281,8 @@ class TransactionImplTest {
                     return FutureResponse.returns(null);
                 }
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
                 }
             }, null);
         ) {
@@ -315,10 +300,10 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                    return FutureResponse.returns(null);
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
@@ -337,10 +322,10 @@ class TransactionImplTest {
         try (
             var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
                 @Override
-                public FutureResponse<SqlResponse.ResultOnly> send(SqlRequest.Rollback request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
-                    return FutureResponse.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                    return FutureResponse.returns(null);
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
@@ -359,11 +344,6 @@ class TransactionImplTest {
 
     private static String path(String string) {
         return Path.of(string).toAbsolutePath().toString();
-    }
-
-    private static SqlResponse.Success newVoid() {
-        return SqlResponse.Success.newBuilder()
-                .build();
     }
 
     private static byte[] toDelimitedByteArray(SqlResponse.ResultOnly response) {

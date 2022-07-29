@@ -9,7 +9,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -25,7 +24,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<SqlResponse.ResultOnly> executeStatement(@Nonnull String source) throws IOException {
+    default FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -36,7 +35,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<SqlResponse.ResultOnly> executeStatement(
+    default FutureResponse<Void> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull SqlRequest.Parameter... parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -51,7 +50,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<SqlResponse.ResultOnly> executeStatement(
+    default FutureResponse<Void> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         throw new UnsupportedOperationException();
@@ -128,7 +127,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request, or the parameter table is too large
      */
-    default FutureResponse<SqlResponse.ResultOnly> batch(
+    default FutureResponse<Void> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {
@@ -197,7 +196,7 @@ public interface Transaction extends ServerResource {
      * @return a future response of the result set
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<SqlResponse.ResultOnly> executeLoad(
+    default FutureResponse<Void> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path... files) throws IOException {
@@ -226,7 +225,7 @@ public interface Transaction extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      * @see Parameters
      */
-    default FutureResponse<SqlResponse.ResultOnly> executeLoad(
+    default FutureResponse<Void> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
@@ -238,7 +237,7 @@ public interface Transaction extends ServerResource {
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in commit by the SQL service
      */
-    default FutureResponse<SqlResponse.ResultOnly> commit() throws IOException {
+    default FutureResponse<Void> commit() throws IOException {
         return commit(SqlRequest.CommitStatus.COMMIT_STATUS_UNSPECIFIED);
     }
 
@@ -250,7 +249,7 @@ public interface Transaction extends ServerResource {
      *      or raise error if the commit operation was failed
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<SqlResponse.ResultOnly> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    default FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -259,7 +258,7 @@ public interface Transaction extends ServerResource {
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the command is processed successfully or not
      * @throws IOException error occurred in rollback by the SQL service
      */
-    default FutureResponse<SqlResponse.ResultOnly> rollback() throws IOException {
+    default FutureResponse<Void> rollback() throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -3,6 +3,8 @@ package com.nautilus_technologies.tsubakuro.low.sql.io;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_ARRAY;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_BIT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_CHARACTER;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DECIMAL;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DECIMAL_COMPACT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_ARRAY;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_BIT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_CHARACTER;
@@ -32,6 +34,7 @@ import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MIN_EMBED
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.time.Instant;
@@ -42,7 +45,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
-import org.firebirdsql.decimal.Decimal128;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,13 +73,13 @@ public class StreamBackedValueInput implements ValueInput {
             // 0xeb
             EntryType.FLOAT8,
             // 0xec
-            null,
+            EntryType.DECIMAL,
             // 0xed
-            null,
+            EntryType.DECIMAL,
             // 0xee
             null,
             // 0xef
-            EntryType.DECIMAL,
+            null,
             // 0xf0
             EntryType.CHARACTER,
             // 0xf1
@@ -333,13 +335,25 @@ public class StreamBackedValueInput implements ValueInput {
             return BigDecimal.valueOf(value);
         }
 
-        assert type == EntryType.DECIMAL;
+        int category = currentHeaderCategory;
         clearHeaderInfo();
-        byte[] buf = readBuffer;
-        assert buf.length == 16;
-        readN(buf, 0, 16);
-        Decimal128 decimal = Decimal128.parseBytes(buf);
-        return decimal.toBigDecimal();
+
+        if (category == HEADER_DECIMAL_COMPACT) {
+            int scale = readSignedInt32();
+            long coefficient = Base128Variant.readSigned(input);
+            return BigDecimal.valueOf(coefficient, -scale);
+        }
+
+        assert category == HEADER_DECIMAL;
+        int exponent = readSignedInt32();
+
+        int coefficientSize = readSize();
+        var buf = byteBuilder;
+        buf.setSize(coefficientSize, false);
+        readN(buf.getData(), 0, buf.getSize());
+        var coefficient = new BigInteger(buf.getData(), 0, buf.getSize());
+
+        return new BigDecimal(coefficient, -exponent);
     }
 
     @Override

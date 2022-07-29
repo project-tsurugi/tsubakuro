@@ -1,14 +1,12 @@
 package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public class Q6 {
     SqlClient sqlClient;
@@ -38,47 +36,36 @@ public class Q6 {
     }
 
     public void run(Profile profile) throws IOException, ServerException, InterruptedException {
-    long start = System.currentTimeMillis();
-    var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
-
-    var future = transaction.executeQuery(prepared,
-        Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"),
-        Parameters.of("dateto", profile.queryValidation ? "1995-01-01" : "1996-01-01"),
-        Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)),
-        Parameters.of("quantity", (long) (profile.queryValidation ? 24 : 25)));
-    var resultSet = future.get();
-
-    try {
-        if (Objects.nonNull(resultSet)) {
-            if (resultSet.nextRecord()) {
+        long start = System.currentTimeMillis();
+        var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
+    
+        var future = transaction.executeQuery(prepared,
+            Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"),
+            Parameters.of("dateto", profile.queryValidation ? "1995-01-01" : "1996-01-01"),
+            Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)),
+            Parameters.of("quantity", (long) (profile.queryValidation ? 24 : 25)));
+    
+        try (var resultSet = future.get()) {
+            if (resultSet.nextRow()) {
                 resultSet.nextColumn();
                 if (!resultSet.isNull()) {
                 System.out.println("REVENUE");
-                System.out.println(resultSet.getInt8());
+                System.out.println(resultSet.fetchInt8Value());
                 } else {
                 System.out.println("REVENUE is null");
                 }
-            } else {
-                throw new IOException("no record");
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
-            }
-            } else {
-            throw new IOException("no resultSet");
-            }
-
-            var commitResponse = transaction.commit().get();
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(commitResponse.getResultCase())) {
-            throw new IOException("commit error");
-            }
+            resultSet.getResponse().get();
+        } catch (ServerException e) {
+            throw new IOException(e);
+        }
+    
+        try {
+            transaction.commit().get();
         } catch (ServerException e) {
             throw new IOException(e);
         } finally {
-            if (!Objects.isNull(resultSet)) {
-            resultSet.close();
-            }
+            profile.q6 = System.currentTimeMillis() - start;
         }
-        profile.q6 = System.currentTimeMillis() - start;
     }
 }

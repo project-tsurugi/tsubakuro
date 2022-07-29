@@ -13,7 +13,7 @@ import "common.proto";
  */
 
 // the placeholder for the prepared statements.
-message PlaceHolder {
+message Placeholder {
     // the placeholder location.
     oneof placement {
         // the placeholder name.
@@ -23,7 +23,8 @@ message PlaceHolder {
 
     // the placeholder type.
     oneof type_info {
-        common.AtomType type = 11;
+        // the atom type.
+        common.AtomType atom_type = 11;
         // the row type.
         common.RowType row_type = 12;
         // the user defined type.
@@ -178,7 +179,7 @@ message Begin {
 /* For prepare request. */
 message Prepare {
   string sql = 1;
-  repeated PlaceHolder placeholders = 2;
+  repeated Placeholder placeholders = 2;
 }
 
 /* For execute statement request. */

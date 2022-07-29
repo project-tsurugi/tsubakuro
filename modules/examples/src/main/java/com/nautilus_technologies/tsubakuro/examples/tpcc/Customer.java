@@ -1,13 +1,11 @@
 package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 public final class Customer {
     private Customer() {
@@ -24,34 +22,20 @@ public final class Customer {
         Parameters.of("c_d_id", (long) paramsDid),
         Parameters.of("c_last", paramsClast));
         long nameCnt = 0;
-        var resultSet1 = future1.get();
-        try {
-            if (!Objects.isNull(resultSet1)) {
-                if (!resultSet1.nextRecord()) {
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
-                    throw new IOException("no record");
-                }
-                resultSet1.nextColumn();
-                nameCnt = resultSet1.getInt8();
-                if (resultSet1.nextRecord()) {
-                    if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                        throw new IOException("SQL error");
-                    }
-                    throw new IOException("found multiple records");
-                }
+        try (var resultSet1 = future1.get()) {
+            if (!resultSet1.nextRow()) {
+                resultSet1.getResponse().get();
+                throw new IOException("no record");
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet1.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
+            resultSet1.nextColumn();
+            nameCnt = resultSet1.fetchInt8Value();
+            if (resultSet1.nextRow()) {
+                resultSet1.getResponse().get();
+                throw new IOException("found multiple records");
             }
+            resultSet1.getResponse().get();
         } catch (ServerException e) {
             return -1;
-        } finally {
-            if (!Objects.isNull(resultSet1)) {
-                resultSet1.close();
-                resultSet1 = null;
-            }
         }
 
         if (nameCnt == 0) {
@@ -64,34 +48,22 @@ public final class Customer {
         Parameters.of("c_d_id", (long) paramsDid),
         Parameters.of("c_last", paramsClast));
         long rv = -1;
-        var resultSet2 = future2.get();
-        try {
-            if (!Objects.isNull(resultSet2)) {
-                if ((nameCnt % 2) > 0) {
-                    nameCnt++;
-                }
-                for (long i = 0; i < (nameCnt / 2); i++) {
-                    if (!resultSet2.nextRecord()) {
-                        if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                            throw new IOException("SQL error");
-                        }
-                        throw new IOException("no record");
-                    }
-                }
-                resultSet2.nextColumn();
-                rv = resultSet2.getInt8();
+        try (var resultSet2 = future2.get()) {
+            if ((nameCnt % 2) > 0) {
+                nameCnt++;
             }
-            if (!SqlResponse.ResultOnly.ResultCase.SUCCESS.equals(resultSet2.getResponse().get().getResultCase())) {
-                throw new IOException("SQL error");
+            for (long i = 0; i < (nameCnt / 2); i++) {
+                if (!resultSet2.nextRow()) {
+                    resultSet2.getResponse().get();
+                    throw new IOException("no record");
+                }
             }
+            resultSet2.nextColumn();
+            rv = resultSet2.fetchInt8Value();
+            resultSet2.getResponse().get();
             return rv;
         } catch (ServerException e) {
             return -1;
-        } finally {
-            if (!Objects.isNull(resultSet2)) {
-                resultSet2.close();
-                resultSet2 = null;
-            }
         }
     }
 }

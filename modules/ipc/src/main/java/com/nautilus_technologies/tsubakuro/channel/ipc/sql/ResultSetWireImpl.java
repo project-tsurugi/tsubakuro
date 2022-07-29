@@ -1,10 +1,10 @@
 package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import org.msgpack.core.buffer.MessageBuffer;
-import org.msgpack.core.buffer.ByteBufferInput;
+
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
@@ -23,26 +23,18 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean eor;
 
-    class ByteBufferBackedInput extends ByteBufferInput {
-    ByteBufferBackedInput(ByteBuffer byteBuffer) {
-        super(byteBuffer);
-    }
+    class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
+        ByteBufferBackedInputForIpc(ByteBuffer source) {
+            super(source);
+        }
 
-    public MessageBuffer next() {
-        var rv = super.next();
-        if (!Objects.isNull(rv)) {
-        return rv;
+        protected boolean next() {
+            source = getChunkNative(wireHandle);
+            if (Objects.isNull(source)) {
+                return false;
+            }
+            return true;
         }
-        if (!eor) {
-        var buffer = getChunkNative(wireHandle);
-        if (Objects.isNull(buffer)) {
-            return null;
-        }
-        super.reset(buffer);
-        return super.next();
-        }
-        return null;
-    }
     }
 
     /**
@@ -60,49 +52,39 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
      */
-    public void connect(String name) throws IOException {
-    if (name.length() == 0) {
-        throw new IOException("ResultSet wire name is empty");
-    }
-    wireHandle = createNative(sessionWireHandle);
-    connectNative(wireHandle, name);
+    public ResultSetWire connect(String name) throws IOException {
+        if (name.length() == 0) {
+            throw new IOException("ResultSet wire name is empty");
+        }
+        wireHandle = createNative(sessionWireHandle);
+        connectNative(wireHandle, name);
+        return this;
     }
 
     /**
      * Provides the Input to retrieve the received data.
      * @return ByteBufferInput contains the record data from the SQL server.
      */
-    public ByteBufferInput getByteBufferBackedInput() {
-    if (Objects.isNull(byteBufferBackedInput)) {
-        var buffer = getChunkNative(wireHandle);
-        if (Objects.isNull(buffer)) {
-        eor = true;
-        return null;
+    public InputStream getByteBufferBackedInput() {
+        if (Objects.isNull(byteBufferBackedInput)) {
+            var buffer = getChunkNative(wireHandle);
+            if (Objects.isNull(buffer)) {
+                eor = true;
+                return null;
+            }
+            byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer);
         }
-        byteBufferBackedInput = new ByteBufferBackedInput(buffer);
-    }
-    return byteBufferBackedInput;
-    }
-
-    public boolean disposeUsedData(long length) throws IOException {
-    disposeUsedDataNative(wireHandle, length);
-    var buffer = getChunkNative(wireHandle);
-    if (Objects.isNull(buffer)) {
-        eor = true;
-        return false;
-    }
-    byteBufferBackedInput.reset(buffer);
-    return true;
+        return byteBufferBackedInput;
     }
 
     /**
      * Close the wire
      */
     public void close() throws IOException {
-    closeNative(wireHandle);
-    wireHandle = 0;
-    if (!Objects.isNull(byteBufferBackedInput)) {
-        byteBufferBackedInput.close();
-    }
+        closeNative(wireHandle);
+        wireHandle = 0;
+        if (!Objects.isNull(byteBufferBackedInput)) {
+            byteBufferBackedInput.close();
+        }
     }
 }

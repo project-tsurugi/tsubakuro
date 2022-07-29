@@ -105,7 +105,7 @@ public interface Wire extends ServerResource {
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
-     * @return ResultSetWireImpl
+     * @return ResultSetWire
     */
     ResultSetWire createResultSetWire() throws IOException;
 

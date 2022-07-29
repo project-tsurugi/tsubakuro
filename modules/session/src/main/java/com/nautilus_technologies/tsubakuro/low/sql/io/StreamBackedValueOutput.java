@@ -1,10 +1,12 @@
 package com.nautilus_technologies.tsubakuro.low.sql.io;
 
-import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.*;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_ARRAY;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_BIT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_CHARACTER;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DATE;
-import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DECIMAL16;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DATETIME_INTERVAL;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DECIMAL;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_DECIMAL_COMPACT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_ARRAY;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_BIT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_EMBED_CHARACTER;
@@ -20,6 +22,7 @@ import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_OC
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_ROW;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_TIME_OF_DAY;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.HEADER_TIME_POINT;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_ARRAY_SIZE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_BIT_SIZE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_CHARACTER_SIZE;
@@ -27,6 +30,7 @@ import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_OCTET_SIZE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_POSITIVE_INT_VALUE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MAX_EMBED_ROW_SIZE;
+import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MIN_DECIMAL_COMPACT_COEFFICIENT;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MIN_EMBED_ARRAY_SIZE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MIN_EMBED_BIT_SIZE;
 import static com.nautilus_technologies.tsubakuro.low.sql.io.Constants.MIN_EMBED_CHARACTER_SIZE;
@@ -39,6 +43,7 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,8 +53,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
 
-import org.firebirdsql.decimal.Decimal128;
-import org.firebirdsql.decimal.OverflowHandling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,9 +112,21 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
             return;
         }
 
-        Decimal128 decimal = Decimal128.valueOf(value, OverflowHandling.THROW_EXCEPTION);
-        output.write(HEADER_DECIMAL16);
-        output.write(decimal.toBytes());
+        BigInteger coefficient = value.unscaledValue();
+        if (MIN_DECIMAL_COMPACT_COEFFICIENT.compareTo(coefficient) <= 0
+                && coefficient.compareTo(MAX_DECIMAL_COMPACT_COEFFICIENT) <= 0) {
+            output.write(HEADER_DECIMAL_COMPACT);
+            Base128Variant.writeSigned(-value.scale(), output);
+            Base128Variant.writeSigned(coefficient.longValue(), output);
+            return;
+        }
+
+        output.write(HEADER_DECIMAL);
+        Base128Variant.writeSigned(-value.scale(), output);
+
+        byte[] coefficientBytes = coefficient.toByteArray();
+        Base128Variant.writeUnsigned(coefficientBytes.length, output);
+        output.write(coefficientBytes);
     }
 
     private static final BigDecimal MAX_LONG_VALUE_AS_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE);
