@@ -209,10 +209,10 @@ class TransactionExceptionTest {
         var sqlClient = SqlClient.attach(session);
 
         var transaction = sqlClient.createTransaction().get();
-        var resultSet = transaction.executeQuery("SELECT * FROM ORDERS WHERE o_id = 1").get();
+        var futureResultSet = transaction.executeQuery("SELECT * FROM ORDERS WHERE o_id = 1");
 
         Throwable exception = assertThrows(ServerException.class, () -> {
-                resultSet.getResponse().get();
+                futureResultSet.get();
         });
         // FIXME: check structured error code instead of message
         assertTrue(exception.getMessage().contains(messageForTheTest));
@@ -231,9 +231,10 @@ class TransactionExceptionTest {
         var preparedStatement = sqlClient.prepare(sql, ph).get();
 
         var transaction = sqlClient.createTransaction().get();
-        var resultSet = transaction.executeQuery(preparedStatement).get();
+        var futureResultSet = transaction.executeQuery(preparedStatement);
+
         Throwable exception = assertThrows(ServerException.class, () -> {
-                resultSet.getResponse().get();
+                futureResultSet.get();
         });
         // FIXME: check structured error code instead of message
         assertTrue(exception.getMessage().contains(messageForTheTest));

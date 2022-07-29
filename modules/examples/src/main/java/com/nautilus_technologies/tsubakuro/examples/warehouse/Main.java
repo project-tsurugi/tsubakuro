@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import  com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 

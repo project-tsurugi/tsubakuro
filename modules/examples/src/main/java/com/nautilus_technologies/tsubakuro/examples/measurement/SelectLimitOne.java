@@ -72,30 +72,27 @@ public class SelectLimitOne extends Thread {
                 var future1 = transaction.executeQuery(prepared1,
                     Parameters.of("no_d_id", (long) paramsDid),
                     Parameters.of("no_w_id", (long) paramsWid));
-                var resultSet1 = future1.get();
-                now = System.nanoTime();
-                profile.head += (now - prev);
-                prev = now;
-                try {
-                    if (!Objects.isNull(resultSet1)) {
+                try (var resultSet1 = future1.get()) {
+                    now = System.nanoTime();
+                    profile.head += (now - prev);
+                    prev = now;
+                    try {
                         if (!resultSet1.nextRow()) {
                             resultSet1.getResponse().get();
                             continue;  // noOid is exhausted, it's OK and continue this transaction
                         }
                         resultSet1.nextColumn();
                         var noOid = resultSet1.fetchInt8Value();
-                    }
-                    resultSet1.getResponse().get();
-                } catch (ServerException e) {
-                    transaction.rollback().get();
-                    transaction = null;
-                    continue;
-                } finally {
-                    if (!Objects.isNull(resultSet1)) {
+                        resultSet1.getResponse().get();
+                    } catch (ServerException e) {
+                        transaction.rollback().get();
+                        transaction = null;
+                        continue;
+                    } finally {
                         resultSet1.close();
-                        resultSet1 = null;
                     }
                 }
+
                 now = System.nanoTime();
                 profile.body += (now - prev);
                 prev = now;

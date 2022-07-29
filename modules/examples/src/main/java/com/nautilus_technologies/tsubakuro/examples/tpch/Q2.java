@@ -3,7 +3,6 @@ package com.nautilus_technologies.tsubakuro.examples.tpch;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -63,26 +62,19 @@ public class Q2 {
             var future = transaction.executeQuery(prepared1,
                 Parameters.of("region", qvalidation ? "EUROPE                   " : "ASIA                     "),
                 Parameters.of("partkey", (long) partkey));
-            var resultSet = future.get();
 
-            try {
-                if (Objects.nonNull(resultSet)) {
-                    if (resultSet.nextRow()) {
-                        resultSet.nextColumn();
-                        if (!resultSet.isNull()) {
-                            q2intermediate.put(partkey, resultSet.fetchInt8Value());
-                        }
-                    } else {
-                        throw new IOException("no record");
+            try (var resultSet = future.get()) {
+                if (resultSet.nextRow()) {
+                    resultSet.nextColumn();
+                    if (!resultSet.isNull()) {
+                        q2intermediate.put(partkey, resultSet.fetchInt8Value());
                     }
-                    resultSet.getResponse().get();
                 } else {
-                    throw new IOException("no resultSet");
+                    throw new IOException("no record");
                 }
-            } finally {
-                if (Objects.nonNull(resultSet)) {
-                    resultSet.close();
-                }
+                resultSet.getResponse().get();
+            } catch (ServerException e) {
+                throw new IOException(e);
             }
         }
     }
@@ -96,37 +88,29 @@ public class Q2 {
                 Parameters.of("size", (long) (qvalidation ? 15 : 16)),
                 Parameters.of("partkey", (long) partkey),
                 Parameters.of("mincost", (long) entry.getValue()));
-            var resultSet = future.get();
 
-            try {
-                if (Objects.nonNull(resultSet)) {
-                    if (resultSet.nextRow()) {
-                        resultSet.nextColumn();
-                        var sAcctbal = resultSet.fetchInt8Value();
-                        resultSet.nextColumn();
-                        var sName = resultSet.fetchCharacterValue();
-                        resultSet.nextColumn();
-                        var nName = resultSet.fetchCharacterValue();
-                        resultSet.nextColumn();
-                        var pMfgr = resultSet.fetchCharacterValue();
-                        resultSet.nextColumn();
-                        var sAddress = resultSet.fetchCharacterValue();
-                        resultSet.nextColumn();
-                        var sPhone = resultSet.fetchCharacterValue();
-                        resultSet.nextColumn();
-                        var sCommnent = resultSet.fetchCharacterValue();
+            try (var resultSet = future.get()) {
+                if (resultSet.nextRow()) {
+                    resultSet.nextColumn();
+                    var sAcctbal = resultSet.fetchInt8Value();
+                    resultSet.nextColumn();
+                    var sName = resultSet.fetchCharacterValue();
+                    resultSet.nextColumn();
+                    var nName = resultSet.fetchCharacterValue();
+                    resultSet.nextColumn();
+                    var pMfgr = resultSet.fetchCharacterValue();
+                    resultSet.nextColumn();
+                    var sAddress = resultSet.fetchCharacterValue();
+                    resultSet.nextColumn();
+                    var sPhone = resultSet.fetchCharacterValue();
+                    resultSet.nextColumn();
+                    var sCommnent = resultSet.fetchCharacterValue();
 
-                        System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
-                    }
-                    resultSet.getResponse().get();
-                } else {
-                    throw new IOException("no resultSet");
+                    System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
                 }
-
-            } finally {
-                if (!Objects.isNull(resultSet)) {
-                    resultSet.close();
-                }
+                resultSet.getResponse().get();
+            } catch (ServerException e) {
+                throw new IOException(e);
             }
         }
     }
@@ -136,9 +120,13 @@ public class Q2 {
         var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
 
         q21(profile.queryValidation, transaction);
-        transaction.commit().get();
-
-        profile.q21 = System.currentTimeMillis() - start;
+        try {
+            transaction.commit().get();
+        } catch (ServerException e) {
+            throw new IOException(e);
+        } finally {
+            profile.q21 = System.currentTimeMillis() - start;
+        }
     }
 
     public void run2(Profile profile) throws IOException, ServerException, InterruptedException {
@@ -148,7 +136,12 @@ public class Q2 {
         q21(profile.queryValidation, transaction);
         q22(profile.queryValidation, transaction);
 
-        transaction.commit().get();
-        profile.q22 = System.currentTimeMillis() - start;
+        try {
+            transaction.commit().get();
+        } catch (ServerException e) {
+            throw new IOException(e);
+        } finally {
+            profile.q22 = System.currentTimeMillis() - start;
+        }
     }
 }

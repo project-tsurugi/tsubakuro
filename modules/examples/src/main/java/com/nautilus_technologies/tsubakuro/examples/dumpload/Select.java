@@ -5,7 +5,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 
 import java.io.IOException;
-import java.util.Objects;
 
 public class Select {
     SqlClient sqlClient;
@@ -54,12 +53,10 @@ public class Select {
     static void prepareAndSelect(SqlClient sqlClient, String sql) throws IOException, ServerException, InterruptedException {
         try (var preparedStatement = sqlClient.prepare(sql).await();
              var transaction = sqlClient.createTransaction().await()) {
-            var resultSet = transaction.executeQuery(preparedStatement).get();
-            if (!Objects.isNull(resultSet)) {
+            try (var resultSet = transaction.executeQuery(preparedStatement).get()) {
                 printResultset(resultSet);
-                resultSet.close();
+                resultSet.getResponse().get();
             }
-            resultSet.getResponse().get();
             transaction.commit().get();
         }
     }

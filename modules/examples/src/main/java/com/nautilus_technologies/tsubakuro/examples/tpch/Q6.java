@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples.tpch;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -37,18 +36,16 @@ public class Q6 {
     }
 
     public void run(Profile profile) throws IOException, ServerException, InterruptedException {
-    long start = System.currentTimeMillis();
-    var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
-
-    var future = transaction.executeQuery(prepared,
-        Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"),
-        Parameters.of("dateto", profile.queryValidation ? "1995-01-01" : "1996-01-01"),
-        Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)),
-        Parameters.of("quantity", (long) (profile.queryValidation ? 24 : 25)));
-    var resultSet = future.get();
-
-    try {
-        if (Objects.nonNull(resultSet)) {
+        long start = System.currentTimeMillis();
+        var transaction = sqlClient.createTransaction(profile.transactionOption.build()).get();
+    
+        var future = transaction.executeQuery(prepared,
+            Parameters.of("datefrom", profile.queryValidation ? "1994-01-01" : "1995-01-01"),
+            Parameters.of("dateto", profile.queryValidation ? "1995-01-01" : "1996-01-01"),
+            Parameters.of("discount", (long) (profile.queryValidation ? 6 : 9)),
+            Parameters.of("quantity", (long) (profile.queryValidation ? 24 : 25)));
+    
+        try (var resultSet = future.get()) {
             if (resultSet.nextRow()) {
                 resultSet.nextColumn();
                 if (!resultSet.isNull()) {
@@ -57,22 +54,18 @@ public class Q6 {
                 } else {
                 System.out.println("REVENUE is null");
                 }
-            } else {
-                throw new IOException("no record");
             }
             resultSet.getResponse().get();
-        } else {
-            throw new IOException("no resultSet");
+        } catch (ServerException e) {
+            throw new IOException(e);
         }
-
-        transaction.commit().get();
-    } catch (ServerException e) {
-        throw new IOException(e);
-    } finally {
-        if (!Objects.isNull(resultSet)) {
-            resultSet.close();
+    
+        try {
+            transaction.commit().get();
+        } catch (ServerException e) {
+            throw new IOException(e);
+        } finally {
+            profile.q6 = System.currentTimeMillis() - start;
         }
-    }
-    profile.q6 = System.currentTimeMillis() - start;
     }
 }

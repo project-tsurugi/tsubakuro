@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples.tpcc;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -40,18 +39,18 @@ public class StockLevel {
     public void prepare() throws IOException, ServerException, InterruptedException {
         String sql1 = "SELECT d_next_o_id FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
         prepared1 = sqlClient.prepare(sql1,
-        Placeholders.of("d_w_id", long.class),
-        Placeholders.of("d_id", long.class)).get();
+            Placeholders.of("d_w_id", long.class),
+            Placeholders.of("d_id", long.class)).get();
 
 
         String sql2 = "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity";
         prepared2 = sqlClient.prepare(sql2,
-        Placeholders.of("ol_w_id", long.class),
-        Placeholders.of("ol_d_id", long.class),
-        Placeholders.of("ol_o_id_high", long.class),
-        Placeholders.of("ol_o_id_low", long.class),
-        Placeholders.of("s_w_id", long.class),
-        Placeholders.of("s_quantity", long.class)).get();
+            Placeholders.of("ol_w_id", long.class),
+            Placeholders.of("ol_d_id", long.class),
+            Placeholders.of("ol_o_id_high", long.class),
+            Placeholders.of("ol_o_id_low", long.class),
+            Placeholders.of("s_w_id", long.class),
+            Placeholders.of("s_quantity", long.class)).get();
     }
 
     public void setParams() {
@@ -82,19 +81,16 @@ public class StockLevel {
             var future1 = transaction.executeQuery(prepared1,
                 Parameters.of("d_w_id", (long) paramsWid),
                 Parameters.of("d_id", (long) paramsDid));
-            var resultSet1 = future1.get();
-            try {
-                if (!Objects.isNull(resultSet1)) {
-                    if (!resultSet1.nextRow()) {
-                        resultSet1.getResponse().get();
-                        throw new IOException("no record");
-                    }
-                    resultSet1.nextColumn();
-                    oId = resultSet1.fetchInt8Value();
-                    if (resultSet1.nextRow()) {
-                        resultSet1.getResponse().get();
-                        throw new IOException("found multiple records");
-                    }
+            try (var resultSet1 = future1.get()) {
+                if (!resultSet1.nextRow()) {
+                    resultSet1.getResponse().get();
+                    throw new IOException("no record");
+                }
+                resultSet1.nextColumn();
+                oId = resultSet1.fetchInt8Value();
+                if (resultSet1.nextRow()) {
+                    resultSet1.getResponse().get();
+                    throw new IOException("found multiple records");
                 }
                 resultSet1.getResponse().get();
             } catch (ServerException e) {
@@ -102,34 +98,26 @@ public class StockLevel {
                 profile.districtTable.stockLevel++;
                 rollback();
                 continue;
-            } finally {
-                if (!Objects.isNull(resultSet1)) {
-                    resultSet1.close();
-                    resultSet1 = null;
-                }
             }
 
             // "SELECT COUNT(DISTINCT s_i_id) FROM ORDER_LINE JOIN STOCK ON s_i_id = ol_i_id WHERE ol_w_id = :ol_w_id AND ol_d_id = :ol_d_id AND ol_o_id < :ol_o_id_high AND ol_o_id >= :ol_o_id_low AND s_w_id = :s_w_id AND s_quantity < :s_quantity"
             var future2 = transaction.executeQuery(prepared2,
-            Parameters.of("ol_w_id", (long) paramsWid),
-            Parameters.of("ol_d_id", (long) paramsDid),
-            Parameters.of("ol_o_id_high", (long) oId),
-            Parameters.of("ol_o_id_low", (long) (oId - OID_RANGE)),
-            Parameters.of("s_w_id", (long) paramsWid),
-            Parameters.of("s_quantity", (long) paramsThreshold));
-            var resultSet2 = future2.get();
-            try {
-                if (!Objects.isNull(resultSet2)) {
-                    if (!resultSet2.nextRow()) {
-                        resultSet2.getResponse().get();
-                        throw new IOException("no record");
-                    }
-                    resultSet2.nextColumn();
-                    queryResult = resultSet2.fetchInt8Value();
-                    if (resultSet2.nextRow()) {
-                        resultSet2.getResponse().get();
-                        throw new IOException("found multiple records");
-                    }
+                Parameters.of("ol_w_id", (long) paramsWid),
+                Parameters.of("ol_d_id", (long) paramsDid),
+                Parameters.of("ol_o_id_high", (long) oId),
+                Parameters.of("ol_o_id_low", (long) (oId - OID_RANGE)),
+                Parameters.of("s_w_id", (long) paramsWid),
+                Parameters.of("s_quantity", (long) paramsThreshold));
+            try (var resultSet2 = future2.get()) {
+                if (!resultSet2.nextRow()) {
+                    resultSet2.getResponse().get();
+                    throw new IOException("no record");
+                }
+                resultSet2.nextColumn();
+                queryResult = resultSet2.fetchInt8Value();
+                if (resultSet2.nextRow()) {
+                    resultSet2.getResponse().get();
+                    throw new IOException("found multiple records");
                 }
                 resultSet2.getResponse().get();
             } catch (ServerException e) {
@@ -137,11 +125,6 @@ public class StockLevel {
                 profile.stockTable.stockLevel++;
                 rollback();
                 continue;
-            } finally {
-                if (!Objects.isNull(resultSet2)) {
-                    resultSet2.close();
-                    resultSet2 = null;
-                }
             }
     
             try {

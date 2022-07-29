@@ -33,9 +33,9 @@ public class Insert extends Thread {
     void prepare() throws IOException, ServerException, InterruptedException {
         String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
         prepared5 = sqlClient.prepare(sql5,
-        Placeholders.of("no_o_id", long.class),
-        Placeholders.of("no_d_id", long.class),
-        Placeholders.of("no_w_id", long.class)).await();
+            Placeholders.of("no_o_id", long.class),
+            Placeholders.of("no_d_id", long.class),
+            Placeholders.of("no_w_id", long.class)).await();
     }
 
     @Override

@@ -69,32 +69,24 @@ public class SelectOne extends Thread {
                 var future2 = transaction.executeQuery(prepared2,
                     Parameters.of("d_w_id", (long) paramsWid),
                     Parameters.of("d_id", (long) paramsDid));
-                var resultSet2 = future2.get();
-                now = System.nanoTime();
-                profile.head += (now - prev);
-                prev = now;
-                try {
-                    if (!Objects.isNull(resultSet2)) {
-                        if (!resultSet2.nextRow()) {
-                            resultSet2.getResponse().get();
-                        }
-                        resultSet2.nextColumn();
-                        var dNextOid = resultSet2.fetchInt8Value();
-                        resultSet2.nextColumn();
-                        var dTax = resultSet2.fetchFloat8Value();
+                try (var resultSet2 = future2.get()) {
+                    now = System.nanoTime();
+                    profile.head += (now - prev);
+                    prev = now;
+                    try {
                         if (resultSet2.nextRow()) {
-                            resultSet2.getResponse().get();
+                            resultSet2.nextColumn();
+                            var dNextOid = resultSet2.fetchInt8Value();
+                            resultSet2.nextColumn();
+                            var dTax = resultSet2.fetchFloat8Value();
                         }
-                    }
-                    resultSet2.getResponse().get();
-                } catch (ServerException e) {
-                    transaction.rollback().get();
-                    transaction = null;
-                    continue;
-                } finally {
-                    if (!Objects.isNull(resultSet2)) {
+                        resultSet2.getResponse().get();
+                    } catch (ServerException e) {
+                        transaction.rollback().get();
+                        transaction = null;
+                        continue;
+                    } finally {
                         resultSet2.close();
-                        resultSet2 = null;
                     }
                 }
                 now = System.nanoTime();

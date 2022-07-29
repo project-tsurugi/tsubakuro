@@ -72,27 +72,23 @@ public class SelectMulti extends Thread {
                 var future1 = transaction.executeQuery(prepared1,
                     Parameters.of("no_d_id", (long) paramsDid),
                     Parameters.of("no_w_id", (long) paramsWid));
-                var resultSet1 = future1.get();
-                now = System.nanoTime();
-                profile.head += (now - prev);
-                prev = now;
-                try {
-                    if (!Objects.isNull(resultSet1)) {
+                try (var resultSet1 = future1.get()) {
+                    now = System.nanoTime();
+                    profile.head += (now - prev);
+                    prev = now;
+                    try {
                         while (resultSet1.nextRow()) {
                             resultSet1.nextColumn();
                             var noOid = resultSet1.fetchInt8Value();
                             profile.records++;
                         }
-                    }
-                    resultSet1.getResponse().get();
-                } catch (ServerException e) {
-                    transaction.rollback().get();
-                    transaction = null;
-                    continue;
-                } finally {
-                    if (!Objects.isNull(resultSet1)) {
+                        resultSet1.getResponse().get();
+                    } catch (ServerException e) {
+                        transaction.rollback().get();
+                        transaction = null;
+                        continue;
+                    } finally {
                         resultSet1.close();
-                        resultSet1 = null;
                     }
                 }
                 now = System.nanoTime();

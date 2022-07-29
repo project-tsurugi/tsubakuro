@@ -19,7 +19,7 @@ public class ServerStreamWire {
     private byte slot;
 
     public ServerStreamWire(Socket socket) throws IOException {
-    this.socket = socket;
+        this.socket = socket;
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
         this.sendOk = false;
@@ -125,8 +125,10 @@ public class ServerStreamWire {
                 bytes = null;
             }
         } catch (EOFException e) {  // imply session close
-            socket.close();
-            socket = null;
+            if (Objects.nonNull(socket)) {
+                socket.close();
+                socket = null;
+            }
             return false;
         } catch (SocketException e) {
             socket = null;

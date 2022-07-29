@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -84,64 +83,64 @@ public class NewOrder {
     public void prepare() throws IOException, ServerException, InterruptedException {
         String sql1 = "SELECT w_tax, c_discount, c_last, c_credit FROM WAREHOUSE, CUSTOMER WHERE w_id = :w_id AND c_w_id = w_id AND c_d_id = :c_d_id AND c_id = :c_id";
         prepared1 = sqlClient.prepare(sql1,
-        Placeholders.of("w_id", long.class),
-        Placeholders.of("c_d_id", long.class),
-        Placeholders.of("c_id", long.class)).get();
+            Placeholders.of("w_id", long.class),
+            Placeholders.of("c_d_id", long.class),
+            Placeholders.of("c_id", long.class)).get();
     
         String sql2 = "SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id";
         prepared2 = sqlClient.prepare(sql2,
-        Placeholders.of("d_w_id", long.class),
-        Placeholders.of("d_id", long.class)).get();
+            Placeholders.of("d_w_id", long.class),
+            Placeholders.of("d_id", long.class)).get();
     
         String sql3 = "UPDATE DISTRICT SET d_next_o_id = :d_next_o_id WHERE d_w_id = :d_w_id AND d_id = :d_id";
         prepared3 = sqlClient.prepare(sql3,
-        Placeholders.of("d_next_o_id", long.class),
-        Placeholders.of("d_w_id", long.class),
-        Placeholders.of("d_id", long.class)).get();
+            Placeholders.of("d_next_o_id", long.class),
+            Placeholders.of("d_w_id", long.class),
+            Placeholders.of("d_id", long.class)).get();
     
         String sql4 = "INSERT INTO ORDERS (o_id, o_d_id, o_w_id, o_c_id, o_entry_d, o_ol_cnt, o_all_local) VALUES (:o_id, :o_d_id, :o_w_id, :o_c_id, :o_entry_d, :o_ol_cnt, :o_all_local)";
         prepared4 = sqlClient.prepare(sql4,
-        Placeholders.of("o_id", long.class),
-        Placeholders.of("o_d_id", long.class),
-        Placeholders.of("o_w_id", long.class),
-        Placeholders.of("c_d_id", long.class),
-        Placeholders.of("o_c_id", long.class),
-        Placeholders.of("o_entry_d", String.class),
-        Placeholders.of("o_ol_cnt", long.class),
-        Placeholders.of("o_all_local", long.class)).get();
+            Placeholders.of("o_id", long.class),
+            Placeholders.of("o_d_id", long.class),
+            Placeholders.of("o_w_id", long.class),
+            Placeholders.of("c_d_id", long.class),
+            Placeholders.of("o_c_id", long.class),
+            Placeholders.of("o_entry_d", String.class),
+            Placeholders.of("o_ol_cnt", long.class),
+            Placeholders.of("o_all_local", long.class)).get();
     
         String sql5 = "INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id)";
         prepared5 = sqlClient.prepare(sql5,
-        Placeholders.of("no_o_id", long.class),
-        Placeholders.of("no_d_id", long.class),
-        Placeholders.of("no_w_id", long.class)).get();
+            Placeholders.of("no_o_id", long.class),
+            Placeholders.of("no_d_id", long.class),
+            Placeholders.of("no_w_id", long.class)).get();
     
         String sql6 = "SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id";
         prepared6 = sqlClient.prepare(sql6,
-        Placeholders.of("i_id", long.class)).get();
+            Placeholders.of("i_id", long.class)).get();
     
         String sql7 = "SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
         prepared7 = sqlClient.prepare(sql7,
-        Placeholders.of("s_i_id", long.class),
-        Placeholders.of("s_w_id", long.class)).get();
+            Placeholders.of("s_i_id", long.class),
+            Placeholders.of("s_w_id", long.class)).get();
     
         String sql8 = "UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id";
         prepared8 = sqlClient.prepare(sql8,
-        Placeholders.of("s_quantity", long.class),
-        Placeholders.of("s_i_id", long.class),
-        Placeholders.of("s_w_id", long.class)).get();
+            Placeholders.of("s_quantity", long.class),
+            Placeholders.of("s_i_id", long.class),
+            Placeholders.of("s_w_id", long.class)).get();
     
         String sql9 = "INSERT INTO ORDER_LINE (ol_o_id, ol_d_id, ol_w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity, ol_amount, ol_dist_info)VALUES (:ol_o_id, :ol_d_id, :ol_w_id, :ol_number, :ol_i_id, :ol_supply_w_id, :ol_quantity, :ol_amount, :ol_dist_info)";
         prepared9 = sqlClient.prepare(sql9,
-        Placeholders.of("ol_o_id", long.class),
-        Placeholders.of("ol_d_id", long.class),
-        Placeholders.of("ol_w_id", long.class),
-        Placeholders.of("ol_number", long.class),
-        Placeholders.of("ol_i_id", long.class),
-        Placeholders.of("ol_supply_w_id", long.class),
-        Placeholders.of("ol_quantity", long.class),
-        Placeholders.of("ol_amount", double.class),
-        Placeholders.of("ol_dist_info", String.class)).get();
+            Placeholders.of("ol_o_id", long.class),
+            Placeholders.of("ol_d_id", long.class),
+            Placeholders.of("ol_w_id", long.class),
+            Placeholders.of("ol_number", long.class),
+            Placeholders.of("ol_i_id", long.class),
+            Placeholders.of("ol_supply_w_id", long.class),
+            Placeholders.of("ol_quantity", long.class),
+            Placeholders.of("ol_amount", double.class),
+            Placeholders.of("ol_dist_info", String.class)).get();
     }
 
     static String timeStamp() {
@@ -200,25 +199,22 @@ public class NewOrder {
             Parameters.of("w_id", (long) paramsWid),
             Parameters.of("c_d_id", (long) paramsDid),
             Parameters.of("c_id", (long) paramsCid));
-            var resultSet1 = future1.get();
-            try {
-                if (!Objects.isNull(resultSet1)) {
-                    if (!resultSet1.nextRow()) {
-                        resultSet1.getResponse().get();
-                        throw new IOException("no record");
-                    }
-                    resultSet1.nextColumn();
-                    wTax = resultSet1.fetchFloat8Value();
-                    resultSet1.nextColumn();
-                    cDiscount = resultSet1.fetchFloat8Value();
-                    resultSet1.nextColumn();
-                    cLast = resultSet1.fetchCharacterValue();
-                    resultSet1.nextColumn();
-                    cCredit = resultSet1.fetchCharacterValue();
-                    if (resultSet1.nextRow()) {
-                        resultSet1.getResponse().get();
-                        throw new IOException("found multiple records");
-                    }
+            try (var resultSet1 = future1.get()) {
+                if (!resultSet1.nextRow()) {
+                    resultSet1.getResponse().get();
+                    throw new IOException("no record");
+                }
+                resultSet1.nextColumn();
+                wTax = resultSet1.fetchFloat8Value();
+                resultSet1.nextColumn();
+                cDiscount = resultSet1.fetchFloat8Value();
+                resultSet1.nextColumn();
+                cLast = resultSet1.fetchCharacterValue();
+                resultSet1.nextColumn();
+                cCredit = resultSet1.fetchCharacterValue();
+                if (resultSet1.nextRow()) {
+                    resultSet1.getResponse().get();
+                    throw new IOException("found multiple records");
                 }
                 resultSet1.getResponse().get();
             } catch (ServerException e) {
@@ -226,32 +222,24 @@ public class NewOrder {
                 profile.customerTable.newOrder++;
                 rollback();
                 continue;
-            } finally {
-                if (!Objects.isNull(resultSet1)) {
-                    resultSet1.close();
-                    resultSet1 = null;
-                }
             }
     
             // SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
             var future2 = transaction.executeQuery(prepared2,
             Parameters.of("d_w_id", (long) paramsWid),
             Parameters.of("d_id", (long) paramsDid));
-            var resultSet2 = future2.get();
-            try {
-                if (!Objects.isNull(resultSet2)) {
-                    if (!resultSet2.nextRow()) {
-                        resultSet2.getResponse().get();
-                        throw new IOException("no record");
-                    }
-                    resultSet2.nextColumn();
-                    dNextOid = resultSet2.fetchInt8Value();
-                    resultSet2.nextColumn();
-                    dTax = resultSet2.fetchFloat8Value();
-                    if (resultSet2.nextRow()) {
-                        resultSet2.getResponse().get();
-                        throw new IOException("found multiple records");
-                    }
+            try (var resultSet2 = future2.get()) {
+                if (!resultSet2.nextRow()) {
+                    resultSet2.getResponse().get();
+                    throw new IOException("no record");
+                }
+                resultSet2.nextColumn();
+                dNextOid = resultSet2.fetchInt8Value();
+                resultSet2.nextColumn();
+                dTax = resultSet2.fetchFloat8Value();
+                if (resultSet2.nextRow()) {
+                    resultSet2.getResponse().get();
+                    throw new IOException("found multiple records");
                 }
                 resultSet2.getResponse().get();
             } catch (ServerException e) {
@@ -259,11 +247,6 @@ public class NewOrder {
                 profile.districtTable.newOrder++;
                 rollback();
                 continue;
-            } finally {
-                if (!Objects.isNull(resultSet2)) {
-                    resultSet2.close();
-                    resultSet2 = null;
-                }
             }
     
             try {
@@ -323,67 +306,51 @@ public class NewOrder {
                 // SELECT i_price, i_name , i_data FROM ITEM WHERE i_id = :i_id
                 var future6 = transaction.executeQuery(prepared6,
                 Parameters.of("i_id", (long) olIid));
-                var resultSet6 = future6.get();
-                try {
-                    if (!Objects.isNull(resultSet6)) {
-                        if (!resultSet6.nextRow()) {
-                            resultSet6.getResponse().get();
-                            throw new IOException("no record");
-                        }
-                        resultSet6.nextColumn();
-                        iPrice = resultSet6.fetchFloat8Value();
-                        resultSet6.nextColumn();
-                        iName = resultSet6.fetchCharacterValue();
-                        resultSet6.nextColumn();
-                        iData = resultSet6.fetchCharacterValue();
-                        if (resultSet6.nextRow()) {
-                            resultSet6.getResponse().get();
-                            throw new IOException("found multiple records");
-                        }
+                try (var resultSet6 = future6.get()) {
+                    if (!resultSet6.nextRow()) {
+                        resultSet6.getResponse().get();
+                        throw new IOException("no record");
+                    }
+                    resultSet6.nextColumn();
+                    iPrice = resultSet6.fetchFloat8Value();
+                    resultSet6.nextColumn();
+                    iName = resultSet6.fetchCharacterValue();
+                    resultSet6.nextColumn();
+                    iData = resultSet6.fetchCharacterValue();
+                    if (resultSet6.nextRow()) {
+                        resultSet6.getResponse().get();
+                        throw new IOException("found multiple records");
                     }
                     resultSet6.getResponse().get();
                 } catch (ServerException e) {
                     break;
-                } finally {
-                    if (!Objects.isNull(resultSet6)) {
-                        resultSet6.close();
-                        resultSet6 = null;
-                    }
                 }
     
                 // SELECT s_quantity, s_data, s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05, s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10 FROM STOCK WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
                 var future7 = transaction.executeQuery(prepared7,
                 Parameters.of("s_i_id", (long) olIid),
                 Parameters.of("s_w_id", (long) olSupplyWid));
-                var resultSet7 = future7.get();
-                try {
-                    if (!Objects.isNull(resultSet7)) {
-                        if (!resultSet7.nextRow()) {
-                            resultSet7.getResponse().get();
-                            throw new IOException("no record");
-                        }
+                try (var resultSet7 = future7.get()) {
+                    if (!resultSet7.nextRow()) {
+                        resultSet7.getResponse().get();
+                        throw new IOException("no record");
+                    }
+                    resultSet7.nextColumn();
+                    sQuantity = resultSet7.fetchInt8Value();
+                    resultSet7.nextColumn();
+                    sData = resultSet7.fetchCharacterValue();
+                    for (int i = 0; i < 10; i++) {
                         resultSet7.nextColumn();
-                        sQuantity = resultSet7.fetchInt8Value();
-                        resultSet7.nextColumn();
-                        sData = resultSet7.fetchCharacterValue();
-                        for (int i = 0; i < 10; i++) {
-                            resultSet7.nextColumn();
-                            sDistData[i] = resultSet7.fetchCharacterValue();
-                        }
-                        if (resultSet7.nextRow()) {
-                            resultSet7.getResponse().get();
-                            throw new IOException("found multiple records");
-                        }
+                        sDistData[i] = resultSet7.fetchCharacterValue();
+                    }
+                    if (resultSet7.nextRow()) {
+                        resultSet7.getResponse().get();
+                        throw new IOException("found multiple records");
                     }
                     resultSet7.getResponse().get();
                 } catch (ServerException e) {
                     profile.stockTable.newOrder++;
                     break;
-                } finally {
-                    if (!Objects.isNull(resultSet7)) {
-                    resultSet7.close();
-                    resultSet7 = null;
-                    }
                 }
     
                 String olDistInfo = sDistData[(int) paramsDid - 1].substring(0, 24);

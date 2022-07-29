@@ -60,18 +60,20 @@ public class Select {
                  Placeholders.of("o_d_id", long.class),
                  Placeholders.of("o_w_id", long.class)).await();
 
-             var transaction = sqlClient.createTransaction().await()) {
+            var transaction = sqlClient.createTransaction().await()) {
 
-            var resultSet = transaction.executeQuery(preparedStatement,
+            try (var resultSet = transaction.executeQuery(preparedStatement,
                 Parameters.of("o_id", (long) 99999999),
                 Parameters.of("o_d_id", (long) 3),
-                Parameters.of("o_w_id", (long) 1)).get();
-            if (!Objects.isNull(resultSet)) {
-                printResultset(resultSet);
+                Parameters.of("o_w_id", (long) 1)).await()) {
+                if (!Objects.isNull(resultSet)) {
+                    printResultset(resultSet);
+                        resultSet.close();
+                }
+                resultSet.getResponse().await();
                 resultSet.close();
             }
-            resultSet.getResponse().get();
-            transaction.commit().get();
+            transaction.commit().await();
         }
     }
 }

@@ -415,7 +415,7 @@ public class SqlServiceStub implements SqlService {
                 var resultSetImpl = new ResultSetImpl(metadata, cursor, owner.release(), this, future);
                 return resources.register(resultSetImpl);
             } catch (SqlServiceException e) {
-                return resources.register(new ResultSetImpl(new FutureResultOnly(e)));
+                throw e;
             } catch (Exception e) {
                 // if sub-response seems broken, check main-response for detect errors.
                 try {

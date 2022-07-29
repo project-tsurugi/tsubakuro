@@ -3,9 +3,8 @@ package com.nautilus_technologies.tsubakuro.examples.warehouse;
 import java.io.IOException;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
+import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 
 public class Select {
     SqlClient sqlClient;
@@ -54,11 +53,13 @@ public class Select {
     public void select() throws IOException, ServerException, InterruptedException {
         String sql = "SELECT * FROM WAREHOUSE";
 
-        Transaction transaction = sqlClient.createTransaction().await();
-        var resultSet = transaction.executeQuery(sql).get();
-        printResultset(resultSet);
-        resultSet.getResponse().get();
-        resultSet.close();
-        transaction.commit().get();
+        try (var transaction = sqlClient.createTransaction().await()) {
+            try (var resultSet = transaction.executeQuery(sql).await()) {
+                printResultset(resultSet);
+                resultSet.getResponse().await();
+                resultSet.close();
+            }
+            transaction.commit().await();
+        }
     }
 }
