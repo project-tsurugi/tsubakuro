@@ -3,15 +3,16 @@ package com.nautilus_technologies.tsubakuro.impl.low.sql;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-import org.firebirdsql.decimal.Decimal128;
 import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.ByteString;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
+import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlCommon.Bit;
 import com.tsurugidb.jogasaki.proto.SqlCommon.TimePoint;
 import com.tsurugidb.jogasaki.proto.SqlRequest.Parameter;
@@ -59,8 +60,11 @@ class ParametersTest {
     void ofBigdecimal() {
         BigDecimal value = new BigDecimal("3.14");
         assertEquals(
-                     param().setDecimalValue(ByteString.copyFrom(Decimal128.valueOf(value).toBytes())).build(),
-                     Parameters.of(TN, value));
+            param().setDecimalValue(
+                    SqlCommon.Decimal.newBuilder()
+                            .setUnscaledValue(ByteString.copyFrom(BigInteger.valueOf(314).toByteArray()))
+                            .setExponent(-2)).build(),
+                    Parameters.of(TN, value));
     }
     
     @Test

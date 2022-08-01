@@ -8,8 +8,6 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import org.firebirdsql.decimal.Decimal128;
-
 import com.google.protobuf.ByteString;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
@@ -112,10 +110,11 @@ public final class Parameters {
     public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull BigDecimal value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        var bytes = ByteString.copyFrom(Decimal128.valueOf(value).toBytes());
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setDecimalValue(bytes)
+                .setDecimalValue(SqlCommon.Decimal.newBuilder()
+                        .setUnscaledValue(ByteString.copyFrom(value.unscaledValue().toByteArray()))
+                        .setExponent(-value.scale()))
                 .build();
     }
 

@@ -48,7 +48,7 @@ enum AtomType {
     // 64-bit floating point number.
     FLOAT8 = 7;
 
-    // 128-bit floating decimal number.
+    // multi precision decimal number.
     DECIMAL = 8;
 
     // character sequence.
@@ -143,6 +143,15 @@ message TypeInfo {
 
     // the type dimension for array types.
     uint32 dimension = 11;
+}
+
+// the multi precision decimal number value.
+message Decimal {
+    // the signed unscaled value (2's complement, big endian).
+    bytes unscaled_value = 1;
+
+    // the exponent of the value (value = unscaled_value * 10^exponent).
+    int32 exponent = 2;
 }
 
 // the bit value.
