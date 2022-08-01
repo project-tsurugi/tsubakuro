@@ -62,8 +62,8 @@ message Parameter {
         // 64-bit floating point number.
         double float8_value = 17;
 
-        // 128-bit floating decimal number (encoded by decimal128, big-endian).
-        bytes decimal_value = 18;
+        // multi precision decimal number.
+        common.Decimal decimal_value = 18;
 
         // character sequence.
         string character_value = 19;
