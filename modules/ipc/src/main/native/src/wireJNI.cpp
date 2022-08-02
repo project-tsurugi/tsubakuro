@@ -261,18 +261,11 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_disposeUsedDataNative
-(JNIEnv *env, jclass, jlong handle, jlong length)
+(JNIEnv *, jclass, jlong handle, jlong length)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    try {
-        rwc->dispose(length);
-    } catch (std::runtime_error &e) {
-        jclass classj = env->FindClass("Ljava/io/IOException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
-    }
+    rwc->dispose(length);
 }
 
 /*
