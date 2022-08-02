@@ -144,7 +144,7 @@ public class StreamBackedValueInput implements ValueInput {
         if (currentEntryType == null) {
             fetchHeader();
             if (LOG.isTraceEnabled()) {
-                LOG.trace("read entry: {0} (1)", currentEntryType, currentHeaderCategory); //$NON-NLS-1$
+                LOG.trace("read entry: {} ()", currentEntryType, currentHeaderCategory); //$NON-NLS-1$
             }
         }
         assert currentEntryType != null;
