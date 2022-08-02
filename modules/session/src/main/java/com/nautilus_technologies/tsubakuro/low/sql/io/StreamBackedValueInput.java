@@ -143,6 +143,9 @@ public class StreamBackedValueInput implements ValueInput {
     public EntryType peekType() throws IOException {
         if (currentEntryType == null) {
             fetchHeader();
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("read entry: {} ({})", currentEntryType, currentHeaderCategory); //$NON-NLS-1$
+            }
         }
         assert currentEntryType != null;
         return currentEntryType;
