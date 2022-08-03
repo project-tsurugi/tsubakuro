@@ -14,7 +14,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle) throws IOException;
     private static native void connectNative(long handle, String name) throws IOException;
     private static native ByteBuffer getChunkNative(long handle);
-    private static native void disposeUsedDataNative(long handle, long length) throws IOException;
+    private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
@@ -29,6 +29,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         protected boolean next() {
+            disposeUsedDataNative(wireHandle, source.capacity());
             source = getChunkNative(wireHandle);
             if (Objects.isNull(source)) {
                 return false;
