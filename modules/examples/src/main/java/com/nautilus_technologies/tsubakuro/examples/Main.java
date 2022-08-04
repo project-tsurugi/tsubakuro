@@ -23,12 +23,14 @@ public final class Main {
 
     private static String url = "ipc:tateyama";
     private static boolean selectOnly = false;
+    private static int selectCount = 1;
 
     public static void main(String[] args) {
         // コマンドラインオプションの設定
         Options options = new Options();
 
         options.addOption(Option.builder("s").argName("select").desc("Select only mode.").build());
+        options.addOption(Option.builder("c").argName("count").hasArg().desc("Specify the execution count of the select operation.").build());
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -39,6 +41,10 @@ public final class Main {
             if (cmd.hasOption("s")) {
                 System.err.println("select only");
                 selectOnly = true;
+            }
+            if (cmd.hasOption("c")) {
+                selectCount = Integer.parseInt(cmd.getOptionValue("c"));
+                System.err.println("select count = " + selectCount);
             }
         } catch (ParseException e) {
             System.err.println("cmd parser failed." + e);
@@ -53,7 +59,7 @@ public final class Main {
             if (!selectOnly) {
                 (new Insert(sqlClient)).prepareAndInsert();
             }
-            (new Select(sqlClient)).prepareAndSelect();
+            (new Select(sqlClient)).prepareAndSelect(selectCount);
         } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
             System.out.println(e);
         }
