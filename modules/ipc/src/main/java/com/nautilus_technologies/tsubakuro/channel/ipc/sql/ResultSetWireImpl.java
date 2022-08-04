@@ -24,8 +24,11 @@ public class ResultSetWireImpl implements ResultSetWire {
     private boolean eor;
 
     class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
-        ByteBufferBackedInputForIpc(ByteBuffer source) {
+        private final ResultSetWireImpl resultSetWireImpl;
+
+        ByteBufferBackedInputForIpc(ByteBuffer source, ResultSetWireImpl resultSetWireImpl) {
             super(source);
+            this.resultSetWireImpl = resultSetWireImpl;
         }
 
         protected boolean next() {
@@ -35,6 +38,12 @@ public class ResultSetWireImpl implements ResultSetWire {
                 return false;
             }
             return true;
+        }
+        
+        @Override
+        public void close() throws IOException {
+            super.close();
+            resultSetWireImpl.close();
         }
     }
 
@@ -73,7 +82,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 eor = true;
                 return null;
             }
-            byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer);
+            byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer, this);
         }
         return byteBufferBackedInput;
     }
@@ -84,8 +93,5 @@ public class ResultSetWireImpl implements ResultSetWire {
     public void close() throws IOException {
         closeNative(wireHandle);
         wireHandle = 0;
-        if (!Objects.isNull(byteBufferBackedInput)) {
-            byteBufferBackedInput.close();
-        }
     }
 }

@@ -41,6 +41,9 @@ public interface ResultSetWire extends Closeable {
 
         @Override
         public int read(byte[] b, int off, int len) {
+            if (len == 0) {
+                return 0;
+            }
             while (true) {
                 int count = Math.min(len, source.remaining());
                 if (count > 0) {

@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -53,7 +52,7 @@ public class Select {
         }
     }
 
-    public void prepareAndSelect() throws IOException, ServerException, InterruptedException {
+    public void prepareAndSelect(int selectCount) throws IOException, ServerException, InterruptedException {
         String sql = "SELECT * FROM ORDERS WHERE o_w_id = :o_w_id AND o_d_id = :o_d_id AND o_id = :o_id";
         try (var preparedStatement = sqlClient.prepare(sql,
                  Placeholders.of("o_id", long.class),
@@ -62,17 +61,16 @@ public class Select {
 
             var transaction = sqlClient.createTransaction().await()) {
 
-            try (var resultSet = transaction.executeQuery(preparedStatement,
-                Parameters.of("o_id", (long) 99999999),
-                Parameters.of("o_d_id", (long) 3),
-                Parameters.of("o_w_id", (long) 1)).await()) {
-                if (!Objects.isNull(resultSet)) {
-                    printResultset(resultSet);
-                        resultSet.close();
+                for (int i = 0; i < selectCount; i++) {
+                    try (var resultSet = transaction.executeQuery(preparedStatement,
+                    Parameters.of("o_id", (long) 99999999),
+                    Parameters.of("o_d_id", (long) 3),
+                    Parameters.of("o_w_id", (long) 1)).await()) {
+                        printResultset(resultSet);
+                        resultSet.getResponse().await();
+                    }
                 }
-                resultSet.getResponse().await();
-                resultSet.close();
-            }
+
             transaction.commit().await();
         }
     }

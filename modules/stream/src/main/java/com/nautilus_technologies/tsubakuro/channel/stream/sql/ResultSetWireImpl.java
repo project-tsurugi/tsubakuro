@@ -18,8 +18,11 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
 
     class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
-        ByteBufferBackedInputForStream(ByteBuffer source) {
+        private final ResultSetWireImpl resultSetWireImpl;
+
+        ByteBufferBackedInputForStream(ByteBuffer source, ResultSetWireImpl resultSetWireImpl) {
             super(source);
+            this.resultSetWireImpl = resultSetWireImpl;
         }
 
         @Override
@@ -36,6 +39,12 @@ public class ResultSetWireImpl implements ResultSetWire {
                 e.printStackTrace();
                 return false;
             }
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            resultSetWireImpl.close();
         }
     }
 
@@ -73,7 +82,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 if (Objects.isNull(buffer)) {
                     return null;
                 }
-                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer));
+                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
             } catch (IOException e) {
                 System.err.println(e);
                 e.printStackTrace();
@@ -94,8 +103,5 @@ public class ResultSetWireImpl implements ResultSetWire {
             }
         }
         streamWire.sendResutSetByeOk(slot);
-        if (Objects.nonNull(byteBufferBackedInput)) {
-            byteBufferBackedInput.close();
-        }
     }
 }
