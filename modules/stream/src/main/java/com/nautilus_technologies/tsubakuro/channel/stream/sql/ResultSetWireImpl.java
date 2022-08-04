@@ -96,12 +96,15 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
-        while (true) {
-            var entry = resultSetBox.receive(slot);
-            if (Objects.isNull(entry.getPayload())) {
-                break;
+        if (Objects.nonNull(streamWire)) {
+            while (true) {
+                var entry = resultSetBox.receive(slot);
+                if (Objects.isNull(entry.getPayload())) {
+                    break;
+                }
             }
+            streamWire.sendResutSetByeOk(slot);
+            streamWire = null;
         }
-        streamWire.sendResutSetByeOk(slot);
     }
 }

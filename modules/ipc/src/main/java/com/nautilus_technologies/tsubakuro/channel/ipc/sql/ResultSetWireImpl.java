@@ -91,7 +91,9 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() throws IOException {
-        closeNative(wireHandle);
-        wireHandle = 0;
+        if (wireHandle != 0) {
+            closeNative(wireHandle);
+            wireHandle = 0;
+        }
     }
 }
