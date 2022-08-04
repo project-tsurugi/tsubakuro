@@ -1,7 +1,6 @@
 package com.nautilus_technologies.tsubakuro.examples;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
@@ -67,10 +66,7 @@ public class Select {
                     Parameters.of("o_id", (long) 99999999),
                     Parameters.of("o_d_id", (long) 3),
                     Parameters.of("o_w_id", (long) 1)).await()) {
-                        if (!Objects.isNull(resultSet)) {
-                            printResultset(resultSet);
-                                resultSet.close();
-                        }
+                        printResultset(resultSet);
                         resultSet.getResponse().await();
                     }
                 }
