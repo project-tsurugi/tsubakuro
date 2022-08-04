@@ -103,8 +103,5 @@ public class ResultSetWireImpl implements ResultSetWire {
             }
         }
         streamWire.sendResutSetByeOk(slot);
-        if (Objects.nonNull(byteBufferBackedInput)) {
-            byteBufferBackedInput.close();
-        }
     }
 }
