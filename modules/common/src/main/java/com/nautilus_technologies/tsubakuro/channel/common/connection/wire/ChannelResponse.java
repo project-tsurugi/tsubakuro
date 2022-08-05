@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.time.LocalDateTime;
 
 import javax.annotation.Nonnull;
 
@@ -14,11 +16,11 @@ import javax.annotation.Nonnull;
  */
 public class ChannelResponse implements Response {
 
+    private static final int SLEEP_UNIT = 10;  // 10mS per sleep
     private final Wire wire;
-    private ResponseWireHandle handle;
-    private boolean queryMode;
-    private ByteBuffer main;
-
+    private final AtomicBoolean queryMode = new AtomicBoolean();
+    private final AtomicReference<ResponseWireHandle> handle = new AtomicReference<>();
+    private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
@@ -28,9 +30,7 @@ public class ChannelResponse implements Response {
     public ChannelResponse(@Nonnull Wire wire) {
         Objects.requireNonNull(wire);
         this.wire = wire;
-        this.handle = null;
-        this.queryMode = false;
-        main = null;
+        queryMode.setPlain(false);
     }
 
     /**
@@ -38,37 +38,46 @@ public class ChannelResponse implements Response {
      * @param main the main response data
      */
     public ChannelResponse(@Nonnull ByteBuffer main) {
-        this.main = main;
+        this.main.set(main);
         this.wire = null;
     }
 
     @Override
-    public synchronized boolean isMainResponseReady() {
+    public boolean isMainResponseReady() {
         return Objects.nonNull(handle) || Objects.nonNull(main);
     }
 
     @Override
-    public synchronized ByteBuffer waitForMainResponse() throws IOException {
-        if (Objects.nonNull(main)) {
-            return main;
+    public ByteBuffer waitForMainResponse() throws IOException {
+        if (Objects.nonNull(main.get())) {
+            return main.get();
         }
-        if (isMainResponseReady()) {
-            main = wire.response(handle);
-            return main;
+        if (Objects.nonNull(handle.get())) {
+            main.set(wire.response(handle.get()));
+            return main.get();
         }
         throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
 
     @Override
-    public synchronized ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        if (Objects.nonNull(main)) {
-            return main;
+    public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        if (Objects.nonNull(main.get())) {
+            return main.get();
         }
-        if (isMainResponseReady()) {
-            main = wire.response(handle, timeout, unit);
-            return main;
+        var limitTIme = LocalDateTime.now().plusNanos(unit.toNanos(timeout));
+        while (true) {
+            if (Objects.nonNull(handle.get())) {
+                main.set(wire.response(handle.get(), timeout, unit));
+                return main.get();
+            }
+            try {
+                Thread.sleep(SLEEP_UNIT);
+            } catch (InterruptedException e) {  // need not care about InterruptedException
+            }
+            if (LocalDateTime.now().isAfter(limitTIme)) {
+                throw new IOException("response box is not available");  // FIXME arch. mismatch??
+            }
         }
-        throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
 
     @Override
@@ -80,10 +89,12 @@ public class ChannelResponse implements Response {
      * @implNote Either this method or setResponseHandle() can be called first.
      */
     @Override
-    public synchronized void setResultSetMode() {
-        queryMode = true;
-        if (Objects.nonNull(handle)) {
-            wire.setResultSetMode(handle);
+    public void setResultSetMode() {
+        synchronized (wire) {
+            queryMode.set(true);
+            if (Objects.nonNull(handle.get())) {
+                wire.setResultSetMode(handle.get());
+            }
         }
     }
 
@@ -91,24 +102,30 @@ public class ChannelResponse implements Response {
      * @implNote It must be called before release() is called.
      */
     @Override
-    public synchronized Response duplicate() {
-        ChannelResponse channelResponse = new ChannelResponse(wire);
-        channelResponse.setResponseHandle(handle);
-        return channelResponse;
+    public Response duplicate() {
+        synchronized (wire) {
+            ChannelResponse channelResponse = new ChannelResponse(wire);
+            channelResponse.setResponseHandle(handle.get());
+            return channelResponse;
+        }
     }
 
     @Override
     public synchronized void release() {
-        if (Objects.nonNull(handle)) {
-            wire.release(handle);
-            handle = null;
+        synchronized (wire) {
+            if (Objects.nonNull(handle.get())) {
+                wire.release(handle.get());
+                handle.set(null);
+            }
         }
     }
 
-    public synchronized void setResponseHandle(ResponseWireHandle h) {
-        handle = h;
-        if (queryMode) {
-            wire.setResultSetMode(handle);
+    public void setResponseHandle(ResponseWireHandle h) {
+        synchronized (wire) {
+            handle.set(h);
+            if (queryMode.get()) {
+                wire.setResultSetMode(handle.get());
+            }
         }
     }
 }
