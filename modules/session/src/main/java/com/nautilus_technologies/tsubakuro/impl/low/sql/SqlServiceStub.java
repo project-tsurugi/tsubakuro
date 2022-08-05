@@ -412,7 +412,7 @@ public class SqlServiceStub implements SqlService {
                 }
                 var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
                 var future = new ForegroundFutureResponse<Void>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
-                var resultSetImpl = new ResultSetImpl(metadata, cursor, owner.release(), this, future);
+                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, future);
                 return resources.register(resultSetImpl);
             } catch (SqlServiceException e) {
                 throw e;
