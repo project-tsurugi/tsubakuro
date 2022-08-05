@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +20,10 @@ import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
+import com.nautilus_technologies.tsubakuro.util.Lang;
+import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * A basic implementation of {@link ResultSet} which just delegate operations to
@@ -30,6 +32,8 @@ import com.tsurugidb.jogasaki.proto.SqlResponse;
 public class ResultSetImpl implements ResultSet {
 
     static final Logger LOG = LoggerFactory.getLogger(ResultSetImpl.class);
+
+    private final CloseHandler closeHandler;
 
     private final ResultSetMetadata metadata;
 
@@ -66,6 +70,7 @@ public class ResultSetImpl implements ResultSet {
      * @param checker tests if response is normal
      */
     public ResultSetImpl(
+            @Nullable ServerResource.CloseHandler closeHandler,
             @Nonnull ResultSetMetadata metadata,
             @Nonnull RelationCursor cursor,
             @Nonnull Response response,
@@ -76,22 +81,11 @@ public class ResultSetImpl implements ResultSet {
         Objects.requireNonNull(response);
         Objects.requireNonNull(checker);
         Objects.requireNonNull(futureResponse);
+        this.closeHandler = closeHandler;
         this.metadata = metadata;
         this.cursor = cursor;
         this.response = response;
         this.tester = checker;
-        this.futureResponse = futureResponse;
-    }
-
-    /**
-     * Creates a new instance when error occured.
-     */
-    public ResultSetImpl(@Nonnull FutureResponse<Void> futureResponse) {
-        Objects.requireNonNull(futureResponse);
-        this.metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder().build());
-        this.cursor = null;
-        this.response = null;
-        this.tester = null;
         this.futureResponse = futureResponse;
     }
 
@@ -360,6 +354,11 @@ public class ResultSetImpl implements ResultSet {
                     tester.test(response);
                 }
             }
+        }
+        if (Objects.nonNull(closeHandler)) {
+            Lang.suppress(
+                    e -> LOG.warn("error occurred while collecting garbage", e),
+                    () -> closeHandler.onClosed(this));
         }
     }
 }

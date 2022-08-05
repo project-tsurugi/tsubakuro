@@ -31,6 +31,7 @@ public final class Main {
 
         options.addOption(Option.builder("s").argName("select").desc("Select only mode.").build());
         options.addOption(Option.builder("c").argName("count").hasArg().desc("Specify the execution count of the select operation.").build());
+        options.addOption(Option.builder("t").argName("stream").desc("Connect via stream endpoint.").build());
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -39,12 +40,16 @@ public final class Main {
             cmd = parser.parse(options, args);
 
             if (cmd.hasOption("s")) {
-                System.err.println("select only");
                 selectOnly = true;
+                System.err.println("select only");
             }
             if (cmd.hasOption("c")) {
                 selectCount = Integer.parseInt(cmd.getOptionValue("c"));
                 System.err.println("select count = " + selectCount);
+            }
+            if (cmd.hasOption("t")) {
+                url = "tcp://localhost:12345/";
+                System.err.println("connect via " + url);
             }
         } catch (ParseException e) {
             System.err.println("cmd parser failed." + e);
