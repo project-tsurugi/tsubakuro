@@ -64,7 +64,7 @@ public class ChannelResponse implements Response {
         if (Objects.nonNull(main.get())) {
             return main.get();
         }
-        var limitTIme = LocalDateTime.now().plusNanos(unit.toNanos(timeout));
+        var limitTime = LocalDateTime.now().plusNanos(unit.toNanos(timeout));
         while (true) {
             if (Objects.nonNull(handle.get())) {
                 main.set(wire.response(handle.get(), timeout, unit));
@@ -74,7 +74,7 @@ public class ChannelResponse implements Response {
                 Thread.sleep(SLEEP_UNIT);
             } catch (InterruptedException e) {  // need not care about InterruptedException
             }
-            if (LocalDateTime.now().isAfter(limitTIme)) {
+            if (LocalDateTime.now().isAfter(limitTime)) {
                 throw new IOException("response box is not available");  // FIXME arch. mismatch??
             }
         }
