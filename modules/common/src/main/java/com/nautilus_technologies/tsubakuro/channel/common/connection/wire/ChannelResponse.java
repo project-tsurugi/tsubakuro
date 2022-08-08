@@ -7,7 +7,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.time.LocalDateTime;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
@@ -22,6 +24,8 @@ public class ChannelResponse implements Response {
     private final AtomicReference<ResponseWireHandle> handle = new AtomicReference<>();
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Lock lock = new ReentrantLock();
+    private final Condition noSet = lock.newCondition();
 
     /**
      * Creates a new instance with a Wire
@@ -52,11 +56,19 @@ public class ChannelResponse implements Response {
         if (Objects.nonNull(main.get())) {
             return main.get();
         }
-        if (Objects.nonNull(handle.get())) {
+
+        lock.lock();
+        try {
+            while (Objects.isNull(handle.get())) {
+                noSet.await();
+            }
             main.set(wire.response(handle.get()));
             return main.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } finally {
+            lock.unlock();
         }
-        throw new IOException("response box is not available");  // FIXME arch. mismatch??
     }
 
     @Override
@@ -64,19 +76,18 @@ public class ChannelResponse implements Response {
         if (Objects.nonNull(main.get())) {
             return main.get();
         }
-        var limitTime = LocalDateTime.now().plusNanos(unit.toNanos(timeout));
-        while (true) {
-            if (Objects.nonNull(handle.get())) {
-                main.set(wire.response(handle.get(), timeout, unit));
-                return main.get();
+
+        lock.lock();
+        try {
+            while (Objects.isNull(handle.get())) {
+                noSet.await();
             }
-            try {
-                Thread.sleep(SLEEP_UNIT);
-            } catch (InterruptedException e) {  // need not care about InterruptedException
-            }
-            if (LocalDateTime.now().isAfter(limitTime)) {
-                throw new IOException("response box is not available");  // FIXME arch. mismatch??
-            }
+            main.set(wire.response(handle.get(), timeout, unit));
+            return main.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -90,11 +101,14 @@ public class ChannelResponse implements Response {
      */
     @Override
     public void setResultSetMode() {
-        synchronized (wire) {
+        lock.lock();
+        try {
             queryMode.set(true);
             if (Objects.nonNull(handle.get())) {
                 wire.setResultSetMode(handle.get());
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -103,29 +117,39 @@ public class ChannelResponse implements Response {
      */
     @Override
     public Response duplicate() {
-        synchronized (wire) {
+        lock.lock();
+        try {
             ChannelResponse channelResponse = new ChannelResponse(wire);
             channelResponse.setResponseHandle(handle.get());
             return channelResponse;
+        } finally {
+            lock.unlock();
         }
     }
 
     @Override
-    public synchronized void release() {
-        synchronized (wire) {
+    public void release() throws IOException {
+        lock.lock();
+        try {
             if (Objects.nonNull(handle.get())) {
                 wire.release(handle.get());
                 handle.set(null);
             }
+        } finally {
+            lock.unlock();
         }
     }
 
     public void setResponseHandle(ResponseWireHandle h) {
-        synchronized (wire) {
+        lock.lock();
+        try {
             handle.set(h);
+            noSet.signal();
             if (queryMode.get()) {
                 wire.setResultSetMode(handle.get());
             }
+        } finally {
+            lock.unlock();
         }
     }
 }

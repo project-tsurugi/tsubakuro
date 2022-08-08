@@ -59,5 +59,5 @@ public interface Response extends ServerResource {
      */
     void setResultSetMode();
 
-    void release();
+    void release() throws IOException;
 }

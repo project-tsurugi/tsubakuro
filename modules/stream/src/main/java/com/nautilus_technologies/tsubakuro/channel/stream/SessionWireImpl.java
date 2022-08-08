@@ -113,20 +113,6 @@ public class SessionWireImpl implements Wire {
         var byteBuffer = ByteBuffer.wrap(responseBox.receive(slot));
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
 
-        synchronized (this) {
-            var entry = queue.peek();
-            if (Objects.nonNull(entry)) {
-                var nextSlot = responseBox.lookFor();
-                if (nextSlot >= 0) {
-                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextSlot));
-
-                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                    streamWire.send(nextSlot, toDelimitedByteArray(header), entry.getRequest());
-                    queue.poll();
-                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
-                }
-            }
-        }
 
         return byteBuffer;
     }
@@ -148,8 +134,23 @@ public class SessionWireImpl implements Wire {
      * @param handle the handle to the response box
     */
     @Override
-    public void release(ResponseWireHandle handle) {
+    public void release(ResponseWireHandle handle) throws IOException {
         responseBox.release(((ResponseWireHandleImpl) handle).getHandle());
+
+        synchronized (this) {
+            var entry = queue.peek();
+            if (Objects.nonNull(entry)) {
+                var nextSlot = responseBox.lookFor();
+                if (nextSlot >= 0) {
+                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextSlot));
+
+                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
+                    streamWire.send(nextSlot, toDelimitedByteArray(header), entry.getRequest());
+                    queue.poll();
+                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                }
+            }
+        }
     }
 
     /**
