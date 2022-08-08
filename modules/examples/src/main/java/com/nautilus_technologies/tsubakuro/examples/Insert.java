@@ -5,13 +5,11 @@ import java.io.IOException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
-import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 
 public class Insert {
     SqlClient sqlClient;
-    PreparedStatement preparedStatement;
 
     public Insert(SqlClient sqlClient) throws IOException, ServerException, InterruptedException {
         this.sqlClient = sqlClient;
@@ -19,7 +17,7 @@ public class Insert {
 
     public void prepareAndInsert() throws IOException, ServerException, InterruptedException {
         String sql = "INSERT INTO ORDERS (o_id, o_c_id, o_d_id, o_w_id, o_entry_d, o_carrier_id, o_ol_cnt, o_all_local) VALUES (:o_id, :o_c_id, :o_d_id, :o_w_id, :o_entry_d, :o_carrier_id, :o_ol_cnt, :o_all_local)";
-        preparedStatement = sqlClient.prepare(sql,
+        try (var preparedStatement = sqlClient.prepare(sql,
         Placeholders.of("o_id", long.class),
         Placeholders.of("o_c_id", long.class),
         Placeholders.of("o_d_id", long.class),
@@ -29,7 +27,8 @@ public class Insert {
         Placeholders.of("o_ol_cnt", long.class),
         Placeholders.of("o_all_local", long.class)).get();
 
-        try (Transaction transaction = sqlClient.createTransaction().await()) {
+        Transaction transaction = sqlClient.createTransaction().await()) {
+
             try {
                 var result = transaction.executeStatement(preparedStatement,
                     Parameters.of("o_id", (long) 99999999),
@@ -44,8 +43,6 @@ public class Insert {
             } catch (ServerException e) {
                 transaction.rollback().get();
             }
-        } finally {
-            preparedStatement.close();
         }
     }
 }
