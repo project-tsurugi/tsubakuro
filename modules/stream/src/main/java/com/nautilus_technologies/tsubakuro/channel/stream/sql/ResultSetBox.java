@@ -110,12 +110,14 @@ public class ResultSetBox {
     public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
         synchronized (boxes[slot]) {
             boxes[slot].queues.add(new ResultSetResponse(writerId, payload));
+            boxes[slot].available.set(true);
         }
     }
     
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
         synchronized (boxes[slot]) {
             boxes[slot].eor = true;
+            boxes[slot].available.set(true);
         }
     }
 }
