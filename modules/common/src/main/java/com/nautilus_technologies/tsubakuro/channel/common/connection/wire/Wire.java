@@ -101,7 +101,7 @@ public interface Wire extends ServerResource {
      * such usage is only possible when a command using a ResultSet fails.
      * @param handle the handle to the response box
      */
-    void release(ResponseWireHandle handle);
+    void release(ResponseWireHandle handle) throws IOException;
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected

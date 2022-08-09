@@ -92,7 +92,7 @@ public class StreamWire {
         return resultSetBox;
     }
     public void sendResutSetByeOk(int slot) throws IOException {
-    send(REQUEST_RESULT_SET_BYE_OK, slot);
+        send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
 
     private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK

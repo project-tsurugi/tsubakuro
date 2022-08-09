@@ -161,24 +161,6 @@ public class SessionWireImpl implements Wire {
         var responseWireHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = receiveNative(responseWireHandle);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
-
-        synchronized (this) {
-            var entry = queue.peek();
-            if (Objects.nonNull(entry)) {
-                var nextHandle = getResponseHandleNative(wireHandle);
-                if (nextHandle != 0) {
-                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextHandle));
-
-                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                    sendNative(nextHandle, toDelimitedByteArray(header));
-                    sendNative(nextHandle, entry.getRequest());
-                    flushNative(nextHandle);
-                    queue.poll();
-                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
-                }
-            }
-        }
-
         return byteBuffer;
     }
 
@@ -194,24 +176,6 @@ public class SessionWireImpl implements Wire {
         }
         var byteBuffer = receiveNative(responseWireHandle, timeoutNano);
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
-
-        synchronized (this) {
-            var entry = queue.peek();
-            if (Objects.nonNull(entry)) {
-                var nextHandle = getResponseHandleNative(wireHandle);
-                if (nextHandle != 0) {
-                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextHandle));
-
-                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                    sendNative(nextHandle, toDelimitedByteArray(header));
-                    sendNative(nextHandle, entry.getRequest());
-                    flushNative(nextHandle);
-                    queue.poll();
-                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
-                }
-            }
-        }
-
         return byteBuffer;
     }
 
@@ -228,8 +192,25 @@ public class SessionWireImpl implements Wire {
      * @param handle the handle to the response box
     */
     @Override
-    public void release(ResponseWireHandle handle) {
+    public void release(ResponseWireHandle handle) throws IOException {
         releaseNative(((ResponseWireHandleImpl) handle).getHandle());
+
+        synchronized (this) {
+            var entry = queue.peek();
+            if (Objects.nonNull(entry)) {
+                var nextHandle = getResponseHandleNative(wireHandle);
+                if (nextHandle != 0) {
+                    entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextHandle));
+
+                    var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
+                    sendNative(nextHandle, toDelimitedByteArray(header));
+                    sendNative(nextHandle, entry.getRequest());
+                    flushNative(nextHandle);
+                    queue.poll();
+                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                }
+            }
+        }
     }
 
     /**

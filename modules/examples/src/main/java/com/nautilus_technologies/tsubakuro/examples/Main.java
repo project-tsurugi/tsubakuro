@@ -24,13 +24,15 @@ public final class Main {
     private static String url = "ipc:tateyama";
     private static boolean selectOnly = false;
     private static int selectCount = 1;
+    private static int threadCount = 1;
 
     public static void main(String[] args) {
         // コマンドラインオプションの設定
         Options options = new Options();
 
         options.addOption(Option.builder("s").argName("select").desc("Select only mode.").build());
-        options.addOption(Option.builder("c").argName("count").hasArg().desc("Specify the execution count of the select operation.").build());
+        options.addOption(Option.builder("c").argName("concurrency").hasArg().desc("Specify the number of threads conducting the select operation.").build());
+        options.addOption(Option.builder("n").argName("number").hasArg().desc("Specify the execution count of the select operation.").build());
         options.addOption(Option.builder("t").argName("stream").desc("Connect via stream endpoint.").build());
 
         CommandLineParser parser = new DefaultParser();
@@ -43,9 +45,13 @@ public final class Main {
                 selectOnly = true;
                 System.err.println("select only");
             }
-            if (cmd.hasOption("c")) {
-                selectCount = Integer.parseInt(cmd.getOptionValue("c"));
+            if (cmd.hasOption("n")) {
+                selectCount = Integer.parseInt(cmd.getOptionValue("n"));
                 System.err.println("select count = " + selectCount);
+            }
+            if (cmd.hasOption("c")) {
+                threadCount = Integer.parseInt(cmd.getOptionValue("c"));
+                System.err.println("thread count = " + threadCount);
             }
             if (cmd.hasOption("t")) {
                 url = "tcp://localhost:12345/";
@@ -62,9 +68,11 @@ public final class Main {
             SqlClient sqlClient = SqlClient.attach(session);) {
 
             if (!selectOnly) {
-                (new Insert(sqlClient)).prepareAndInsert();
+                var insert = new Insert(sqlClient);
+                insert.prepareAndInsert();
             }
-            (new Select(sqlClient)).prepareAndSelect(selectCount);
+            var select = new Select(sqlClient, selectCount, threadCount);
+            select.prepareAndSelect();
         } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
             System.out.println(e);
         }
