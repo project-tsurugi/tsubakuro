@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import  com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
 
 /**
  * An interface that provides asynchronous response data,

@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.RememberMeCredential;
 
 /**
  * Represents authentication information.

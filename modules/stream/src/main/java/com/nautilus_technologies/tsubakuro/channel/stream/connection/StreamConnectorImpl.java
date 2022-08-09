@@ -5,8 +5,8 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
-import  com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Connector;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
