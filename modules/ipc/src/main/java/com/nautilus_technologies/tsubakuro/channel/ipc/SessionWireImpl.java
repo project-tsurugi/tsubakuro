@@ -203,9 +203,9 @@ public class SessionWireImpl implements Wire {
                     entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextHandle));
 
                     var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
-                    sendNative(nextHandle, toDelimitedByteArray(header));
-                    sendNative(nextHandle, entry.getRequest());
-                    flushNative(nextHandle);
+                    sendNative(wireHandle, toDelimitedByteArray(header));
+                    sendNative(wireHandle, entry.getRequest());
+                    flushNative(wireHandle);
                     queue.poll();
                     logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
                 }
