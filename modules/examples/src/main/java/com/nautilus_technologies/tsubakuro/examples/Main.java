@@ -23,6 +23,7 @@ public final class Main {
 
     private static String url = "ipc:tateyama";
     private static boolean selectOnly = false;
+    private static int loopCount = 1;
     private static int selectCount = 1;
     private static int threadCount = 1;
 
@@ -33,6 +34,7 @@ public final class Main {
         options.addOption(Option.builder("s").argName("select").desc("Select only mode.").build());
         options.addOption(Option.builder("c").argName("concurrency").hasArg().desc("Specify the number of threads conducting the select operation.").build());
         options.addOption(Option.builder("n").argName("number").hasArg().desc("Specify the execution count of the select operation.").build());
+        options.addOption(Option.builder("l").argName("loops").hasArg().desc("Specify the number of loop count of the thread invocation.").build());
         options.addOption(Option.builder("t").argName("stream").desc("Connect via stream endpoint.").build());
 
         CommandLineParser parser = new DefaultParser();
@@ -53,6 +55,10 @@ public final class Main {
                 threadCount = Integer.parseInt(cmd.getOptionValue("c"));
                 System.err.println("thread count = " + threadCount);
             }
+            if (cmd.hasOption("l")) {
+                loopCount = Integer.parseInt(cmd.getOptionValue("n"));
+                System.err.println("loop count = " + loopCount);
+            }
             if (cmd.hasOption("t")) {
                 url = "tcp://localhost:12345/";
                 System.err.println("connect via " + url);
@@ -71,7 +77,7 @@ public final class Main {
                 var insert = new Insert(sqlClient);
                 insert.prepareAndInsert();
             }
-            var select = new Select(sqlClient, selectCount, threadCount);
+            var select = new Select(sqlClient, loopCount, selectCount, threadCount);
             select.prepareAndSelect();
         } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
             System.out.println(e);

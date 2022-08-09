@@ -12,6 +12,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 
 public class Select {
     final SqlClient sqlClient;
+    final int loopCount;
     final int selectCount;
     final int threadCount;
 
@@ -86,20 +87,23 @@ public class Select {
         }
     }
 
-    public Select(SqlClient sqlClient, int selectCount, int threadCount) throws IOException, ServerException, InterruptedException {
+    public Select(SqlClient sqlClient, int loopCount, int selectCount, int threadCount) throws IOException, ServerException, InterruptedException {
         this.sqlClient = sqlClient;
+        this.loopCount = loopCount;
         this.selectCount = selectCount;
         this.threadCount = threadCount;
     }
 
     public void prepareAndSelect() throws IOException, ServerException, InterruptedException {
         Thread[] threads = new Thread[threadCount];
-        for (int i = 0; i < threadCount; i++) {
-            threads[i] =  new ThreadForSelect(sqlClient, selectCount);
-            threads[i].start();
-        }
-        for (int i = 0; i < threadCount; i++) {
-            threads[i].join();
+        for (int j = 1; j < loopCount; j++) {
+            for (int i = 0; i < threadCount; i++) {
+                threads[i] =  new ThreadForSelect(sqlClient, selectCount);
+                threads[i].start();
+            }
+            for (int i = 0; i < threadCount; i++) {
+                threads[i].join();
+            }
         }
     }
 }
