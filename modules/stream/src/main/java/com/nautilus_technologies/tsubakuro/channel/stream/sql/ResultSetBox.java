@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
  * ResultSetBox type.
  */
 public class ResultSetBox {
-    private static final int SIZE = 16;
+    private static final int SIZE = ResponseBox.responseBoxSize();
 
     private StreamWire streamWire;
     private Abox[] boxes;

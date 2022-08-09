@@ -49,7 +49,7 @@ public class StreamWire {
     }
 
     public void hello() throws IOException {
-        send(REQUEST_SESSION_HELLO, 0);
+        send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
     public boolean pull(AtomicBoolean available) throws IOException {
         synchronized (inStream) {

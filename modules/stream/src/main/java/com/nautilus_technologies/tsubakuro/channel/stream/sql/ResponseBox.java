@@ -99,4 +99,8 @@ public class ResponseBox {
             }
         }
     }
+
+    public static byte responseBoxSize() {
+        return (byte) SIZE;
+    }
 }
