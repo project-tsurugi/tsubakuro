@@ -582,8 +582,7 @@ class SqlServiceStubTest {
                                 1.25,
                             },
                         }),
-                        wire)));
-        wire.setSubResponse(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
@@ -682,8 +681,7 @@ class SqlServiceStubTest {
                                 "Hello, world!",
                                 1.25,
                             },
-                        }),
-                        wire)));
+                        }))));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
@@ -907,8 +905,7 @@ class SqlServiceStubTest {
                             { "b" },
                             { "c" },
                         }),
-                        wire)));
-        wire.setSubResponse(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()
@@ -951,8 +948,7 @@ class SqlServiceStubTest {
                         { "a" },
                         { "b" },
                         { "c" },
-                    }),
-                    wire)));
+                    }))));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()

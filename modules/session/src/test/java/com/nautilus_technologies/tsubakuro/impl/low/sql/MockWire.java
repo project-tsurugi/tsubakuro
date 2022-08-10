@@ -36,7 +36,6 @@ public class MockWire implements Wire {
     });
 
     private ByteBuffer resultSetData;
-    private ByteBuffer subResponse;
 
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
@@ -46,7 +45,7 @@ public class MockWire implements Wire {
         }
         try {
             var response = next.handle(serviceId, payload);
-            resultSetData = ((SimpleResponse) response).getSub();
+            resultSetData = ((SimpleResponse) response).getRelation();
             return FutureResponse.wrap(Owner.of(response));    
 //            return FutureResponse.wrap(Owner.of(next.handle((int) serviceId, payload)));
         } catch (ServerException e) {
@@ -96,7 +95,7 @@ public class MockWire implements Wire {
 
     @Override
     public ByteBuffer response(ResponseWireHandle handle) {
-        return subResponse.position(0);
+        return null;
     }
     @Override
     public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
@@ -117,14 +116,5 @@ public class MockWire implements Wire {
             return new ResultSetWireMock(resultSetData);
         }
         return null;
-    }
-
-    void setSubResponse(SqlResponse.ResultOnly message) {
-        try (var buffer = new ByteArrayOutputStream()) {
-            message.writeDelimitedTo(buffer);
-            subResponse = ByteBuffer.wrap(buffer.toByteArray());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }

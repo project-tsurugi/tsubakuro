@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 
 /**
@@ -17,9 +16,9 @@ public class SimpleResponse implements Response {
 
     private final ByteBuffer main;
 
-    private final ByteBuffer sub;
+    private final ByteBuffer relation;
 
-    private final Wire wire;
+    private final ByteBuffer status;
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -28,10 +27,11 @@ public class SimpleResponse implements Response {
      * @param main the main response data
      * @param sub the sub response data
      */
-    public SimpleResponse(ByteBuffer main, ByteBuffer sub, Wire wire) {
+    public SimpleResponse(ByteBuffer main, ByteBuffer relation, ByteBuffer status) {
+        Objects.requireNonNull(main);
         this.main = main;
-        this.sub = sub;
-        this.wire = wire;
+        this.relation = relation;
+        this.status = status;
     }
 
     /**
@@ -52,11 +52,6 @@ public class SimpleResponse implements Response {
     public ByteBuffer waitForMainResponse() {
         if (Objects.nonNull(main)) {
             return main;
-        }
-        try {
-            return wire.response(null);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return null;
     }
@@ -86,7 +81,7 @@ public class SimpleResponse implements Response {
 
     @Override
     public Response duplicate() {
-        return new SimpleResponse(null, null, wire);
+        return new SimpleResponse(status);
     }
 
     @Override
@@ -97,7 +92,7 @@ public class SimpleResponse implements Response {
     public void release() {
     }
 
-    public ByteBuffer getSub() {
-        return sub;
+    public ByteBuffer getRelation() {
+        return relation;
     }
 }
