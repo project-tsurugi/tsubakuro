@@ -48,7 +48,7 @@ public class SessionWireImpl implements Wire {
     private static native void releaseNative(long responseWireHandle);
     private static native void closeNative(long wireHandle);
 
-    final Logger logger = LoggerFactory.getLogger(SessionWireImpl.class);
+    static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
 
     static {
         System.loadLibrary("wire");
@@ -86,7 +86,7 @@ public class SessionWireImpl implements Wire {
         this.dbName = dbName;
         this.sessionID = sessionID;
         this.queue = new ArrayDeque<>();
-        logger.trace("begin Session via stream, id = " + sessionID);
+        LOG.trace("begin Session via stream, id = {}", sessionID);
     }
 
     /**
@@ -111,7 +111,7 @@ public class SessionWireImpl implements Wire {
                 sendNative(wireHandle, toDelimitedByteArray(header));
                 sendNative(wireHandle, payload);
                 flushNative(wireHandle);
-                logger.trace("send " + payload + ", handle = " + handle);  // FIXME use formatted message
+                LOG.trace("send {}, handle = {}", payload, handle);
             } else {
                 queue.add(new QueueEntry(serviceId, payload, response));
             }
@@ -145,7 +145,7 @@ public class SessionWireImpl implements Wire {
                     sendNative(wireHandle, payload.array());
                 }
                 flushNative(wireHandle);
-                logger.trace("send " + payload + ", handle = " + handle);  // FIXME use formatted message
+                LOG.trace("send {}, handle = {}", payload, handle);
             } else {
                 queue.add(new QueueEntry(serviceId, payload.array(), response));  // FIXME in case of Direct ByteBuffer
             }
@@ -207,7 +207,7 @@ public class SessionWireImpl implements Wire {
                     sendNative(wireHandle, entry.getRequest());
                     flushNative(wireHandle);
                     queue.poll();
-                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                    LOG.trace("send {}, handle = {}", entry.getRequest(), handle);
                 }
             }
         }

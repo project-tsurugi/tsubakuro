@@ -36,7 +36,7 @@ public class SessionWireImpl implements Wire {
     private final ResponseBox responseBox;
     private final Queue<QueueEntry> queue;
 
-    final Logger logger = LoggerFactory.getLogger(SessionWireImpl.class);
+    static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
 
     static class QueueEntry {
         final long serviceId;
@@ -85,6 +85,7 @@ public class SessionWireImpl implements Wire {
             if (slot >= 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(slot));
                 streamWire.send(slot, toDelimitedByteArray(header), request);
+                LOG.trace("send {}, slot = {}", request, slot);
             } else {
                 queue.add(new QueueEntry(serviceID, request, response));
             }
@@ -112,7 +113,6 @@ public class SessionWireImpl implements Wire {
         byte slot = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = ByteBuffer.wrap(responseBox.receive(slot));
         FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
-
 
         return byteBuffer;
     }
@@ -147,7 +147,7 @@ public class SessionWireImpl implements Wire {
                     var header = HEADER_BUILDER.setServiceId(entry.serviceId()).setSessionId(sessionID).build();
                     streamWire.send(nextSlot, toDelimitedByteArray(header), entry.getRequest());
                     queue.poll();
-                    logger.trace("send " + entry.getRequest() + ", handle = " + handle);  // FIXME use formatted message
+                    LOG.trace("send {}, slot = {}", entry.getRequest(), nextSlot);
                 }
             }
         }

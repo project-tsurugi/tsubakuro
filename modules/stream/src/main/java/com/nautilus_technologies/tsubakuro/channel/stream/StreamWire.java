@@ -35,7 +35,7 @@ public class StreamWire {
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
 
-    final Logger logger = LoggerFactory.getLogger(StreamWire.class);
+    static final Logger LOG = LoggerFactory.getLogger(StreamWire.class);
 
     public StreamWire(String hostname, int port) throws IOException {
         socket = new Socket(hostname, port);
@@ -64,18 +64,18 @@ public class StreamWire {
                 byte slot = message.getSlot();
 
                 if (info == RESPONSE_SESSION_PAYLOAD) {
-                    logger.trace("receive SESSION_PAYLOAD, slot = ", slot);
+                    LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
                     responseBox.push(slot, message.getBytes());
                 } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
                     byte writer = message.getWriter();
-                    logger.trace("receive RESULT_SET_PAYLOAD, slot = ", slot, ", writer = ", writer);
+                    LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
                     resultSetBox.push(slot, writer, message.getBytes());
                 } else if (info == RESPONSE_RESULT_SET_HELLO) {
                     resultSetBox.pushHello(message.getString(), slot);
                 } else if (info == RESPONSE_RESULT_SET_BYE) {
                     resultSetBox.pushBye(slot);
                 } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
-                    logger.trace("receive SESSION_HELLO_" + ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                    LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
                     valid = true;
                 } else {
                     throw new IOException("invalid info in the response");
@@ -106,8 +106,9 @@ public class StreamWire {
 
             outStream.write(header, 0, header.length);
         }
-        logger.trace("send SESSION_HELLO");
+        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : "RESULT_SET_BYE_OK"), s); //$NON-NLS-1$
     }
+
     public void send(int s, byte[] payload) throws IOException {  // SESSION_PAYLOAD
         int length = (int) payload.length;
 
@@ -125,7 +126,7 @@ public class StreamWire {
                 outStream.write(payload, 0, length);
             }
         }
-        logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
+        LOG.trace("send SESSION_PAYLOAD, length = {}, slot = {}", length, s);
     }
 
     public void send(int s, byte[] first, byte[] payload) throws IOException {  // SESSION_PAYLOAD
@@ -146,7 +147,7 @@ public class StreamWire {
                 outStream.write(payload, 0, payload.length);
             }
         }
-        logger.trace("send SESSION_PAYLOAD, length = " + length + ", slot = ", s);
+        LOG.trace("send SESSION_PAYLOAD, length = {}, slot = {}", length, s);
     }
 
     byte strip(int i) {
