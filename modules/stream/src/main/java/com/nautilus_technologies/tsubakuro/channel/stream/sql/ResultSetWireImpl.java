@@ -80,6 +80,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 var receivedData = resultSetBox.receive(slot);
                 var buffer = receivedData.getPayload();
                 if (Objects.isNull(buffer)) {
+                    close();
                     return null;
                 }
                 byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);

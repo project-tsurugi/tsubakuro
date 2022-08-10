@@ -21,7 +21,6 @@ public class ResultSetWireImpl implements ResultSetWire {
     private long wireHandle = 0;  // for c++
     private long sessionWireHandle;
     private ByteBufferBackedInput byteBufferBackedInput;
-    private boolean eor;
 
     class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
@@ -52,9 +51,8 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param sessionWireHandle the handle of the Wire to which the transaction that created this object belongs
      */
     public ResultSetWireImpl(long sessionWireHandle) {
-    this.sessionWireHandle = sessionWireHandle;
-    this.byteBufferBackedInput = null;
-    this.eor = false;
+        this.sessionWireHandle = sessionWireHandle;
+        this.byteBufferBackedInput = null;
     }
 
     /**
@@ -79,7 +77,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (Objects.isNull(byteBufferBackedInput)) {
             var buffer = getChunkNative(wireHandle);
             if (Objects.isNull(buffer)) {
-                eor = true;
+                close();
                 return null;
             }
             byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer, this);
@@ -90,7 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Close the wire
      */
-    public void close() throws IOException {
+    public void close() {
         if (wireHandle != 0) {
             closeNative(wireHandle);
             wireHandle = 0;
