@@ -47,6 +47,8 @@ public class ResultSetImpl implements ResultSet {
 
     private final FutureResponse<Void> futureResponse;
 
+    private boolean stausGotton;
+
     /**
      * Tests if the response is valid.
      */
@@ -87,6 +89,7 @@ public class ResultSetImpl implements ResultSet {
         this.response = response;
         this.tester = checker;
         this.futureResponse = futureResponse;
+        this.stausGotton = false;
     }
 
     @Override
@@ -103,6 +106,7 @@ public class ResultSetImpl implements ResultSet {
                 var rv = cursor.nextRow();
                 if (!rv) {
                     futureResponse.await();
+                    stausGotton = true;
                 }
                 return rv;
             } catch (IOException | ServerException e) {
@@ -364,6 +368,8 @@ public class ResultSetImpl implements ResultSet {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
-        futureResponse.await();
+        if (!stausGotton) {
+            futureResponse.await();
+        }
     }
 }
