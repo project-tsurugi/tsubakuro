@@ -52,12 +52,18 @@ public interface Response extends ServerResource {
      * Clone the Response without using super.clone(). It is usesd when QueryMode has been set.
      * @return Response  to receive the second response forwarded from the server when using query mode.
      */
-    Response duplicate();
+    default Response duplicate() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Set this response to involve data transfer using resultSet.
      */
-    void setResultSetMode();
+    default void setResultSetMode() {
+        throw new UnsupportedOperationException();
+    }
 
-    void release() throws IOException;
+    default void release() throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

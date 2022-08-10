@@ -581,14 +581,14 @@ class SqlServiceStubTest {
                                 "Hello, world!",
                                 1.25,
                             },
-                        }))));
+                        }),
+                        wire)));
+        wire.setSubResponse(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
+        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
                 .setSql("SELECT 1")
                 .build();
-
-        wire.next(RequestHandler.returns(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build()));
-
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message);
@@ -682,7 +682,8 @@ class SqlServiceStubTest {
                                 "Hello, world!",
                                 1.25,
                             },
-                        }))));
+                        }),
+                        wire)));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
@@ -905,7 +906,9 @@ class SqlServiceStubTest {
                             { "a" },
                             { "b" },
                             { "c" },
-                        }))));
+                        }),
+                        wire)));
+        wire.setSubResponse(SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build());
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()
@@ -948,7 +951,8 @@ class SqlServiceStubTest {
                         { "a" },
                         { "b" },
                         { "c" },
-                    }))));
+                    }),
+                    wire)));
         acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()

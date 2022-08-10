@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 
 /**
@@ -18,6 +19,8 @@ public class SimpleResponse implements Response {
 
     private final ByteBuffer sub;
 
+    private final Wire wire;
+
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
@@ -25,10 +28,10 @@ public class SimpleResponse implements Response {
      * @param main the main response data
      * @param sub the sub response data
      */
-    public SimpleResponse(ByteBuffer main, ByteBuffer sub) {
-        Objects.requireNonNull(main);
+    public SimpleResponse(ByteBuffer main, ByteBuffer sub, Wire wire) {
         this.main = main;
         this.sub = sub;
+        this.wire = wire;
     }
 
     /**
@@ -37,7 +40,7 @@ public class SimpleResponse implements Response {
      * @param subMap map of sub response ID and its data
      */
     public SimpleResponse(ByteBuffer main) {
-        this(main, null);
+        this(main, null, null);
     }
 
     @Override
@@ -47,12 +50,20 @@ public class SimpleResponse implements Response {
 
     @Override
     public ByteBuffer waitForMainResponse() {
-        return main;
+        if (Objects.nonNull(main)) {
+            return main;
+        }
+        try {
+            return wire.response(null);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) {
-        return main;
+        return waitForMainResponse();
     }
 
     private void checkOpen() {
@@ -75,7 +86,7 @@ public class SimpleResponse implements Response {
 
     @Override
     public Response duplicate() {
-        return new SimpleResponse(main);
+        return new SimpleResponse(null, null, wire);
     }
 
     @Override

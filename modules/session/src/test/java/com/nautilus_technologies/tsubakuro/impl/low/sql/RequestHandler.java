@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 // import java.util.Map;
 import java.util.Objects;
 
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
@@ -34,10 +35,10 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, Relation relation) {
+    static RequestHandler returns(ByteBuffer response, Relation relation, Wire wire) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        return (id, request) -> new SimpleResponse(response, relation.getByteBuffer());
+        return (id, request) -> new SimpleResponse(response, relation.getByteBuffer(), wire);
     }
     static RequestHandler returns(ByteBuffer response) {
         Objects.requireNonNull(response);
@@ -50,10 +51,10 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, Relation relation) {
+    static RequestHandler returns(byte[] response, Relation relation, Wire wire) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        return returns(ByteBuffer.wrap(response), relation);
+        return returns(ByteBuffer.wrap(response), relation, wire);
     }
     static RequestHandler returns(byte[] response) {
         Objects.requireNonNull(response);
@@ -101,15 +102,15 @@ public interface RequestHandler {
         return returns(toDelimitedByteArray(sqlResponse));
     }
 
-    static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation) {
+    static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation, Wire wire) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setExecuteQuery(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation);
+        return returns(toDelimitedByteArray(sqlResponse), relation, wire);
     }
-    static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
+    static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation, Wire wire) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation);
+        return returns(toDelimitedByteArray(sqlResponse), relation, wire);
     }
 
     /**

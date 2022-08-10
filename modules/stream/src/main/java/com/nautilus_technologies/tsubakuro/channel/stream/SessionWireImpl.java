@@ -69,7 +69,7 @@ public class SessionWireImpl implements Wire {
         this.sessionID = sessionID;
         this.responseBox = streamWire.getResponseBox();
         this.queue = new ArrayDeque<>();
-        LoggerFactory.getLogger(SessionWireImpl.class).trace("begin Session via stream, id = " + sessionID);
+        LOG.trace("begin Session via stream, id = " + sessionID);
     }
 
     @Override

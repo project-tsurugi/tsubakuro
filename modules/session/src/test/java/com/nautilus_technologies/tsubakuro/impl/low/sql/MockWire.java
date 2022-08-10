@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Queue;
@@ -18,6 +19,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.ResultSetWireMock;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Mock implementation of {@link Wire}.
@@ -34,6 +36,7 @@ public class MockWire implements Wire {
     });
 
     private ByteBuffer resultSetData;
+    private ByteBuffer subResponse;
 
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
@@ -93,7 +96,7 @@ public class MockWire implements Wire {
 
     @Override
     public ByteBuffer response(ResponseWireHandle handle) {
-        return null;
+        return subResponse.position(0);
     }
     @Override
     public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
@@ -114,5 +117,14 @@ public class MockWire implements Wire {
             return new ResultSetWireMock(resultSetData);
         }
         return null;
+    }
+
+    void setSubResponse(SqlResponse.ResultOnly message) {
+        try (var buffer = new ByteArrayOutputStream()) {
+            message.writeDelimitedTo(buffer);
+            subResponse = ByteBuffer.wrap(buffer.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

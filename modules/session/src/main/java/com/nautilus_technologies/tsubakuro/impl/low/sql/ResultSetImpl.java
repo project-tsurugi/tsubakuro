@@ -100,7 +100,11 @@ public class ResultSetImpl implements ResultSet {
         try {
             checkResponse();
             try {
-                return cursor.nextRow();
+                var rv = cursor.nextRow();
+                if (!rv) {
+                    futureResponse.await();
+                }
+                return rv;
             } catch (IOException | ServerException e) {
                 checkResponse(e);
                 throw e;
@@ -360,5 +364,6 @@ public class ResultSetImpl implements ResultSet {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
+        futureResponse.await();
     }
 }
