@@ -56,7 +56,7 @@ public final class Main {
                 System.err.println("thread count = " + threadCount);
             }
             if (cmd.hasOption("l")) {
-                loopCount = Integer.parseInt(cmd.getOptionValue("n"));
+                loopCount = Integer.parseInt(cmd.getOptionValue("l"));
                 System.err.println("loop count = " + loopCount);
             }
             if (cmd.hasOption("t")) {

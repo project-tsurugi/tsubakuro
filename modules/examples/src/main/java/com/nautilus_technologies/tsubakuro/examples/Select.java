@@ -96,7 +96,7 @@ public class Select {
 
     public void prepareAndSelect() throws IOException, ServerException, InterruptedException {
         Thread[] threads = new Thread[threadCount];
-        for (int j = 1; j < loopCount; j++) {
+        for (int j = 0; j < loopCount; j++) {
             for (int i = 0; i < threadCount; i++) {
                 threads[i] =  new ThreadForSelect(sqlClient, selectCount);
                 threads[i].start();
