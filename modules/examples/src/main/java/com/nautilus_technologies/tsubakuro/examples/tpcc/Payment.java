@@ -206,7 +206,6 @@ public class Payment {
                 Parameters.of("w_id", (long) paramsWid));
             try (var resultSet2 = future2.get()) {
                 if (!resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet2.nextColumn();
@@ -222,10 +221,8 @@ public class Payment {
                 resultSet2.nextColumn();
                 wZip = resultSet2.fetchCharacterValue();
                 if (resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet2.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.payment++;
                 profile.warehouseTable.payment++;
@@ -253,7 +250,6 @@ public class Payment {
                     Parameters.of("d_id", (long) paramsDid));
             try (var resultSet4 = future4.get()) {
                 if (!resultSet4.nextRow()) {
-                    resultSet4.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet4.nextColumn();
@@ -269,10 +265,8 @@ public class Payment {
                 resultSet4.nextColumn();
                 dName = resultSet4.fetchCharacterValue();
                 if (resultSet4.nextRow()) {
-                    resultSet4.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet4.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.payment++;
                 profile.districtTable.payment++;
@@ -299,7 +293,6 @@ public class Payment {
                     Parameters.of("c_id", (long) cId));
             try (var resultSet7 = future7.get()) {
                 if (!resultSet7.nextRow()) {
-                    resultSet7.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet7.nextColumn();
@@ -331,10 +324,8 @@ public class Payment {
                 resultSet7.nextColumn();
                 cSince = resultSet7.fetchCharacterValue();  // c_since(13)
                 if (resultSet7.nextRow()) {
-                    resultSet7.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet7.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.payment++;
                 profile.customerTable.payment++;
@@ -352,16 +343,13 @@ public class Payment {
                     Parameters.of("c_id", (long) cId));
                 try (var resultSet8 = future8.get()) {
                     if (!resultSet8.nextRow()) {
-                        resultSet8.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet8.nextColumn();
                     cData = resultSet8.fetchCharacterValue();
                     if (resultSet8.nextRow()) {
-                        resultSet8.getResponse().get();
                         throw new IOException("found multiple records");
                     }
-                    resultSet8.getResponse().get();
                 } catch (ServerException e) {
                     profile.retryOnStatement.payment++;
                     profile.customerTable.payment++;

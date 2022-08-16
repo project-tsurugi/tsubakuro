@@ -10,7 +10,7 @@ import com.nautilus_technologies.tsubakuro.channel.stream.StreamWire;
  * ResponseBox type.
  */
 public class ResponseBox {
-    private static final int SIZE = 16;
+    private static final int SIZE = Byte.MAX_VALUE;
 
     private StreamWire streamWire;
     private Abox[] boxes;

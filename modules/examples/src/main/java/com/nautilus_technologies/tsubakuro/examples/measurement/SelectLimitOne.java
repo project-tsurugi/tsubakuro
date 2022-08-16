@@ -78,12 +78,10 @@ public class SelectLimitOne extends Thread {
                     prev = now;
                     try {
                         if (!resultSet1.nextRow()) {
-                            resultSet1.getResponse().get();
                             continue;  // noOid is exhausted, it's OK and continue this transaction
                         }
                         resultSet1.nextColumn();
                         var noOid = resultSet1.fetchInt8Value();
-                        resultSet1.getResponse().get();
                     } catch (ServerException e) {
                         transaction.rollback().get();
                         transaction = null;

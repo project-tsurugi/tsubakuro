@@ -65,7 +65,6 @@ public class Q14 {
             } else {
                 throw new IOException("no record");
             }
-            resultSetT.getResponse().get();
         } catch (ServerException e) {
             throw new IOException(e);
         }
@@ -87,7 +86,6 @@ public class Q14 {
             } else {
                 throw new IOException("no record");
             }
-            resultSetB.getResponse().get();
         } catch (ServerException e) {
             throw new IOException(e);
         }

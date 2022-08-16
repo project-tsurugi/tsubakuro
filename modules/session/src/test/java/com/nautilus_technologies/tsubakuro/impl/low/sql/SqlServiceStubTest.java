@@ -691,7 +691,7 @@ class SqlServiceStubTest {
             var service = new SqlServiceStub(session);
             var future = service.send(message);
         ) {
-            assertThrows(SqlServiceException.class, () -> future.await().getResponse().get());
+            assertThrows(SqlServiceException.class, () -> future.await().close());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -959,7 +959,7 @@ class SqlServiceStubTest {
             var service = new SqlServiceStub(session);
             var future = service.send(message);
         ) {
-            var error = assertThrows(SqlServiceException.class, () -> future.await().getResponse().get());
+            var error = assertThrows(SqlServiceException.class, () -> future.await().close());
             assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());

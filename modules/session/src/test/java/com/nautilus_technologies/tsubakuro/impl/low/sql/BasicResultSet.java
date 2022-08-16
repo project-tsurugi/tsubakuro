@@ -152,11 +152,6 @@ public class BasicResultSet implements ResultSet {
     }
 
     @Override
-    public FutureResponse<Void> getResponse() {
-        return futureResultOnly;
-    }
-
-    @Override
     public void close() throws ServerException, IOException, InterruptedException {
         cursor.close();
     }

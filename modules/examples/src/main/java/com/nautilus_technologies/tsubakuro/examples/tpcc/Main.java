@@ -34,7 +34,6 @@ public final class Main {
                     }
                 }
                 resultSet.close();
-                resultSet.getResponse().get();
                 transaction.commit().get();
                 return count;
         } catch (IOException | ServerException | InterruptedException | TimeoutException e) {

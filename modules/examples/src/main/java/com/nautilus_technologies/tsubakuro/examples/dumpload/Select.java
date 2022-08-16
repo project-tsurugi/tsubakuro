@@ -55,7 +55,6 @@ public class Select {
              var transaction = sqlClient.createTransaction().await()) {
             try (var resultSet = transaction.executeQuery(preparedStatement).get()) {
                 printResultset(resultSet);
-                resultSet.getResponse().get();
             }
             transaction.commit().get();
         }

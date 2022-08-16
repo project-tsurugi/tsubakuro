@@ -86,7 +86,6 @@ public class Q19 {
             } else {
                 throw new IOException("no record");
             }
-            resultSet.getResponse().get();
         } catch (ServerException e) {
             throw new IOException(e);
         }

@@ -201,7 +201,6 @@ public class NewOrder {
             Parameters.of("c_id", (long) paramsCid));
             try (var resultSet1 = future1.get()) {
                 if (!resultSet1.nextRow()) {
-                    resultSet1.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet1.nextColumn();
@@ -213,10 +212,8 @@ public class NewOrder {
                 resultSet1.nextColumn();
                 cCredit = resultSet1.fetchCharacterValue();
                 if (resultSet1.nextRow()) {
-                    resultSet1.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet1.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.newOrder++;
                 profile.customerTable.newOrder++;
@@ -230,7 +227,6 @@ public class NewOrder {
             Parameters.of("d_id", (long) paramsDid));
             try (var resultSet2 = future2.get()) {
                 if (!resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet2.nextColumn();
@@ -238,10 +234,8 @@ public class NewOrder {
                 resultSet2.nextColumn();
                 dTax = resultSet2.fetchFloat8Value();
                 if (resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet2.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.newOrder++;
                 profile.districtTable.newOrder++;
@@ -308,7 +302,6 @@ public class NewOrder {
                 Parameters.of("i_id", (long) olIid));
                 try (var resultSet6 = future6.get()) {
                     if (!resultSet6.nextRow()) {
-                        resultSet6.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet6.nextColumn();
@@ -318,10 +311,8 @@ public class NewOrder {
                     resultSet6.nextColumn();
                     iData = resultSet6.fetchCharacterValue();
                     if (resultSet6.nextRow()) {
-                        resultSet6.getResponse().get();
                         throw new IOException("found multiple records");
                     }
-                    resultSet6.getResponse().get();
                 } catch (ServerException e) {
                     break;
                 }
@@ -332,7 +323,6 @@ public class NewOrder {
                 Parameters.of("s_w_id", (long) olSupplyWid));
                 try (var resultSet7 = future7.get()) {
                     if (!resultSet7.nextRow()) {
-                        resultSet7.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet7.nextColumn();
@@ -344,10 +334,8 @@ public class NewOrder {
                         sDistData[i] = resultSet7.fetchCharacterValue();
                     }
                     if (resultSet7.nextRow()) {
-                        resultSet7.getResponse().get();
                         throw new IOException("found multiple records");
                     }
-                    resultSet7.getResponse().get();
                 } catch (ServerException e) {
                     profile.stockTable.newOrder++;
                     break;

@@ -38,7 +38,6 @@ public final class Main {
                 }
             }
             resultSet.close();
-            resultSet.getResponse().get();
             transaction.commit().get();
             session.close();
             return count / 10000;

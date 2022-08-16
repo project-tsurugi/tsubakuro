@@ -102,17 +102,12 @@ public class ResultSetImpl implements ResultSet {
         checkResponse();
         try {
             checkResponse();
-            try {
-                var rv = cursor.nextRow();
-                if (!rv) {
-                    futureResponse.await();
-                    stausGotton = true;
-                }
-                return rv;
-            } catch (IOException | ServerException e) {
-                checkResponse(e);
-                throw e;
+            if (cursor.nextRow()) {
+                return true;
             }
+            futureResponse.await();
+            stausGotton = true;
+            return false;
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;
@@ -339,11 +334,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public void setCloseTimeout(Timeout timeout) {
         cursor.setCloseTimeout(timeout);
-    }
-
-    @Override
-    public FutureResponse<Void> getResponse() {
-        return futureResponse;   
     }
 
     @Override
