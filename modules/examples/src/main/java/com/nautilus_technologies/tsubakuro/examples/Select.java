@@ -39,7 +39,6 @@ public class Select {
                     Parameters.of("o_d_id", (long) 3),
                     Parameters.of("o_w_id", (long) 1)).get(2000, TimeUnit.MILLISECONDS)) {
                         printResultset(resultSet);
-                        resultSet.getResponse().get(2000, TimeUnit.MILLISECONDS);
                     }
                 }
                 transaction.commit().await();

@@ -80,7 +80,6 @@ public class SelectOne extends Thread {
                             resultSet2.nextColumn();
                             var dTax = resultSet2.fetchFloat8Value();
                         }
-                        resultSet2.getResponse().get();
                     } catch (ServerException e) {
                         transaction.rollback().get();
                         transaction = null;

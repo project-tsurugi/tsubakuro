@@ -34,10 +34,10 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, Relation relation) {
+    static RequestHandler returns(ByteBuffer response, Relation relation, ByteBuffer status) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        return (id, request) -> new SimpleResponse(response, relation.getByteBuffer());
+        return (id, request) -> new SimpleResponse(response, relation.getByteBuffer(), status);
     }
     static RequestHandler returns(ByteBuffer response) {
         Objects.requireNonNull(response);
@@ -50,10 +50,13 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, Relation relation) {
+    static RequestHandler returns(byte[] response, Relation relation, byte[] status) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        return returns(ByteBuffer.wrap(response), relation);
+        if (Objects.nonNull(status)) {
+            return returns(ByteBuffer.wrap(response), relation, ByteBuffer.wrap(status));
+        }
+        return returns(ByteBuffer.wrap(response), relation, null);
     }
     static RequestHandler returns(byte[] response) {
         Objects.requireNonNull(response);
@@ -101,15 +104,16 @@ public interface RequestHandler {
         return returns(toDelimitedByteArray(sqlResponse));
     }
 
-    static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation) {
+    static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation, SqlResponse.ResultOnly status) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setExecuteQuery(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation);
+        var sqlStatus = SqlResponse.Response.newBuilder().setResultOnly(status).build();
+        return returns(toDelimitedByteArray(sqlResponse), relation, toDelimitedByteArray(sqlStatus));
     }
     static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation);
+        return returns(toDelimitedByteArray(sqlResponse), relation, null);
     }
 
     /**

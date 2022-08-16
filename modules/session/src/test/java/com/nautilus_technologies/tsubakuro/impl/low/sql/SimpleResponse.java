@@ -16,7 +16,9 @@ public class SimpleResponse implements Response {
 
     private final ByteBuffer main;
 
-    private final ByteBuffer sub;
+    private final ByteBuffer relation;
+
+    private final ByteBuffer status;
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -25,10 +27,11 @@ public class SimpleResponse implements Response {
      * @param main the main response data
      * @param sub the sub response data
      */
-    public SimpleResponse(ByteBuffer main, ByteBuffer sub) {
+    public SimpleResponse(ByteBuffer main, ByteBuffer relation, ByteBuffer status) {
         Objects.requireNonNull(main);
         this.main = main;
-        this.sub = sub;
+        this.relation = relation;
+        this.status = status;
     }
 
     /**
@@ -37,7 +40,7 @@ public class SimpleResponse implements Response {
      * @param subMap map of sub response ID and its data
      */
     public SimpleResponse(ByteBuffer main) {
-        this(main, null);
+        this(main, null, null);
     }
 
     @Override
@@ -47,12 +50,15 @@ public class SimpleResponse implements Response {
 
     @Override
     public ByteBuffer waitForMainResponse() {
-        return main;
+        if (Objects.nonNull(main)) {
+            return main;
+        }
+        return null;
     }
 
     @Override
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) {
-        return main;
+        return waitForMainResponse();
     }
 
     private void checkOpen() {
@@ -75,7 +81,7 @@ public class SimpleResponse implements Response {
 
     @Override
     public Response duplicate() {
-        return new SimpleResponse(main);
+        return new SimpleResponse(status);
     }
 
     @Override
@@ -86,7 +92,7 @@ public class SimpleResponse implements Response {
     public void release() {
     }
 
-    public ByteBuffer getSub() {
-        return sub;
+    public ByteBuffer getRelation() {
+        return relation;
     }
 }

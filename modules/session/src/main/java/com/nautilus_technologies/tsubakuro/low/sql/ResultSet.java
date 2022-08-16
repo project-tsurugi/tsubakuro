@@ -22,8 +22,12 @@ public interface ResultSet extends RelationCursor {
     /**
      * Get a FutureResponse of the response returned from the SQL service
      * @return a FutureResponse of SqlResponse.ResultOnly indicate whether the SQL service has successfully completed processing or not
+     * @deprecated FutureResponse<Void> is checked at next() and/or close(), thus it is unnecessary to provide FutureResponse<Void> to tsubakuro's clinets
      */
-    FutureResponse<Void> getResponse();
+    @Deprecated
+    default FutureResponse<Void> getResponse() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     default void close() throws ServerException, IOException, InterruptedException {

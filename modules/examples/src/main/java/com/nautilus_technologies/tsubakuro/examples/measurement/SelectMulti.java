@@ -82,7 +82,6 @@ public class SelectMulti extends Thread {
                             var noOid = resultSet1.fetchInt8Value();
                             profile.records++;
                         }
-                        resultSet1.getResponse().get();
                     } catch (ServerException e) {
                         transaction.rollback().get();
                         transaction = null;

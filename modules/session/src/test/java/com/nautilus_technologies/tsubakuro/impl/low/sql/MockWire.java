@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.sql;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Queue;
@@ -18,6 +19,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.ResultSetWireMock;
+import com.tsurugidb.jogasaki.proto.SqlResponse;
 
 /**
  * Mock implementation of {@link Wire}.
@@ -43,7 +45,7 @@ public class MockWire implements Wire {
         }
         try {
             var response = next.handle(serviceId, payload);
-            resultSetData = ((SimpleResponse) response).getSub();
+            resultSetData = ((SimpleResponse) response).getRelation();
             return FutureResponse.wrap(Owner.of(response));    
 //            return FutureResponse.wrap(Owner.of(next.handle((int) serviceId, payload)));
         } catch (ServerException e) {

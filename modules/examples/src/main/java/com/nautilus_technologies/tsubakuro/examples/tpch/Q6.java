@@ -55,7 +55,6 @@ public class Q6 {
                 System.out.println("REVENUE is null");
                 }
             }
-            resultSet.getResponse().get();
         } catch (ServerException e) {
             throw new IOException(e);
         }

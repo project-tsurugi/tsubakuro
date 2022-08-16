@@ -83,16 +83,13 @@ public class StockLevel {
                 Parameters.of("d_id", (long) paramsDid));
             try (var resultSet1 = future1.get()) {
                 if (!resultSet1.nextRow()) {
-                    resultSet1.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet1.nextColumn();
                 oId = resultSet1.fetchInt8Value();
                 if (resultSet1.nextRow()) {
-                    resultSet1.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet1.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.districtTable.stockLevel++;
@@ -110,16 +107,13 @@ public class StockLevel {
                 Parameters.of("s_quantity", (long) paramsThreshold));
             try (var resultSet2 = future2.get()) {
                 if (!resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("no record");
                 }
                 resultSet2.nextColumn();
                 queryResult = resultSet2.fetchInt8Value();
                 if (resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("found multiple records");
                 }
-                resultSet2.getResponse().get();
             } catch (ServerException e) {
                 profile.retryOnStatement.stockLevel++;
                 profile.stockTable.stockLevel++;

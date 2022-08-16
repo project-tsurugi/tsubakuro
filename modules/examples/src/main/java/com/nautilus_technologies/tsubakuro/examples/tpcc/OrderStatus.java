@@ -146,7 +146,6 @@ public class OrderStatus {
                     Parameters.of("c_w_id", (long) paramsWid));
                 try (var resultSet3 = future3.get()) {
                     if (!resultSet3.nextRow()) {
-                        resultSet3.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet3.nextColumn();
@@ -158,10 +157,8 @@ public class OrderStatus {
                     resultSet3.nextColumn();
                     cLast = resultSet3.fetchCharacterValue();
                     if (resultSet3.nextRow()) {
-                        resultSet3.getResponse().get();
                         throw new IOException("found multiple records");
                     }
-                    resultSet3.getResponse().get();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
@@ -176,23 +173,17 @@ public class OrderStatus {
                     Parameters.of("o_c_id", (long) cId));
                 try (var resultSet4 = future4.get()) {
                     if (!resultSet4.nextRow()) {
-                        resultSet4.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet4.nextColumn();
                     oId = resultSet4.fetchInt8Value();
-                    try {
-                        resultSet4.getResponse().get();
-                    } catch (ServerException e) {
-                        // FIXME treat InconsistentInde
-                        //                    if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
-                        //                        if (profile.inconsistentIndexCount == 0) {
-                        //                            System.out.println("inconsistent_index");
-                        //                        }
-                        //                        profile.inconsistentIndexCount++;
-                        //                    }
-                        throw e;
-                    }
+                    // FIXME treat InconsistentIndex
+                    //                    if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
+                    //                        if (profile.inconsistentIndexCount == 0) {
+                    //                            System.out.println("inconsistent_index");
+                    //                        }
+                    //                        profile.inconsistentIndexCount++;
+                    //                    }
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
@@ -207,7 +198,6 @@ public class OrderStatus {
                     Parameters.of("o_id", (long) oId));
                 try (var resultSet5 = future5.get()) {
                     if (!resultSet5.nextRow()) {
-                        resultSet5.getResponse().get();
                         throw new IOException("no record");
                     }
                     resultSet5.nextColumn();
@@ -219,10 +209,8 @@ public class OrderStatus {
                     resultSet5.nextColumn();
                     oOlCnt = resultSet5.fetchInt8Value();
                     if (resultSet5.nextRow()) {
-                        resultSet5.getResponse().get();
                         throw new IOException("found multiple records");
                     }
-                    resultSet5.getResponse();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;
@@ -252,7 +240,6 @@ public class OrderStatus {
                         }
                         i++;
                     }
-                    resultSet6.getResponse().get();
                 } catch (ServerException e) {
                     profile.retryOnStatement.orderStatus++;
                     profile.ordersTable.orderStatus++;

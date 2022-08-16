@@ -24,16 +24,13 @@ public final class Customer {
         long nameCnt = 0;
         try (var resultSet1 = future1.get()) {
             if (!resultSet1.nextRow()) {
-                resultSet1.getResponse().get();
                 throw new IOException("no record");
             }
             resultSet1.nextColumn();
             nameCnt = resultSet1.fetchInt8Value();
             if (resultSet1.nextRow()) {
-                resultSet1.getResponse().get();
                 throw new IOException("found multiple records");
             }
-            resultSet1.getResponse().get();
         } catch (ServerException e) {
             return -1;
         }
@@ -54,13 +51,11 @@ public final class Customer {
             }
             for (long i = 0; i < (nameCnt / 2); i++) {
                 if (!resultSet2.nextRow()) {
-                    resultSet2.getResponse().get();
                     throw new IOException("no record");
                 }
             }
             resultSet2.nextColumn();
             rv = resultSet2.fetchInt8Value();
-            resultSet2.getResponse().get();
             return rv;
         } catch (ServerException e) {
             return -1;

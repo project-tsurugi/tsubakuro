@@ -72,7 +72,6 @@ public class Q2 {
                 } else {
                     throw new IOException("no record");
                 }
-                resultSet.getResponse().get();
             } catch (ServerException e) {
                 throw new IOException(e);
             }
@@ -108,7 +107,6 @@ public class Q2 {
 
                     System.out.println(sAcctbal + "," + sName + "," + nName + "," + partkey + "," + pMfgr + "," + sAddress + "," + sPhone + "," + sCommnent);
                 }
-                resultSet.getResponse().get();
             } catch (ServerException e) {
                 throw new IOException(e);
             }
