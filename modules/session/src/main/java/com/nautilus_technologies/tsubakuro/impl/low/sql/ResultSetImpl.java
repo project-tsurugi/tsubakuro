@@ -47,6 +47,8 @@ public class ResultSetImpl implements ResultSet {
 
     private final FutureResponse<Void> futureResponse;
 
+    private Timeout timeout;
+
     private boolean stausGotton;
 
     /**
@@ -89,6 +91,7 @@ public class ResultSetImpl implements ResultSet {
         this.response = response;
         this.tester = checker;
         this.futureResponse = futureResponse;
+        this.timeout = new Timeout();
         this.stausGotton = false;
     }
 
@@ -101,11 +104,10 @@ public class ResultSetImpl implements ResultSet {
     public boolean nextRow() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
-            checkResponse();
             if (cursor.nextRow()) {
                 return true;
             }
-            futureResponse.await();
+            timeout.waitFor(futureResponse);
             stausGotton = true;
             return false;
         } catch (IOException | ServerException e) {
@@ -332,8 +334,9 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void setCloseTimeout(Timeout timeout) {
-        cursor.setCloseTimeout(timeout);
+    public void setCloseTimeout(Timeout t) {
+        cursor.setCloseTimeout(t);
+        timeout = t;
     }
 
     @Override
@@ -359,7 +362,7 @@ public class ResultSetImpl implements ResultSet {
                     () -> closeHandler.onClosed(this));
         }
         if (!stausGotton) {
-            futureResponse.await();
+            timeout.waitFor(futureResponse);
         }
     }
 }
