@@ -190,7 +190,7 @@ public class Session implements ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      */
     public FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException {
-        return FutureResponse.returns(null);
+        throw new UnsupportedOperationException();
     }
 
     @Override
