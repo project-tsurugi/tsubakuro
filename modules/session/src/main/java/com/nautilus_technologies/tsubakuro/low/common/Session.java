@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
@@ -171,6 +172,25 @@ public class Session implements ServerResource {
     public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
         return wire.updateCredential(credential);
+    }
+
+    /**
+     * Requests to update the session expiration time.
+     * <p>
+     * The resources underlying this session will be disposed after this session was expired.
+     * To extend the expiration time, clients should continue to send requests in this session, or update expiration time explicitly by using this method.
+     * </p>
+     * <p>
+     * If the specified expiration time is too long, the server will automatically shorten it to its limit.
+     * </p>
+     * @param time the expiration time from now
+     * @param unit the time unit of expiration time
+     * @return the future response of the request;
+     *     it will raise {@link CoreServiceException} if request was failure
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    public FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

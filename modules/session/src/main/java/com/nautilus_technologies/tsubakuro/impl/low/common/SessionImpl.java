@@ -3,6 +3,8 @@ package com.nautilus_technologies.tsubakuro.impl.low.common;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +30,18 @@ public class SessionImpl extends Session {
      *
      * @param Wire the wire that connects to the Database
      */
+    @Override
     public void connect(Wire wire) {
         super.wire = wire;
     }
 
     public FutureResponse<? extends Response> send(int id, byte[] request) throws IOException {
         return super.wire.send(id, request);
+    }
+
+    @Override
+    public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
+        return FutureResponse.returns(null);
     }
 
     /**
