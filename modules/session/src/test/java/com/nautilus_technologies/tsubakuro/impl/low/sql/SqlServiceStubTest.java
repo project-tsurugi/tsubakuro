@@ -24,6 +24,7 @@ import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.jogasaki.proto.SqlResponse;
 import com.tsurugidb.jogasaki.proto.StatusProtos;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -38,10 +39,10 @@ class SqlServiceStubTest {
 
     private final MockWire wire = new MockWire();
 
-    private final Session session = new Session(wire);
+    private final Session session = new SessionImpl(wire);
 
     @AfterEach
-    void tearDown() throws IOException, InterruptedException {
+    void tearDown() throws IOException, InterruptedException, ServerException {
         session.close();
     }
 
@@ -72,6 +73,7 @@ class SqlServiceStubTest {
                 .addAllColumns(Arrays.asList(columns))
                 .build();
     }
+
 //    private SchemaProtos.RecordMeta toResultSetMetadata(SqlCommon.Column... columns) {
 //        var builder = SchemaProtos.RecordMeta.newBuilder();
 //        for (var e: Arrays.asList(columns)) {
