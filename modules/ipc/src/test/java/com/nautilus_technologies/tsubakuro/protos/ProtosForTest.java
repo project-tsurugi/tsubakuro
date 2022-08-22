@@ -1,9 +1,9 @@
 package com.nautilus_technologies.tsubakuro.protos;
 
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.StatusProtos;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlStatus;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -828,12 +828,12 @@ public final class ProtosForTest {
         static SqlResponse.Error.Builder builder() {
             return
                 SqlResponse.Error.newBuilder()
-                .setStatus(StatusProtos.Status.NOT_FOUND)
+                .setStatus(SqlStatus.Status.NOT_FOUND)
                 .setDetail(ERROR);
         }
         static boolean check(SqlResponse.Error dst) {
             return
-                dst.getStatus().equals(StatusProtos.Status.NOT_FOUND)
+                dst.getStatus().equals(SqlStatus.Status.NOT_FOUND)
                 && dst.getDetail().equals(ERROR);
         }
         

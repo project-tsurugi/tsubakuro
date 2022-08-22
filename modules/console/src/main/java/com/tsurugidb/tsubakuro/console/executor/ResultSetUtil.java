@@ -12,7 +12,7 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.RelationMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlCommon;
 
 /**
  * Utilities about {@link ResultSet}.

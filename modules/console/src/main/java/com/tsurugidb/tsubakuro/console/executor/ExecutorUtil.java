@@ -11,7 +11,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.console.model.CommitStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement.ErrorKind;

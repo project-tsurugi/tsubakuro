@@ -3,8 +3,8 @@ syntax = "proto3";
 package tateyama.proto.datastore.common;
 
 option java_multiple_files = false;
-option java_package = "com.nautilus_technologies.tateyama.proto";
-option java_outer_classname = "DatastoreCommonProtos";
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "DatastoreCommon";
 
 // Point-in-Time recovery tag.
 message Tag {

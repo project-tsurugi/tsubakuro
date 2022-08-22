@@ -18,7 +18,7 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.channel.stream.SessionWireImpl;
 import com.nautilus_technologies.tsubakuro.protos.ProtosForTest;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 class SessionWireTest {
     static final int SERVICE_ID_SQL = 3;

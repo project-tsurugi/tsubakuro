@@ -10,7 +10,7 @@ public final class Constants {
      */
     public static final int SERVICE_ID_BACKUP = 2;
     /**
-     * The message version of DatastoreRequestProtos
+     * The message version of DatastoreRequest
      */
     public static final int MESSAGE_VERSION = 1;
 

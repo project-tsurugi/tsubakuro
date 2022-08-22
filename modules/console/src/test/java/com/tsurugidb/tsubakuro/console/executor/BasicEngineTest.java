@@ -17,8 +17,8 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.ResultSetMetadataAdapter
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.console.model.Region;
 import com.tsurugidb.tsubakuro.console.model.Statement;
 import com.tsurugidb.tsubakuro.console.parser.SqlParser;

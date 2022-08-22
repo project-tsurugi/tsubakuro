@@ -28,8 +28,8 @@ import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 class BasicResultProcessorTest {
 

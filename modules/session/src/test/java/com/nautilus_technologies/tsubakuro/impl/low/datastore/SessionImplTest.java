@@ -19,7 +19,7 @@ import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
-import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
+import com.tsurugidb.tateyama.proto.DatastoreResponse;
 
 class SessionImplTest {
     public class TestResponse implements Response {
@@ -99,8 +99,8 @@ class SessionImplTest {
         @Override
         public ByteBuffer response(ResponseWireHandle handle) {
             try (var buffer = new ByteArrayOutputStream()) {
-                var response = DatastoreResponseProtos.BackupBegin.newBuilder()
-                    .setSuccess(DatastoreResponseProtos.BackupBegin.Success.newBuilder()
+                var response = DatastoreResponse.BackupBegin.newBuilder()
+                    .setSuccess(DatastoreResponse.BackupBegin.Success.newBuilder()
                     .setId(100)
                     .addFiles("/tmp/backup-1")
                     .build())

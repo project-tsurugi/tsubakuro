@@ -13,8 +13,8 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.util.Lang;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 
 /**
  * PreparedStatementImpl type.

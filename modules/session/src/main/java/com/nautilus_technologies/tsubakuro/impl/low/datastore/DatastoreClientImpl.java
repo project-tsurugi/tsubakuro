@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
+import com.tsurugidb.tateyama.proto.DatastoreRequest;
 import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
 import com.nautilus_technologies.tsubakuro.low.datastore.BackupEstimate;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreClient;
@@ -48,7 +48,7 @@ public class DatastoreClientImpl implements DatastoreClient {
 
     @Override
     public FutureResponse<Backup> beginBackup(@Nullable String label) throws IOException {
-        var builder = DatastoreRequestProtos.BackupBegin.newBuilder();
+        var builder = DatastoreRequest.BackupBegin.newBuilder();
         if (label != null) {
             builder.setLabel(label);
         }
@@ -57,20 +57,20 @@ public class DatastoreClientImpl implements DatastoreClient {
 
     @Override
     public FutureResponse<BackupEstimate> estimateBackup() throws IOException {
-        var builder = DatastoreRequestProtos.BackupEstimate.newBuilder();
+        var builder = DatastoreRequest.BackupEstimate.newBuilder();
         return service.send(builder.build());
     }
 
     @Override
     public FutureResponse<List<Tag>> listTag() throws IOException {
-        var builder = DatastoreRequestProtos.TagList.newBuilder();
+        var builder = DatastoreRequest.TagList.newBuilder();
         return service.send(builder.build());
     }
 
     @Override
     public FutureResponse<Optional<Tag>> getTag(@Nonnull String name) throws IOException {
         Objects.requireNonNull(name);
-        var builder = DatastoreRequestProtos.TagGet.newBuilder()
+        var builder = DatastoreRequest.TagGet.newBuilder()
                 .setName(name);
         return service.send(builder.build());
     }
@@ -78,7 +78,7 @@ public class DatastoreClientImpl implements DatastoreClient {
     @Override
     public FutureResponse<Tag> addTag(@Nonnull String name, @Nullable String comment) throws IOException {
         Objects.requireNonNull(name);
-        var builder = DatastoreRequestProtos.TagAdd.newBuilder()
+        var builder = DatastoreRequest.TagAdd.newBuilder()
                 .setName(name);
         if (!Objects.isNull(comment)) {
             builder.setComment(comment);
@@ -89,7 +89,7 @@ public class DatastoreClientImpl implements DatastoreClient {
     @Override
     public FutureResponse<Boolean> removeTag(@Nonnull String name) throws IOException {
         Objects.requireNonNull(name);
-        var builder = DatastoreRequestProtos.TagRemove.newBuilder()
+        var builder = DatastoreRequest.TagRemove.newBuilder()
                 .setName(name);
         return service.send(builder.build());
     }

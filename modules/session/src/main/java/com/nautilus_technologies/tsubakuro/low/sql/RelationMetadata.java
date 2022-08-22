@@ -2,7 +2,7 @@ package com.nautilus_technologies.tsubakuro.low.sql;
 
 import java.util.List;
 
-import com.tsurugidb.jogasaki.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlCommon;
 
 /**
  * Represents metadata of relations.

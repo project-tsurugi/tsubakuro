@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
-import com.nautilus_technologies.tateyama.proto.DatastoreCommonProtos;
-import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
-import com.nautilus_technologies.tateyama.proto.DatastoreResponseProtos;
+import com.tsurugidb.tateyama.proto.DatastoreCommon;
+import com.tsurugidb.tateyama.proto.DatastoreRequest;
+import com.tsurugidb.tateyama.proto.DatastoreResponse;
 import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
 // import com.nautilus_technologies.tsubakuro.low.datastore.BackupEstimate;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreService;
@@ -62,7 +62,7 @@ public class DatastoreServiceStub implements DatastoreService {
         this.session = session;
     }
 
-    static DatastoreServiceException newUnknown(@Nonnull DatastoreResponseProtos.UnknownError message) {
+    static DatastoreServiceException newUnknown(@Nonnull DatastoreResponse.UnknownError message) {
         assert message != null;
         return new DatastoreServiceException(DatastoreServiceCode.UNKNOWN, message.getMessage());
     }
@@ -77,7 +77,7 @@ public class DatastoreServiceStub implements DatastoreService {
                 name));
     }
 
-    static Tag convert(@Nonnull DatastoreCommonProtos.Tag tag) {
+    static Tag convert(@Nonnull DatastoreCommon.Tag tag) {
         assert tag != null;
         return new Tag(
                 tag.getName(),
@@ -96,7 +96,7 @@ public class DatastoreServiceStub implements DatastoreService {
     class BackupBeginProcessor implements MainResponseProcessor<Backup> {
         @Override
         public Backup process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupBegin.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = DatastoreResponse.BackupBegin.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -121,11 +121,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<Backup> send(@Nonnull DatastoreRequestProtos.BackupBegin request) throws IOException {
+    public FutureResponse<Backup> send(@Nonnull DatastoreRequest.BackupBegin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                  .setMessageVersion(Constants.MESSAGE_VERSION)
                                  .setBackupBegin(request)
                                  .build()),
@@ -135,7 +135,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class BackupEndProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupEnd.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = DatastoreResponse.BackupEnd.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -158,11 +158,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupEnd request) throws IOException {
+    public FutureResponse<Void> send(@Nonnull DatastoreRequest.BackupEnd request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                  .setMessageVersion(Constants.MESSAGE_VERSION)
                                  .setBackupEnd(request)
                                  .build()),
@@ -177,7 +177,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagListProcessor implements MainResponseProcessor<List<Tag>> {
         @Override
         public List<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.TagList.parseFrom(payload);
+            var message = DatastoreResponse.TagList.parseFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -201,11 +201,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<List<Tag>> send(@Nonnull DatastoreRequestProtos.TagList request) throws IOException {
+    public FutureResponse<List<Tag>> send(@Nonnull DatastoreRequest.TagList request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                      .setTagList(request)
                                      .build()),
                 new TagListProcessor().asResponseProcessor());
@@ -214,7 +214,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagAddProcessor implements MainResponseProcessor<Tag> {
         @Override
         public Tag process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.TagAdd.parseFrom(payload);
+            var message = DatastoreResponse.TagAdd.parseFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -249,11 +249,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<Tag> send(@Nonnull DatastoreRequestProtos.TagAdd request) throws IOException {
+    public FutureResponse<Tag> send(@Nonnull DatastoreRequest.TagAdd request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                      .setTagAdd(request)
                                      .build()),
                 new TagAddProcessor().asResponseProcessor());
@@ -262,7 +262,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagGetProcessor implements MainResponseProcessor<Optional<Tag>> {
         @Override
         public Optional<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.TagGet.parseFrom(payload);
+            var message = DatastoreResponse.TagGet.parseFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -285,11 +285,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<Optional<Tag>> send(@Nonnull DatastoreRequestProtos.TagGet request) throws IOException {
+    public FutureResponse<Optional<Tag>> send(@Nonnull DatastoreRequest.TagGet request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                      .setTagGet(request)
                                      .build()),
                 new TagGetProcessor().asResponseProcessor());
@@ -298,7 +298,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagRemoveProcessor implements MainResponseProcessor<Boolean> {
         @Override
         public Boolean process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.TagRemove.parseFrom(payload);
+            var message = DatastoreResponse.TagRemove.parseFrom(payload);
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -321,11 +321,11 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<Boolean> send(@Nonnull DatastoreRequestProtos.TagRemove request) throws IOException {
+    public FutureResponse<Boolean> send(@Nonnull DatastoreRequest.TagRemove request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
+                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                      .setTagRemove(request)
                                      .build()),
                 new TagRemoveProcessor().asResponseProcessor());
@@ -338,7 +338,7 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
 // FIXME should process at transport layer
-    private byte[] toDelimitedByteArray(DatastoreRequestProtos.Request request) throws IOException {
+    private byte[] toDelimitedByteArray(DatastoreRequest.Request request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

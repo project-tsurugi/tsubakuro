@@ -6,10 +6,10 @@ import java.io.OutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
-import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.FrameworkRequest;
+import com.tsurugidb.tateyama.proto.FrameworkResponse;
 
 /**
  * ServerWireImpl type.
@@ -70,7 +70,7 @@ public class ServerWireImpl implements Closeable {
     public SqlRequest.Request get() throws IOException {
         try {
             var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
-            var header = FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
+            var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
             sessionID = header.getSessionId();
             return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -86,7 +86,7 @@ public class ServerWireImpl implements Closeable {
     public void put(SqlResponse.Response response) throws IOException {
         try {
             byte[] resposeByteArray = dump(out -> {
-                    FrameworkResponseProtos.Header.newBuilder().build().writeDelimitedTo(out);
+                    FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
                     response.writeDelimitedTo(out);
                 });
             if (wireHandle != 0) {

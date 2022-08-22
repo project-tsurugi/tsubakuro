@@ -5,11 +5,11 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 
 /**
- * Utilities to build {@link com.tsurugidb.jogasaki.proto.SqlRequest.Placeholder Placeholder}.
+ * Utilities to build {@link com.tsurugidb.tateyama.proto.SqlRequest.Placeholder Placeholder}.
  */
 public final class Placeholders {
 

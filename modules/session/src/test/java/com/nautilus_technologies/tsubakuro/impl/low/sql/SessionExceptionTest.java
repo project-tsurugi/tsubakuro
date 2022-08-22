@@ -20,9 +20,9 @@ import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.StatusProtos;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlStatus;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 
@@ -80,7 +80,7 @@ class SesstionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setBegin(SqlResponse.Begin.newBuilder()
                                   .setError(SqlResponse.Error.newBuilder()
-                                            .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                            .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                             .setDetail(messageForTheTest)))
                         .build();
                         break;
@@ -88,7 +88,7 @@ class SesstionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setPrepare(SqlResponse.Prepare.newBuilder()
                                   .setError(SqlResponse.Error.newBuilder()
-                                            .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                            .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                             .setDetail(messageForTheTest)))
                         .build();
                         break;
@@ -105,7 +105,7 @@ class SesstionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setExplain(SqlResponse.Explain.newBuilder()
                                   .setError(SqlResponse.Error.newBuilder()
-                                            .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                            .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                             .setDetail(messageForTheTest)))
                         .build();
                         break;

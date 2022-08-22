@@ -21,9 +21,9 @@ import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.StatusProtos;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlStatus;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 
@@ -90,7 +90,7 @@ class TransactionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setResultOnly(SqlResponse.ResultOnly.newBuilder()
                                        .setError(SqlResponse.Error.newBuilder()
-                                                 .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                                 .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                                  .setDetail(messageForTheTest)))
                         .build();
                         break;
@@ -99,7 +99,7 @@ class TransactionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setResultOnly(SqlResponse.ResultOnly.newBuilder()
                                        .setError(SqlResponse.Error.newBuilder()
-                                                 .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                                 .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                                  .setDetail(messageForTheTest)))
                         .build();
                         break;
@@ -110,7 +110,7 @@ class TransactionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setResultOnly(SqlResponse.ResultOnly.newBuilder()
                                        .setError(SqlResponse.Error.newBuilder()
-                                                 .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                                 .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                                  .setDetail(messageForTheTest)))
                         .build();
                         break;
@@ -124,7 +124,7 @@ class TransactionExceptionTest {
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setExplain(SqlResponse.Explain.newBuilder()
                                        .setError(SqlResponse.Error.newBuilder()
-                                                 .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                                                 .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                                                  .setDetail(messageForTheTest)))
                         .build();
                         break;

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
+import com.tsurugidb.tateyama.proto.DatastoreRequest;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
@@ -25,7 +25,7 @@ public interface DatastoreService extends ServerResource {
      *      which helps to create a new backup
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Backup> send(DatastoreRequestProtos.BackupBegin request) throws IOException {
+    default FutureResponse<Backup> send(DatastoreRequest.BackupBegin request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -36,19 +36,7 @@ public interface DatastoreService extends ServerResource {
      *      which may raise error if the request was failed
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Void> send(DatastoreRequestProtos.BackupEnd request) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Requests {@code BackupContinue} to datastore service.
-     * @param request the request
-     * @return the future response of the request,
-     *      which may raise error if the request was failed
-     * @throws IOException if I/O error was occurred while sending the request
-     */
-    @Deprecated
-    default FutureResponse<Void> send(DatastoreRequestProtos.BackupContinue request) throws IOException {
+    default FutureResponse<Void> send(DatastoreRequest.BackupEnd request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -59,7 +47,7 @@ public interface DatastoreService extends ServerResource {
      *      which may raise error if the request was failed
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<BackupEstimate> send(DatastoreRequestProtos.BackupEstimate request) throws IOException {
+    default FutureResponse<BackupEstimate> send(DatastoreRequest.BackupEstimate request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -70,7 +58,7 @@ public interface DatastoreService extends ServerResource {
      *      which may raise error if the request was failed
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Void> send(DatastoreRequestProtos.RestoreBackup request) throws IOException {
+    default FutureResponse<Void> send(DatastoreRequest.RestoreBackup request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -81,7 +69,7 @@ public interface DatastoreService extends ServerResource {
      *      which may raise error if the request was failed
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Void> send(DatastoreRequestProtos.RestoreTag request) throws IOException {
+    default FutureResponse<Void> send(DatastoreRequest.RestoreTag request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -93,7 +81,7 @@ public interface DatastoreService extends ServerResource {
      *      If the request was succeeded, future will returns the all available tag list
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<List<Tag>> send(DatastoreRequestProtos.TagList request) throws IOException {
+    default FutureResponse<List<Tag>> send(DatastoreRequest.TagList request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -105,7 +93,7 @@ public interface DatastoreService extends ServerResource {
      *      If the request was succeeded, future will returns the added tag
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Tag> send(DatastoreRequestProtos.TagAdd request) throws IOException {
+    default FutureResponse<Tag> send(DatastoreRequest.TagAdd request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -118,7 +106,7 @@ public interface DatastoreService extends ServerResource {
      *      future will returns the target tag or empty if there is no such the tag
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Optional<Tag>> send(DatastoreRequestProtos.TagGet request) throws IOException {
+    default FutureResponse<Optional<Tag>> send(DatastoreRequest.TagGet request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -131,7 +119,7 @@ public interface DatastoreService extends ServerResource {
      *      future will returns whether or not the target tag is removed
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Boolean> send(DatastoreRequestProtos.TagRemove request) throws IOException {
+    default FutureResponse<Boolean> send(DatastoreRequest.TagRemove request) throws IOException {
         throw new UnsupportedOperationException();
     }
 

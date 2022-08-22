@@ -19,7 +19,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.ResultSetWireMock;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 /**
  * Mock implementation of {@link Wire}.
