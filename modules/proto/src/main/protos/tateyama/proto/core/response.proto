@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package tateyama.proto.core.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "CoreResponse";
+
+// empty message
+message Void {}
+
+// unknown error was occurred.
+message UnknownError {
+    // the error message.
+    string message = 1;
+}
+
+// update session expiration time
+message UpdateExpirationTime {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 11;
+
+        // session was expired.
+        Void expired = 12;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 13;
+    }
+}
