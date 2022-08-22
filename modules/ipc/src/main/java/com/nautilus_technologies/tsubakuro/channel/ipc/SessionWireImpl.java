@@ -20,8 +20,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Channe
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
-import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
-import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
+import com.tsurugidb.tateyama.proto.FrameworkRequest;
+import com.tsurugidb.tateyama.proto.FrameworkResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Owner;
@@ -30,7 +30,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements Wire {
-    static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
+    static final FrameworkRequest.Header.Builder HEADER_BUILDER = FrameworkRequest.Header.newBuilder().setMessageVersion(1);
 
     private long wireHandle = 0;  // for c++
     private final String dbName;
@@ -160,7 +160,7 @@ public class SessionWireImpl implements Wire {
         }
         var responseWireHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = receiveNative(responseWireHandle);
-        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
         return byteBuffer;
     }
 
@@ -175,7 +175,7 @@ public class SessionWireImpl implements Wire {
             throw new IOException("timeout duration overflow");
         }
         var byteBuffer = receiveNative(responseWireHandle, timeoutNano);
-        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
         return byteBuffer;
     }
 
@@ -234,7 +234,7 @@ public class SessionWireImpl implements Wire {
         wireHandle = 0;
     }
 
-    byte[] toDelimitedByteArray(FrameworkRequestProtos.Header request) throws IOException {
+    byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

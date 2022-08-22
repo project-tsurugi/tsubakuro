@@ -19,8 +19,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Respon
 import com.nautilus_technologies.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.nautilus_technologies.tsubakuro.channel.stream.sql.ResponseBox;
-import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
-import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
+import com.tsurugidb.tateyama.proto.FrameworkRequest;
+import com.tsurugidb.tateyama.proto.FrameworkResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.util.Owner;
@@ -29,7 +29,7 @@ import com.nautilus_technologies.tsubakuro.util.Owner;
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements Wire {
-    static final FrameworkRequestProtos.Header.Builder HEADER_BUILDER = FrameworkRequestProtos.Header.newBuilder().setMessageVersion(1);
+    static final FrameworkRequest.Header.Builder HEADER_BUILDER = FrameworkRequest.Header.newBuilder().setMessageVersion(1);
 
     private StreamWire streamWire;
     private final long sessionID;
@@ -112,7 +112,7 @@ public class SessionWireImpl implements Wire {
         }
         byte slot = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = ByteBuffer.wrap(responseBox.receive(slot));
-        FrameworkResponseProtos.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
 
         return byteBuffer;
     }
@@ -174,7 +174,7 @@ public class SessionWireImpl implements Wire {
         streamWire = null;
     }
 
-    byte[] toDelimitedByteArray(FrameworkRequestProtos.Header request) throws IOException {
+    byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

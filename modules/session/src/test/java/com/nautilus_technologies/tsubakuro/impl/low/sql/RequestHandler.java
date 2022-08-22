@@ -10,7 +10,7 @@ import java.util.Objects;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 /**
  * Handles request for wires and returns its response.

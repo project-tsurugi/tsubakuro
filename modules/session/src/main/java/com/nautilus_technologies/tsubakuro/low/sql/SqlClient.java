@@ -10,7 +10,7 @@ import javax.annotation.Nonnull;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.SqlClientImpl;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 
@@ -34,7 +34,7 @@ public interface SqlClient extends ServerResource {
      * Starts a new transaction with default transaction options.
      * @return a future response of transaction object
      * @throws IOException if I/O error was occurred while sending request
-     * @see #createTransaction(com.tsurugidb.jogasaki.proto.SqlRequest.TransactionOption)
+     * @see #createTransaction(com.tsurugidb.tateyama.proto.SqlRequest.TransactionOption)
      */
     default FutureResponse<Transaction> createTransaction() throws IOException {
         return createTransaction(SqlRequest.TransactionOption.getDefaultInstance());

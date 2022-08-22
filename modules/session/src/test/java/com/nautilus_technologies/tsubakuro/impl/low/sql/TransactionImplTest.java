@@ -12,9 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;

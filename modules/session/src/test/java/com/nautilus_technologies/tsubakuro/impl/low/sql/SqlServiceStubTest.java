@@ -19,10 +19,10 @@ import java.util.OptionalLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.tsurugidb.jogasaki.proto.StatusProtos;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlStatus;
 import com.nautilus_technologies.tsubakuro.low.common.Session;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
@@ -64,7 +64,7 @@ class SqlServiceStubTest {
 
     private static SqlResponse.Error newEngineError() {
         return SqlResponse.Error.newBuilder()
-                .setStatus(StatusProtos.Status.ERR_UNKNOWN)
+                .setStatus(SqlStatus.Status.ERR_UNKNOWN)
                 .build();
     }
 

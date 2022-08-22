@@ -13,16 +13,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.channel.stream.ServerStreamWire;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
-import com.nautilus_technologies.tateyama.proto.FrameworkRequestProtos;
-import com.nautilus_technologies.tateyama.proto.FrameworkResponseProtos;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.FrameworkRequest;
+import com.tsurugidb.tateyama.proto.FrameworkResponse;
 
 /**
  * ServerWireImpl type.
  */
 public class ServerWireImpl implements Closeable {
-    static final FrameworkResponseProtos.Header.Builder HEADER_BUILDER = FrameworkResponseProtos.Header.newBuilder();
+    static final FrameworkResponse.Header.Builder HEADER_BUILDER = FrameworkResponse.Header.newBuilder();
 
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
@@ -149,7 +149,7 @@ public class ServerWireImpl implements Closeable {
                 if (!receiveQueue.isEmpty()) {
                     var ba = receiveQueue.poll().getBytes();
                     var byteArrayInputStream = new ByteArrayInputStream(ba);
-                    FrameworkRequestProtos.Header.parseDelimitedFrom(byteArrayInputStream);
+                    FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
                     return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
                 }
                 try {

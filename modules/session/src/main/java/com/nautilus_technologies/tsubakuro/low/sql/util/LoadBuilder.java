@@ -18,8 +18,8 @@ import com.nautilus_technologies.tsubakuro.low.sql.TableMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.MappedFutureResponse;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 
 /**
  * Builds {@link Load} operations.

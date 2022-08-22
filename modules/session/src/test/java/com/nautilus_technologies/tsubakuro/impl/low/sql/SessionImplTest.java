@@ -23,8 +23,8 @@ import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
 import com.nautilus_technologies.tsubakuro.low.sql.Types;
 import com.nautilus_technologies.tsubakuro.impl.low.common.SessionImpl;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.util.Owner;
 import com.nautilus_technologies.tsubakuro.session.ProtosForTest;
 

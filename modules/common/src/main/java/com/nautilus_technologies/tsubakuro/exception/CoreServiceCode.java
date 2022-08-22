@@ -5,7 +5,7 @@ import java.util.EnumMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tateyama.proto.DiagnosticsProtos;
+import com.tsurugidb.tateyama.proto.DiagnosticsProtos;
 
 /**
  * Code of server core diagnostics.

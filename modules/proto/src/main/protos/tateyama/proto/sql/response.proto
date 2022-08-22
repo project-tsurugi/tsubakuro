@@ -3,11 +3,11 @@ syntax = "proto3";
 package jogasaki.proto.sql.response;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.jogasaki.proto";
+option java_package = "com.tsurugidb.tateyama.proto";
 option java_outer_classname = "SqlResponse";
 
-import "common.proto";
-import "status.proto";
+import "tateyama/proto/sql/common.proto";
+import "tateyama/proto/sql/status.proto";
 
 /*
  * Definition of sub fields for Response.

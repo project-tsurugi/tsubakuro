@@ -12,10 +12,10 @@ import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.ByteString;
 import com.nautilus_technologies.tsubakuro.low.sql.Parameters;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlCommon.Bit;
-import com.tsurugidb.jogasaki.proto.SqlCommon.TimePoint;
-import com.tsurugidb.jogasaki.proto.SqlRequest.Parameter;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlCommon.Bit;
+import com.tsurugidb.tateyama.proto.SqlCommon.TimePoint;
+import com.tsurugidb.tateyama.proto.SqlRequest.Parameter;
 
 class ParametersTest {
     

@@ -178,7 +178,7 @@ public class OrderStatus {
                     resultSet4.nextColumn();
                     oId = resultSet4.fetchInt8Value();
                     // FIXME treat InconsistentIndex
-                    //                    if (status4.getError().getStatus() == StatusProtos.Status.ERR_INCONSISTENT_INDEX) {
+                    //                    if (status4.getError().getStatus() == SqlStatus.Status.ERR_INCONSISTENT_INDEX) {
                     //                        if (profile.inconsistentIndexCount == 0) {
                     //                            System.out.println("inconsistent_index");
                     //                        }

@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
+import com.tsurugidb.tateyama.proto.DatastoreRequest;
 import com.nautilus_technologies.tsubakuro.low.datastore.Backup;
 import com.nautilus_technologies.tsubakuro.low.datastore.DatastoreService;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -103,7 +103,7 @@ public class BackupImpl implements Backup {
             return;
         }
         long timeoutMillis = Math.min(unit.toMillis(timeout), MAX_EXPIRATION_TIME_MILLIS);
-        var request = DatastoreRequestProtos.BackupContinue.newBuilder()
+        var request = DatastoreRequest.BackupContinue.newBuilder()
                 .setId(backupId)
                 .setExpirationTime(timeoutMillis)
                 .build();
@@ -133,7 +133,7 @@ public class BackupImpl implements Backup {
                     () -> closeHandler.onClosed(this));
         }
         if (Objects.nonNull(service)) {
-            var request = DatastoreRequestProtos.BackupEnd.newBuilder()
+            var request = DatastoreRequest.BackupEnd.newBuilder()
                     .setId(backupId)
                     .build();
             var response = service.send(request);

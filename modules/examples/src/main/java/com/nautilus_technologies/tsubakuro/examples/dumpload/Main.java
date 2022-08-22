@@ -8,7 +8,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Placeholders;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
 import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.low.sql.util.LoadBuilder;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 import org.apache.commons.cli.*;
 
 import java.nio.file.Files;

@@ -11,8 +11,8 @@ import org.slf4j.LoggerFactory;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
 import com.nautilus_technologies.tsubakuro.low.sql.SqlService;
 import com.nautilus_technologies.tsubakuro.low.sql.PreparedStatement;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 
 /**
  * PreparedStatementImpl type.

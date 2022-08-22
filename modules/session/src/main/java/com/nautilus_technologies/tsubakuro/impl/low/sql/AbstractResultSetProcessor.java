@@ -10,8 +10,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 
 import com.google.protobuf.Message;
-//import com.tsurugidb.jogasaki.proto.SqlRequest;
-//import com.tsurugidb.jogasaki.proto.SqlResponse;
+//import com.tsurugidb.tateyama.proto.SqlRequest;
+//import com.tsurugidb.tateyama.proto.SqlResponse;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 //import com.nautilus_technologies.tsubakuro.exception.BrokenResponseException;

@@ -16,7 +16,7 @@ import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.ServerResource;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlRequest;
 
 /**
  * Executes load operations.

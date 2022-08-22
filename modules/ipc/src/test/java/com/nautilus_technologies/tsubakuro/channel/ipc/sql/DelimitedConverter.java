@@ -3,8 +3,8 @@ package com.nautilus_technologies.tsubakuro.channel.ipc.sql;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 public final class DelimitedConverter {
     private DelimitedConverter() {
