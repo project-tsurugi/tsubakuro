@@ -5,7 +5,7 @@ horikawa
 この文書は、protocol buffersによるメッセージ定義に関するconventionを記す。
 
 ## 前提
-* protocol buffersによるメッセージはサービス毎に用意する
+* protocol buffersによるメッセージはサービス毎に用意する。
 * 各サービス毎に定義するメッセージは、request, responseとそれらに共通するcommonの３種類。commonは存在しない場合もある。
 * 上記の他に、サービス全体に共通する診断メッセージ（diagnostics）がある。
 
@@ -35,9 +35,7 @@ top directoryの例は下記
 
 ## javaのpackageとouter_classname
 ### package
-* com.tsurugidb.[開発コード].proto
-開発コードの例は、jogasaki, limestone。
-開発コードが用意されていないサービスについては、サービス名で代用しても良い（例：auth）。
+* com.tsurugidb.[サービス名].proto
 
 # outer_classname
 * `サービス名`[Request|Response|Common]
