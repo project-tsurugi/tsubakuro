@@ -38,7 +38,7 @@ package名は以下とする。
 
 ## javaのpackageとouter_classname
 ### package
-* com.tsurugidb.[サービス名].proto
+* com.tsurugidb.tateyama.proto
 
 # outer_classname
 * `サービス名`[Request|Response|Common]
