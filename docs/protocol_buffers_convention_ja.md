@@ -32,6 +32,9 @@ top directoryの例は下記
 ファイル名：diagnostics.proto
 ファイル格納場所：topディレクトリ
 
+## package名
+package名は以下とする。
+* tateyama.proto.[サービス名].[request|response|common]
 
 ## javaのpackageとouter_classname
 ### package
