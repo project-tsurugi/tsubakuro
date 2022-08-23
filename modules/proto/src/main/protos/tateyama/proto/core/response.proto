@@ -24,10 +24,7 @@ message UpdateExpirationTime {
         // request is successfully completed.
         Void success = 11;
 
-        // session was expired.
-        Void expired = 12;
-
         // unknown error was occurred.
-        UnknownError unknown_error = 13;
+        UnknownError unknown_error = 12;
     }
 }
