@@ -1,6 +1,7 @@
 package com.nautilus_technologies.tsubakuro.impl.low.common;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -15,14 +16,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nautilus_technologies.tsubakuro.low.common.Session;
+import com.tsurugidb.tateyama.proto.CoreRequest;
+import com.tsurugidb.tateyama.proto.CoreResponse;
 import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
+import com.nautilus_technologies.tsubakuro.util.ByteBufferInputStream;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Wire;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.Response;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.nautilus_technologies.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
 import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
+import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.nautilus_technologies.tsubakuro.low.common.CoreServiceCode;
+import com.nautilus_technologies.tsubakuro.low.common.CoreServiceException;
 
 /**
  * SessionImpl type.
@@ -30,8 +38,10 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundF
 public class SessionImpl implements Session {
     static final Logger LOG = LoggerFactory.getLogger(SessionImpl.class);
 
-    private long timeout;
-    private TimeUnit unit;
+    /**
+     * The Core service ID.
+     */
+    public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
 
     private Wire wire;  // FIXME use Wire
 
@@ -130,9 +140,36 @@ public class SessionImpl implements Session {
         return wire.updateCredential(credential);
     }
 
+
+    static class UpdateExpirationTimeProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = CoreResponse.UpdateExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
     @Override
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
-        return FutureResponse.returns(null);
+        return send(
+            SERVICE_ID,
+            toDelimitedByteArray(CoreRequest.Request.newBuilder()
+                .setMessageVersion(Constants.MESSAGE_VERSION)
+                .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
+                    .setExpirationTime(u.toMillis(t)))
+                .build()),
+            new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
     /**
@@ -141,13 +178,7 @@ public class SessionImpl implements Session {
      * @param u unit of timeout
      */
     public void setCloseTimeout(long t, TimeUnit u) {
-        timeout = t;
-        unit = u;
-    }
-
-    @Override
-    public void setCloseTimeout(@Nonnull Timeout to) {
-        Objects.requireNonNull(to);
+        setCloseTimeout(new Timeout(t, u, Timeout.Policy.ERROR));
     }
 
     /**
@@ -175,5 +206,19 @@ public class SessionImpl implements Session {
     @Override
     public Wire getWire() {
         return wire;
+    }
+
+    static CoreServiceException newUnknown(@Nonnull CoreResponse.UnknownError message) {
+        assert message != null;
+        return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
+    }
+
+    private byte[] toDelimitedByteArray(CoreRequest.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
     }
 }
