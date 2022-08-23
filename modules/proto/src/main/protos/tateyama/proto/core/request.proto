@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package tateyama.proto.core.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "CoreRequest";
+
+// the request message to tateyama core service.
+message Request {
+    // the request message version.
+    uint64 message_version = 1;
+
+    reserved 2 to 10;
+
+    // the request command.
+    oneof command {
+        UpdateExpirationTime update_expiration_time = 11;
+    }
+    reserved 12 to 99;
+}
+
+// update session expiration time
+message UpdateExpirationTime {
+
+    // the expiration time (milliseconds from now) to be set
+    uint64 expiration_time = 1;
+}
