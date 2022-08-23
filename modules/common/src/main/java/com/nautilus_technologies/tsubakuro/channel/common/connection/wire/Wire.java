@@ -93,7 +93,9 @@ public interface Wire extends ServerResource {
     /**
      * Set to receive a Query type response by response box
      */
-    void setResultSetMode(ResponseWireHandle handle);
+    default void setResultSetMode(ResponseWireHandle handle) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * release the message in the response box
@@ -101,13 +103,17 @@ public interface Wire extends ServerResource {
      * such usage is only possible when a command using a ResultSet fails.
      * @param handle the handle to the response box
      */
-    void release(ResponseWireHandle handle) throws IOException;
+    default void release(ResponseWireHandle handle) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
      * @return ResultSetWire
     */
-    ResultSetWire createResultSetWire() throws IOException;
+    default ResultSetWire createResultSetWire() throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Closes this connection.
