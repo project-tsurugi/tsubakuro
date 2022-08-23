@@ -29,8 +29,8 @@ import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
 import com.nautilus_technologies.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.nautilus_technologies.tsubakuro.channel.common
 import com.nautilus_technologies.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.common.CoreServiceCode;
-import com.nautilus_technologies.tsubakuro.low.common.CoreServiceException;
+import com.nautilus_technologies.tsubakuro.exception.CoreServiceCode;
+import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
 
 /**
  * SessionImpl type.
