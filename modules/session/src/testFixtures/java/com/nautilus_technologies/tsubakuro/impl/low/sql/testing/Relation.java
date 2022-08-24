@@ -1,6 +1,7 @@
 package  com.nautilus_technologies.tsubakuro.impl.low.sql.testing;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
@@ -194,7 +195,7 @@ public final class Relation {
             }
             output.flush();
             return buf.toByteArray();
-        } catch (Exception e) {
+        } catch (IOException e) {
             // may not occur
             throw new AssertionError(e);
         }
