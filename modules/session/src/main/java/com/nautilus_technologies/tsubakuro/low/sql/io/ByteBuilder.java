@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * Builds an array of bytes.
  */
@@ -12,7 +14,7 @@ public final class ByteBuilder {
 
     private static final byte[] EMPTY = new byte[0];
 
-    public byte[] buffer = EMPTY;
+    private byte[] buffer = EMPTY;
 
     private int size;
 
@@ -122,6 +124,9 @@ public final class ByteBuilder {
      * Returns the buffer array.
      * @return the buffer array
      */
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP",
+            justification = "don't take copies for optimization")
     public byte[] getData() {
         return buffer;
     }

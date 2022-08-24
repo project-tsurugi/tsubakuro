@@ -7,6 +7,7 @@ import java.time.LocalTime;
 
 import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
+import com.nautilus_technologies.tsubakuro.low.sql.io.ValueInput;
 
 /**
  * An implementation of {@link RelationCursor}, which retrieves relation data from the {@link ValueInput}.

@@ -1,6 +1,7 @@
 package  com.nautilus_technologies.tsubakuro.impl.low.sql.testing;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
@@ -19,7 +20,6 @@ import java.util.stream.Stream;
 import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.BasicResultSet;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.ValueInputBackedRelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueInput;
@@ -38,6 +38,10 @@ import com.nautilus_technologies.tsubakuro.low.sql.io.ValueInput;
  *     </tr>
  *   </thead>
  *   <tbody>
+ *     <tr>
+ *       <td> {@link Boolean} </td>
+ *       <td> {@link RelationCursor#fetchBooleanValue() BOOLEAN} </td>
+ *     </tr>
  *     <tr>
  *       <td> {@link Integer} </td>
  *       <td> {@link RelationCursor#fetchInt4Value() INT4} </td>
@@ -115,6 +119,11 @@ public final class Relation {
         this.entries = entries;
     }
 
+    /**
+     * Returns byte sequence of this relation.
+     * {@link StreamBackedValueInput} can extract the contents.
+     * @return the byte sequence.
+     */
     public ByteBuffer getByteBuffer() {
         return ByteBuffer.wrap(getBytes());
     }
@@ -186,7 +195,7 @@ public final class Relation {
             }
             output.flush();
             return buf.toByteArray();
-        } catch (Exception e) {
+        } catch (IOException e) {
             // may not occur
             throw new AssertionError(e);
         }

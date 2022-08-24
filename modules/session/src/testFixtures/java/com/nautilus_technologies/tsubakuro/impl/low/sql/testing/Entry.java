@@ -69,6 +69,10 @@ public final class Entry {
      *       <td> {@link #forNull()} </td>
      *     </tr>
      *     <tr>
+     *       <td> {@code value instanceof Boolean} </td>
+     *       <td> {@link #forInt(long)} </td>
+     *     </tr>
+     *     <tr>
      *       <td> {@code value instanceof Integer} </td>
      *       <td> {@link #forInt(long)} </td>
      *     </tr>
@@ -129,6 +133,9 @@ public final class Entry {
     private static Entry parse0(Object value) {
         if (value == null) {
             return NULL;
+        }
+        if (value instanceof Boolean) {
+            return Entry.forInt((Boolean) value ? 1 : 0);
         }
         if (value instanceof Integer) {
             return Entry.forInt((Integer) value);
