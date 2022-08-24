@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import com.nautilus_technologies.tsubakuro.low.sql.RelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.BasicResultSet;
 import com.nautilus_technologies.tsubakuro.impl.low.sql.ValueInputBackedRelationCursor;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.nautilus_technologies.tsubakuro.low.sql.io.StreamBackedValueInput;
