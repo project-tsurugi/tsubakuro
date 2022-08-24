@@ -15,7 +15,6 @@ import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
 import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
 import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.nautilus_technologies.tsubakuro.util.Timeout;
-import com.nautilus_technologies.tsubakuro.util.FutureResponse;
 
 /**
  * A basic implementation of {@link ResultSet} which just delegate operations to {@link RelationCursor}.
@@ -25,8 +24,6 @@ public class BasicResultSet implements ResultSet {
     private final ResultSetMetadata metadata;
 
     private final RelationCursor cursor;
-
-    private final FutureResultOnly futureResultOnly;
 
     /**
      * Creates a new instance.
@@ -38,7 +35,6 @@ public class BasicResultSet implements ResultSet {
         Objects.requireNonNull(cursor);
         this.metadata = metadata;
         this.cursor = cursor;
-        this.futureResultOnly = new FutureResultOnly();
     }
 
     @Override

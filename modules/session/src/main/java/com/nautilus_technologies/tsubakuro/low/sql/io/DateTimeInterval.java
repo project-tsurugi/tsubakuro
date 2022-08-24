@@ -96,6 +96,6 @@ public final class DateTimeInterval {
                 year,
                 month,
                 day,
-                BigDecimal.valueOf(nanoseconds).setScale(-9));
+                BigDecimal.valueOf(nanoseconds).scaleByPowerOfTen(-9).toPlainString());
     }
 }

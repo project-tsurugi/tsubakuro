@@ -39,6 +39,10 @@ import com.nautilus_technologies.tsubakuro.low.sql.io.ValueInput;
  *   </thead>
  *   <tbody>
  *     <tr>
+ *       <td> {@link Boolean} </td>
+ *       <td> {@link RelationCursor#fetchBooleanValue() BOOLEAN} </td>
+ *     </tr>
+ *     <tr>
  *       <td> {@link Integer} </td>
  *       <td> {@link RelationCursor#fetchInt4Value() INT4} </td>
  *     </tr>
@@ -115,6 +119,11 @@ public final class Relation {
         this.entries = entries;
     }
 
+    /**
+     * Returns byte sequence of this relation.
+     * {@link StreamBackedValueInput} can extract the contents.
+     * @return the byte sequence.
+     */
     public ByteBuffer getByteBuffer() {
         return ByteBuffer.wrap(getBytes());
     }
