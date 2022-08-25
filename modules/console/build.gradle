@@ -31,11 +31,11 @@ sourceSets {
     }
 }
 
-sourcesJar {
-    // excludes generated source files
-    exclude "$buildDir/generated/sources/jflex"
-}
-
 checkstyleMain {
     exclude '**/*Flex.java'
+}
+
+tasks.sourcesJar {
+    // sourcesJar will include generated files..
+    dependsOn 'generateJflex'
 }
