@@ -144,7 +144,7 @@ class BasicSqlProcessorTest {
     @Test
     void execute_wo_result() throws Exception {
         var reached = new AtomicBoolean();
-        PreparedStatement ps = createPreparedStatement(true);
+        PreparedStatement ps = createPreparedStatement(false);
         Transaction tx = new Transaction() {
             @Override
             public FutureResponse<Void> executeStatement(
