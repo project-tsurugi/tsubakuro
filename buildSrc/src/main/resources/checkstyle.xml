@@ -82,7 +82,7 @@
       <property name="severity" value="ignore"/>
       <property name="ignoreNumbers" value="-1, 0, 1, 2, 10, 24, 60"/>
     </module>
-    <module name="MissingSwitchDefault"/>
+    <!-- <module name="MissingSwitchDefault"/> -->
     <module name="SimplifyBooleanExpression">
       <property name="severity" value="ignore"/>
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>

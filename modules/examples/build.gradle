@@ -12,6 +12,7 @@ dependencies {
     implementation project(':ipc')
     implementation project(':stream')
     implementation project(':connector')
+    implementation project(':console')
 }
 
 application {
@@ -100,5 +101,16 @@ tasks.register('runUpdateExpirationTime', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.nautilus_technologies.tsubakuro.examples.updateExpirationTime.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+}
+
+tasks.register('runScript', JavaExec) {
+    description 'run SQL script : -Dscript=</path/to/script> -Dconnection=<endpoint-uri> [-DlogLevel=<level>]'
+    dependsOn ':ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.tsurugidb.tsubakuro.console.ScriptRunner'
+    args = [ System.getProperty('script', ''), System.getProperty('connection', '') ]
+    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', System.getProperty('logLevel', 'INFO')
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
