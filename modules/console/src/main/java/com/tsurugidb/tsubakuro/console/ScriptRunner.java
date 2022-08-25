@@ -37,7 +37,7 @@ public final class ScriptRunner {
 
     static final Logger LOG = LoggerFactory.getLogger(ScriptRunner.class);
 
-    private static final Path PATH_STANDARD_INPUT = Path.of("/");
+    private static final Path PATH_STANDARD_INPUT = Path.of("-"); //$NON-NLS-1$
 
     private static final Charset DEFAULT_SCRIPT_ENCODING = StandardCharsets.UTF_8;
 
