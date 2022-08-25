@@ -37,7 +37,7 @@ public final class ScriptRunner {
 
     static final Logger LOG = LoggerFactory.getLogger(ScriptRunner.class);
 
-    private static final Path PATH_STANDARD_INPUT = Path.of("-"); //$NON-NLS-1$
+    private static final String NAME_STANDARD_INPUT = "-"; //$NON-NLS-1$
 
     private static final Charset DEFAULT_SCRIPT_ENCODING = StandardCharsets.UTF_8;
 
@@ -58,10 +58,10 @@ public final class ScriptRunner {
         }
         LOG.debug("script: {}", args[0]); //$NON-NLS-1$
         LOG.debug("endpoint: {}", args[1]); //$NON-NLS-1$
-        Path scriptPath = Path.of(args[0]);
-        URI endpoint = URI.create(args[1]);
+        var script = args[0];
+        var endpoint = URI.create(args[1]);
         Credential credential = NullCredential.INSTANCE;
-        boolean success = execute(toReaderSupplier(scriptPath), endpoint, credential);
+        boolean success = execute(toReaderSupplier(script), endpoint, credential);
         if (!success) {
             System.exit(1);
         }
@@ -140,8 +140,8 @@ public final class ScriptRunner {
         return true;
     }
 
-    private static IoSupplier<? extends Reader> toReaderSupplier(Path script) throws FileNotFoundException {
-        if (script.equals(PATH_STANDARD_INPUT)) {
+    private static IoSupplier<? extends Reader> toReaderSupplier(String script) throws FileNotFoundException {
+        if (script.equals(NAME_STANDARD_INPUT)) {
             LOG.debug("read SQL script from standard input"); //$NON-NLS-1$
             return () -> {
                 var console = System.console();
@@ -151,11 +151,12 @@ public final class ScriptRunner {
                 return new InputStreamReader(System.in, Charset.defaultCharset());
             };
         }
-        if (!Files.isRegularFile(script)) {
-            throw new FileNotFoundException(script.toString());
+        var path = Path.of(script);
+        if (!Files.isRegularFile(path)) {
+            throw new FileNotFoundException(path.toString());
         }
-        LOG.debug("read SQL script from file: {}", script); //$NON-NLS-1$
-        return () -> Files.newBufferedReader(script, DEFAULT_SCRIPT_ENCODING);
+        LOG.debug("read SQL script from file: {}", path); //$NON-NLS-1$
+        return () -> Files.newBufferedReader(path, DEFAULT_SCRIPT_ENCODING);
     }
 
     private ScriptRunner() {
