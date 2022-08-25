@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.protobuf.ByteString;
+import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
 import com.tsurugidb.jogasaki.proto.SqlCommon;
 import com.tsurugidb.jogasaki.proto.SqlCommon.TypeInfo;
 
@@ -138,6 +139,7 @@ public final class Types {
             Map.entry(Instant.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(java.sql.Timestamp.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(SqlCommon.TimePoint.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+            Map.entry(DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
             Map.entry(SqlCommon.DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
 
             // LOB
