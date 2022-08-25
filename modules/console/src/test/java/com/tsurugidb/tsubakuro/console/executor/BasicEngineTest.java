@@ -164,7 +164,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(false);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalStateException.class, () -> engine.execute(parse("SELECT * FROM T")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("SELECT * FROM T")));
     }
 
     @Test
@@ -290,7 +290,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(true);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalStateException.class, () -> engine.execute(parse("START TRANSACTION")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("START TRANSACTION")));
     }
 
     @Test
@@ -338,7 +338,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(false);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalStateException.class, () -> engine.execute(parse("COMMIT")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("COMMIT")));
     }
 
     @Test
@@ -364,7 +364,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(false);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalStateException.class, () -> engine.execute(parse("COMMIT")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("COMMIT")));
     }
 
     @Test
@@ -386,11 +386,38 @@ class BasicEngineTest {
     }
 
     @Test
+    void special_statement_status() throws Exception {
+        MockSqlProcessor sql = new MockSqlProcessor(false);
+        MockResultProcessor rs = new MockResultProcessor();
+        var engine = new BasicEngine(sql, rs);
+        var cont = engine.execute(parse("\\status"));
+        assertTrue(cont);
+    }
+
+    @Test
+    void special_statement_status_tx_active() throws Exception {
+        MockSqlProcessor sql = new MockSqlProcessor(true);
+        MockResultProcessor rs = new MockResultProcessor();
+        var engine = new BasicEngine(sql, rs);
+        var cont = engine.execute(parse("\\status"));
+        assertTrue(cont);
+    }
+
+    @Test
+    void special_statement_help() throws Exception {
+        MockSqlProcessor sql = new MockSqlProcessor(false);
+        MockResultProcessor rs = new MockResultProcessor();
+        var engine = new BasicEngine(sql, rs);
+        var cont = engine.execute(parse("\\help"));
+        assertTrue(cont);
+    }
+
+    @Test
     void special_statement_exit_tx_active() throws Exception {
         MockSqlProcessor sql = new MockSqlProcessor(true);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalStateException.class, () -> engine.execute(parse("\\exit")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("\\exit")));
     }
 
     @Test
@@ -407,7 +434,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(false);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalArgumentException.class, () -> engine.execute(parse("\\UNKNOWN_COMMAND")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("\\UNKNOWN_COMMAND")));
     }
 
     @Test
@@ -415,7 +442,7 @@ class BasicEngineTest {
         MockSqlProcessor sql = new MockSqlProcessor(false);
         MockResultProcessor rs = new MockResultProcessor();
         var engine = new BasicEngine(sql, rs);
-        assertThrows(IllegalArgumentException.class, () -> engine.execute(parse("START TRANSACTION INVALID")));
+        assertThrows(EngineException.class, () -> engine.execute(parse("START TRANSACTION INVALID")));
     }
 
     private static Statement parse(String text) throws IOException {

@@ -69,7 +69,7 @@ Developers can build other SQL scripting tools using following interfaces and cl
                     |  "EXCLUDE" <table-list>
 
 <commit-statement> ::= "COMMIT"
-          |  "COMMIT" "WAIT" "FOR" <commit-status>
+                    |  "COMMIT" "WAIT" "FOR" <commit-status>
 
 <commit-status> ::= "ACCEPTED"
                  |  "AVAILABLE"
@@ -94,6 +94,8 @@ Developers can build other SQL scripting tools using following interfaces and cl
 
 <special-statement> ::= "\EXIT"
                      |  "\HALT"
+                     |  "\STATUS"
+                     |  "\HELP"
 
 <statement-delimiter> ::= ";"
                        |  EOF
