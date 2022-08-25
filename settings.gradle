@@ -6,6 +6,7 @@ include 'session'
 include 'ipc'
 include 'stream'
 include 'connector'
+include 'auth-mock'
 include 'examples'
 
 rootProject.children.each { project ->
