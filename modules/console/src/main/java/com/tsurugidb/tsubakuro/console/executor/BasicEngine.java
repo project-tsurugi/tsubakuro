@@ -44,8 +44,8 @@ public class BasicEngine extends AbstractEngine {
     }
 
     @Override
-    protected boolean executeEmptyStatement(
-            @Nonnull Statement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeEmptyStatement(@Nonnull Statement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
         return true;
@@ -55,8 +55,8 @@ public class BasicEngine extends AbstractEngine {
             value = "RCN",
             justification = "misdetection: SqlProcessor.execute() may return null")
     @Override
-    protected boolean executeGenericStatement(
-            @Nonnull Statement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeGenericStatement(@Nonnull Statement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
@@ -70,8 +70,8 @@ public class BasicEngine extends AbstractEngine {
     }
 
     @Override
-    protected boolean executeStartTransactionStatement(
-            @Nonnull StartTransactionStatement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeStartTransactionStatement(@Nonnull StartTransactionStatement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
@@ -82,8 +82,8 @@ public class BasicEngine extends AbstractEngine {
     }
 
     @Override
-    protected boolean executeCommitStatement(
-            @Nonnull CommitStatement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeCommitStatement(@Nonnull CommitStatement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
@@ -94,8 +94,8 @@ public class BasicEngine extends AbstractEngine {
     }
 
     @Override
-    protected boolean executeRollbackStatement(
-            @Nonnull Statement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeRollbackStatement(@Nonnull Statement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
@@ -105,15 +105,15 @@ public class BasicEngine extends AbstractEngine {
     }
 
     @Override
-    protected boolean executeCallStatement(
-            @Nonnull CallStatement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeCallStatement(@Nonnull CallStatement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         // fall-back
         return executeGenericStatement(statement);
     }
 
     @Override
-    protected boolean executeSpecialStatement(
-            @Nonnull SpecialStatement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeSpecialStatement(@Nonnull SpecialStatement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
@@ -126,18 +126,34 @@ public class BasicEngine extends AbstractEngine {
             LOG.debug("starting force shut-down"); //$NON-NLS-1$
             return false;
         }
+        if (ExecutorUtil.isStatusCommand(statement)) {
+            LOG.debug("show status"); //$NON-NLS-1$
+            if (sqlProcessor.isTransactionActive()) {
+                System.out.println("transaction is active");
+            } else {
+                System.out.println("transaction is inactive");
+            }
+            return true;
+        }
+        if (ExecutorUtil.isHelpCommand(statement)) {
+            LOG.debug("show help"); //$NON-NLS-1$
+            for (var s: ExecutorUtil.getHelpMessage()) {
+                System.out.println(s);
+            }
+            return true;
+        }
         // execute as erroneous
         LOG.debug("command is unrecognized: {}", statement.getCommandName()); //$NON-NLS-1$
         return execute(ExecutorUtil.toUnknownError(statement));
     }
 
     @Override
-    protected boolean executeErroneousStatement(
-            @Nonnull ErroneousStatement statement) throws ServerException, IOException, InterruptedException {
+    protected boolean executeErroneousStatement(@Nonnull ErroneousStatement statement)
+            throws EngineException, ServerException, IOException, InterruptedException {
         Objects.requireNonNull(statement);
         LOG.debug("execute: kind={}, text={}", statement.getKind(), statement.getText()); //$NON-NLS-1$
 
-        throw new IllegalArgumentException(MessageFormat.format(
+        throw new EngineException(MessageFormat.format(
                 "[{0}] {1} (line={2}, column={3})",
                 statement.getErrorKind(),
                 statement.getMessage(),
@@ -145,18 +161,18 @@ public class BasicEngine extends AbstractEngine {
                 statement.getOccurrence().getStartColumn() + 1));
     }
 
-    private void checkTransactionActive(Statement statement) {
+    private void checkTransactionActive(Statement statement) throws EngineException {
         if (!sqlProcessor.isTransactionActive()) {
-            throw new IllegalStateException(MessageFormat.format(
+            throw new EngineException(MessageFormat.format(
                     "transaction is not started (line={0}, column={1})",
                     statement.getRegion().getStartLine() + 1,
                     statement.getRegion().getStartColumn() + 1));
         }
     }
 
-    private void checkTransactionInactive(Statement statement) {
+    private void checkTransactionInactive(Statement statement) throws EngineException {
         if (sqlProcessor.isTransactionActive()) {
-            throw new IllegalStateException(MessageFormat.format(
+            throw new EngineException(MessageFormat.format(
                     "transaction is running (line={0}, column={1})",
                     statement.getRegion().getStartLine() + 1,
                     statement.getRegion().getStartColumn() + 1));

@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.console.model.CommitStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;
-import com.tsurugidb.tsubakuro.console.model.ErroneousStatement.ErrorKind;
 import com.tsurugidb.tsubakuro.console.model.Regioned;
 import com.tsurugidb.tsubakuro.console.model.SpecialStatement;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement;
+import com.tsurugidb.tsubakuro.console.model.ErroneousStatement.ErrorKind;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.ReadWriteMode;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.TransactionMode;
 
@@ -30,7 +30,11 @@ public final class ExecutorUtil {
 
     private static final String COMMAND_EXIT = "exit"; //$NON-NLS-1$
 
-    private static final String COMMAND_HALT = "halt"; //$NON-NLS-2$
+    private static final String COMMAND_HALT = "halt"; //$NON-NLS-1$
+
+    private static final String COMMAND_HELP = "help"; //$NON-NLS-1$
+
+    private static final String COMMAND_STATUS = "status"; //$NON-NLS-1$
 
     /**
      * Extracts transaction option from the {@link StartTransactionStatement}.
@@ -132,7 +136,6 @@ public final class ExecutorUtil {
         return isCommand(COMMAND_EXIT, statement);
     }
 
-
     /**
      * Returns whether or not the statement represents {@code '\halt'} command.
      * @param statement the extraction target statement
@@ -141,6 +144,26 @@ public final class ExecutorUtil {
     public static boolean isHaltCommand(@Nonnull SpecialStatement statement) {
         Objects.requireNonNull(statement);
         return isCommand(COMMAND_HALT, statement);
+    }
+
+    /**
+     * Returns whether or not the statement represents {@code '\help'} command.
+     * @param statement the extraction target statement
+     * @return {@code true} if the statement represents such the command, or {@code false} otherwise
+     */
+    public static boolean isHelpCommand(@Nonnull SpecialStatement statement) {
+        Objects.requireNonNull(statement);
+        return isCommand(COMMAND_HELP, statement);
+    }
+
+    /**
+     * Returns whether or not the statement represents {@code '\status'} command.
+     * @param statement the extraction target statement
+     * @return {@code true} if the statement represents such the command, or {@code false} otherwise
+     */
+    public static boolean isStatusCommand(@Nonnull SpecialStatement statement) {
+        Objects.requireNonNull(statement);
+        return isCommand(COMMAND_STATUS, statement);
     }
 
     /**
@@ -171,6 +194,22 @@ public final class ExecutorUtil {
                 MessageFormat.format(
                         "unknown command: \"{0}\"",
                         statement.getCommandName().getValue()));
+    }
+
+    /**
+     * Returns a help message.
+     * @return help message
+     */
+    public static List<String> getHelpMessage() {
+        return List.of(
+                "\\exit - exit script",
+                "\\halt - exit script forcibly",
+                "\\help - show this message",
+                "\\status - show transaction status",
+                "START TRANSACTION - starts a transaction",
+                "COMMIT - commits the current transaction",
+                "ROLLBACK - revokes the current transaction",
+                "(other statements) - submit SQL command to server");
     }
 
     private static <T> T unwrap(Optional<Regioned<T>> value) {

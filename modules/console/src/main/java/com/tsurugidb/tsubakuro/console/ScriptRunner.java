@@ -1,13 +1,15 @@
 package com.tsurugidb.tsubakuro.console;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -24,6 +26,7 @@ import com.tsurugidb.tsubakuro.console.executor.BasicEngine;
 import com.tsurugidb.tsubakuro.console.executor.BasicResultProcessor;
 import com.tsurugidb.tsubakuro.console.executor.BasicSqlProcessor;
 import com.tsurugidb.tsubakuro.console.executor.Engine;
+import com.tsurugidb.tsubakuro.console.executor.IoSupplier;
 import com.tsurugidb.tsubakuro.console.model.Statement;
 import com.tsurugidb.tsubakuro.console.parser.SqlParser;
 
@@ -34,6 +37,8 @@ public final class ScriptRunner {
 
     static final Logger LOG = LoggerFactory.getLogger(ScriptRunner.class);
 
+    private static final String NAME_STANDARD_INPUT = "-"; //$NON-NLS-1$
+
     private static final Charset DEFAULT_SCRIPT_ENCODING = StandardCharsets.UTF_8;
 
     /**
@@ -42,62 +47,41 @@ public final class ScriptRunner {
      * <li> {@code args[0]} : path to the script file (UTF-8 encoded) </li>
      * <li> {@code args[1]} : connection URI </li>
      * </ul>
-     * This may invoke {@link System#exit(int)}, or use {@link #execute(String...)} to avoid it.
      * @param args the program arguments
      * @throws Exception if exception was occurred
      */
     public static void main(String... args) throws Exception {
-        if (!execute(args)) {
+        if (args.length != 2) {
+            throw new IllegalArgumentException(MessageFormat.format(
+                    "usage: java {0} </path/to/script.sql> <connection-uri>",
+                    ScriptRunner.class.getName()));
+        }
+        LOG.debug("script: {}", args[0]); //$NON-NLS-1$
+        LOG.debug("endpoint: {}", args[1]); //$NON-NLS-1$
+        var script = args[0];
+        var endpoint = URI.create(args[1]);
+        Credential credential = NullCredential.INSTANCE;
+        boolean success = execute(toReaderSupplier(script), endpoint, credential);
+        if (!success) {
             System.exit(1);
         }
     }
 
     /**
-     * Executes a script file.
-     * <ul>
-     * <li> {@code args[0]} : path to the script file (UTF-8 encoded) </li>
-     * <li> {@code args[1]} : connection URI </li>
-     * </ul>
-     * @param args the program arguments
-     * @return {@code true} if successfully completed, {@code false} otherwise
-     * @throws ServerException if server side error was occurred
-     * @throws IOException if I/O error was occurred while executing the script
-     * @throws InterruptedException if interrupted while executing the script
-     */
-    public static boolean execute(String... args) throws ServerException, IOException, InterruptedException {
-        if (args.length != 2) {
-            throw new IllegalArgumentException(MessageFormat.format(
-                    "usage: java {0} </path/to/script.sql> <connection-uri>  ## {1}",
-                    ScriptRunner.class.getName(),
-                    Arrays.asList(args)));
-        }
-        LOG.debug("script: {}", args[0]); //$NON-NLS-1$
-        LOG.debug("endpoint: {}", args[1]); //$NON-NLS-1$
-        Path script = Path.of(args[0]);
-        Charset scriptEncoding = DEFAULT_SCRIPT_ENCODING;
-        URI endpoint = URI.create(args[1]);
-        Credential credential = NullCredential.INSTANCE;
-        return execute(script, scriptEncoding, endpoint, credential);
-    }
-
-    /**
      * Executes the script using basic implementation.
      * @param script the script file
-     * @param scriptEncoding the script file charset
      * @param endpoint the connection target end-point URI
      * @param credential the connection credential information
      * @return {@code true} if successfully completed, {@code false} otherwise
      * @throws ServerException if server side error was occurred
-     * @throws IOException if I/O error was occurred while executing the script
-     * @throws InterruptedException if interrupted while executing the script
+     * @throws IOException if I/O error was occurred while establishing connection
+     * @throws InterruptedException if interrupted while establishing connection
      */
     public static boolean execute(
-            @Nonnull Path script,
-            @Nonnull Charset scriptEncoding,
+            @Nonnull IoSupplier<? extends Reader> script,
             @Nonnull URI endpoint,
             @Nonnull Credential credential) throws ServerException, IOException, InterruptedException {
         Objects.requireNonNull(script);
-        Objects.requireNonNull(scriptEncoding);
         Objects.requireNonNull(endpoint);
         Objects.requireNonNull(credential);
         LOG.info(MessageFormat.format(
@@ -110,31 +94,26 @@ public final class ScriptRunner {
                 var sqlProcessor = new BasicSqlProcessor(SqlClient.attach(session));
                 var resultProcessor = new BasicResultProcessor();
         ) {
-            return execute(script, scriptEncoding, new BasicEngine(sqlProcessor, resultProcessor));
+            return execute(script, new BasicEngine(sqlProcessor, resultProcessor));
         }
     }
 
     /**
      * Executes the script.
      * @param script the script file
-     * @param scriptEncoding the script file charset
      * @param engine the statement executor
      * @return {@code true} if successfully completed, {@code false} otherwise
      * @throws ServerException if server side error was occurred
-     * @throws IOException if I/O error was occurred while executing the script
-     * @throws InterruptedException if interrupted while executing the script
+     * @throws IOException if I/O error was occurred while establishing connection
+     * @throws InterruptedException if interrupted while establishing connection
      */
     public static boolean execute(
-            @Nonnull Path script,
-            @Nonnull Charset scriptEncoding,
+            @Nonnull IoSupplier<? extends Reader> script,
             @Nonnull Engine engine) throws ServerException, IOException, InterruptedException {
         Objects.requireNonNull(script);
-        Objects.requireNonNull(scriptEncoding);
         Objects.requireNonNull(engine);
-        LOG.info(MessageFormat.format(
-                "start processing script: {0}",
-                script));
-        try (var parser = new SqlParser(Files.newBufferedReader(script, scriptEncoding))) {
+        LOG.info("start processing script");
+        try (var parser = new SqlParser(script.get())) {
             while (true) {
                 Statement statement = parser.next();
                 if (statement == null) {
@@ -159,6 +138,25 @@ public final class ScriptRunner {
         }
         LOG.info("script execution was successfully completed");
         return true;
+    }
+
+    private static IoSupplier<? extends Reader> toReaderSupplier(String script) throws FileNotFoundException {
+        if (script.equals(NAME_STANDARD_INPUT)) {
+            LOG.debug("read SQL script from standard input"); //$NON-NLS-1$
+            return () -> {
+                var console = System.console();
+                if (console != null) {
+                    return console.reader();
+                }
+                return new InputStreamReader(System.in, Charset.defaultCharset());
+            };
+        }
+        var path = Path.of(script);
+        if (!Files.isRegularFile(path)) {
+            throw new FileNotFoundException(path.toString());
+        }
+        LOG.debug("read SQL script from file: {}", path); //$NON-NLS-1$
+        return () -> Files.newBufferedReader(path, DEFAULT_SCRIPT_ENCODING);
     }
 
     private ScriptRunner() {
