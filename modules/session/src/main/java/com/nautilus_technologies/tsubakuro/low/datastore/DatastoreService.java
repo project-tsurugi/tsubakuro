@@ -3,6 +3,7 @@ package com.nautilus_technologies.tsubakuro.low.datastore;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import com.nautilus_technologies.tateyama.proto.DatastoreRequestProtos;
 import com.nautilus_technologies.tsubakuro.exception.ServerException;
@@ -46,6 +47,7 @@ public interface DatastoreService extends ServerResource {
      *      which may raise error if the request was failed
      * @throws IOException if I/O error was occurred while sending the request
      */
+    @Deprecated
     default FutureResponse<Void> send(DatastoreRequestProtos.BackupContinue request) throws IOException {
         throw new UnsupportedOperationException();
     }
@@ -130,6 +132,25 @@ public interface DatastoreService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<Boolean> send(DatastoreRequestProtos.TagRemove request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests to update the session expiration time.
+     * <p>
+     * The resources underlying this session will be disposed after this session was expired.
+     * To extend the expiration time, clients should continue to send requests in this session, or update expiration time explicitly by using this method.
+     * </p>
+     * <p>
+     * If the specified expiration time is too long, the server will automatically shorten it to its limit.
+     * </p>
+     * @param time the expiration time from now
+     * @param unit the time unit of expiration time
+     * @return the future response of the request;
+     *     it will raise {@link CoreServiceException} if request was failure
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<Void> updateExpirationTime(long time, TimeUnit unit) throws IOException {
         throw new UnsupportedOperationException();
     }
 
