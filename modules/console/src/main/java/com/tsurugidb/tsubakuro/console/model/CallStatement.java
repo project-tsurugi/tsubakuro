@@ -16,7 +16,7 @@ public class CallStatement implements Statement {
 
     private final Regioned<String> procedureName;
 
-    private final List<Regioned<?>> procedureArguments;
+    private final List<Regioned<Value>> procedureArguments;
 
     /**
      * Creates a new instance.
@@ -29,7 +29,7 @@ public class CallStatement implements Statement {
             @Nonnull String text,
             @Nonnull Region region,
             @Nonnull Regioned<String> procedureName,
-            @Nonnull List<? extends Regioned<?>> procedureArguments) {
+            @Nonnull List<? extends Regioned<Value>> procedureArguments) {
         Objects.requireNonNull(text);
         Objects.requireNonNull(region);
         this.text = text;
@@ -39,8 +39,8 @@ public class CallStatement implements Statement {
     }
 
     @Override
-    public StatementKind getKind() {
-        return StatementKind.CALL;
+    public Kind getKind() {
+        return Kind.CALL;
     }
 
     @Override
@@ -65,7 +65,7 @@ public class CallStatement implements Statement {
      * Returns the target procedure arguments.
      * @return the procedure arguments
      */
-    public List<Regioned<?>> getProcedureArguments() {
+    public List<Regioned<Value>> getProcedureArguments() {
         return procedureArguments;
     }
 

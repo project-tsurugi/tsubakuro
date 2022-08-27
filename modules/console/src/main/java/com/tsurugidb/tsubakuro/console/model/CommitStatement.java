@@ -61,8 +61,8 @@ public class CommitStatement implements Statement {
     }
 
     @Override
-    public StatementKind getKind() {
-        return StatementKind.COMMIT;
+    public Kind getKind() {
+        return Kind.COMMIT;
     }
 
     @Override

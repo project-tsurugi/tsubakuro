@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.console.model;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,6 +41,36 @@ public final class Regioned<V> {
      */
     public Region getRegion() {
         return region;
+    }
+
+    /**
+     * Returns the mapped object.
+     * @param <R> the mapped value type
+     * @param function the value mapper
+     * @return the mapped object
+     */
+    public <R> Regioned<R> map(@Nonnull Function<? super V, ? extends R> function) {
+        return new Regioned<>(function.apply(value), region);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        Regioned<?> other = (Regioned<?>) obj;
+        return Objects.equals(value, other.value);
     }
 
     @Override

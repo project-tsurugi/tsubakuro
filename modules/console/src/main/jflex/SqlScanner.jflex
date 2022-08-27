@@ -125,7 +125,9 @@ DELIMITED_IDENTIFIER = "\"" ( "\\" . | [^\\\"] )* "\""
 
 NUMERIC_LITERAL = ( {DIGIT}+ ( "." {DIGIT}* )? | "." {DIGIT}+ ) ( "E" [+\-]? {DIGIT}+ )?
 
-BOOLEAN_LITERAL = ( "TRUE" | "FALSE" )
+TRUE_LITERAL = "TRUE"
+
+FALSE_LITERAL = "FALSE"
 
 NULL_LITERAL = "NULL"
 
@@ -144,6 +146,7 @@ RIGHT_PAREN = ")"
 PLUS = "+"
 MINUS = "-"
 ASTERISK = "*"
+EQUAL = "="
 
 TEXT = .
 
@@ -157,7 +160,8 @@ TEXT = .
 {BLOCK_COMMENT}             { return token(TokenKind.BLOCK_COMMENT); }
 
 // values
-{BOOLEAN_LITERAL}           { return token(TokenKind.BOOLEAN_LITERAL); }
+{TRUE_LITERAL}              { return token(TokenKind.TRUE_LITERAL); }
+{FALSE_LITERAL}             { return token(TokenKind.FALSE_LITERAL); }
 {NULL_LITERAL}              { return token(TokenKind.NULL_LITERAL); }
 {REGULAR_IDENTIFIER}        { return token(TokenKind.REGULAR_IDENTIFIER); }
 {DELIMITED_IDENTIFIER}      { return token(TokenKind.DELIMITED_IDENTIFIER); }
@@ -175,6 +179,7 @@ TEXT = .
 {PLUS}                      { return token(TokenKind.PLUS); }
 {MINUS}                     { return token(TokenKind.MINUS); }
 {ASTERISK}                  { return token(TokenKind.ASTERISK); }
+{EQUAL}                     { return token(TokenKind.EQUAL); }
 
 // unhandled text
 {TEXT}                      { return unhandled(); }

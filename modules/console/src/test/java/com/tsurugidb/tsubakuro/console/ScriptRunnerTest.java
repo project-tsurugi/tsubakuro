@@ -17,7 +17,6 @@ import com.tsurugidb.tsubakuro.console.executor.IoSupplier;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;
 import com.tsurugidb.tsubakuro.console.model.SpecialStatement;
 import com.tsurugidb.tsubakuro.console.model.Statement;
-import com.tsurugidb.tsubakuro.console.model.StatementKind;
 
 class ScriptRunnerTest {
 
@@ -34,7 +33,7 @@ class ScriptRunnerTest {
             return true;
         }
 
-        String text(StatementKind expected, int index) {
+        String text(Statement.Kind expected, int index) {
             Statement occurred = statements.get(index);
             assertEquals(expected, occurred.getKind());
             return occurred.getText().trim();
@@ -51,7 +50,7 @@ class ScriptRunnerTest {
         var r = ScriptRunner.execute(script("SELECT * FROM T"), recorder);
         assertTrue(r);
         assertEquals(1, recorder.statements.size());
-        assertEquals("SELECT * FROM T", recorder.text(StatementKind.GENERIC, 0));
+        assertEquals("SELECT * FROM T", recorder.text(Statement.Kind.GENERIC, 0));
     }
 
     @Test
@@ -71,7 +70,7 @@ class ScriptRunnerTest {
         var r = ScriptRunner.execute(script("\\exit", "!!!"), recorder);
         assertTrue(r);
         assertEquals(1, recorder.statements.size());
-        assertEquals("\\exit", recorder.text(StatementKind.SPECIAL, 0));
+        assertEquals("\\exit", recorder.text(Statement.Kind.SPECIAL, 0));
     }
 
     @Test
@@ -80,6 +79,6 @@ class ScriptRunnerTest {
         var r = ScriptRunner.execute(script("COMMIT UNKNOWN"), recorder);
         assertTrue(r);
         assertEquals(1, recorder.statements.size());
-        assertEquals("COMMIT UNKNOWN", recorder.text(StatementKind.ERRONEOUS, 0));
+        assertEquals("COMMIT UNKNOWN", recorder.text(Statement.Kind.ERRONEOUS, 0));
     }
 }

@@ -19,6 +19,11 @@ public class ErroneousStatement implements Statement {
         UNEXPECTED_TOKEN,
 
         /**
+         * conflict property key names.
+         */
+        CONFLICT_PROPERTIES_KEY,
+
+        /**
          * conflict read-write mode option in {@code START TRANSACTION}.
          * @see StartTransactionStatement#getReadWriteMode()
          */
@@ -44,6 +49,18 @@ public class ErroneousStatement implements Statement {
         DUPLICATE_READ_AREA_OPTION,
 
         /**
+         * conflict transaction label option in {@code START TRANSACTION}.
+         * @see StartTransactionStatement#getLabel()
+         */
+        DUPLICATE_TRANSACTION_LABEL_OPTION,
+
+        /**
+         * conflict transaction properties option in {@code START TRANSACTION}.
+         * @see StartTransactionStatement#getProperties()
+         */
+        DUPLICATE_TRANSACTION_PROPERTIES_OPTION,
+
+        /**
          * invalid commit status in {@code COMMIT}.
          * @see CommitStatement#getCommitStatus()
          */
@@ -55,6 +72,10 @@ public class ErroneousStatement implements Statement {
          */
         UNKNOWN_SPECIAL_COMMAND,
 
+        /**
+         * Unexpected grammar.
+         */
+        UNSUPPORTED_GRAMMAR,
     }
 
     private final String text;
@@ -94,8 +115,8 @@ public class ErroneousStatement implements Statement {
     }
 
     @Override
-    public StatementKind getKind() {
-        return StatementKind.ERRONEOUS;
+    public Kind getKind() {
+        return Kind.ERRONEOUS;
     }
 
     @Override

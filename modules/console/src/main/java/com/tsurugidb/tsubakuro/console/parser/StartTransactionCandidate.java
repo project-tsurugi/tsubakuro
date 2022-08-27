@@ -1,11 +1,14 @@
 package com.tsurugidb.tsubakuro.console.parser;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import com.tsurugidb.tsubakuro.console.model.Regioned;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.ExclusiveMode;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.ReadWriteMode;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.TransactionMode;
+import com.tsurugidb.tsubakuro.console.model.Value;
 
 class StartTransactionCandidate {
 
@@ -22,4 +25,6 @@ class StartTransactionCandidate {
     List<Regioned<String>> readAreaExclude;
 
     Regioned<String> label;
+
+    Map<Regioned<String>, Optional<Regioned<Value>>> properties;
 }

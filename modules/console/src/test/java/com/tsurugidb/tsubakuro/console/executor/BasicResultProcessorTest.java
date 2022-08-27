@@ -1,6 +1,8 @@
 package com.tsurugidb.tsubakuro.console.executor;
 
-import static com.nautilus_technologies.tsubakuro.low.sql.Types.*;
+import static com.nautilus_technologies.tsubakuro.low.sql.Types.column;
+import static com.nautilus_technologies.tsubakuro.low.sql.Types.row;
+import static com.nautilus_technologies.tsubakuro.low.sql.Types.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
