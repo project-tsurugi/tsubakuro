@@ -128,8 +128,8 @@ class SqlScannerTest {
     void boolean_literal() throws Exception {
         var s = scanOne("TRUE False");
         assertEquals(List.of(
-                TokenKind.BOOLEAN_LITERAL,
-                TokenKind.BOOLEAN_LITERAL,
+                TokenKind.TRUE_LITERAL,
+                TokenKind.FALSE_LITERAL,
                 TokenKind.END_OF_STATEMENT), kinds(s));
     }
 
@@ -203,7 +203,7 @@ class SqlScannerTest {
 
     @Test
     void punctuations() throws Exception {
-        var ss = scan(".,;()+-*");
+        var ss = scan(".,;()+-*=");
         assertEquals(2, ss.size());
         {
             var s = ss.get(0);
@@ -220,6 +220,7 @@ class SqlScannerTest {
                     TokenKind.PLUS,
                     TokenKind.MINUS,
                     TokenKind.ASTERISK,
+                    TokenKind.EQUAL,
                     TokenKind.END_OF_STATEMENT), kinds(s));
         }
     }

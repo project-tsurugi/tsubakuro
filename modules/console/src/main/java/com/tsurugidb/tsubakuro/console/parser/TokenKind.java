@@ -29,12 +29,17 @@ enum TokenKind {
     NUMERIC_LITERAL,
 
     /**
-     * boolean literals.
+     * true.
      */
-    BOOLEAN_LITERAL,
+    TRUE_LITERAL,
 
     /**
-     * null literal.
+     * false.
+     */
+    FALSE_LITERAL,
+
+    /**
+     * null.
      */
     NULL_LITERAL,
 
@@ -91,6 +96,11 @@ enum TokenKind {
      * asterisk.
      */
     ASTERISK,
+
+    /**
+     * equal sign.
+     */
+    EQUAL,
 
     /**
      * special commands.

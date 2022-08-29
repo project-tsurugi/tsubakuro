@@ -10,7 +10,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.console.model.Statement;
-import com.tsurugidb.tsubakuro.console.model.StatementKind;
 
 class SqlParserTest {
 
@@ -18,7 +17,7 @@ class SqlParserTest {
     void simple() throws Exception {
         var ss = parse("SELECT * FROM T");
         assertEquals(1, ss.size());
-        assertEquals(StatementKind.GENERIC, ss.get(0).getKind());
+        assertEquals(Statement.Kind.GENERIC, ss.get(0).getKind());
         assertEquals("SELECT * FROM T", ss.get(0).getText());
     }
 
@@ -27,13 +26,13 @@ class SqlParserTest {
         var ss = parse("SELECT * FROM T0; SELECT * FROM T1; SELECT * FROM T2");
         assertEquals(3, ss.size());
 
-        assertEquals(StatementKind.GENERIC, ss.get(0).getKind());
+        assertEquals(Statement.Kind.GENERIC, ss.get(0).getKind());
         assertEquals("SELECT * FROM T0", ss.get(0).getText());
 
-        assertEquals(StatementKind.GENERIC, ss.get(1).getKind());
+        assertEquals(Statement.Kind.GENERIC, ss.get(1).getKind());
         assertEquals("SELECT * FROM T1", ss.get(1).getText());
 
-        assertEquals(StatementKind.GENERIC, ss.get(2).getKind());
+        assertEquals(Statement.Kind.GENERIC, ss.get(2).getKind());
         assertEquals("SELECT * FROM T2", ss.get(2).getText());
     }
 
@@ -41,7 +40,7 @@ class SqlParserTest {
     void error() throws Exception {
         var ss = parse("ROLLBACK FROM T");
         assertEquals(1, ss.size());
-        assertEquals(StatementKind.ERRONEOUS, ss.get(0).getKind());
+        assertEquals(Statement.Kind.ERRONEOUS, ss.get(0).getKind());
     }
 
     @Test
@@ -54,7 +53,7 @@ class SqlParserTest {
     void empty_statement() throws Exception {
         var ss = parse(";");
         assertEquals(1, ss.size());
-        assertEquals(StatementKind.EMPTY, ss.get(0).getKind());
+        assertEquals(Statement.Kind.EMPTY, ss.get(0).getKind());
     }
 
     private static List<Statement> parse(String text) throws IOException {

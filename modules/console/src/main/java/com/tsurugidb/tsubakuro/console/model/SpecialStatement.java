@@ -21,10 +21,7 @@ public class SpecialStatement implements Statement {
      * @param region the region of this statement in the document
      * @param commandName the command name, must does not start back-slash
      */
-    public SpecialStatement(
-            @Nonnull String text,
-            @Nonnull Region region,
-            @Nonnull Regioned<String> commandName) {
+    public SpecialStatement(@Nonnull String text, @Nonnull Region region, @Nonnull Regioned<String> commandName) {
         Objects.requireNonNull(text);
         Objects.requireNonNull(region);
         Objects.requireNonNull(commandName);
@@ -34,8 +31,8 @@ public class SpecialStatement implements Statement {
     }
 
     @Override
-    public StatementKind getKind() {
-        return StatementKind.SPECIAL;
+    public Kind getKind() {
+        return Kind.SPECIAL;
     }
 
     @Override

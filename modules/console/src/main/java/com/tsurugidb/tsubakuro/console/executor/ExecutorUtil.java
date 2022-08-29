@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.jogasaki.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.console.model.CommitStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;
+import com.tsurugidb.tsubakuro.console.model.ErroneousStatement.ErrorKind;
 import com.tsurugidb.tsubakuro.console.model.Regioned;
 import com.tsurugidb.tsubakuro.console.model.SpecialStatement;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement;
-import com.tsurugidb.tsubakuro.console.model.ErroneousStatement.ErrorKind;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.ReadWriteMode;
 import com.tsurugidb.tsubakuro.console.model.StartTransactionStatement.TransactionMode;
 
@@ -49,6 +49,7 @@ public final class ExecutorUtil {
         statement.getLabel().ifPresent(it -> options.setLabel(it.getValue()));
         computeWritePreserve(statement).ifPresent(options::addAllWritePreserves);
         // FIXME: read area
+        // FIXME: properties
         return options.build();
     }
 

@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
  */
 public class SimpleStatement implements Statement {
 
-    private final StatementKind kind;
+    private final Kind kind;
 
     private final String text;
 
@@ -21,10 +21,7 @@ public class SimpleStatement implements Statement {
      * @param text the text of this statement
      * @param region the region of this statement in the document
      */
-    public SimpleStatement(
-            @Nonnull StatementKind kind,
-            @Nonnull String text,
-            @Nonnull Region region) {
+    public SimpleStatement(@Nonnull Kind kind, @Nonnull String text, @Nonnull Region region) {
         Objects.requireNonNull(kind);
         Objects.requireNonNull(text);
         Objects.requireNonNull(region);
@@ -34,7 +31,7 @@ public class SimpleStatement implements Statement {
     }
 
     @Override
-    public StatementKind getKind() {
+    public Kind getKind() {
         return kind;
     }
 
