@@ -191,7 +191,8 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this);
+            var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources);
+            return resources.register(preparedStatementImpl);
         }
     }
 

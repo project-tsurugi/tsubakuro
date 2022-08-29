@@ -105,7 +105,7 @@ class TransactionImplTest {
                 }
             }, null);
         ) {
-            client.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(100).build(), null),
+            client.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(100).build(), null, null),
             List.of()).await();
         }
         assertEquals(1, count.get());
@@ -286,7 +286,7 @@ class TransactionImplTest {
                 }
             }, null);
         ) {
-            client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build(), null),
+            client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build(), null, null),
                                                             List.of(), Path.of("/path/to/load")).await();
         }
         assertEquals(1, count.get());
@@ -339,7 +339,7 @@ class TransactionImplTest {
     }
 
     private static PreparedStatementImpl prepared(long id) {
-        return new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(id).build(), null);
+        return new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(id).build(), null, null);
     }
 
     private static String path(String string) {
