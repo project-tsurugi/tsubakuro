@@ -92,12 +92,13 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getBegin();
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
+            LOG.trace("receive (Begin): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Begin.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            return new TransactionImpl(detailResponse.getTransactionHandle(), SqlServiceStub.this);
+            var transactionImpl = new TransactionImpl(detailResponse.getTransactionHandle(), SqlServiceStub.this, resources);
+            return resources.register(transactionImpl);
         }
     }
 
@@ -105,7 +106,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Transaction> send(
             @Nonnull SqlRequest.Begin request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (Begin): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -123,11 +124,11 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
+            LOG.trace("receive (commit): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
             return null;
         }
     }
@@ -136,7 +137,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Commit request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (commit): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -154,11 +155,11 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
+            LOG.trace("receive (rollback): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
             return null;
         }
     }
@@ -167,7 +168,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Rollback request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (rollback): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -185,6 +186,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getPrepare();
+            LOG.trace("receive (prepare): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Prepare.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -197,7 +199,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<PreparedStatement> send(
             SqlRequest.Prepare request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -215,11 +217,11 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
+            LOG.trace("receive (dispose prepared statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
             return null;
         }
     }
@@ -228,7 +230,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.DisposePreparedStatement request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (dispose prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -246,6 +248,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getExplain();
+            LOG.trace("receive (explain): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Explain.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -258,7 +261,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<String> send(
             @Nonnull SqlRequest.Explain request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (explain): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -276,6 +279,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getDescribeTable();
+            LOG.trace("receive (describe table): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.DescribeTable.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -288,7 +292,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<TableMetadata> send(
             @Nonnull SqlRequest.DescribeTable request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (describe table): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -306,7 +310,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
+            LOG.trace("receive (execute (prepared) statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -319,7 +323,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -332,7 +336,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -350,11 +354,11 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
+            LOG.trace("receive (execute query body): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
             return null;
         }
     }
@@ -368,7 +372,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         SqlResponse.Response parse(@Nonnull ByteBuffer payload) throws IOException {
             var message = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            LOG.trace("receive (execute query bodyhead): {}", message); //$NON-NLS-1$
             return message;
         }
 
@@ -433,7 +437,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<ResultSet> send(
             @Nonnull SqlRequest.ExecuteQuery request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -450,7 +454,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<ResultSet> send(
             @Nonnull SqlRequest.ExecutePreparedQuery request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -471,7 +475,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
+            LOG.trace("receive (batch): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -484,7 +488,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Batch request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (batch): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 SqlRequest.Request.newBuilder()
@@ -498,7 +502,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<ResultSet> send(
             @Nonnull SqlRequest.ExecuteDump request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -516,7 +520,7 @@ public class SqlServiceStub implements SqlService {
                 throw new IOException("response type is inconsistent with the request type");
             }
             var detailResponse = response.getResultOnly();
-            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
+            LOG.trace("receive (execute load): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
@@ -529,7 +533,7 @@ public class SqlServiceStub implements SqlService {
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.ExecuteLoad request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (execute load): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
@@ -539,27 +543,50 @@ public class SqlServiceStub implements SqlService {
     }
 
     // for compatibility
+    static class DisconnectProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                // FIXME log error message
+                throw new IOException("response type is inconsistent with the request type");
+            }
+            var detailResponse = response.getResultOnly();
+            LOG.trace("receive (disconnect): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+            }
+            return null;
+        }
+    }
+
+    // for compatibility
     @Override
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Disconnect request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send: {}", request); //$NON-NLS-1$
+        LOG.trace("send (disconnect): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setDisconnect(request)
                     .build()),
-                new LoadProcessor().asResponseProcessor());
+                new DisconnectProcessor().asResponseProcessor());
     }
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        var futureResponse = send(SqlRequest.Disconnect.newBuilder().build());
-        if (Objects.nonNull(futureResponse)) {
-            futureResponse.get();
+        LOG.warn("disposing session at close");
+        try {
+            LOG.trace("closing underlying resources"); //$NON-NLS-1$
+            resources.close();
+        } finally {
+            var futureResponse = send(SqlRequest.Disconnect.newBuilder().build());
+            if (Objects.nonNull(futureResponse)) {
+                futureResponse.get();
+            }
         }
-        LOG.trace("closing underlying resources"); //$NON-NLS-1$
-        resources.close();
     }
 
     private byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {

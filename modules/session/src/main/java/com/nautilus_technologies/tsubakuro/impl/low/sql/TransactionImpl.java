@@ -67,19 +67,6 @@ public class TransactionImpl implements Transaction {
         this.timeout = 0;
     }
 
-    /**
-     * Class constructor, called from  FutureTransactionImpl.
-     @param transaction a handle for this transaction
-     @param service the caller of this constructor
-     */
-    public TransactionImpl(SqlCommon.Transaction transaction, SqlService service) {
-        this.transaction = transaction;
-        this.service = service;
-        this.closeHandler = null;
-        this.cleanuped = false;
-        this.timeout = 0;
-    }
-
     @Override
     public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
@@ -240,7 +227,6 @@ public class TransactionImpl implements Transaction {
                 .setNotificationType(status)
                 .build());
         cleanuped = true;
-        dispose();
         return rv;
     }
 
@@ -252,7 +238,6 @@ public class TransactionImpl implements Transaction {
         if (!cleanuped) {
             var rv = submitRollback();
             cleanuped = true;
-            dispose();
             return rv;
         }
         return new FutureResultOnly();
@@ -278,33 +263,25 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(service)) {
-            if (!cleanuped) {
-                // FIXME need to consider rollback is suitable here
-                try (var rollback = submitRollback()) {
-                    if (timeout == 0) {
-                        rollback.get();
-                    } else {
-                        rollback.get(timeout, unit);
-                    }
-                } catch (TimeoutException e) {
-                    LOG.warn("disposing transaction is timeout", e);
-                } finally {
-                    cleanuped = true;
+        if (Objects.nonNull(service) && !cleanuped) {
+            // FIXME need to consider rollback is suitable here
+            try (var rollback = submitRollback()) {
+                if (timeout == 0) {
+                    rollback.get();
+                } else {
+                    rollback.get(timeout, unit);
                 }
+            } catch (TimeoutException e) {
+                LOG.warn("disposing transaction is timeout", e);
+            } finally {
+                cleanuped = true;
             }
-            dispose();
         }
         if (Objects.nonNull(closeHandler)) {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
-    }
-
-    private void dispose() {
-//        service.remove(this);
-//        service = null;
     }
 
     /**
