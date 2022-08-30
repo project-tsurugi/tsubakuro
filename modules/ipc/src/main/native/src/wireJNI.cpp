@@ -15,18 +15,18 @@
  */
 
 #include <jni.h>
-#include "com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl.h"
-#include "com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl.h"
+#include "com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl.h"
+#include "com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
 
 using namespace tateyama::common::wire;
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_SessionWireImpl
  * Method:    openNative
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_openNative
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_openNative
 (JNIEnv *env, jclass, jstring name)
 {
     session_wire_container* swc;
@@ -49,11 +49,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Se
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    getResponseHandleNative
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_getResponseHandleNative
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_getResponseHandleNative
   (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -62,11 +62,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Se
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    sendNative
  * Signature: (J[B)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_sendNative__J_3B
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_sendNative__J_3B
 (JNIEnv *env, jclass, jlong handle, jbyteArray array)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -77,11 +77,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    sendNative
  * Signature: (JLjava/nio/ByteBuffer;)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_sendNative__JLjava_nio_ByteBuffer_2
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_sendNative__JLjava_nio_ByteBuffer_2
 (JNIEnv *env, jclass, jlong handle, jobject buf)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -90,11 +90,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    setQueryModeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_setQueryModeNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_setQueryModeNative
 (JNIEnv *, jclass, jlong responseWireHandle)
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseWireHandle));
@@ -102,11 +102,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    flushNative
  * Signature: (JJZ)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_flushNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_flushNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -114,11 +114,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    receiveNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__J
+JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__J
 (JNIEnv *env, jclass, jlong handle)
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
@@ -128,11 +128,11 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    receiveNative
  * Signature: (JJ)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__JJ
+JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__JJ
 (JNIEnv *env, jclass, jlong handle, jlong timeout)
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
@@ -152,11 +152,11 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_
 pthread_mutex_t release_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    releaseNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_releaseNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_releaseNative
 (JNIEnv *, jclass, jlong handle)
 {
     response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
@@ -171,11 +171,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
  * Method:    closeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_SessionWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -186,11 +186,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_Ses
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    createNative
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_createNative
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_createNative
 (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -209,11 +209,11 @@ JNIEXPORT jlong JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sq
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    connectNative
  * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_connectNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_connectNative
 (JNIEnv *env, jclass, jlong handle, jstring name)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -239,11 +239,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    getChunkNative
  * Signature: (J)Ljava/nio/ByteBuffer;
  */
-JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_getChunkNative
+JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_getChunkNative
 (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -256,11 +256,11 @@ JNIEXPORT jobject JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    disposeUsedDataNative
  * Signature: (JJ)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_disposeUsedDataNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_disposeUsedDataNative
 (JNIEnv *, jclass, jlong handle, jlong length)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -269,11 +269,11 @@ JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    isEndOfRecordNative
  * Signature: (J)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_isEndOfRecordNative
+JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_isEndOfRecordNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
@@ -282,11 +282,11 @@ JNIEXPORT jboolean JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc
 }
 
 /*
- * Class:     com_nautilus_technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    closeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_nautilus_1technologies_tsubakuro_channel_ipc_sql_ResultSetWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));

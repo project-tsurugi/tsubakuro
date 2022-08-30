@@ -17,12 +17,12 @@ import javax.annotation.Nullable;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.nautilus_technologies.tsubakuro.exception.CoreServiceCode;
-import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
-import com.nautilus_technologies.tsubakuro.impl.low.auth.JwtTicket;
-import com.nautilus_technologies.tsubakuro.low.auth.Ticket;
-import com.nautilus_technologies.tsubakuro.low.auth.TicketProvider;
-import com.nautilus_technologies.tsubakuro.low.auth.TokenKind;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.auth.impl.JwtTicket;
+import com.tsurugidb.tsubakuro.auth.Ticket;
+import com.tsurugidb.tsubakuro.auth.TicketProvider;
+import com.tsurugidb.tsubakuro.auth.TokenKind;
 
 /**
  * Mock implementation of {@link TicketProvider}.

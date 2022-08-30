@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.console.model.CallStatement;
 import com.tsurugidb.tsubakuro.console.model.CommitStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;

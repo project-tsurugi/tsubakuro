@@ -5,8 +5,8 @@ import java.io.IOException;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
 
 /**
  * Processes {@link ResultSet}.

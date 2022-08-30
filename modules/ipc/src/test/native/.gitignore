@@ -21,4 +21,4 @@ cmake-build-*
 *.tokens
 
 # create by javac -h include
-/include/com_nautilus_technologies_tsubakuro_*.h
+/include/com_tsurugidb_tsubakuro_*.h

@@ -9,10 +9,10 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
-import com.nautilus_technologies.tsubakuro.low.sql.Transaction;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tateyama.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.console.model.Region;
 

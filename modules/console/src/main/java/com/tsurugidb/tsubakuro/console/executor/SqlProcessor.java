@@ -5,9 +5,9 @@ import java.io.IOException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tateyama.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.console.model.Region;
 
