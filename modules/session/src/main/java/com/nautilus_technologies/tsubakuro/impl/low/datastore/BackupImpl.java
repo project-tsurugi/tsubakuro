@@ -102,7 +102,12 @@ public class BackupImpl implements Backup {
         if (Objects.isNull(service) || closed.get()) {
             return;
         }
-        try (var response = service.updateExpirationTime(timeout, unit)) {
+        long timeoutMillis = Math.min(unit.toMillis(timeout), MAX_EXPIRATION_TIME_MILLIS);
+        var request = DatastoreRequestProtos.BackupContinue.newBuilder()
+                .setId(backupId)
+                .setExpirationTime(timeoutMillis)
+                .build();
+        try (var response = service.send(request)) {
             // FIXME: don't wait, delay the receive response until next keepAlive() or close()
             response.get();
         }
