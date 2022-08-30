@@ -1,9 +1,11 @@
-package com.tsurugidb.tsubakuro.exception;
+package com.tsurugidb.tsubakuro.sql;
 
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.tsurugidb.tsubakuro.exception.ServerException;
 
 /**
  * An exception which occurs if Tsurugi OLTP server core is something wrong.

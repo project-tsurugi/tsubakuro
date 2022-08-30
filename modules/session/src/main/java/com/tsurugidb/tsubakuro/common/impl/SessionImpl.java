@@ -140,7 +140,6 @@ public class SessionImpl implements Session {
         return wire.updateCredential(credential);
     }
 
-
     static class UpdateExpirationTimeProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {

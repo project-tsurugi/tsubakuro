@@ -240,7 +240,7 @@ public class TransactionImpl implements Transaction {
             cleanuped = true;
             return rv;
         }
-        return new FutureResultOnly();
+        return FutureResponse.returns(null);
     }
 
     private FutureResponse<Void> submitRollback() throws IOException {

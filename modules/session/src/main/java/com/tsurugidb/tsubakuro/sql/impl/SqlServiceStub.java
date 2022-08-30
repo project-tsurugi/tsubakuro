@@ -18,8 +18,8 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.exception.SqlServiceCode;
-import com.tsurugidb.tsubakuro.exception.SqlServiceException;
+import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
+import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -32,7 +32,6 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
-//import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 
 /**

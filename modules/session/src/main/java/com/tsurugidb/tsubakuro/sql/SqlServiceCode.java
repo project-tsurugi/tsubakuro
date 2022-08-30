@@ -1,10 +1,11 @@
-package com.tsurugidb.tsubakuro.exception;
+package com.tsurugidb.tsubakuro.sql;
 
 import java.util.EnumMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
 import com.tsurugidb.tateyama.proto.SqlStatus;
 
 /**
