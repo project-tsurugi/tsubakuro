@@ -14,8 +14,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.protobuf.ByteString;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlCommon.TypeInfo;
+import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo;
 
 /**
  * Utilities to build {@link com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo}.

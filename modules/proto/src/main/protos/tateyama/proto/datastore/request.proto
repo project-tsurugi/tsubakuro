@@ -20,8 +20,6 @@ message Request {
         BackupBegin backup_begin = 11;
         // completes backup operation.
         BackupEnd backup_end = 12;
-        // extends expiration time of the backup operation.
-        BackupContinue backup_contine = 13;
         // estimates backup operation magnitude.
         BackupEstimate backup_estimate = 14;
         // restores datastore from backup data.
@@ -50,15 +48,6 @@ message BackupBegin {
 message BackupEnd {
     // the backup ID to complete.
     uint64 id = 1;
-}
-
-// extends expiration time of the backup operation.
-message BackupContinue {
-    // the backup ID to extends expiration time.
-    uint64 id = 1;
-
-    // the expiration time in milliseconds.
-    uint64 expiration_time = 2;
 }
 
 // estimates backup operation magnitude.

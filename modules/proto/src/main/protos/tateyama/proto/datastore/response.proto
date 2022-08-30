@@ -57,23 +57,6 @@ message BackupEnd {
     }
 }
 
-// extends expiration time of the backup operation.
-message BackupContinue {
-    reserved 1 to 10;
-
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Void success = 12;
-
-        // backup operation was expired.
-        Void expired = 13;
-
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
-    }
-}
-
 // estimates backup operation magnitude.
 message BackupEstimate {
     reserved 1 to 10;

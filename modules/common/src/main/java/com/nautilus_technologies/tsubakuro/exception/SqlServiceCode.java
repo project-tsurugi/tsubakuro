@@ -145,8 +145,8 @@ public enum SqlServiceCode implements DiagnosticCode {
     /**
      * ERR_CONFLICT_ON_WRITE_PRESERVE
      */
-    ERR_CONFLICT_ON_WRITE_PRESERVE(-23, StatusProtos.Status.ERR_CONFLICT_ON_WRITE_PRESERVE),
-    
+    ERR_CONFLICT_ON_WRITE_PRESERVE(-23, SqlStatus.Status.ERR_CONFLICT_ON_WRITE_PRESERVE),
+
     ;
     private final int codeNumber;
 

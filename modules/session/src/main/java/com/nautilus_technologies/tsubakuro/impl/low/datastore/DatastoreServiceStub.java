@@ -169,41 +169,9 @@ public class DatastoreServiceStub implements DatastoreService {
             new BackupEndProcessor().asResponseProcessor());
     }
 
-    static class BackupContinueProcessor implements MainResponseProcessor<Void> {
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponseProtos.BackupContinue.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            LOG.trace("receive: {}", message); //$NON-NLS-1$
-            switch (message.getResultCase()) {
-            case SUCCESS:
-                return null;
-
-            case EXPIRED:
-                throw new DatastoreServiceException(DatastoreServiceCode.BACKUP_EXPIRED);
-
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
-
-            case RESULT_NOT_SET:
-                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
-
-            default:
-                break;
-            }
-            throw new AssertionError(); // may not occur
-        }
-    }
-
     @Override
-    public FutureResponse<Void> send(@Nonnull DatastoreRequestProtos.BackupContinue request) throws IOException {
-        LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(
-            SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequestProtos.Request.newBuilder()
-                                 .setMessageVersion(Constants.MESSAGE_VERSION)
-                                 .setBackupContine(request)
-                                 .build()),
-            new BackupContinueProcessor().asResponseProcessor());
+    public FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException {
+        return session.updateExpirationTime(time, unit);
     }
 
     static class TagListProcessor implements MainResponseProcessor<List<Tag>> {
