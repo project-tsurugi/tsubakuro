@@ -17,11 +17,11 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nautilus_technologies.tsubakuro.channel.common.connection.Credential;
-import com.nautilus_technologies.tsubakuro.channel.common.connection.NullCredential;
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.low.common.SessionBuilder;
-import com.nautilus_technologies.tsubakuro.low.sql.SqlClient;
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
+import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.common.SessionBuilder;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.console.executor.BasicEngine;
 import com.tsurugidb.tsubakuro.console.executor.BasicResultProcessor;
 import com.tsurugidb.tsubakuro.console.executor.BasicSqlProcessor;

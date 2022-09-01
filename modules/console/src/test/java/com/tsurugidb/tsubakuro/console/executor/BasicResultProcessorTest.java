@@ -1,8 +1,8 @@
 package com.tsurugidb.tsubakuro.console.executor;
 
-import static com.nautilus_technologies.tsubakuro.low.sql.Types.column;
-import static com.nautilus_technologies.tsubakuro.low.sql.Types.row;
-import static com.nautilus_technologies.tsubakuro.low.sql.Types.user;
+import static com.tsurugidb.tsubakuro.sql.Types.column;
+import static com.tsurugidb.tsubakuro.sql.Types.row;
+import static com.tsurugidb.tsubakuro.sql.Types.user;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
@@ -23,13 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ResultSetMetadataAdapter;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSetMetadata;
-import com.nautilus_technologies.tsubakuro.low.sql.io.DateTimeInterval;
-import com.tsurugidb.jogasaki.proto.SqlCommon;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.sql.impl.ResultSetMetadataAdapter;
+import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
+import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
+import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 
 class BasicResultProcessorTest {
 

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package tateyama.proto.diagnostics;
 
-option java_package = "com.nautilus_technologies.tateyama.proto";
+option java_package = "com.tsurugidb.tateyama.proto";
 option java_outer_classname = "DiagnosticsProtos";
 
 // diagnostic code.

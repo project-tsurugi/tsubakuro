@@ -15,7 +15,7 @@ dependencies {
 }
 
 application {
-    mainClass.set('com.nautilus_technologies.tsubakuro.examples.Main')
+    mainClass.set('com.tsurugidb.tsubakuro.examples.Main')
 }
 
 run {
@@ -35,7 +35,7 @@ tasks.register('runExample', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -43,7 +43,7 @@ tasks.register('runTpcc', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.tpcc.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.tpcc.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -51,7 +51,7 @@ tasks.register('runPm', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.measurement.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.measurement.Main'
     jvmArgs = ['-Xms1024m', '-Xmx4096m', '-XX:+PreserveFramePointer', '--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -59,7 +59,7 @@ tasks.register('runWarehouse', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.warehouse.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.warehouse.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -67,7 +67,7 @@ tasks.register('runIc', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.concurrent.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.concurrent.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -75,7 +75,7 @@ tasks.register('runTpch', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.tpch.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.tpch.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -83,7 +83,7 @@ tasks.register('runDumpLoad', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.dumpload.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.dumpload.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -91,7 +91,7 @@ tasks.register('runBackup', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.datastore.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.datastore.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -99,6 +99,6 @@ tasks.register('runUpdateExpirationTime', JavaExec) {
     dependsOn ':ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
-    mainClass = 'com.nautilus_technologies.tsubakuro.examples.updateExpirationTime.Main'
+    mainClass = 'com.tsurugidb.tsubakuro.examples.updateExpirationTime.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }

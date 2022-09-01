@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.console.model.CallStatement;
 import com.tsurugidb.tsubakuro.console.model.CommitStatement;
 import com.tsurugidb.tsubakuro.console.model.ErroneousStatement;

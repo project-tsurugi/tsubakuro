@@ -12,13 +12,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.ResultSetMetadataAdapter;
-import com.nautilus_technologies.tsubakuro.impl.low.sql.testing.Relation;
-import com.nautilus_technologies.tsubakuro.low.sql.ResultSet;
-import com.nautilus_technologies.tsubakuro.low.sql.Types;
-import com.tsurugidb.jogasaki.proto.SqlRequest;
-import com.tsurugidb.jogasaki.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.impl.ResultSetMetadataAdapter;
+import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.Types;
+import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.tateyama.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.console.model.Region;
 import com.tsurugidb.tsubakuro.console.model.Statement;
 import com.tsurugidb.tsubakuro.console.parser.SqlParser;

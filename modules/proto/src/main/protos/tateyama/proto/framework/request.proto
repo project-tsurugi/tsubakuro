@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package tateyama.proto.framework.request;
 
-option java_package = "com.nautilus_technologies.tateyama.proto";
-option java_outer_classname = "FrameworkRequestProtos";
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "FrameworkRequest";
 
 // common request header for clients to set and send to tateyama.
 message Header {

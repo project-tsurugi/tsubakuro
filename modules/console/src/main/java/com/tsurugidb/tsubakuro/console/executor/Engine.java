@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import javax.annotation.Nonnull;
 
-import com.nautilus_technologies.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.console.model.Statement;
 
 /**

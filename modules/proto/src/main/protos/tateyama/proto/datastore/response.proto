@@ -3,8 +3,8 @@ syntax = "proto3";
 package tateyama.proto.datastore.response;
 
 option java_multiple_files = false;
-option java_package = "com.nautilus_technologies.tateyama.proto";
-option java_outer_classname = "DatastoreResponseProtos";
+option java_package = "com.tsurugidb.tateyama.proto";
+option java_outer_classname = "DatastoreResponse";
 
 import "tateyama/proto/datastore/common.proto";
 
@@ -54,23 +54,6 @@ message BackupEnd {
 
         // unknown error was occurred.
         UnknownError unknown_error = 13;
-    }
-}
-
-// extends expiration time of the backup operation.
-message BackupContinue {
-    reserved 1 to 10;
-
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Void success = 12;
-
-        // backup operation was expired.
-        Void expired = 13;
-
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
     }
 }
 

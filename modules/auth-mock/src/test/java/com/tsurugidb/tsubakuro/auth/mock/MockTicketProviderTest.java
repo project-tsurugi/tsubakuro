@@ -15,10 +15,10 @@ import org.junit.jupiter.api.Test;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.nautilus_technologies.tsubakuro.exception.CoreServiceCode;
-import com.nautilus_technologies.tsubakuro.exception.CoreServiceException;
-import com.nautilus_technologies.tsubakuro.low.auth.Ticket;
-import com.nautilus_technologies.tsubakuro.low.auth.TokenKind;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.auth.Ticket;
+import com.tsurugidb.tsubakuro.auth.TokenKind;
 
 class MockTicketProviderTest {
 
