@@ -1,35 +1,38 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 
 /**
  * SessionWireImpl type.
  */
 public class SessionWireImpl implements Wire {
+
+    static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
+
     static final FrameworkRequest.Header.Builder HEADER_BUILDER = FrameworkRequest.Header.newBuilder().setMessageVersion(1);
 
     private long wireHandle = 0;  // for c++
@@ -48,10 +51,8 @@ public class SessionWireImpl implements Wire {
     private static native void releaseNative(long responseWireHandle);
     private static native void closeNative(long wireHandle);
 
-    static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
-
     static {
-        System.loadLibrary("wire");
+        NativeLibrary.load();
     }
 
     static class QueueEntry {
