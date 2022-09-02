@@ -13,7 +13,7 @@ import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**

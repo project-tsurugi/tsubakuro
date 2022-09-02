@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package tateyama.proto.core.request;
+package core.proto.Core.request;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.core.proto";
 option java_outer_classname = "CoreRequest";
 
 // the request message to tateyama core service.

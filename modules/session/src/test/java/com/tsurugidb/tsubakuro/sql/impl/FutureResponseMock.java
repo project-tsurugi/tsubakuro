@@ -7,8 +7,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tateyama.proto.SqlResponse;
-import com.tsurugidb.tateyama.proto.SqlResponse.ResultOnly;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlResponse.ResultOnly;
 
 /**
  * FutureResponseMock type.

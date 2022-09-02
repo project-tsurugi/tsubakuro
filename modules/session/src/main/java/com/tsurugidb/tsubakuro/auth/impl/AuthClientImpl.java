@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.tsurugidb.tateyama.proto.AuthRequest;
+import com.tsurugidb.auth.proto.AuthRequest;
 import com.tsurugidb.tsubakuro.auth.AuthClient;
 import com.tsurugidb.tsubakuro.auth.AuthInfo;
 import com.tsurugidb.tsubakuro.auth.AuthService;

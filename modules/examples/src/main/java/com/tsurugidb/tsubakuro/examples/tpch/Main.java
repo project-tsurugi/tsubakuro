@@ -16,7 +16,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
 
 public final class Main {
     private static String url = "ipc:tateyama";

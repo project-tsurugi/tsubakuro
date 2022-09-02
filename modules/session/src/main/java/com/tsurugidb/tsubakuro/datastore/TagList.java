@@ -2,7 +2,7 @@ package com.tsurugidb.tsubakuro.datastore;
 
 import java.io.IOException;
 import java.util.Collection;
-import com.tsurugidb.tateyama.proto.DatastoreCommon;
+import com.tsurugidb.datastore.proto.DatastoreCommon;
 
 /**
  * TagList type.

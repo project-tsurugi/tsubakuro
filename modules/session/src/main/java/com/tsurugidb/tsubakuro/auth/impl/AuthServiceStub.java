@@ -11,8 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
-import com.tsurugidb.tateyama.proto.AuthRequest;
-import com.tsurugidb.tateyama.proto.AuthResponse;
+import com.tsurugidb.auth.proto.AuthRequest;
+import com.tsurugidb.auth.proto.AuthResponse;
 import com.tsurugidb.tsubakuro.auth.AuthInfo;
 import com.tsurugidb.tsubakuro.auth.AuthService;
 import com.tsurugidb.tsubakuro.auth.AuthServiceCode;

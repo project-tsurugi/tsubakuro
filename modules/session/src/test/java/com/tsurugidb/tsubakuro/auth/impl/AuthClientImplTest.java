@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tateyama.proto.AuthRequest;
+import com.tsurugidb.auth.proto.AuthRequest;
 import com.tsurugidb.tsubakuro.auth.AuthInfo;
 import com.tsurugidb.tsubakuro.auth.AuthService;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;

@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package tateyama.proto.auth.request;
+package auth.proto.Auth.request;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.auth.proto";
 option java_outer_classname = "AuthRequest";
 
 import "tateyama/proto/auth/common.proto";

@@ -65,7 +65,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#BOOLEAN
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#BOOLEAN
      */
     boolean fetchBooleanValue() throws IOException, ServerException, InterruptedException;
 
@@ -81,7 +81,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#INT4
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#INT4
      */
     int fetchInt4Value() throws IOException, ServerException, InterruptedException;
 
@@ -97,7 +97,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#INT8
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#INT8
      */
     long fetchInt8Value() throws IOException, ServerException, InterruptedException;
 
@@ -113,7 +113,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#FLOAT4
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#FLOAT4
      */
     float fetchFloat4Value() throws IOException, ServerException, InterruptedException;
 
@@ -129,7 +129,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#FLOAT8
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#FLOAT8
      */
     double fetchFloat8Value() throws IOException, ServerException, InterruptedException;
 
@@ -145,7 +145,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#FLOAT8
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#FLOAT8
      */
     BigDecimal fetchDecimalValue() throws IOException, ServerException, InterruptedException;
 
@@ -161,7 +161,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#CHARACTER
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#CHARACTER
      */
     String fetchCharacterValue() throws IOException, ServerException, InterruptedException;
 
@@ -177,7 +177,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#OCTET
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#OCTET
      */
     byte[] fetchOctetValue() throws IOException, ServerException, InterruptedException;
 
@@ -193,7 +193,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#BIT
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#BIT
      */
     boolean[] fetchBitValue() throws IOException, ServerException, InterruptedException;
 
@@ -209,7 +209,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#DATE
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#DATE
      */
     LocalDate fetchDateValue() throws IOException, ServerException, InterruptedException;
 
@@ -225,7 +225,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#TIME_OF_DAY
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#TIME_OF_DAY
      */
     LocalTime fetchTimeOfDayValue() throws IOException, ServerException, InterruptedException;
 
@@ -244,7 +244,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#TIME_POINT
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#TIME_POINT
      */
     Instant fetchTimePointValue() throws IOException, ServerException, InterruptedException;
 
@@ -260,7 +260,7 @@ public interface RelationCursor extends ServerResource {
      * @throws IOException if the value type is not matched
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
-     * @see com.tsurugidb.tateyama.proto.SqlCommon.AtomType#DATETIME_INTERVAL
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#DATETIME_INTERVAL
      */
     DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException;
 

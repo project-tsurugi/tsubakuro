@@ -8,8 +8,8 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.sql.Types;
-import com.tsurugidb.tateyama.proto.SqlCommon.AtomType;
-import com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo;
+import com.tsurugidb.sql.proto.SqlCommon.AtomType;
+import com.tsurugidb.sql.proto.SqlCommon.TypeInfo;
 
 class TypesTest {
         

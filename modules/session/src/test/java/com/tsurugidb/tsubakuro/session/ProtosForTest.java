@@ -1,9 +1,9 @@
 package com.tsurugidb.tsubakuro.session;
 
-import com.tsurugidb.tateyama.proto.SqlCommon;
-import com.tsurugidb.tateyama.proto.SqlRequest;
-import com.tsurugidb.tateyama.proto.SqlResponse;
-import com.tsurugidb.tateyama.proto.SqlStatus;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlStatus;
 
 import static org.junit.jupiter.api.Assertions.*;
 

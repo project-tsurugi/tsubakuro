@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
-import com.tsurugidb.tateyama.proto.DatastoreCommon;
-import com.tsurugidb.tateyama.proto.DatastoreRequest;
-import com.tsurugidb.tateyama.proto.DatastoreResponse;
+import com.tsurugidb.datastore.proto.DatastoreCommon;
+import com.tsurugidb.datastore.proto.DatastoreRequest;
+import com.tsurugidb.datastore.proto.DatastoreResponse;
 import com.tsurugidb.tsubakuro.datastore.Backup;
 // import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;

@@ -13,10 +13,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.stream.ServerStreamWire;
-import com.tsurugidb.tateyama.proto.SqlRequest;
-import com.tsurugidb.tateyama.proto.SqlResponse;
-import com.tsurugidb.tateyama.proto.FrameworkRequest;
-import com.tsurugidb.tateyama.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.framework.proto.FrameworkResponse;
 
 /**
  * ServerWireImpl type.

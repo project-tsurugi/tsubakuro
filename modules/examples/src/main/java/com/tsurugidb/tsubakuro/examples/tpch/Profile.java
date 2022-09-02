@@ -1,6 +1,6 @@
 package com.tsurugidb.tsubakuro.examples.tpch;
 
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
 
 public class Profile {
     public long scales;

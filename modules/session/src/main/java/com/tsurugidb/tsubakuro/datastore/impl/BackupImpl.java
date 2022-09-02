@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tateyama.proto.DatastoreRequest;
+import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.tsubakuro.datastore.Backup;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.exception.ServerException;

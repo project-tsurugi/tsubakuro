@@ -9,11 +9,11 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.google.protobuf.ByteString;
-import com.tsurugidb.tateyama.proto.SqlCommon;
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlRequest;
 
 /**
- * Utilities of {@link com.tsurugidb.tateyama.proto.SqlRequest.Parameter Parameter}.
+ * Utilities of {@link com.tsurugidb.sql.proto.SqlRequest.Parameter Parameter}.
  */
 public final class Parameters {
 

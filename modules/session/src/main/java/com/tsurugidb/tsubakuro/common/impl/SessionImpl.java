@@ -16,8 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tateyama.proto.CoreRequest;
-import com.tsurugidb.tateyama.proto.CoreResponse;
+import com.tsurugidb.core.proto.CoreRequest;
+import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;

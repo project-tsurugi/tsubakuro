@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 
 import com.tsurugidb.tsubakuro.channel.ipc.SessionWireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
 

@@ -16,7 +16,7 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
 
 /**
  * Executes load operations.

@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Types;
-import com.tsurugidb.tateyama.proto.SqlCommon.AtomType;
-import com.tsurugidb.tateyama.proto.SqlRequest.Placeholder.TypeInfoCase;
+import com.tsurugidb.sql.proto.SqlCommon.AtomType;
+import com.tsurugidb.sql.proto.SqlRequest.Placeholder.TypeInfoCase;
 
 class PlaceholdersTest {
     

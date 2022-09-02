@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package tateyama.proto.datastore.request;
+package datastore.proto.Datastore.request;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.datastore.proto";
 option java_outer_classname = "DatastoreRequest";
 
 import "tateyama/proto/datastore/common.proto";

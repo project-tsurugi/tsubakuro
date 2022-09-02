@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package tateyama.proto.framework.response;
+package framework.proto.Framework.response;
 
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.framework.proto";
 option java_outer_classname = "FrameworkResponse";
 
 // common response header for client to receive
