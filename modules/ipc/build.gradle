@@ -15,7 +15,7 @@ dependencies {
 publishing {
     publications {
         mavenNative(MavenPublication) {
-            artifactId = "${rootProject.name}-libtsubakuro"
+            artifactId = "${rootProject.name}-jni"
             artifact "${buildDir}/native/libtsubakuro.so"
         }
     }
