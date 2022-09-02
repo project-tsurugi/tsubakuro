@@ -106,8 +106,9 @@ task cmakeTestBuild {
     }
 }
 
-classes.dependsOn nativeLib
-testClasses.dependsOn cmakeTestBuild
+assemble.dependsOn nativeLib
+test.dependsOn cmakeBuild
+test.dependsOn cmakeTestBuild
 
 cmakeConfigure.dependsOn compileJava
 cmakeTestConfigure.dependsOn compileTestJava
