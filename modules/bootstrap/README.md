@@ -22,14 +22,19 @@ Please refer about Tsurugi SQL console [console/README.md].
 
 ```sh
 # cd modules/bootstrap
-java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar build/libs/tsubakuro-bootstrap-*-all.jar /path/to/script.sql tcp://localhost:12345
+java -jar build/libs/tsubakuro-bootstrap-*-all.jar /path/to/script.sql tcp://localhost:12345
 ```
 
 or, read SQL script from standard input (specify `-` to script path)
 
 ```sh
 # cd modules/bootstrap
-java -Dorg.slf4j.simpleLogger.defaultLogLevel=debug -jar build/libs/tsubakuro-bootstrap-*-all.jar - tcp://localhost:12345
+java -jar build/libs/tsubakuro-bootstrap-*-all.jar - tcp://localhost:12345
 ```
 
 Please type `\help` to show available commands.
+
+Available options:
+
+* `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug` - enables debug logs
+* `-Dcom.tsurugidb.tsubakuro.jnilib=/path/to/libtsubakuro.so` - enables IPC connector (in build tree, JNI library is available at `../ipc/build/native/libtsubakuro.so`)
