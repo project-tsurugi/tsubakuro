@@ -18,8 +18,8 @@ import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Types;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.MappedFutureResponse;
-import com.tsurugidb.tateyama.proto.SqlCommon;
-import com.tsurugidb.tateyama.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlRequest;
 
 /**
  * Builds {@link Load} operations.

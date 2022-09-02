@@ -15,11 +15,11 @@ import javax.annotation.Nullable;
 
 import com.google.protobuf.ByteString;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
-import com.tsurugidb.tateyama.proto.SqlCommon;
-import com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlCommon.TypeInfo;
 
 /**
- * Utilities to build {@link com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo}.
+ * Utilities to build {@link com.tsurugidb.sql.proto.SqlCommon.TypeInfo}.
  *
  * <p>
  * This helps to build a SQL type representation from the Java types.
@@ -69,7 +69,7 @@ import com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo;
  *     </tr>
  *     <tr>
  *       <td> {@code BIT} </td>
- *       <td> {@code byte[]}, {@link com.tsurugidb.tateyama.proto.SqlCommon.Bit SqlCommon.Bit} </td>
+ *       <td> {@code byte[]}, {@link com.tsurugidb.sql.proto.SqlCommon.Bit SqlCommon.Bit} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code DATE} </td>
@@ -85,15 +85,15 @@ import com.tsurugidb.tateyama.proto.SqlCommon.TypeInfo;
  *     </tr>
  *     <tr>
  *       <td> {@code DATETIME_INTERVAL} </td>
- *       <td> {@link com.tsurugidb.tateyama.proto.SqlCommon.DateTimeInterval SqlCommon.DateTimeInterval} </td>
+ *       <td> {@link com.tsurugidb.sql.proto.SqlCommon.DateTimeInterval SqlCommon.DateTimeInterval} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code CLOB} </td>
- *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.tateyama.proto.SqlCommon.Clob SqlCommon.Clob} </td>
+ *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.sql.proto.SqlCommon.Clob SqlCommon.Clob} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code BLOB} </td>
- *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.tateyama.proto.SqlCommon.Blob SqlCommon.Blob} </td>
+ *       <td> {@link java.sql.Clob}, {@link com.tsurugidb.sql.proto.SqlCommon.Blob SqlCommon.Blob} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code ARRAY} </td>

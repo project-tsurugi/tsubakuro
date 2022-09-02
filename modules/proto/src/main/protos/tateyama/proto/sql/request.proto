@@ -3,7 +3,7 @@ syntax = "proto3";
 package jogasaki.proto.sql.request;
 
 option java_multiple_files = false;
-option java_package = "com.tsurugidb.tateyama.proto";
+option java_package = "com.tsurugidb.sql.proto";
 option java_outer_classname = "SqlRequest";
 
 import "tateyama/proto/sql/common.proto";

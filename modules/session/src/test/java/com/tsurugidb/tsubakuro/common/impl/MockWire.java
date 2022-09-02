@@ -16,7 +16,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
-import com.tsurugidb.tateyama.proto.CoreResponse;
+import com.tsurugidb.core.proto.CoreResponse;
 
 /**
  * Mock implementation of {@link Wire}.

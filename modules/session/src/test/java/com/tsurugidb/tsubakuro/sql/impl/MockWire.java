@@ -19,7 +19,7 @@ import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.sql.impl.testing.ResultSetWireMock;
-import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
  * Mock implementation of {@link Wire}.

@@ -19,7 +19,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
-import com.tsurugidb.tateyama.proto.DatastoreResponse;
+import com.tsurugidb.datastore.proto.DatastoreResponse;
 
 class SessionImplTest {
     public class TestResponse implements Response {

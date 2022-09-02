@@ -7,8 +7,8 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
-import com.tsurugidb.tateyama.proto.SqlCommon;
-import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
  * An implementation of {@link TableMetadata} which just wraps original protocol buffers' message.

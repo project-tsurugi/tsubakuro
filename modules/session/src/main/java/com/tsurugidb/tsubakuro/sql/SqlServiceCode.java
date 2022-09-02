@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
-import com.tsurugidb.tateyama.proto.SqlStatus;
+import com.tsurugidb.sql.proto.SqlStatus;
 
 /**
  * Code of server core diagnostics.

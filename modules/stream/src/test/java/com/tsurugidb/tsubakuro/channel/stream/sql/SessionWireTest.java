@@ -18,7 +18,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.channel.stream.SessionWireImpl;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.tateyama.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
 
 class SessionWireTest {
     static final int SERVICE_ID_SQL = 3;

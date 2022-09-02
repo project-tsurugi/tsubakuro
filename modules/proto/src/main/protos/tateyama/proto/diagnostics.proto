@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package tateyama.proto.diagnostics;
 
-option java_package = "com.tsurugidb.tateyama.proto";
-option java_outer_classname = "DiagnosticsProtos";
+option java_package = "com.tsurugidb.diagnostics.proto";
+option java_outer_classname = "Diagnostics";
 
 // diagnostic code.
 enum Code {

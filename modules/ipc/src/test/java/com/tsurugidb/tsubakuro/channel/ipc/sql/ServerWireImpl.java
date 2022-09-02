@@ -6,10 +6,10 @@ import java.io.OutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 
-import com.tsurugidb.tateyama.proto.SqlRequest;
-import com.tsurugidb.tateyama.proto.SqlResponse;
-import com.tsurugidb.tateyama.proto.FrameworkRequest;
-import com.tsurugidb.tateyama.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.framework.proto.FrameworkResponse;
 
 /**
  * ServerWireImpl type.

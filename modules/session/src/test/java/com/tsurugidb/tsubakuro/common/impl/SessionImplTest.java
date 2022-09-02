@@ -15,8 +15,8 @@ import java.io.ByteArrayOutputStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tateyama.proto.CoreRequest;
-import com.tsurugidb.tateyama.proto.CoreResponse;
+import com.tsurugidb.core.proto.CoreRequest;
+import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;

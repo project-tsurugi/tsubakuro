@@ -15,7 +15,7 @@ import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
-import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlCommon;
 
 /**
  * A basic implementation of {@link ResultProcessor}.

@@ -12,7 +12,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.RelationMetadata;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
-import com.tsurugidb.tateyama.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlCommon;
 
 /**
  * Utilities about {@link ResultSet}.

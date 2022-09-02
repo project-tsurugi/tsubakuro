@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tateyama.proto.DatastoreRequest;
+import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.tsubakuro.datastore.Backup;
 import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
 import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
