@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
 import com.tsurugidb.tsubakuro.channel.ipc.SessionWireImpl;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -27,13 +28,13 @@ public final class IpcConnectorImpl implements Connector {
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
 
-    static {
-        System.loadLibrary("wire");
-    }
-
     private final String name;
     long handle;
     long id;
+
+    static {
+        NativeLibrary.load();
+    }
 
     public IpcConnectorImpl(String name) {
         this.name = name;

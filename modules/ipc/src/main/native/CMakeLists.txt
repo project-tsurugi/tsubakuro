@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(wire
+project(tsubakuro-jni
     VERSION 0.1.0
-    DESCRIPTION "Template project for Java Native Interface"
+    DESCRIPTION "Tsubakuro Native Wire Implementations"
     LANGUAGES C CXX)
 
 option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
@@ -22,8 +22,8 @@ find_package(Boost
     REQUIRED
 )
 
-set(export_name "wire")
-set(package_name "wire")
+set(export_name "tsubakuro")
+set(package_name "tsubakuro")
 
 include(CMakePackageConfigHelpers)
 
@@ -31,9 +31,9 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_library(wire-api INTERFACE)
+add_library(tsubakuro-api INTERFACE)
 
-target_include_directories(wire-api
+target_include_directories(tsubakuro-api
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/${export_name}>
