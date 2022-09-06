@@ -1,3 +1,24 @@
 plugins {
     id 'tsubakuro.javadocs'
+    id 'tsubakuro.java-library-conventions'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+dependencies {
+    implementation project(':connector')
+    implementation project(':session')
+}
+
+shadowJar {
+    archiveBaseName = 'tsubakuro'
+    archiveClassifier = 'all'
+    mergeServiceFiles()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = "${rootProject.name}"
+        }
+    }
 }
