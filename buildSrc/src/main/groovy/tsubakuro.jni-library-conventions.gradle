@@ -3,11 +3,11 @@ plugins {
 }
 
 def nativeRootDir = "$project.projectDir/src/main/native"
-def nativeBuildDir = "${nativeRootDir}/build"
+def nativeBuildDir = "$project.buildDir/cmake/main"
 def nativeIncludeDir = "${nativeRootDir}/include"
 
 def nativeTestRootDir = "$project.projectDir/src/test/native"
-def nativeTestBuildDir = "${nativeTestRootDir}/build"
+def nativeTestBuildDir = "$project.buildDir/cmake/test"
 def nativeTestIncludeDir = "${nativeTestRootDir}/include"
 
 def nativeLibDir = "$project.buildDir/native"
@@ -27,7 +27,12 @@ task cmakeConfigure {
         exec {
             mkdir "$nativeBuildDir"
             workingDir "$nativeBuildDir"
-            commandLine "cmake", ".."
+            commandLine [
+                "cmake",
+                "$nativeRootDir",
+                "-DCMAKE_BUILD_TYPE=${System.getProperty('CMAKE_BUILD_TYPE', 'RelWithDebInfo')}",
+                "-DCMAKE_INSTALL_PREFIX=$project.buildDir",
+            ]
         }
     }
 }
@@ -46,7 +51,7 @@ task cmakeTestConfigure {
         exec {
             mkdir "$nativeTestBuildDir"
             workingDir "$nativeTestBuildDir"
-            commandLine "cmake", ".."
+            commandLine "cmake", "$nativeTestRootDir"
         }
     }
 }
@@ -78,10 +83,10 @@ task nativeLib {
     .withPropertyName('nativeLibFile')
 
     doLast {
-        copy {
-            from "${nativeBuildDir}/src"
-            into "${nativeLibDir}"
-            include '*.so'
+        exec {
+            mkdir "$nativeBuildDir"
+            workingDir "$nativeBuildDir"
+            commandLine "cmake", "--install", "."
         }
     }
 }

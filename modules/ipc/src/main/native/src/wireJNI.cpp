@@ -195,7 +195,7 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWi
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    session_wire_container::resultset_wires_container* rwc;
+    session_wire_container::resultset_wires_container* rwc {};
     try {
         rwc = swc->create_resultset_wire();
     } catch (std::runtime_error &e) {
