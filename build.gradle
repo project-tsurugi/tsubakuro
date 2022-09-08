@@ -22,6 +22,9 @@ components.java.withVariantsFromConfiguration(configurations.apiElements) {
 components.java.withVariantsFromConfiguration(configurations.runtimeElements) {
     skip()
 }
+components.java.withVariantsFromConfiguration(configurations.sourcesElements) {
+    skip()
+}
 
 publishing {
     publications {

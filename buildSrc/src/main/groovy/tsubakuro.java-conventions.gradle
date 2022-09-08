@@ -16,6 +16,7 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(11)
     }
+    withSourcesJar()
 }
 
 dependencies {
@@ -46,11 +47,6 @@ tasks.withType(JavaCompile) { task ->
     task.options.encoding = 'UTF-8'
 }
 
-task sourcesJar(type: Jar) {
-    classifier 'sources'
-    from sourceSets.main.allSource
-}
-
 task testsJar(type: Jar) {
     classifier 'tests'
     from sourceSets.test.output
@@ -64,11 +60,6 @@ jar {
         'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
         'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
     )
-}
-
-artifacts {
-    archives tasks.sourcesJar
-    //archives tasks.testsJar
 }
 
 tasks.named('test') {
