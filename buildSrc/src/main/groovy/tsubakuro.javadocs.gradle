@@ -3,9 +3,9 @@ plugins {
 }
 
 def clientApiProjects = [
-    ":common",
-    ":session",
-    ":connector"
+    ":tsubakuro-common",
+    ":tsubakuro-session",
+    ":tsubakuro-connector"
 ]
 
 tasks.register('clientApiJavadoc', Javadoc)

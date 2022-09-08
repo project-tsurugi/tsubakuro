@@ -7,11 +7,11 @@ dependencies {
     implementation 'commons-cli:commons-cli:1.4'
     implementation 'org.slf4j:slf4j-simple:1.7.32'
 
-    implementation project(':session')
-    implementation project(':common')
-    implementation project(':ipc')
-    implementation project(':stream')
-    implementation project(':connector')
+    implementation project(':tsubakuro-session')
+    implementation project(':tsubakuro-common')
+    implementation project(':tsubakuro-ipc')
+    implementation project(':tsubakuro-stream')
+    implementation project(':tsubakuro-connector')
 }
 
 application {

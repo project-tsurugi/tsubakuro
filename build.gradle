@@ -5,8 +5,8 @@ plugins {
 }
 
 dependencies {
-    implementation project(':connector')
-    implementation project(':session')
+    implementation project(':tsubakuro-connector')
+    implementation project(':tsubakuro-session')
 }
 
 shadowJar {
