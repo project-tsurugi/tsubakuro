@@ -190,3 +190,15 @@ message Clob {
 message Blob {
     // FIXME impl
 }
+
+// unit for time and timestamp value
+enum TimeUnit {
+    // unit unspecified.
+    TIME_UNIT_UNSPECIFIED = 0;
+    // unit nano-second.
+    NANOSECOND = 1;
+    // unit micro-second.
+    MICROSECOND = 2;
+    // unit milli-second.
+    MILLISECOND = 3;
+}

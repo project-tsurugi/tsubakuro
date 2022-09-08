@@ -243,6 +243,9 @@ message DumpOption {
 
     // record count limit for dump output file
     uint64 max_record_count_per_file = 12;
+
+    // time unit used for timestamp columns
+    common.TimeUnit timestamp_unit = 13;
 }
 
 /* For execute dump request. */
