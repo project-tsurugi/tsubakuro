@@ -35,6 +35,8 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
 
     try {
         container = new connection_container(std::string_view(name_, len_));
+        env->ReleaseStringUTFChars(name, name_);
+        return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
     } catch (std::runtime_error &e) {
         env->ReleaseStringUTFChars(name, name_);
         jclass classj = env->FindClass("Ljava/io/IOException;");
@@ -43,8 +45,6 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
         env->DeleteLocalRef(classj);
         return 0;
     }
-    env->ReleaseStringUTFChars(name, name_);
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(container));
 }
 
 /*

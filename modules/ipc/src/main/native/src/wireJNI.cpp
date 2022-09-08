@@ -36,6 +36,8 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
 
     try {
         swc = new session_wire_container(std::string_view(name_, len_));
+        env->ReleaseStringUTFChars(name, name_);
+        return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(swc));
     } catch (std::runtime_error &e) {
         env->ReleaseStringUTFChars(name, name_);
         jclass classj = env->FindClass("Ljava/io/IOException;");
@@ -44,8 +46,6 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
         env->DeleteLocalRef(classj);
         return 0;
     }
-    env->ReleaseStringUTFChars(name, name_);
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(swc));
 }
 
 /*
@@ -198,14 +198,14 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWi
     session_wire_container::resultset_wires_container* rwc {};
     try {
         rwc = swc->create_resultset_wire();
+        return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rwc));
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
         env->ThrowNew(classj, e.what());
         env->DeleteLocalRef(classj);
+        return 0;
     }
-
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rwc));
 }
 
 /*
@@ -224,18 +224,20 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWir
         if (classj == nullptr) { std::abort(); }
         env->ThrowNew(classj, "name is null");
         env->DeleteLocalRef(classj);
+        return;
     }
     jsize len_ = env->GetStringUTFLength(name);
 
     try {
         rwc->connect(std::string_view(name_, len_));
+        env->ReleaseStringUTFChars(name, name_);
     } catch (std::runtime_error &e) {
+        env->ReleaseStringUTFChars(name, name_);
         jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
         env->ThrowNew(classj, e.what());
         env->DeleteLocalRef(classj);
     }
-    env->ReleaseStringUTFChars(name, name_);
 }
 
 /*
