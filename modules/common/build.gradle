@@ -10,5 +10,5 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
     testImplementation 'org.slf4j:slf4j-nop:1.7.32'
 
-    api project(':proto')
+    api project(':tsubakuro-proto')
 }

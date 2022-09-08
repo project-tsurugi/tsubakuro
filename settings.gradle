@@ -1,17 +1,18 @@
 rootProject.name = 'tsubakuro'
 
-include 'proto'
-include 'common'
-include 'session'
-include 'ipc'
-include 'stream'
-include 'connector'
-include 'console'
-include 'bootstrap'
-include 'auth-mock'
-include 'examples'
+include "${rootProject.name}-proto"
+include "${rootProject.name}-common"
+include "${rootProject.name}-session"
+include "${rootProject.name}-ipc"
+include "${rootProject.name}-stream"
+include "${rootProject.name}-connector"
+include "${rootProject.name}-console"
+include "${rootProject.name}-bootstrap"
+include "${rootProject.name}-auth-mock"
+include "${rootProject.name}-examples"
 
 rootProject.children.each { project ->
-    project.projectDir = new File(settingsDir, "modules/${project.name}")
+    var dirName = project.name.substring("${rootProject.name}-".length());
+    project.projectDir = new File(settingsDir, "modules/${dirName}")
     assert project.projectDir.isDirectory()
 }
