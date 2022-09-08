@@ -7,12 +7,20 @@ plugins {
 dependencies {
     implementation project(':tsubakuro-connector')
     implementation project(':tsubakuro-session')
+    implementation project(':tsubakuro-console')
 }
 
 shadowJar {
     archiveBaseName = 'tsubakuro'
     archiveClassifier = 'all'
     mergeServiceFiles()
+}
+
+components.java.withVariantsFromConfiguration(configurations.apiElements) {
+    skip()
+}
+components.java.withVariantsFromConfiguration(configurations.runtimeElements) {
+    skip()
 }
 
 publishing {
