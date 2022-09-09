@@ -11,7 +11,7 @@ def nativeTestBuildDir = "$project.buildDir/cmake/test"
 def nativeTestIncludeDir = "${nativeTestRootDir}/include"
 
 def nativeLibDir = "$project.buildDir/native"
-
+def nativeLibVersion = System.getenv("GITHUB_SHA") ?: ""
 
 task cmakeConfigure {
     inputs.files(fileTree(nativeRootDir) {
@@ -32,6 +32,7 @@ task cmakeConfigure {
                 "$nativeRootDir",
                 "-DCMAKE_BUILD_TYPE=${System.getProperty('CMAKE_BUILD_TYPE', 'RelWithDebInfo')}",
                 "-DCMAKE_INSTALL_PREFIX=$project.buildDir",
+                "-DTSUBAKURO_LIBRARY_VERSION=$nativeLibVersion",
             ]
         }
     }

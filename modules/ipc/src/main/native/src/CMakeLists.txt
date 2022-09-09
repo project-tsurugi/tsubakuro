@@ -8,6 +8,11 @@ target_link_libraries(tsubakuro
     PRIVATE rt
 )
 
+target_compile_definitions(tsubakuro
+    PRIVATE
+        TSUBAKURO_LIBRARY_VERSION=${TSUBAKURO_LIBRARY_VERSION}
+)
+
 set_target_properties(tsubakuro
     PROPERTIES
         INSTALL_RPATH "\$ORIGIN"

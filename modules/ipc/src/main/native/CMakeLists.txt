@@ -22,6 +22,14 @@ find_package(Boost
     REQUIRED
 )
 
+if (NOT TSUBAKURO_LIBRARY_VERSION)
+    set(
+        TSUBAKURO_LIBRARY_VERSION ""
+        CACHE STRING
+        "native library version"
+    )
+endif (NOT TSUBAKURO_LIBRARY_VERSION)
+
 set(export_name "tsubakuro")
 set(package_name "tsubakuro")
 
