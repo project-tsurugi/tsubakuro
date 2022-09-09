@@ -32,7 +32,7 @@ spotbugs {
 }
 
 tasks.register('runExample', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.Main'
@@ -40,7 +40,7 @@ tasks.register('runExample', JavaExec) {
 }
 
 tasks.register('runTpcc', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.tpcc.Main'
@@ -48,7 +48,7 @@ tasks.register('runTpcc', JavaExec) {
 }
 
 tasks.register('runPm', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.measurement.Main'
@@ -56,7 +56,7 @@ tasks.register('runPm', JavaExec) {
 }
 
 tasks.register('runWarehouse', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.warehouse.Main'
@@ -64,7 +64,7 @@ tasks.register('runWarehouse', JavaExec) {
 }
 
 tasks.register('runIc', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.concurrent.Main'
@@ -72,7 +72,7 @@ tasks.register('runIc', JavaExec) {
 }
 
 tasks.register('runTpch', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.tpch.Main'
@@ -80,7 +80,7 @@ tasks.register('runTpch', JavaExec) {
 }
 
 tasks.register('runDumpLoad', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.dumpload.Main'
@@ -88,7 +88,7 @@ tasks.register('runDumpLoad', JavaExec) {
 }
 
 tasks.register('runBackup', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.datastore.Main'
@@ -96,7 +96,7 @@ tasks.register('runBackup', JavaExec) {
 }
 
 tasks.register('runUpdateExpirationTime', JavaExec) {
-    dependsOn ':ipc:assemble'
+    dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
     mainClass = 'com.tsurugidb.tsubakuro.examples.updateExpirationTime.Main'
