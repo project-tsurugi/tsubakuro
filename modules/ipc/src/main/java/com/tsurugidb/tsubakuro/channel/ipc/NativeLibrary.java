@@ -2,16 +2,14 @@ package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 
@@ -66,7 +64,7 @@ public final class NativeLibrary {
                     .map(Boolean::valueOf)
                     .orElse(DEFAULT_VERIFY_VERSION);
 
-    private static final String PATH_MANIFEST_FILE = "/META-INF/MANIFEST.MF"; //$NON-NLS-1$
+    private static final String PATH_VERSION_FILE = "/META-INF/tsurugidb/tsubakuro-ipc.properties"; //$NON-NLS-1$
 
     private static final String ATTRIBUTE_LIBRARY_VERSION = "Build-Revision"; //$NON-NLS-1$
 
@@ -154,26 +152,16 @@ public final class NativeLibrary {
     }
 
     private static Optional<String> getJavaLibraryVersion0() throws IOException {
-        var classPath = NativeLibrary.class.getResource(NativeLibrary.class.getSimpleName() + ".class"); //$NON-NLS-1$
-        LOG.trace("current class file: {}", classPath); //$NON-NLS-1$
-        if (classPath == null || !Objects.equals(classPath.getProtocol(), "jar")) { //$NON-NLS-1$
-            throw new FileNotFoundException("missing JAR file of Tsubakuro IPC library");
+        LOG.trace("searching for version file: {}", PATH_VERSION_FILE);
+        var versionFile = NativeLibrary.class.getResource(PATH_VERSION_FILE); //$NON-NLS-1$
+        if (versionFile == null) {
+            throw new FileNotFoundException("missing version file of Tsubakuro IPC library");
         }
-        var cpString = classPath.toExternalForm();
-        int contentsSeparator = cpString.lastIndexOf("!");
-        if (contentsSeparator < 0) {
-            throw new FileNotFoundException(MessageFormat.format(
-                    "unsupported JAR file path of Tsubakuro IPC library",
-                    classPath));
-        }
-        String manifestPath = cpString.substring(0, contentsSeparator + 1) +  PATH_MANIFEST_FILE;
-        LOG.debug("loading Java library version: {}", manifestPath); //$NON-NLS-1$;
-        try (var jar = new URL(manifestPath).openStream()) {
-            Manifest manifest = new Manifest(jar);
-            Attributes attr = manifest.getMainAttributes();
-            return Optional.ofNullable(attr.getValue(ATTRIBUTE_LIBRARY_VERSION))
-                    .map(String::strip)
-                    .filter(it -> !it.isEmpty());
+        LOG.debug("loading version file: {}", versionFile);
+        try (var input = versionFile.openStream()) {
+            var properties = new Properties();
+            properties.load(input);
+            return Optional.ofNullable(properties.getProperty(ATTRIBUTE_LIBRARY_VERSION));
         }
     }
 
