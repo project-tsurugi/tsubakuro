@@ -38,7 +38,7 @@ where ${ProjectTopDirectory} is a directory created by clone of the tsubakuro re
 Build only java libraries and skip testing and building native libraries.
 
 ```
-./gradlew assemble -x tsubakuro-ipc:cmakeBuild
+./gradlew assemble -x tsubakuro-ipc:nativeLib
 ```
 
 ### install
