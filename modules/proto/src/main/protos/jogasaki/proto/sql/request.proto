@@ -6,7 +6,7 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.sql.proto";
 option java_outer_classname = "SqlRequest";
 
-import "tateyama/proto/sql/common.proto";
+import "jogasaki/proto/sql/common.proto";
 
 /*
  * Definition of sub fields for Request.

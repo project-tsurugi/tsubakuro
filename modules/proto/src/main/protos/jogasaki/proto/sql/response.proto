@@ -6,8 +6,8 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.sql.proto";
 option java_outer_classname = "SqlResponse";
 
-import "tateyama/proto/sql/common.proto";
-import "tateyama/proto/sql/status.proto";
+import "jogasaki/proto/sql/common.proto";
+import "jogasaki/proto/sql/status.proto";
 
 /*
  * Definition of sub fields for Response.
