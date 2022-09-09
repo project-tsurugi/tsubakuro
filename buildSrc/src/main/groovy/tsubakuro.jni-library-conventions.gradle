@@ -20,6 +20,8 @@ task cmakeConfigure {
     .ignoreEmptyDirectories()
     .withPropertyName('nativeRootDir')
 
+    inputs.property('TSUBAKURO_LIBRARY_VERSION', nativeLibVersion)
+
     outputs.dir(nativeBuildDir)
     .withPropertyName('nativeBuildDir')
 
@@ -64,6 +66,8 @@ task cmakeBuild {
     .ignoreEmptyDirectories()
     .withPropertyName('nativeRootDir')
 
+    inputs.property('TSUBAKURO_LIBRARY_VERSION', nativeLibVersion)
+
     outputs.dir(nativeBuildDir)
     .withPropertyName('nativeBuildDir')
 
@@ -79,6 +83,8 @@ task cmakeBuild {
 task nativeLib {
     inputs.files(nativeBuildDir)
     .withPropertyName('nativeBuildDir')
+
+    inputs.property('TSUBAKURO_LIBRARY_VERSION', nativeLibVersion)
 
     outputs.file("${nativeLibDir}/*.so")
     .withPropertyName('nativeLibFile')
