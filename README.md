@@ -38,7 +38,7 @@ where ${ProjectTopDirectory} is a directory created by clone of the tsubakuro re
 Build only java libraries and skip testing and building native libraries.
 
 ```
-./gradlew assemble -x tsubakuro-ipc:cmakeBuild
+./gradlew assemble -x tsubakuro-ipc:nativeLib
 ```
 
 ### install
@@ -71,7 +71,9 @@ cd ${ProjectTopDirectory}
 ```
 
 ## How to use
-To use on Gradle, add Tsubakuro libraries and SLF4J implementation library to dependencies.
+
+### Setup dependencies
+To use on Gradle, add Tsubakuro libraries and SLF4J implementation library to `dependencies`.
 
 ```
 dependencies {
@@ -80,4 +82,33 @@ dependencies {
 
     implementation 'org.slf4j:slf4j-simple:1.7.32'
 }
+```
+
+A list of available libraries (java artifacts) can be found at:
+* https://github.com/orgs/project-tsurugi/packages?repo_name=tsubakuro
+
+### Maven Repository Configuration
+The java artifacts in this repository are distributed on GitHub Packages,.
+
+To use these artifacts, add a Maven remote repository for GitHub Packages or a `mavenLocal` to `repositories` configuration in `build.gradle`.
+
+Please see the following `build.gradle` examples.
+* https://github.com/project-tsurugi/iceaxe/blob/master/buildSrc/src/main/groovy/iceaxe.java-conventions.gradle
+
+#### Use Tsubakuro that deployed GitHub Packages
+
+Set up the following credentials for the GitHub Packages, and build nomally.
+* Gradle property `gpr.user` or environment variable `GPR_USER` with your GitHub username
+* Gradle Property `gpr.key` or environment variable `GPR_KEY` with your personal access token
+
+For more information about personal access token, please see the following documents.
+* https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-gradle-registry
+
+
+#### Use Tsubakuro that installed locally
+
+First, Install Tsubakuro locally following the steps in `How to Build`, and build project with Gradle Property `mavenLocal` option.
+
+```
+./gradlew build -PmavenLocal
 ```
