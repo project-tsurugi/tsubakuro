@@ -19,7 +19,7 @@ application {
 }
 
 run {
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
@@ -34,7 +34,7 @@ spotbugs {
 tasks.register('runExample', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -42,7 +42,7 @@ tasks.register('runExample', JavaExec) {
 tasks.register('runTpcc', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.tpcc.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -50,7 +50,7 @@ tasks.register('runTpcc', JavaExec) {
 tasks.register('runPm', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.measurement.Main'
     jvmArgs = ['-Xms1024m', '-Xmx4096m', '-XX:+PreserveFramePointer', '--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -58,7 +58,7 @@ tasks.register('runPm', JavaExec) {
 tasks.register('runWarehouse', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.warehouse.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -66,7 +66,7 @@ tasks.register('runWarehouse', JavaExec) {
 tasks.register('runIc', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.concurrent.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -74,7 +74,7 @@ tasks.register('runIc', JavaExec) {
 tasks.register('runTpch', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.tpch.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -82,7 +82,7 @@ tasks.register('runTpch', JavaExec) {
 tasks.register('runDumpLoad', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.dumpload.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -90,7 +90,7 @@ tasks.register('runDumpLoad', JavaExec) {
 tasks.register('runBackup', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.datastore.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
@@ -98,7 +98,7 @@ tasks.register('runBackup', JavaExec) {
 tasks.register('runUpdateExpirationTime', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.examples.updateExpirationTime.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }

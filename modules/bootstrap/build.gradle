@@ -30,7 +30,7 @@ run {
     description 'run SQL script : -Dscript=</path/to/script> -Dconnection=<endpoint-uri> [-DlogLevel=<level>]'
     args = [ System.getProperty('script', '(unspecified)'), System.getProperty('connection', 'unspecified:unspecified') ]
     systemProperty 'org.slf4j.simpleLogger.defaultLogLevel', System.getProperty('logLevel', 'INFO')
-    systemProperty 'java.library.path', "$project.projectDir/../ipc/src/main/native/build/src"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
 
