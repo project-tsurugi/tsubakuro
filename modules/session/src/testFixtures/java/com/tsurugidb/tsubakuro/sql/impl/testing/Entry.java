@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.impl.testing;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -113,8 +115,16 @@ public final class Entry {
      *       <td> {@link #forTimeOfDay(LocalTime)} </td>
      *     </tr>
      *     <tr>
-     *       <td> {@code value instanceof Instant} </td>
-     *       <td> {@link #forTimePoint(Instant)} </td>
+     *       <td> {@code value instanceof LocalDateTime} </td>
+     *       <td> {@link #forTimePoint(LocalDateTime)} </td>
+     *     </tr>
+     *     <tr>
+     *       <td> {@code value instanceof OffsetTime} </td>
+     *       <td> {@link #forTimeOfDayWithTimeZone(OffsetTime)} </td>
+     *     </tr>
+     *     <tr>
+     *       <td> {@code value instanceof OffsetDateTime} </td>
+     *       <td> {@link #forTimePointWithTimeZone(OffsetDateTime)} </td>
      *     </tr>
      *     <tr>
      *       <td> {@code value instanceof DateTimeInterval} </td>
@@ -167,8 +177,17 @@ public final class Entry {
         if (value instanceof LocalTime) {
             return Entry.forTimeOfDay((LocalTime) value);
         }
-        if (value instanceof Instant) {
-            return Entry.forTimePoint((Instant) value);
+        if (value instanceof LocalDateTime) {
+            return Entry.forTimePoint((LocalDateTime) value);
+        }
+        if (value instanceof LocalTime) {
+            return Entry.forTimeOfDay((LocalTime) value);
+        }
+        if (value instanceof OffsetTime) {
+            return Entry.forTimeOfDayWithTimeZone((OffsetTime) value);
+        }
+        if (value instanceof OffsetDateTime) {
+            return Entry.forTimePointWithTimeZone((OffsetDateTime) value);
         }
         if (value instanceof DateTimeInterval) {
             return Entry.forDateTimeInterval((DateTimeInterval) value);
@@ -365,7 +384,7 @@ public final class Entry {
      * @param value the value
      * @return the created entry
      */
-    public static Entry forTimePoint(Instant value) {
+    public static Entry forTimePoint(LocalDateTime value) {
         Objects.requireNonNull(value);
         return new Entry(EntryType.TIME_POINT, value);
     }
@@ -374,9 +393,47 @@ public final class Entry {
      * Returns as {@link EntryType#TIME_POINT} value.
      * @return the value
      */
-    public Instant getTimePointValue() {
+    public LocalDateTime getTimePointValue() {
         check(EntryType.TIME_POINT);
-        return (Instant) value;
+        return (LocalDateTime) value;
+    }
+
+    /**
+     * Creates a new instance for {@link EntryType#TIME_OF_DAY_WITH_TIME_ZONE}.
+     * @param value the value
+     * @return the created entry
+     */
+    public static Entry forTimeOfDayWithTimeZone(OffsetTime value) {
+        Objects.requireNonNull(value);
+        return new Entry(EntryType.TIME_OF_DAY_WITH_TIME_ZONE, value);
+    }
+
+    /**
+     * Returns as {@link EntryType#TIME_OF_DAY} value.
+     * @return the value
+     */
+    public OffsetTime getTimeOfDayWithTimeZoneValue() {
+        check(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
+        return (OffsetTime) value;
+    }
+
+    /**
+     * Creates a new instance for {@link EntryType#TIME_POINT_WITH_TIME_ZONE}.
+     * @param value the value
+     * @return the created entry
+     */
+    public static Entry forTimePointWithTimeZone(OffsetDateTime value) {
+        Objects.requireNonNull(value);
+        return new Entry(EntryType.TIME_POINT_WITH_TIME_ZONE, value);
+    }
+
+    /**
+     * Returns as {@link EntryType#TIME_POINT_WITH_TIME_ZONE} value.
+     * @return the value
+     */
+    public OffsetDateTime getTimePointWithTimeZoneValue() {
+        check(EntryType.TIME_POINT);
+        return (OffsetDateTime) value;
     }
 
     /**

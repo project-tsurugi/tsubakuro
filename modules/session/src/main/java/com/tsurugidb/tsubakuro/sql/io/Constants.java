@@ -33,9 +33,9 @@ final class Constants {
 
     public static final int HEADER_DECIMAL = 0xed;
 
-    public static final int HEADER_RESERVED_EE = 0xee;
+    public static final int HEADER_TIME_OF_DAY_WITH_TIME_ZONE = 0xee;
 
-    public static final int HEADER_RESERVED_EF = 0xef;
+    public static final int HEADER_TIME_POINT_WITH_TIME_ZONE = 0xef;
 
     public static final int HEADER_CHARACTER = 0xf0;
 

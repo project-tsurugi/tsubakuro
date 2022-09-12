@@ -83,8 +83,16 @@ import com.tsurugidb.tsubakuro.sql.io.ValueInput;
  *       <td> {@link RelationCursor#fetchTimeOfDayValue() TIME_OF_DAY} </td>
  *     </tr>
  *     <tr>
- *       <td> {@link java.time.Instant} </td>
+ *       <td> {@link java.time.LocalDateTime} </td>
  *       <td> {@link RelationCursor#fetchTimePointValue() TIME_POINT} </td>
+ *     </tr>
+ *     <tr>
+ *       <td> {@link java.time.OffsetTime} </td>
+ *       <td> {@link RelationCursor#fetchTimeOfDayWithTimeZoneValue() TIME_OF_DAY_WITH_TIME_ZONE} </td>
+ *     </tr>
+ *     <tr>
+ *       <td> {@link java.time.OffsetDateTime} </td>
+ *       <td> {@link RelationCursor#fetchTimePointWithTimeZoneValue() TIME_POINT_WITH_TIME_ZONE} </td>
  *     </tr>
  *     <tr>
  *       <td> {@link DateTimeInterval} </td>
@@ -172,6 +180,12 @@ public final class Relation {
                     break;
                 case TIME_POINT:
                     output.writeTimePoint(entry.getTimePointValue());
+                    break;
+                case TIME_OF_DAY_WITH_TIME_ZONE:
+                    output.writeTimeOfDayWithTimeZone(entry.getTimeOfDayWithTimeZoneValue());
+                    break;
+                case TIME_POINT_WITH_TIME_ZONE:
+                    output.writeTimePointWithTimeZone(entry.getTimePointWithTimeZoneValue());
                     break;
                 case DATETIME_INTERVAL:
                     output.writeDateTimeInterval(entry.getDateTimeIntervalValue());

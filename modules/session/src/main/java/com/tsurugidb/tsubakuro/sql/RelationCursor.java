@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
@@ -246,7 +248,42 @@ public interface RelationCursor extends ServerResource {
      * @throws InterruptedException if interrupted while extracting the column data
      * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#TIME_POINT
      */
-    Instant fetchTimePointValue() throws IOException, ServerException, InterruptedException;
+    LocalDateTime fetchTimePointValue() throws IOException, ServerException, InterruptedException;
+
+    /**
+     * Retrieves a {@code TIME_OF_DAY_WITH_TIME_ZONE} value on the column of the cursor position.
+     * <p>
+     * You can only take once to retrieve the value on the column.
+     * </p>
+     * @return the value
+     * @throws IllegalStateException if the value has been already fetched
+     * @throws IllegalStateException if this cursor does not point to any columns
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#TIME_OF_DAY_WITH_TIME_ZONE
+     */
+    OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, ServerException, InterruptedException;
+
+    /**
+     * Retrieves a {@code TIME_POINT_WITH_TIME_ZONE} value on the column of the cursor position.
+     * <p>
+     * You can only take once to retrieve the value on the column.
+     * </p>
+     * <p>
+     * Note that, this does not include time-zone information.
+     * </p>
+     * @return the value
+     * @throws IllegalStateException if the value has been already fetched
+     * @throws IllegalStateException if this cursor does not point to any columns
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#TIME_POINT_WITH_TIME_ZONE
+     */
+    OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, ServerException, InterruptedException;
 
     /**
      * Retrieves a {@code DATETIME_INTERVAL} value on the column of the cursor position.

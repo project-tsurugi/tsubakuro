@@ -37,9 +37,13 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -77,9 +81,9 @@ public class StreamBackedValueInput implements ValueInput {
             // 0xed
             EntryType.DECIMAL,
             // 0xee
-            null,
+            EntryType.TIME_OF_DAY_WITH_TIME_ZONE,
             // 0xef
-            null,
+            EntryType.TIME_POINT_WITH_TIME_ZONE,
             // 0xf0
             EntryType.CHARACTER,
             // 0xf1
@@ -465,12 +469,31 @@ public class StreamBackedValueInput implements ValueInput {
     }
 
     @Override
-    public Instant readTimePoint() throws IOException {
+    public LocalDateTime readTimePoint() throws IOException {
         require(EntryType.TIME_POINT);
         clearHeaderInfo();
         var seconds = Base128Variant.readSigned(input);
         var nanos = Base128Variant.readUnsigned(input);
-        return Instant.ofEpochSecond(seconds, nanos);
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(seconds, nanos), ZoneId.of("UTC"));  // FIXME
+    }
+
+    @Override
+    public OffsetTime readTimeOfDayWithTimeZone() throws IOException {
+        require(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
+        clearHeaderInfo();
+//        var offset = Base128Variant.readUnsigned(input);
+//        return LocalTime.ofNanoOfDay(offset);
+        return null; // FIXME
+    }
+
+    @Override
+    public OffsetDateTime readTimePointWithTimeZone()throws IOException {
+        require(EntryType.TIME_POINT_WITH_TIME_ZONE);
+        clearHeaderInfo();
+//        var seconds = Base128Variant.readSigned(input);
+//        var nanos = Base128Variant.readUnsigned(input);
+//        return LocalDateTime.ofEpochSecond(seconds, nanos);
+        return null; // FIXME
     }
 
     @Override

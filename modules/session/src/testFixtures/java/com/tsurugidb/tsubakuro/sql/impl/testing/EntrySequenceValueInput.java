@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.impl.testing;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -233,9 +235,21 @@ public class EntrySequenceValueInput implements ValueInput {
     }
 
     @Override
-    public Instant readTimePoint() {
+    public LocalDateTime readTimePoint() {
         var next = fetchNext(EntryType.TIME_POINT);
         return next.getTimePointValue();
+    }
+
+    @Override
+    public OffsetTime readTimeOfDayWithTimeZone() {
+        var next = fetchNext(EntryType.TIME_OF_DAY);
+        return next.getTimeOfDayWithTimeZoneValue();
+    }
+
+    @Override
+    public OffsetDateTime readTimePointWithTimeZone() {
+        var next = fetchNext(EntryType.TIME_POINT);
+        return next.getTimePointWithTimeZoneValue();
     }
 
     @Override

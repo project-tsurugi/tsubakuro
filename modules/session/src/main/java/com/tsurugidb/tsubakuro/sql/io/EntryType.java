@@ -67,6 +67,16 @@ public enum EntryType {
     TIME_POINT,
 
     /**
+     * Time of day with timezone value.
+     */
+    TIME_OF_DAY_WITH_TIME_ZONE,
+
+    /**
+     * Time-point with timezone value.
+     */
+    TIME_POINT_WITH_TIME_ZONE,
+
+    /**
      * Date-time interval value.
      */
     DATETIME_INTERVAL,
