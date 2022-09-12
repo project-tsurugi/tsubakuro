@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -258,8 +260,8 @@ class BasicResultProcessorTest {
     @Test
     void value_time_point() throws Exception {
         ResultSet rs = Relation.of(new Object[][] {
-            { Instant.ofEpochSecond(123) },
-        }).getResultSet(meta(column(Instant.class)));
+            {  LocalDateTime.ofInstant(Instant.ofEpochSecond(123), ZoneId.of("UTC")) },
+        }).getResultSet(meta(column(LocalDateTime.class)));
 
         try (var proc = create()) {
             proc.process(rs);

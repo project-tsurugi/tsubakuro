@@ -1,9 +1,11 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
@@ -90,7 +92,17 @@ public class EmptyRelationCursor implements RelationCursor {
     }
 
     @Override
-    public Instant fetchTimePointValue() throws UnsupportedOperationException {
+    public LocalDateTime fetchTimePointValue() throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public OffsetDateTime fetchTimePointWithTimeZoneValue() throws UnsupportedOperationException {
         throw new UnsupportedOperationException();
     }
 

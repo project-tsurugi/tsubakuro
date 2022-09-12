@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -254,7 +256,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public Instant fetchTimePointValue() throws IOException, ServerException, InterruptedException {
+    public LocalDateTime fetchTimePointValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchTimePointValue();
@@ -263,6 +265,30 @@ public class ResultSetImpl implements ResultSet {
             throw e;
         }
     }
+
+
+    @Override
+    public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchTimeOfDayWithTimeZoneValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchTimePointWithTimeZoneValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
 
     @Override
     public DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException {

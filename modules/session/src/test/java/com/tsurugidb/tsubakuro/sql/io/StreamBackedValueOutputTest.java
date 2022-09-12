@@ -33,9 +33,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.Month;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -305,16 +307,16 @@ class StreamBackedValueOutputTest {
     void writeTimePoint() {
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(0, 0))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.of("UTC")))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(+4096), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(+4096, 0))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(+4096, 0), ZoneId.of("UTC")))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(-4096), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(-4096, 0))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(-4096, 0), ZoneId.of("UTC")))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(123_456_789)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(0, 123_456_789))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.of("UTC")))));
     }
 
     @Test

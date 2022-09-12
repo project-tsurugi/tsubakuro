@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -229,9 +231,25 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     }
 
     @Override
-    public Instant fetchTimePointValue() throws IOException, InterruptedException {
+    public LocalDateTime fetchTimePointValue() throws IOException, InterruptedException {
         requireColumnType(EntryType.TIME_POINT);
         var value = input.readTimePoint();
+        columnConsumed();
+        return value;
+    }
+
+    @Override
+    public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, InterruptedException {
+        requireColumnType(EntryType.TIME_OF_DAY);
+        var value = input.readTimeOfDayWithTimeZone();
+        columnConsumed();
+        return value;
+    }
+
+    @Override
+    public OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, InterruptedException {
+        requireColumnType(EntryType.TIME_POINT);
+        var value = input.readTimePointWithTimeZone();  // FIXME
         columnConsumed();
         return value;
     }

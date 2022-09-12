@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -136,9 +138,18 @@ public final class Types {
             Map.entry(java.sql.Date.class, wrap(SqlCommon.AtomType.DATE)),
             Map.entry(LocalTime.class, wrap(SqlCommon.AtomType.TIME_OF_DAY)),
             Map.entry(java.sql.Time.class, wrap(SqlCommon.AtomType.TIME_OF_DAY)),
-            Map.entry(Instant.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+            Map.entry(LocalDateTime.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(java.sql.Timestamp.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(SqlCommon.TimePoint.class, wrap(SqlCommon.AtomType.TIME_POINT)),
+
+
+
+
+            Map.entry(OffsetTime.class, wrap(SqlCommon.AtomType.TIME_OF_DAY_WITH_TIME_ZONE)),
+            Map.entry(OffsetDateTime.class, wrap(SqlCommon.AtomType.TIME_POINT_WITH_TIME_ZONE)),
+
+
+
             Map.entry(DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
             Map.entry(SqlCommon.DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
 

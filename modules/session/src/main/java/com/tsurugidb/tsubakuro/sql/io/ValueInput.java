@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.io;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 
 import javax.annotation.Nonnull;
 
@@ -187,7 +189,28 @@ public interface ValueInput extends AutoCloseable {
      * @throws IllegalStateException if the next entry is inconsistent value type
      * @see #peekType()
      */
-    Instant readTimePoint() throws IOException, InterruptedException;
+    LocalDateTime readTimePoint() throws IOException, InterruptedException;
+
+
+        /**
+     * Reads the next {@link EntryType#TIME_OF_DAY_WITH_TIME_ZONE} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     */
+    OffsetTime readTimeOfDayWithTimeZone() throws IOException, InterruptedException;
+
+    /**
+     * Reads the next {@link EntryType#TIME_POINT_WITH_TIME_ZONE} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     */
+    OffsetDateTime readTimePointWithTimeZone() throws IOException, InterruptedException;
 
     /**
      * Reads the next {@link EntryType#DATETIME_INTERVAL} entry.

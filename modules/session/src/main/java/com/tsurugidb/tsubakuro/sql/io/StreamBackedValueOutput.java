@@ -22,6 +22,8 @@ import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_OCTET;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_ROW;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY_WITH_TIME_ZONE;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT_WITH_TIME_ZONE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_EMBED_ARRAY_SIZE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_EMBED_BIT_SIZE;
@@ -45,9 +47,12 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -262,15 +267,38 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     }
 
     @Override
-    public void writeTimePoint(@Nonnull Instant value) throws IOException {
+    public void writeTimePoint(@Nonnull LocalDateTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT);
 
-        var offsetSecond = value.getEpochSecond();
-        var offsetNano = value.getNano();
+        var ivalue = value.toInstant(ZoneOffset.UTC);  // FIXME
+        var offsetSecond = ivalue.getEpochSecond();
+        var offsetNano = ivalue.getNano();
         Base128Variant.writeSigned(offsetSecond, output);
         Base128Variant.writeUnsigned(offsetNano, output);
     }
+
+    @Override
+    public void writeTimeOfDayWithTimeZone(@Nonnull OffsetTime value) throws IOException {
+        Objects.requireNonNull(value);
+        output.write(HEADER_TIME_OF_DAY_WITH_TIME_ZONE);  // FIXME
+
+//        var offset = value.toNanoOfDay();
+//        assert offset >= 0;
+//        Base128Variant.writeUnsigned(offset, output);
+    }
+
+    @Override
+    public void writeTimePointWithTimeZone(@Nonnull OffsetDateTime value) throws IOException {
+        Objects.requireNonNull(value);
+        output.write(HEADER_TIME_POINT_WITH_TIME_ZONE);  // FIXME
+
+//        var offsetSecond = value.getEpochSecond();
+//        var offsetNano = value.getNano();
+//        Base128Variant.writeSigned(offsetSecond, output);
+//        Base128Variant.writeUnsigned(offsetNano, output);
+    }
+
 
     @Override
     public void writeDateTimeInterval(@Nonnull DateTimeInterval value) throws IOException {

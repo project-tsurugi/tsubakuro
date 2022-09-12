@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.impl.testing;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 //import javax.annotation.Nonnull;
@@ -118,8 +120,18 @@ public class BasicResultSet implements ResultSet {
     }
 
     @Override
-    public Instant fetchTimePointValue() throws IOException, ServerException, InterruptedException {
+    public LocalDateTime fetchTimePointValue() throws IOException, ServerException, InterruptedException {
         return cursor.fetchTimePointValue();
+    }
+
+    @Override
+    public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+        return cursor.fetchTimeOfDayWithTimeZoneValue();
+    }
+
+    @Override
+    public OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+        return cursor.fetchTimePointWithTimeZoneValue();
     }
 
     @Override

@@ -11,9 +11,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
 
@@ -178,11 +180,11 @@ class StreamBackedValueInputTest {
 
     @Test
     void readTimePoint() {
-        assertSerDe(Instant.ofEpochSecond(0, 0),
+        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.of("UTC")),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(Instant.parse("2022-05-04T12:34:56.789Z"),
+        assertSerDe(LocalDateTime.ofInstant(Instant.parse("2022-05-04T12:34:56.789Z"), ZoneId.of("UTC")),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(Instant.ofEpochSecond(0, 123_456_789),
+        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.of("UTC")),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
     }
 
