@@ -28,13 +28,14 @@ import com.tsurugidb.tsubakuro.util.Owner;
 /**
  * SessionWireImpl type.
  */
-public class SessionWireImpl implements Wire {
+public final class SessionWireImpl implements Wire {
     static final FrameworkRequest.Header.Builder HEADER_BUILDER = FrameworkRequest.Header.newBuilder().setMessageVersion(1);
 
     private StreamWire streamWire;
+    private StreamWireReceiver streamWireReceiver;
     private final long sessionID;
     private final ResponseBox responseBox;
-    private final Queue<QueueEntry> queue;
+    private final Queue<QueueEntry> queue = new ArrayDeque<>();
 
     static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
 
@@ -68,7 +69,8 @@ public class SessionWireImpl implements Wire {
         this.streamWire = streamWire;
         this.sessionID = sessionID;
         this.responseBox = streamWire.getResponseBox();
-        this.queue = new ArrayDeque<>();
+        this.streamWireReceiver = new StreamWireReceiver(streamWire);
+        streamWireReceiver.start();
         LOG.trace("begin Session via stream, id = " + sessionID);
     }
 
@@ -163,8 +165,19 @@ public class SessionWireImpl implements Wire {
      */
     @Override
     public void close() throws IOException {
-        streamWire.close();
-        streamWire = null;
+        if (Objects.nonNull(streamWire)) {
+            streamWire.close();
+            streamWire = null;
+        }
+        if (Objects.nonNull(streamWireReceiver)) {
+            try {
+                streamWireReceiver.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                streamWireReceiver = null;
+            }
+        }
     }
 
     byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
