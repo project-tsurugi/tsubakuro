@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 /**
  * ResultSetBox type.
@@ -14,10 +14,10 @@ import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
 public class ResultSetBox {
     private static final int SIZE = ResponseBox.responseBoxSize();
 
-    private StreamWire streamWire;
     private Abox[] boxes;
     private Map<String, Integer> map;
-    private AtomicBoolean available;
+    private Lock lock = new ReentrantLock();
+    private Condition availableCondition = lock.newCondition();
 
     private static class MessageQueue {
         ArrayDeque<ResultSetResponse> queue;
@@ -40,23 +40,18 @@ public class ResultSetBox {
     }
 
     private static class Abox {
-        private AtomicBoolean available;
-        private MessageQueue queues;
+        private Lock lock = new ReentrantLock();
+        private Condition availableCondition = lock.newCondition();
+        private MessageQueue queues = new MessageQueue();
         private boolean eor;
 
         Abox() {
-            this.available = new AtomicBoolean();
-            this.available.set(false);
             this.eor = false;
-            this.queues = new MessageQueue();
         }
     }
 
-    public ResultSetBox(StreamWire streamWire) {
-        this.streamWire = streamWire;
+    public ResultSetBox() {
         this.map = new HashMap<>();
-        this.available = new AtomicBoolean();
-        this.available.set(false);
         this.boxes = new Abox[SIZE];
 
         for (int i = 0; i < SIZE; i++) {
@@ -66,58 +61,77 @@ public class ResultSetBox {
 
     public ResultSetResponse receive(int slot) throws IOException {
         while (true) {
-            synchronized (boxes[slot]) {
+            Lock l =  boxes[slot].lock;
+            l.lock();
+            try {
                 if (!boxes[slot].queues.isEmpty()) {
                     return boxes[slot].queues.poll();
                 }
                 if (boxes[slot].eor) {
                     return new ResultSetResponse(0, null);
                 }
+                boxes[slot].availableCondition.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                l.unlock();
             }
-            streamWire.pull(boxes[slot].available);
         }
     }
 
     public byte hello(String name) throws IOException {
         while (true) {
-            synchronized (map) {
+            lock.lock();
+            try {
                 if (map.containsKey(name)) {
                     var slot = (byte) map.get(name).intValue();
                     map.remove(name);
-                    return  slot;
+                    return slot;
                 }
-                available.set(false);
+                availableCondition.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.unlock();
             }
-            streamWire.pull(available);
         }
     }
 
     public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
-        synchronized (map) {
+        lock.lock();
+        try {
             if (map.containsKey(name)) {
                 map.replace(name, slot);
             } else {
                 map.put(name, slot);
             }
-            available.set(true);
-            synchronized (boxes[slot]) {
-                boxes[slot].eor = false;
-                boxes[slot].queues.clear();
-            }
+            boxes[slot].eor = false;
+            boxes[slot].queues.clear();
+            availableCondition.signal();
+        } finally {
+            lock.unlock();
         }
     }
 
     public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
-        synchronized (boxes[slot]) {
+        Lock l =  boxes[slot].lock;
+        l.lock();
+        try {
             boxes[slot].queues.add(new ResultSetResponse(writerId, payload));
-            boxes[slot].available.set(true);
+            boxes[slot].availableCondition.signal();
+        } finally {
+            l.unlock();
         }
     }
     
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
-        synchronized (boxes[slot]) {
+        Lock l =  boxes[slot].lock;
+        l.lock();
+        try {
             boxes[slot].eor = true;
-            boxes[slot].available.set(true);
+            boxes[slot].availableCondition.signal();
+        } finally {
+            l.unlock();
         }
     }
 }
