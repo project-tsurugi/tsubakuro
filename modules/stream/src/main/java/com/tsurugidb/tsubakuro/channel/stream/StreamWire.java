@@ -5,8 +5,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.EOFException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +41,8 @@ public class StreamWire {
         socket = new Socket(hostname, port);
         outStream = new DataOutputStream(socket.getOutputStream());
         inStream = new DataInputStream(socket.getInputStream());
-        responseBox = new ResponseBox(this);
-        resultSetBox = new ResultSetBox(this);
+        responseBox = new ResponseBox();
+        resultSetBox = new ResultSetBox();
         this.header = new byte[6];
         this.valid = false;
         this.closed = false;
@@ -51,39 +51,32 @@ public class StreamWire {
     public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
-    public boolean pull(AtomicBoolean available) throws IOException {
-        synchronized (inStream) {
-            if (available.get()) {
-                available.set(false);
-                return true;
-            }
+    public boolean pull() throws IOException {
+        var message = receive();
+        if (Objects.nonNull(message)) {
+            byte info = message.getInfo();
+            byte slot = message.getSlot();
 
-            var message = receive();
-            if (Objects.nonNull(message)) {
-                byte info = message.getInfo();
-                byte slot = message.getSlot();
-
-                if (info == RESPONSE_SESSION_PAYLOAD) {
-                    LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-                    responseBox.push(slot, message.getBytes());
-                } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
-                    byte writer = message.getWriter();
-                    LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
-                    resultSetBox.push(slot, writer, message.getBytes());
-                } else if (info == RESPONSE_RESULT_SET_HELLO) {
-                    resultSetBox.pushHello(message.getString(), slot);
-                } else if (info == RESPONSE_RESULT_SET_BYE) {
-                    resultSetBox.pushBye(slot);
-                } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
-                    LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-                    valid = true;
-                } else {
-                    throw new IOException("invalid info in the response");
-                }
-                return true;
+            if (info == RESPONSE_SESSION_PAYLOAD) {
+                LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
+                responseBox.push(slot, message.getBytes());
+            } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
+                byte writer = message.getWriter();
+                LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
+                resultSetBox.push(slot, writer, message.getBytes());
+            } else if (info == RESPONSE_RESULT_SET_HELLO) {
+                resultSetBox.pushHello(message.getString(), slot);
+            } else if (info == RESPONSE_RESULT_SET_BYE) {
+                resultSetBox.pushBye(slot);
+            } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
+                LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                valid = true;
+            } else {
+                throw new IOException("invalid info in the response");
             }
-            return false;
+            return true;
         }
+        return false;
     }
     public ResponseBox getResponseBox() {
         return responseBox;
@@ -187,7 +180,7 @@ public class StreamWire {
                 bytes = null;
             }
             return new StreamMessage(info, bytes, slot, writer);
-        } catch (EOFException e) {  // imply session close
+        } catch (SocketException | EOFException e) {  // imply session close
             socket.close();
             closed = true;
             return null;
