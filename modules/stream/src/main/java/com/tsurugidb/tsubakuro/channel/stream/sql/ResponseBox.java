@@ -2,16 +2,12 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
 import java.util.Objects;
-<<<<<<< HEAD
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
-import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
-=======
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
->>>>>>> d28a5e1... implement and use StreamWireReceiver
+
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
+// import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
 
 /**
  * ResponseBox type.
@@ -22,13 +18,9 @@ public class ResponseBox {
     private Abox[] boxes;
 
     private static class Abox {
-<<<<<<< HEAD
-        private AtomicBoolean available;
 //        private ChannelResponse channelResponse;
-=======
-        private Lock lock = new ReentrantLock();
-        private Condition availableCondition = lock.newCondition();
->>>>>>> d28a5e1... implement and use StreamWireReceiver
+        private final Lock lock = new ReentrantLock();
+        private final Condition availableCondition = lock.newCondition();
         private byte[] firstResponse;
         private byte[] secondResponse;
         private int expected;
@@ -108,19 +100,6 @@ public class ResponseBox {
         }
     }
 
-<<<<<<< HEAD
-=======
-    public void setResultSetMode(int slot) {
-        Lock l =  boxes[slot].lock;
-        l.lock();
-        try {
-            boxes[slot].expected = 2;
-        } finally {
-            l.unlock();
-        }
-    }
-
->>>>>>> d28a5e1... implement and use StreamWireReceiver
     public void release(int slot) {
         Lock l =  boxes[slot].lock;
         l.lock();

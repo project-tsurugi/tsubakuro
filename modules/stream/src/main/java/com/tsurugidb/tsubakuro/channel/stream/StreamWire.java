@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 
-public class StreamWire {
+public class StreamWire  extends Thread {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
@@ -192,10 +192,27 @@ public class StreamWire {
         }
     }
 
+    public void run() {
+        try {
+            while (true) {
+                if (!pull()) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void close() throws IOException {
         if (!closed) {
             socket.close();
             closed = true;
+        }
+        try {
+            this.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }
