@@ -81,7 +81,7 @@ public class SessionWireImpl implements Wire {
         var future = FutureResponse.wrap(Owner.of(response));
         synchronized (this) {
             var header = HEADER_BUILDER.setServiceId(serviceID).setSessionId(sessionID).build();
-            var slot = responseBox.lookFor();
+            var slot = responseBox.lookFor(response);
             if (slot >= 0) {
                 response.setResponseHandle(new ResponseWireHandleImpl(slot));
                 streamWire.send(slot, toDelimitedByteArray(header), request);
@@ -112,7 +112,9 @@ public class SessionWireImpl implements Wire {
         }
         byte slot = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = ByteBuffer.wrap(responseBox.receive(slot));
+
         FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
+        release(handle);
 
         return byteBuffer;
     }
@@ -122,25 +124,16 @@ public class SessionWireImpl implements Wire {
     }
 
     /**
-     * Set to receive a Query type response by response box
-     */
-    @Override
-    public void setResultSetMode(ResponseWireHandle handle) {
-        responseBox.setResultSetMode(((ResponseWireHandleImpl) handle).getHandle());
-    }
-
-    /**
      * release the message in the response box
      * @param handle the handle to the response box
     */
-    @Override
-    public void release(ResponseWireHandle handle) throws IOException {
+    private void release(ResponseWireHandle handle) throws IOException {
         responseBox.release(((ResponseWireHandleImpl) handle).getHandle());
 
         synchronized (this) {
             var entry = queue.peek();
             if (Objects.nonNull(entry)) {
-                var nextSlot = responseBox.lookFor();
+                var nextSlot = responseBox.lookFor(entry.getResponse());
                 if (nextSlot >= 0) {
                     entry.getResponse().setResponseHandle(new ResponseWireHandleImpl(nextSlot));
 

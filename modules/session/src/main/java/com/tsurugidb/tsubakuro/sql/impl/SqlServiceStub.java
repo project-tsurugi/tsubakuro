@@ -31,6 +31,7 @@ import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.SecondChannelResponse;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 
@@ -397,12 +398,9 @@ public class SqlServiceStub implements SqlService {
             try (
                 var owner = Owner.of(response);
             ) {
-                response.setResultSetMode();
-    
                 test(response);
                 var sqlResponse = cache.get();
-                var channelResponse = response.duplicate();
-                response.release();
+                var secondChannelResponse = new SecondChannelResponse(response);
                 var detailResponse = sqlResponse.getExecuteQuery();
                 var metadata = new ResultSetMetadataAdapter(detailResponse.getRecordMeta());
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
@@ -414,7 +412,7 @@ public class SqlServiceStub implements SqlService {
                 } else {
                     cursor = new EmptyRelationCursor();
                 }
-                var futureResponse = FutureResponse.wrap(Owner.of(channelResponse));
+                var futureResponse = FutureResponse.wrap(Owner.of(secondChannelResponse));
                 var future = new ForegroundFutureResponse<Void>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, future);
                 return resources.register(resultSetImpl);

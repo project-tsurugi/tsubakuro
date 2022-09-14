@@ -91,23 +91,6 @@ public interface Wire extends ServerResource {
     ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
     /**
-     * Set to receive a Query type response by response box
-     */
-    default void setResultSetMode(ResponseWireHandle handle) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * release the message in the response box
-     * This method can also be executed before receiving a response. However, at this time, 
-     * such usage is only possible when a command using a ResultSet fails.
-     * @param handle the handle to the response box
-     */
-    default void release(ResponseWireHandle handle) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
      * @return ResultSetWire
     */

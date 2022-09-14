@@ -48,22 +48,32 @@ public interface Response extends ServerResource {
     ByteBuffer waitForMainResponse(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException;
 
-    /**
-     * Clone the Response without using super.clone(). It is usesd when QueryMode has been set.
-     * @return Response  to receive the second response forwarded from the server when using query mode.
+                /**
+     * Returns the main response body.
+     * If the main response body is not ready, this operation was blocked until it would be ready.
+     * @return ByteBuffer of the main response body
+     * @throws IOException if I/O error was occurred while retrieving main response body
+     * @throws ServerException if server error was occurred while retrieving main response body
+     * @throws InterruptedException if interrupted while retrieving main response body
      */
-    default Response duplicate() {
+    default ByteBuffer waitForSecondResponse() throws IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Set this response to involve data transfer using resultSet.
+     * Returns the main response body.
+     * If the main response body is not ready, this operation was blocked until it would be ready.
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of {@code timeout}
+     * @return ByteBuffer of the main response body
+     * @throws IOException if I/O error was occurred while retrieving main response body
+     * @throws ServerException if server error was occurred while retrieving main response body
+     * @throws InterruptedException if interrupted while retrieving main response body
+     * @throws TimeoutException if the wait time out;
+     *      please attention that this exception may occur shorter time than the {@code timeout}
      */
-    default void setResultSetMode() {
-        throw new UnsupportedOperationException();
-    }
-
-    default void release() throws IOException {
+    default ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
         throw new UnsupportedOperationException();
     }
 }

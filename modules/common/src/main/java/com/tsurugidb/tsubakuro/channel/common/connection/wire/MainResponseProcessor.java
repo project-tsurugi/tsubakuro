@@ -43,8 +43,6 @@ public interface MainResponseProcessor<T> {
                 Objects.requireNonNull(response);
                 try (response) {
                     return self.process(response.waitForMainResponse());
-                } finally {
-                    response.release();
                 }
             }
 

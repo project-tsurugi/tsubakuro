@@ -161,8 +161,13 @@ public class SessionWireImpl implements Wire {
         }
         var responseWireHandle = ((ResponseWireHandleImpl) handle).getHandle();
         var byteBuffer = receiveNative(responseWireHandle);
-        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
-        return byteBuffer;
+
+        byte[] ba = new byte[byteBuffer.capacity()];
+        byteBuffer.get(ba);
+        release(handle);
+        var newBuffer = ByteBuffer.wrap(ba);
+        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(newBuffer));
+        return newBuffer;
     }
 
     @Override
@@ -176,24 +181,20 @@ public class SessionWireImpl implements Wire {
             throw new IOException("timeout duration overflow");
         }
         var byteBuffer = receiveNative(responseWireHandle, timeoutNano);
-        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(byteBuffer));
-        return byteBuffer;
-    }
 
-    /**
-     * Set to receive a Query type response by response box
-     */
-    @Override
-    public void setResultSetMode(ResponseWireHandle handle) {
-        setQueryModeNative(((ResponseWireHandleImpl) handle).getHandle());
+        byte[] ba = new byte[byteBuffer.capacity()];
+        byteBuffer.get(ba);
+        release(handle);
+        var newBuffer = ByteBuffer.wrap(ba);
+        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(newBuffer));
+        return newBuffer;
     }
 
     /**
      * release the message in the response box
      * @param handle the handle to the response box
     */
-    @Override
-    public void release(ResponseWireHandle handle) throws IOException {
+    private void release(ResponseWireHandle handle) throws IOException {
         releaseNative(((ResponseWireHandleImpl) handle).getHandle());
 
         synchronized (this) {

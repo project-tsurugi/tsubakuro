@@ -34,6 +34,7 @@ public class StreamWire {
     public static final byte RESPONSE_SESSION_HELLO_NG = 4;
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
+    public static final byte RESPONSE_SESSION_BODYHEAD = 7;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamWire.class);
 
@@ -65,7 +66,10 @@ public class StreamWire {
 
                 if (info == RESPONSE_SESSION_PAYLOAD) {
                     LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-                    responseBox.push(slot, message.getBytes());
+                    responseBox.push(slot, message.getBytes(), false);
+                } else if (info == RESPONSE_SESSION_BODYHEAD) {
+                    LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
+                    responseBox.push(slot, message.getBytes(), true);
                 } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
                     byte writer = message.getWriter();
                     LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
