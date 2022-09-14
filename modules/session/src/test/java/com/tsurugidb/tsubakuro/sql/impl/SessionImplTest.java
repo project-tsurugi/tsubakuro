@@ -60,16 +60,6 @@ class SessionImplTest {
         @Override
         public void close() throws IOException, InterruptedException {
         }
-        @Override
-        public ChannelResponseMock duplicate() {
-            return null;
-        }
-        @Override
-        public void release() {
-        }
-        @Override
-        public void setResultSetMode() {
-        }
     }
 
     class SessionWireMock implements Wire {
@@ -130,14 +120,6 @@ class SessionImplTest {
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
-        }
-
-        @Override
-        public void release(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
-        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

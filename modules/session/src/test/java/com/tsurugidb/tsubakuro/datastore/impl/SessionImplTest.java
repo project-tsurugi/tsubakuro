@@ -53,19 +53,6 @@ class SessionImplTest {
         }
 
         @Override
-        public TestResponse duplicate() {
-            return null;
-        }
-
-        @Override
-        public void setResultSetMode() {
-        }
-
-        @Override
-        public void release() {
-        }
-
-        @Override
         public void close() throws IOException, InterruptedException {
         }
     }
@@ -74,14 +61,6 @@ class SessionImplTest {
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null; // dummy as it is test for session
-        }
-    
-        @Override
-        public void release(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
-        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

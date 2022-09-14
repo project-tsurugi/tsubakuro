@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
 
 /**
@@ -17,6 +18,7 @@ public class ResponseBox {
 
     private static class Abox {
         private AtomicBoolean available;
+//        private ChannelResponse channelResponse;
         private byte[] firstResponse;
         private byte[] secondResponse;
         private int expected;
@@ -62,7 +64,7 @@ public class ResponseBox {
         }
     }
 
-    public void push(int slot, byte[] payload) {
+    public void push(int slot, byte[] payload, boolean head) {
         synchronized (boxes[slot]) {
             if (Objects.isNull(boxes[slot].firstResponse)) {
                 boxes[slot].firstResponse = payload;
@@ -70,24 +72,22 @@ public class ResponseBox {
                 boxes[slot].secondResponse = payload;
             }
             boxes[slot].available.set(true);
+            if (head) {
+                boxes[slot].expected = 2;
+            }
         }
     }
 
-    public byte lookFor() {
+    public byte lookFor(ChannelResponse channelResponse) {
         synchronized (this) {
             for (byte i = 0; i < SIZE; i++) {
                 if (boxes[i].expected == 0) {
                     boxes[i].expected = 1;
+//                    boxes[i].channelResponse = channelResponse;
                     return i;
                 }
             }
             return -1;
-        }
-    }
-
-    public void setResultSetMode(int slot) {
-        synchronized (boxes[slot]) {
-            boxes[slot].expected = 2;
         }
     }
 

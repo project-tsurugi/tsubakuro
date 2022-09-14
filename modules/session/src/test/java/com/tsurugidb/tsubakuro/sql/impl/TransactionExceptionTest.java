@@ -60,17 +60,6 @@ class TransactionExceptionTest {
         @Override
         public void close() throws IOException, InterruptedException {
         }
-        @Override
-        public ChannelResponseMock duplicate() {
-            var rv = new ChannelResponseMock(wire);
-            return rv;
-        }
-        @Override
-        public void release() {
-        }
-        @Override
-        public void setResultSetMode() {
-        }
     }
 
     class SessionWireMock implements Wire {
@@ -152,12 +141,6 @@ class TransactionExceptionTest {
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
-        }
-        @Override
-        public void release(ResponseWireHandle responseWireHandle) {
-        }
-        @Override
-        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
         @Override
         public void close() throws IOException {

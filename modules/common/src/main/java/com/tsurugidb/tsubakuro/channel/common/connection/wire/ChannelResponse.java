@@ -20,9 +20,9 @@ public class ChannelResponse implements Response {
 
     private static final int SLEEP_UNIT = 10;  // 10mS per sleep
     private final Wire wire;
-    private final AtomicBoolean queryMode = new AtomicBoolean();
     private final AtomicReference<ResponseWireHandle> handle = new AtomicReference<>();
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
+    private final AtomicReference<ByteBuffer> second = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
@@ -34,7 +34,6 @@ public class ChannelResponse implements Response {
     public ChannelResponse(@Nonnull Wire wire) {
         Objects.requireNonNull(wire);
         this.wire = wire;
-        queryMode.setPlain(false);
     }
 
     /**
@@ -92,52 +91,38 @@ public class ChannelResponse implements Response {
     }
 
     @Override
+    public ByteBuffer waitForSecondResponse() throws IOException {
+        if (Objects.nonNull(second.get())) {
+            return second.get();
+        }
+
+        lock.lock();
+        try {
+            second.set(wire.response(handle.get()));
+            return second.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        if (Objects.nonNull(second.get())) {
+            return second.get();
+        }
+
+        lock.lock();
+        try {
+            second.set(wire.response(handle.get(), timeout, unit));
+            return second.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
     public void close() throws IOException, InterruptedException {
         closed.set(true);
-    }
-
-    /**
-     * @implNote Either this method or setResponseHandle() can be called first.
-     */
-    @Override
-    public void setResultSetMode() {
-        lock.lock();
-        try {
-            queryMode.set(true);
-            if (Objects.nonNull(handle.get())) {
-                wire.setResultSetMode(handle.get());
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @implNote It must be called before release() is called.
-     */
-    @Override
-    public Response duplicate() {
-        lock.lock();
-        try {
-            ChannelResponse channelResponse = new ChannelResponse(wire);
-            channelResponse.setResponseHandle(handle.get());
-            return channelResponse;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void release() throws IOException {
-        lock.lock();
-        try {
-            if (Objects.nonNull(handle.get())) {
-                wire.release(handle.get());
-                handle.set(null);
-            }
-        } finally {
-            lock.unlock();
-        }
     }
 
     public void setResponseHandle(ResponseWireHandle h) {
@@ -145,9 +130,6 @@ public class ChannelResponse implements Response {
         try {
             handle.set(h);
             noSet.signal();
-            if (queryMode.get()) {
-                wire.setResultSetMode(handle.get());
-            }
         } finally {
             lock.unlock();
         }

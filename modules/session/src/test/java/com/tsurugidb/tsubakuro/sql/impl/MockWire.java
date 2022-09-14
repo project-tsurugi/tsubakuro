@@ -103,14 +103,6 @@ public class MockWire implements Wire {
     }
 
     @Override
-    public void setResultSetMode(ResponseWireHandle handle) {
-    }
-
-    @Override
-    public void release(ResponseWireHandle handle) {
-    }
-
-    @Override
     public ResultSetWire createResultSetWire() throws IOException {
         if (Objects.nonNull(resultSetData)) {
             return new ResultSetWireMock(resultSetData);

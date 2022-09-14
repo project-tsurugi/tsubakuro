@@ -60,6 +60,19 @@ public class SimpleResponse implements Response {
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) {
         return waitForMainResponse();
     }
+    
+    @Override
+    public ByteBuffer waitForSecondResponse() {
+        if (Objects.nonNull(status)) {
+            return status;
+        }
+        return null;
+    }
+
+    @Override
+    public ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit) {
+        return waitForSecondResponse();
+    }
 
     private void checkOpen() {
         if (closed.get()) {
@@ -77,19 +90,6 @@ public class SimpleResponse implements Response {
         return MessageFormat.format(
                 "SimpleResponse(main={0}, sub={1})",
                 main.remaining());
-    }
-
-    @Override
-    public Response duplicate() {
-        return new SimpleResponse(status);
-    }
-
-    @Override
-    public void setResultSetMode() {
-    }
-
-    @Override
-    public void release() {
     }
 
     public ByteBuffer getRelation() {
