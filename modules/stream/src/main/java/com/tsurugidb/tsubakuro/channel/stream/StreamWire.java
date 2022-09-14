@@ -17,12 +17,12 @@ public class StreamWire  extends Thread {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
-    private ResponseBox responseBox;
-    private ResultSetBox resultSetBox;
-    private byte[] header;
+    private ResponseBox responseBox = new ResponseBox();
+    private ResultSetBox resultSetBox = new ResultSetBox();
+    private byte[] header = new byte[7];
 
-    private boolean valid;
-    private boolean closed;
+    private boolean valid = false;
+    private boolean closed = false;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
@@ -42,11 +42,6 @@ public class StreamWire  extends Thread {
         socket = new Socket(hostname, port);
         outStream = new DataOutputStream(socket.getOutputStream());
         inStream = new DataInputStream(socket.getInputStream());
-        responseBox = new ResponseBox();
-        resultSetBox = new ResultSetBox();
-        this.header = new byte[6];
-        this.valid = false;
-        this.closed = false;
     }
 
     public void hello() throws IOException {
@@ -57,7 +52,7 @@ public class StreamWire  extends Thread {
         var message = receive();
         if (Objects.nonNull(message)) {
             byte info = message.getInfo();
-            byte slot = message.getSlot();
+            int slot = message.getSlot();
 
             if (info == RESPONSE_SESSION_PAYLOAD) {
                 LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
@@ -96,11 +91,12 @@ public class StreamWire  extends Thread {
     private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
         synchronized (outStream) {
             header[0] = i;  // info
-            header[1] = (byte) s;  // slot
-            header[2] = 0;
+            header[1] = strip(s);       // slot
+            header[2] = strip(s >> 8);  // slot
             header[3] = 0;
             header[4] = 0;
             header[5] = 0;
+            header[6] = 0;
 
             outStream.write(header, 0, header.length);
         }
@@ -112,11 +108,12 @@ public class StreamWire  extends Thread {
 
         synchronized (outStream) {
             header[0] = REQUEST_SESSION_PAYLOAD;
-            header[1] = strip(s);  // slot
-            header[2] = strip(length);
-            header[3] = strip(length >> 8);
-            header[4] = strip(length >> 16);
-            header[5] = strip(length >> 24);
+            header[1] = strip(s);       // slot
+            header[2] = strip(s >> 8);  // slot
+            header[3] = strip(length);
+            header[4] = strip(length >> 8);
+            header[5] = strip(length >> 16);
+            header[6] = strip(length >> 24);
 
             outStream.write(header, 0, header.length);
             if (length > 0) {
@@ -132,11 +129,12 @@ public class StreamWire  extends Thread {
 
         synchronized (outStream) {
             header[0] = REQUEST_SESSION_PAYLOAD;
-            header[1] = strip(s);  // slot
-            header[2] = strip(length);
-            header[3] = strip(length >> 8);
-            header[4] = strip(length >> 16);
-            header[5] = strip(length >> 24);
+            header[1] = strip(s);       // slot
+            header[2] = strip(s >> 8);  // slot
+            header[3] = strip(length);
+            header[4] = strip(length >> 8);
+            header[5] = strip(length >> 16);
+            header[6] = strip(length >> 24);
 
             outStream.write(header, 0, header.length);
             if (length > 0) {
@@ -162,7 +160,11 @@ public class StreamWire  extends Thread {
             info = inStream.readByte();
 
             // slot受信
-            byte slot = inStream.readByte();
+            int slot = 0;
+            for (int i = 0; i < 2; i++) {
+                int inData = inStream.readByte() & 0xff;
+                slot |= inData << (i * 8);
+            }
 
             if (info ==  RESPONSE_RESULT_SET_PAYLOAD) {
                 writer = inStream.readByte();
