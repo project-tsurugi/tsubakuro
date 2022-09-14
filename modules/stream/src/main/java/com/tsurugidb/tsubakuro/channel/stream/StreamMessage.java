@@ -6,10 +6,10 @@ import java.io.UnsupportedEncodingException;
 public class StreamMessage {
     public final byte[] bytes;
     private final byte info;
-    private final byte slot;
+    private final int slot;
     private final byte writer;
 
-    public StreamMessage(byte info, byte[] bytes, byte slot, byte writer) throws IOException {
+    public StreamMessage(byte info, byte[] bytes, int slot, byte writer) throws IOException {
         this.info = info;
         this.bytes = bytes;
         this.slot = slot;
@@ -33,7 +33,7 @@ public class StreamMessage {
     public byte[] getBytes() {
         return bytes;
     }
-    public byte getSlot() {
+    public int getSlot() {
         return slot;
     }
     public byte getWriter() {
