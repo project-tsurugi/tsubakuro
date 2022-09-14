@@ -10,14 +10,13 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.stream.sql.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 
-public class StreamWire  extends Thread {
+public class StreamWire extends Thread {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
-    private ResponseBox responseBox = new ResponseBox();
+    private ResponseBox responseBox = new ResponseBox(this);
     private ResultSetBox resultSetBox = new ResultSetBox();
     private byte[] header = new byte[7];
 
@@ -48,7 +47,7 @@ public class StreamWire  extends Thread {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
-    public boolean pull() throws IOException {
+    private boolean pull() throws IOException {
         var message = receive();
         if (Objects.nonNull(message)) {
             byte info = message.getInfo();
@@ -124,8 +123,8 @@ public class StreamWire  extends Thread {
         LOG.trace("send SESSION_PAYLOAD, length = {}, slot = {}", length, s);
     }
 
-    public void send(int s, byte[] first, byte[] payload) throws IOException {  // SESSION_PAYLOAD
-        int length = (int) (first.length + payload.length);
+    public void send(int s, byte[] frameHeader, byte[] payload) throws IOException {  // SESSION_PAYLOAD
+        int length = (int) (frameHeader.length + payload.length);
 
         synchronized (outStream) {
             header[0] = REQUEST_SESSION_PAYLOAD;
@@ -139,7 +138,7 @@ public class StreamWire  extends Thread {
             outStream.write(header, 0, header.length);
             if (length > 0) {
                 // payload送信
-                outStream.write(first, 0, first.length);
+                outStream.write(frameHeader, 0, frameHeader.length);
                 outStream.write(payload, 0, payload.length);
             }
         }

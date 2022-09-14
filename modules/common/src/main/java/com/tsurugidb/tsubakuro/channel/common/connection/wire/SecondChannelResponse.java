@@ -20,8 +20,8 @@ public class SecondChannelResponse implements Response {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Creates a new instance with a Wire
-     * @param wire the Wire from which a main response will come
+     * Creates a new instance with the response
+     * @param response the ChannelResponse to receive BODY_HEAD message
      */
     public SecondChannelResponse(@Nonnull Response response) {
         Objects.requireNonNull(response);
@@ -30,7 +30,7 @@ public class SecondChannelResponse implements Response {
 
     @Override
     public boolean isMainResponseReady() {
-        return response.isMainResponseReady();
+        return response.isSecondResponseReady();
     }
 
     @Override

@@ -13,6 +13,9 @@ import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+
 /**
  * A simple implementation of {@link Response} which just returns payload data.
  */
@@ -26,6 +29,7 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
+    private final boolean streamMode;
 
     /**
      * Creates a new instance with a Wire
@@ -34,6 +38,16 @@ public class ChannelResponse implements Response {
     public ChannelResponse(@Nonnull Wire wire) {
         Objects.requireNonNull(wire);
         this.wire = wire;
+        this.streamMode = false;
+    }
+
+        /**
+     * Creates a new instance with a Wire
+     * @param wire the Wire from which a main response will come
+     */
+    public ChannelResponse() {
+        this.wire = null;
+        this.streamMode = true;
     }
 
     /**
@@ -43,11 +57,12 @@ public class ChannelResponse implements Response {
     public ChannelResponse(@Nonnull ByteBuffer main) {
         this.main.set(main);
         this.wire = null;
+        this.streamMode = false;
     }
 
     @Override
     public boolean isMainResponseReady() {
-        return Objects.nonNull(handle) || Objects.nonNull(main);
+        return Objects.nonNull(handle) || Objects.nonNull(main.get());
     }
 
     @Override
@@ -56,17 +71,31 @@ public class ChannelResponse implements Response {
             return main.get();
         }
 
-        lock.lock();
-        try {
-            while (Objects.isNull(handle.get())) {
-                noSet.await();
+        if (streamMode) {
+            lock.lock();
+            try {
+                while (Objects.isNull(main.get())) {
+                    noSet.await();
+                }
+                return main.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
             }
-            main.set(wire.response(handle.get()));
-            return main.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        } finally {
-            lock.unlock();
+        } else {
+            lock.lock();
+            try {
+                while (Objects.isNull(handle.get())) {
+                    noSet.await();
+                }
+                main.set(wire.response(handle.get()));
+                return main.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -76,18 +105,37 @@ public class ChannelResponse implements Response {
             return main.get();
         }
 
-        lock.lock();
-        try {
-            while (Objects.isNull(handle.get())) {
-                noSet.await();
+        if (streamMode) {
+            lock.lock();
+            try {
+                while (Objects.isNull(main.get())) {
+                    noSet.await();
+                }
+                return main.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
             }
-            main.set(wire.response(handle.get(), timeout, unit));
-            return main.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        } finally {
-            lock.unlock();
+        } else {
+            lock.lock();
+            try {
+                while (Objects.isNull(handle.get())) {
+                    noSet.await();
+                }
+                main.set(wire.response(handle.get(), timeout, unit));
+                return main.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
+            }
         }
+    }
+
+    @Override
+    public boolean isSecondResponseReady() {
+        return Objects.nonNull(handle) || Objects.nonNull(second.get());
     }
 
     @Override
@@ -96,12 +144,26 @@ public class ChannelResponse implements Response {
             return second.get();
         }
 
-        lock.lock();
-        try {
-            second.set(wire.response(handle.get()));
-            return second.get();
-        } finally {
-            lock.unlock();
+        if (streamMode) {
+            lock.lock();
+            try {
+                while (Objects.isNull(second.get())) {
+                    noSet.await();
+                }
+                return second.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            lock.lock();
+            try {
+                second.set(wire.response(handle.get()));
+                return second.get();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -111,12 +173,26 @@ public class ChannelResponse implements Response {
             return second.get();
         }
 
-        lock.lock();
-        try {
-            second.set(wire.response(handle.get(), timeout, unit));
-            return second.get();
-        } finally {
-            lock.unlock();
+        if (streamMode) {
+            lock.lock();
+            try {
+                while (Objects.isNull(second.get())) {
+                    noSet.await();
+                }
+                return second.get();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
+            }
+        } else {
+            lock.lock();
+            try {
+                second.set(wire.response(handle.get(), timeout, unit));
+                return second.get();
+            } finally {
+                lock.unlock();
+            }
         }
     }
 
@@ -133,5 +209,36 @@ public class ChannelResponse implements Response {
         } finally {
             lock.unlock();
         }
+    }
+
+    public void setMainResponse(@Nonnull ByteBuffer response) {
+        lock.lock();
+        try {
+            main.set(skipFrameworkHeader(response));
+            noSet.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void setSecondResponse(@Nonnull ByteBuffer response) {
+        lock.lock();
+        try {
+            second.set(skipFrameworkHeader(response));
+            noSet.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private ByteBuffer skipFrameworkHeader(ByteBuffer response) {
+        try {
+            response.rewind();
+            FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;  // FIXME
     }
 }
