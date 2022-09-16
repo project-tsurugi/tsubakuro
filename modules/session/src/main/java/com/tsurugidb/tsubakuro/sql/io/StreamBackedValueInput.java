@@ -44,6 +44,7 @@ import java.time.OffsetTime;
 import java.time.OffsetDateTime;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -487,19 +488,19 @@ public class StreamBackedValueInput implements ValueInput {
     public OffsetTime readTimeOfDayWithTimeZone() throws IOException {
         require(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
         clearHeaderInfo();
-//        var offset = Base128Variant.readUnsigned(input);
-//        return LocalTime.ofNanoOfDay(offset);
-        return null; // FIXME
+        var offset = Base128Variant.readUnsigned(input);
+        var timeZoneOffset = readSignedInt32();
+        return OffsetTime.of(LocalTime.ofNanoOfDay(offset), ZoneOffset.ofTotalSeconds(timeZoneOffset * 60));
     }
 
     @Override
     public OffsetDateTime readTimePointWithTimeZone()throws IOException {
         require(EntryType.TIME_POINT_WITH_TIME_ZONE);
         clearHeaderInfo();
-//        var seconds = Base128Variant.readSigned(input);
-//        var nanos = Base128Variant.readUnsigned(input);
-//        return LocalDateTime.ofEpochSecond(seconds, nanos);
-        return null; // FIXME
+        var seconds = Base128Variant.readSigned(input);
+        var nanos = Base128Variant.readUnsigned(input);
+        var timeZoneOffset = readSignedInt32();
+        return OffsetDateTime.ofInstant(Instant.ofEpochSecond(seconds, nanos), ZoneOffset.ofTotalSeconds(timeZoneOffset * 60));
     }
 
     @Override

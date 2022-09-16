@@ -280,24 +280,28 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     @Override
     public void writeTimeOfDayWithTimeZone(@Nonnull OffsetTime value) throws IOException {
         Objects.requireNonNull(value);
-        output.write(HEADER_TIME_OF_DAY_WITH_TIME_ZONE);  // FIXME
+        output.write(HEADER_TIME_OF_DAY_WITH_TIME_ZONE);
 
-//        var offset = value.toNanoOfDay();
-//        assert offset >= 0;
-//        Base128Variant.writeUnsigned(offset, output);
+        var offset = value.toLocalTime().toNanoOfDay();
+        assert offset >= 0;
+        var timeZoneOffset = value.getOffset().getTotalSeconds() / 60;
+        Base128Variant.writeUnsigned(offset, output);
+        Base128Variant.writeSigned(timeZoneOffset, output);
     }
 
     @Override
     public void writeTimePointWithTimeZone(@Nonnull OffsetDateTime value) throws IOException {
         Objects.requireNonNull(value);
-        output.write(HEADER_TIME_POINT_WITH_TIME_ZONE);  // FIXME
+        output.write(HEADER_TIME_POINT_WITH_TIME_ZONE);
 
-//        var offsetSecond = value.getEpochSecond();
-//        var offsetNano = value.getNano();
-//        Base128Variant.writeSigned(offsetSecond, output);
-//        Base128Variant.writeUnsigned(offsetNano, output);
+        var localDateTime = value.toLocalDateTime();
+        var offsetSecond = localDateTime.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(localDateTime));
+        var offsetNano = value.getNano();
+        var timeZoneOffset = value.getOffset().getTotalSeconds() / 60;
+        Base128Variant.writeSigned(offsetSecond, output);
+        Base128Variant.writeUnsigned(offsetNano, output);
+        Base128Variant.writeSigned(timeZoneOffset, output);
     }
-
 
     @Override
     public void writeDateTimeInterval(@Nonnull DateTimeInterval value) throws IOException {
