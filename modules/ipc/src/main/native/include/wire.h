@@ -62,6 +62,43 @@ private:
 };
 
 /**
+ * @brief header information used in response message,
+ * it assumes that machines with the same endianness communicate with each other
+ */
+class response_header {
+public:
+    using index_type = std::uint16_t;
+    using msg_type = std::uint16_t;
+    using length_type = std::uint32_t;
+
+    static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type) + sizeof(msg_type);
+
+    response_header(index_type idx, length_type length, msg_type type) : idx_(idx), type_(type), length_(length) {}
+    response_header() : response_header(0, 0, 0) {}
+    explicit response_header(const char* buffer) {
+        std::memcpy(&idx_, buffer, sizeof(index_type));
+        std::memcpy(&type_, buffer + sizeof(index_type), sizeof(msg_type));  //NOLINT
+        std::memcpy(&length_, buffer + (sizeof(index_type) + sizeof(msg_type)), sizeof(length_type));  //NOLINT
+    }
+
+    [[nodiscard]] index_type get_idx() const { return idx_; }
+    [[nodiscard]] length_type get_length() const { return length_; }
+    [[nodiscard]] msg_type get_type() const { return type_; }
+    char* get_buffer() {
+        std::memcpy(buffer_, &idx_, sizeof(index_type));  //NOLINT
+        std::memcpy(buffer_ + sizeof(index_type), &type_, sizeof(msg_type));  //NOLINT
+        std::memcpy(buffer_ + (sizeof(index_type) + sizeof(msg_type)), &length_, sizeof(length_type));  //NOLINT
+        return static_cast<char*>(buffer_);
+    };
+
+private:
+    index_type idx_{};
+    msg_type type_{};
+    length_type length_{};
+    char buffer_[size]{};  //NOLINT
+};
+
+/**
  * @brief header information used in metadata message,
  * it assumes that machines with the same endianness communicate with each other
  */
@@ -91,7 +128,7 @@ private:
 
 
 static constexpr const char* request_wire_name = "request_wire";
-static constexpr const char* response_box_name = "response_box";
+static constexpr const char* response_wire_name = "response_wire";
 
 /**
  * @brief One-to-one unidirectional communication of charactor stream with header T
@@ -175,6 +212,7 @@ protected:
     std::size_t capacity_;  //NOLINT
 
     std::atomic_ulong pushed_{0};  //NOLINT
+    std::atomic_ulong pushed_valid_{0};  //NOLINT
     std::size_t poped_{0};  //NOLINT
 
     std::atomic_bool wait_for_write_{};  //NOLINT
@@ -290,189 +328,107 @@ public:
 
 private:
     std::unique_ptr<char[]> copy_of_payload_{};  // in case of ring buffer wrap around  //NOLINT
-    std::atomic_ulong pushed_valid_{0};  //NOLINT
 
     std::size_t stored_valid() const { return (pushed_valid_ - poped_); }  //NOLINT
 };
 
 
 // for response
-class response_box {
+class unidirectional_response_wire : public simple_wire<response_header> {
 public:
-
-    class response {
-        friend class response_box;
-
-    public:
-        static constexpr std::size_t max_response_message_length = 256;
-
-        response() = default;
-        ~response() = default;
-
-        /**
-         * @brief Copy and move constructers are deleted.
-         */
-        response(response const&) = delete;
-        response(response&&) = delete;
-        response& operator = (response const&) = delete;
-        response& operator = (response&&) = delete;
-
-        std::pair<char*, std::size_t> recv(std::int64_t timeout = 0) {
-            if (!(written_ > read_)) {
-                if (timeout == 0) {
-                    boost::interprocess::scoped_lock lock(m_restored_);
-                    w_restored_ = true;
-                    std::atomic_thread_fence(std::memory_order_acq_rel);
-                    c_restored_.wait(lock, [this](){ return written_ > read_; });
-                    w_restored_ = false;
-                } else {
-                    boost::interprocess::scoped_lock lock(m_restored_);
-                    w_restored_ = true;
-                    std::atomic_thread_fence(std::memory_order_acq_rel);
-                    if (!c_restored_.timed_wait(lock,
-#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                                boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
-#else
-                                                boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
-#endif
-                                                [this](){ return written_ > read_; })) {
-                        throw std::runtime_error("response has not been received within the specified time");
-                    }
-                    w_restored_ = false;
-                }
-            }
-            if (read_ == 0) {
-                if (annex_ != 0) {
-                    return std::pair<char*, std::size_t>(static_cast<char*>(client_managed_shm_ptr_->get_address_from_handle(annex_)), annex_length_);
-                }
-                return std::pair<char*, std::size_t>(static_cast<char*>(buffer_), length_);
-            }
-            if (second_annex_ != 0) {
-                return std::pair<char*, std::size_t>(static_cast<char*>(client_managed_shm_ptr_->get_address_from_handle(second_annex_)), second_annex_length_);
-            }
-            return std::pair<char*, std::size_t>(static_cast<char*>(buffer_) + length_, second_length_);  // NOLINT
-        }
-        void set_inuse() {
-            inuse_ = true;
-        }
-        [[nodiscard]] bool is_inuse() const { return inuse_; }
-        void dispose() {
-            if (++read_ == expected_) {
-                length_ = second_length_ = 0;
-                to_be_written_ = written_ = read_ = 0;
-                expected_ = 1;
-                inuse_ = false;
-                query_ = false;
-                if (annex_ != 0) {
-                    client_managed_shm_ptr_->deallocate(client_managed_shm_ptr_->get_address_from_handle(annex_));
-                    annex_ = 0;
-                    annex_length_ = 0;
-                }
-                if (second_annex_ != 0) {
-                    client_managed_shm_ptr_->deallocate(client_managed_shm_ptr_->get_address_from_handle(second_annex_));
-                    second_annex_ = 0;
-                    second_annex_length_ = 0;
-                }
-            }
-        }
-        char* get_buffer(std::size_t length) {
-            if (to_be_written_++ == 0) {
-                if (length <= max_response_message_length) {
-                    length_ = length;
-                    return static_cast<char*>(buffer_);
-                }
-                annex_ = allocate_buffer(length);
-                annex_length_ = length;
-                return static_cast<char*>(server_managed_shm_ptr_->get_address_from_handle(annex_));
-            }
-            if (second_length_ <= (max_response_message_length - length_)) {
-                second_length_ = length;
-                return static_cast<char*>(buffer_) + length_;  // NOLINT
-            }
-            second_annex_ = allocate_buffer(length);
-            second_annex_length_ = length;
-            return static_cast<char*>(server_managed_shm_ptr_->get_address_from_handle(second_annex_));
-        }
-        void flush() {
-            written_++;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (w_restored_) {
-                boost::interprocess::scoped_lock lock(m_restored_);
-                c_restored_.notify_one();
-            }
-        }
-        void set_query_mode() {
-            expected_ = 2;
-            query_ = true;
-        }
-        void un_receive() {
-            expected_--;
-            read_--;
-        }
-    private:
-        static constexpr std::size_t Alignment = sizeof(std::size_t);
-
-        void set_server_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-            server_managed_shm_ptr_ = managed_shm_ptr;
-        }
-        void set_client_managed_shared_memory(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-            client_managed_shm_ptr_ = managed_shm_ptr;
-        }
-        boost::interprocess::managed_shared_memory::handle_t allocate_buffer(std::size_t length) {
-            auto buffer = static_cast<char*>(server_managed_shm_ptr_->allocate_aligned(length, Alignment));
-            return server_managed_shm_ptr_->get_handle_from_address(buffer);
-        }
-
-        std::size_t length_{};
-        std::size_t second_length_{};
-        unsigned expected_{1};
-        unsigned to_be_written_{};
-        std::atomic_uint written_{};
-        unsigned read_{};
-        bool inuse_{};
-        bool query_{};
-
-        boost::interprocess::managed_shared_memory* server_managed_shm_ptr_{};
-        boost::interprocess::managed_shared_memory* client_managed_shm_ptr_{};
-        boost::interprocess::interprocess_mutex m_restored_{};
-        boost::interprocess::interprocess_condition c_restored_{};
-        std::atomic_bool w_restored_{};
-        char buffer_[max_response_message_length]{};  //NOLINT
-        boost::interprocess::managed_shared_memory::handle_t annex_{};
-        std::size_t annex_length_{};
-        boost::interprocess::managed_shared_memory::handle_t second_annex_{};
-        std::size_t second_annex_length_{};
-    };
+    unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
     /**
-     * @brief Construct a new object.
+     * @brief wait for response arrival and return its header.
      */
-    explicit response_box(size_t aSize, boost::interprocess::managed_shared_memory* managed_shm_ptr) : boxes_(aSize, managed_shm_ptr->get_segment_manager()) {
-        for (auto &&r: boxes_) {
-            r.set_server_managed_shared_memory(managed_shm_ptr);
+    response_header await(const char* base) {
+        while (true) {
+            if(stored_valid() >= response_header::size) {
+                break;
+            }
+            if (closed_.load()) {
+                throw std::runtime_error("closed");
+            }
+            {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                wait_for_read_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                c_empty_.wait(lock, [this](){ return (stored_valid() >= response_header::size) || closed_.load(); });
+                wait_for_read_ = false;
+            }
+        }
+
+        if ((base + capacity_) >= (read_address(base) + sizeof(response_header))) {  //NOLINT
+            header_received_ = response_header(read_address(base));  // normal case
+        } else {
+            char buf[sizeof(response_header)];  // in case for ring buffer full  //NOLINT
+            std::size_t first_part = capacity_ - index(poped_);
+            memcpy(buf, read_address(base), first_part);  //NOLINT
+            memcpy(buf + first_part, base, sizeof(response_header) - first_part);  //NOLINT
+            header_received_ = response_header(static_cast<char*>(buf));
+        }
+        return header_received_;
+    }
+    response_header::length_type get_length() const {
+        return header_received_.get_length();
+    }
+    response_header::index_type get_idx() const {
+        return header_received_.get_idx();
+    }
+    response_header::msg_type get_type() const {
+        return header_received_.get_type();
+    }
+    /**
+     * @brief pop the current message.
+     */
+    void read(char* to, const char* base) {
+        auto length = static_cast<std::size_t>(header_received_.get_length());
+        read_from_buffer(to, base, read_address(base, response_header::size), length);
+        poped_ += response_header::size + length;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
         }
     }
-    response_box() = delete;
-    ~response_box() = default;
+    /**
+     * @brief dispose the message in the queue at read_point that has completed read and is no longer needed
+     *  used by endpoint IF
+     */
+    void dispose([[maybe_unused]] const char* base) {
+        poped_ += (header_received_.get_length() + response_header::size);
+    }
+    void close() {
+        closed_.store(true);
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
 
     /**
-     * @brief Copy and move constructers are deleted.
+     * @brief write response message in the response wire, which is used by endpoint IF
      */
-    response_box(response_box const&) = delete;
-    response_box(response_box&&) = delete;
-    response_box& operator = (response_box const&) = delete;
-    response_box& operator = (response_box&&) = delete;
-
-    std::size_t size() { return boxes_.size(); }
-    response& at(std::size_t idx) { return boxes_.at(idx); }
-    void connect(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
-        for (auto &&r: boxes_) {
-            r.set_client_managed_shared_memory(managed_shm_ptr);
+    void write(char* base, const char* from, response_header header) {
+        std::size_t length = header.get_length() + response_header::size;
+        if (length > room()) { wait_to_write(length); }
+        write_in_buffer(base, buffer_address(base, pushed_ + response_header::size), from, header.get_length());
+        pushed_ += length;
+        write_in_buffer(base, buffer_address(base, pushed_valid_), header.get_buffer(), response_header::size);
+        pushed_valid_.store(pushed_.load());
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
         }
     }
 
 private:
-    std::vector<response, boost::interprocess::allocator<response, boost::interprocess::managed_shared_memory::segment_manager>> boxes_;
+    response_header header_received_{};
+    std::atomic_bool closed_{};
+
+    std::size_t stored_valid() const { return (pushed_valid_ - poped_); }  //NOLINT
 };
 
 
@@ -503,7 +459,29 @@ public:
          *  used by server only
          */
         void write(const char* from, std::size_t length) {
+            if (!continued_) {
+                brand_new();
+            }
             write(get_bip_address(managed_shm_ptr_), from, length);
+        }
+        /**
+         * @brief begin new record which will be flushed on commit
+        */
+        void brand_new() {
+            std::size_t length = length_header::size;
+            if (length > room()) { wait_to_write(length); }
+            pushed_ += length;
+        }
+        void flush(char* base) {
+            length_header header(pushed_ - (pushed_valid_ + length_header::size));
+            write_in_buffer(base, buffer_address(base, pushed_valid_), header.get_buffer(), length_header::size);
+            pushed_valid_.store(pushed_.load());
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (wait_for_read_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_empty_.notify_one();
+            }
+            continued_ = false;
         }
 
         /**
@@ -513,12 +491,12 @@ public:
             if (chunk_end_ < poped_) {
                 chunk_end_ = poped_;
             }
-            if (!(chunk_end_ < pushed_)) {
+            if (!(chunk_end_ < pushed_valid_)) {
                 if (timeout == 0) {
                     boost::interprocess::scoped_lock lock(m_mutex_);
                     wait_for_column_ = true;
                     std::atomic_thread_fence(std::memory_order_acq_rel);
-                    c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_; });
+                    c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_valid_; });
                     wait_for_column_ = false;
                 } else {
                     boost::interprocess::scoped_lock lock(m_mutex_);
@@ -530,17 +508,17 @@ public:
 #else
                                              boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
 #endif
-                                             [this](){ return chunk_end_ < pushed_; })) {
+                                             [this](){ return chunk_end_ < pushed_valid_; })) {
                         throw std::runtime_error("record has not been received within the specified time");
                     }
                     wait_for_column_ = false;
                 }
             }
             auto chunk_start = chunk_end_;
-            if ((pushed_ / capacity_) == (chunk_start / capacity_)) {
-                chunk_end_ = pushed_;
+            if ((pushed_valid_ / capacity_) == (chunk_start / capacity_)) {
+                chunk_end_ = pushed_valid_;
             } else {
-                chunk_end_ = (pushed_ / capacity_) * capacity_;
+                chunk_end_ = (pushed_valid_ / capacity_) * capacity_;
             }
             return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), chunk_end_ - chunk_start);
         }
@@ -559,7 +537,7 @@ public:
         /**
          * @brief check this wire has record
          */
-        [[nodiscard]] bool has_record() const { return pushed_ > poped_; }
+        [[nodiscard]] bool has_record() const { return pushed_valid_ > poped_; }
 
         void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
             buffer_handle_ = handle;
@@ -615,6 +593,7 @@ public:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
         std::atomic_bool wait_for_column_{};
         std::atomic_bool closed_{};
+        bool continued_{};
         unidirectional_simple_wires* envelope_{};
     };
 
