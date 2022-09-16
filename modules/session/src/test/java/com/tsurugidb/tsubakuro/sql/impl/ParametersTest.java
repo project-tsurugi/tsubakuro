@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Instant;
+import java.time.ZoneId;
+//import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 
@@ -113,13 +116,13 @@ class ParametersTest {
     }
     
     @Test
-    void ofInstant() {
+    void ofLocalDateTime() {
         assertEquals(
                      param().setTimePointValue(TimePoint.newBuilder()
                                                .setOffsetSeconds(100)
                                                .setNanoAdjustment(200))
                      .build(),
-                     Parameters.of(TN, Instant.ofEpochSecond(100, 200)));
+                     Parameters.of(TN, LocalDateTime.ofInstant(Instant.ofEpochSecond(100, 200), ZoneId.systemDefault())));
     }
     
     @Test

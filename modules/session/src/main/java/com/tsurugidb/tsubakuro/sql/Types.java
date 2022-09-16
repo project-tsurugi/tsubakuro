@@ -141,15 +141,10 @@ public final class Types {
             Map.entry(LocalDateTime.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(java.sql.Timestamp.class, wrap(SqlCommon.AtomType.TIME_POINT)),
             Map.entry(SqlCommon.TimePoint.class, wrap(SqlCommon.AtomType.TIME_POINT)),
-
-
-
-
             Map.entry(OffsetTime.class, wrap(SqlCommon.AtomType.TIME_OF_DAY_WITH_TIME_ZONE)),
+            Map.entry(SqlCommon.TimeOfDayWithTimeZone.class, wrap(SqlCommon.AtomType.TIME_OF_DAY_WITH_TIME_ZONE)),
             Map.entry(OffsetDateTime.class, wrap(SqlCommon.AtomType.TIME_POINT_WITH_TIME_ZONE)),
-
-
-
+            Map.entry(SqlCommon.TimePointWithTimeZone.class, wrap(SqlCommon.AtomType.TIME_POINT_WITH_TIME_ZONE)),
             Map.entry(DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
             Map.entry(SqlCommon.DateTimeInterval.class, wrap(SqlCommon.AtomType.DATETIME_INTERVAL)),
 

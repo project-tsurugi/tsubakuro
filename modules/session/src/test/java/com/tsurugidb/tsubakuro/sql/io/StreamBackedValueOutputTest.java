@@ -307,16 +307,16 @@ class StreamBackedValueOutputTest {
     void writeTimePoint() {
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(0)),
-                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.of("UTC")))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.systemDefault()))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(+4096), uint(0)),
-                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(+4096, 0), ZoneId.of("UTC")))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(+4096, 0), ZoneId.systemDefault()))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(-4096), uint(0)),
-                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(-4096, 0), ZoneId.of("UTC")))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(-4096, 0), ZoneId.systemDefault()))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(123_456_789)),
-                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.of("UTC")))));
+                perform(o -> o.writeTimePoint(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.systemDefault()))));
     }
 
     @Test

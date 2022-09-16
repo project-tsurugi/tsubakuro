@@ -52,7 +52,7 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.OffsetTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -271,9 +271,8 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT);
 
-        var ivalue = value.toInstant(ZoneOffset.UTC);  // FIXME
-        var offsetSecond = ivalue.getEpochSecond();
-        var offsetNano = ivalue.getNano();
+        var offsetSecond = value.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(value));
+        var offsetNano = value.getNano();
         Base128Variant.writeSigned(offsetSecond, output);
         Base128Variant.writeUnsigned(offsetNano, output);
     }

@@ -180,11 +180,11 @@ class StreamBackedValueInputTest {
 
     @Test
     void readTimePoint() {
-        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.of("UTC")),
+        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.systemDefault()),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(LocalDateTime.ofInstant(Instant.parse("2022-05-04T12:34:56.789Z"), ZoneId.of("UTC")),
+        assertSerDe(LocalDateTime.ofInstant(Instant.parse("2022-05-04T12:34:56.789Z"), ZoneId.systemDefault()),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.of("UTC")),
+        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.systemDefault()),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
     }
 

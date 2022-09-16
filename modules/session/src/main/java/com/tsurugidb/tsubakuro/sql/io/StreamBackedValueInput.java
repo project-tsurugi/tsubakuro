@@ -255,6 +255,12 @@ public class StreamBackedValueInput implements ValueInput {
         case TIME_POINT:
             readTimePoint();
             return true;
+        case TIME_OF_DAY_WITH_TIME_ZONE:
+            readTimeOfDayWithTimeZone();
+            return true;
+        case TIME_POINT_WITH_TIME_ZONE:
+            readTimePointWithTimeZone();
+            return true;
         case DATETIME_INTERVAL:
             readDateTimeInterval();
             return true;
@@ -474,7 +480,7 @@ public class StreamBackedValueInput implements ValueInput {
         clearHeaderInfo();
         var seconds = Base128Variant.readSigned(input);
         var nanos = Base128Variant.readUnsigned(input);
-        return LocalDateTime.ofInstant(Instant.ofEpochSecond(seconds, nanos), ZoneId.of("UTC"));  // FIXME
+        return LocalDateTime.ofInstant(Instant.ofEpochSecond(seconds, nanos), ZoneId.systemDefault());
     }
 
     @Override
