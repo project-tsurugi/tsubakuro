@@ -86,6 +86,12 @@ message Parameter {
         // date-time interval.
         common.DateTimeInterval datetime_interval_value = 28;
 
+        // time of day with time zone.
+        common.TimeOfDayWithTimeZone time_of_day_with_time_zone_value = 29;
+
+        // time point with time zone.
+        common.TimePointWithTimeZone time_point_with_time_zone_value = 30;
+
         // reference column position (for load action).
         uint64 reference_column_position = 51;
 
@@ -93,7 +99,7 @@ message Parameter {
         string reference_column_name = 52;
     }
 
-    reserved 12, 13, 20, 22, 24, 29 to 40, 41 to 50, 53 to 99;
+    reserved 12, 13, 20, 22, 24, 31 to 40, 41 to 50, 53 to 99;
 }
 
 // the parameter set for the statement.

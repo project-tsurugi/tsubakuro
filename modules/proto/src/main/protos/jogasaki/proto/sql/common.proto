@@ -77,7 +77,11 @@ enum AtomType {
     // date-time interval.
     DATETIME_INTERVAL = 18;
 
-    reserved 19 to 20;
+    // time of day with time zone.
+    TIME_OF_DAY_WITH_TIME_ZONE = 19;
+
+    // time point with time zone.
+    TIME_POINT_WITH_TIME_ZONE = 20;
 
     // character large objects.
     CLOB = 21;
@@ -161,12 +165,30 @@ message Bit {
     uint64 size = 2;
 }
 
+// the time-of-day-with-time-zone value.
+message TimeOfDayWithTimeZone {
+    // offset nano-seconds from epoch (00:00:00) in the time zone.
+    uint64 offset_nanoseconds = 1;
+    // timezone offset in minute.
+    sint32 time_zone_offset = 2;
+}
+
 // the time-point value.
 message TimePoint {
-    // offset seconds from epoch (1970-01-01 00:00:00 GMT).
+    // offset seconds from epoch (1970-01-01 00:00:00).
     sint64 offset_seconds = 1;
     // nano-seconds adjustment [0, 10^9-1].
     uint32 nano_adjustment = 2;
+}
+
+// the time-point-with-time-zone value.
+message TimePointWithTimeZone {
+    // offset seconds from epoch (1970-01-01 00:00:00) in the time zone.
+    sint64 offset_seconds = 1;
+    // nano-seconds adjustment [0, 10^9-1].
+    uint32 nano_adjustment = 2;
+    // timezone offset in minute.
+    sint32 time_zone_offset = 3;
 }
 
 // the date-time interval value.
