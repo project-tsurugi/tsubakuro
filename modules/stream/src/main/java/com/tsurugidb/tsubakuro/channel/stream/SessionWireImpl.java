@@ -4,14 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
@@ -63,15 +60,6 @@ public final class SessionWireImpl implements Wire {
         } catch (IOException e) {
             throw new IOException(e);
         }
-    }
-
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
-        throw new UnsupportedOperationException();
     }
 
     /**

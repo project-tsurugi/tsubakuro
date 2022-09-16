@@ -12,7 +12,6 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -24,11 +23,9 @@ import com.tsurugidb.datastore.proto.DatastoreResponse;
 class SessionImplTest {
     public class TestResponse implements Response {
         private final SessionWireMock wire;
-        private ResponseWireHandle handle;
 
         TestResponse(SessionWireMock wire) {
             this.wire = wire;
-            this.handle = null;
         }
 
         @Override
@@ -39,7 +36,19 @@ class SessionImplTest {
         @Override
         public ByteBuffer waitForMainResponse() throws IOException {
             if (isMainResponseReady()) {
-                return wire.response(handle);
+                try (var buffer = new ByteArrayOutputStream()) {
+                    var response = DatastoreResponse.BackupBegin.newBuilder()
+                        .setSuccess(DatastoreResponse.BackupBegin.Success.newBuilder()
+                        .setId(100)
+                        .addFiles("/tmp/backup-1")
+                        .build())
+                    .build();
+                    response.writeDelimitedTo(buffer);
+                    return ByteBuffer.wrap(buffer.toByteArray());
+                } catch (IOException e) {
+                    System.out.println(e);
+                }
+                return null; // dummy as it is test for session
             }
             throw new IOException("response box is not available");
         }
@@ -47,7 +56,7 @@ class SessionImplTest {
         @Override
         public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
             if (isMainResponseReady()) {
-                return wire.response(handle, timeout, unit);
+                return waitForMainResponse();
             }
             throw new IOException("response box is not available");  // FIXME arch. mismatch??
         }
@@ -75,27 +84,6 @@ class SessionImplTest {
             return FutureResponse.wrap(Owner.of(response));
         }
 
-        @Override
-        public ByteBuffer response(ResponseWireHandle handle) {
-            try (var buffer = new ByteArrayOutputStream()) {
-                var response = DatastoreResponse.BackupBegin.newBuilder()
-                    .setSuccess(DatastoreResponse.BackupBegin.Success.newBuilder()
-                    .setId(100)
-                    .addFiles("/tmp/backup-1")
-                    .build())
-                .build();
-                response.writeDelimitedTo(buffer);
-                return ByteBuffer.wrap(buffer.toByteArray());
-            } catch (IOException e) {
-                System.out.println(e);
-            }
-            return null; // dummy as it is test for session
-        }
-
-        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) {
-            return response(handle);
-        }
-        
         @Override
         public void close() throws IOException {
         }

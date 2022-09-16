@@ -3,8 +3,6 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
@@ -71,24 +69,6 @@ public interface Wire extends ServerResource {
         Objects.requireNonNull(credential);
         return FutureResponse.returns(null);
     }
-
-    /**
-     * Receive the message corresponding to the given responseWireHandle from the SQL server
-     * @param handle the handle of communication wire to receive incoming message
-     * @return SqlResponse.Response the response message received from the SQL server
-     * @throws IOException error occurred in responce receive
-     */
-    ByteBuffer response(ResponseWireHandle handle) throws IOException;
-
-    /**
-     * Receive the message corresponding to the given responseWireHandle from the SQL server
-     * @param handle the handle of communication wire to receive incoming message
-     * @param timeout the maximum time to wait
-     * @param unit the time unit of {@code timeout}
-     * @return SqlResponse.Response the response message received from the SQL server
-     * @throws IOException error occurred in responce receive
-     */
-    ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException;
 
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
