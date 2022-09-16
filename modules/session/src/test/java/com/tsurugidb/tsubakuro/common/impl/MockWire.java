@@ -15,7 +15,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.core.proto.CoreResponse;
 
 /**
@@ -84,14 +83,5 @@ public class MockWire implements Wire {
     @Override
     public void close() throws IOException, InterruptedException {
         handlers.clear();
-    }
-
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle) {
-        return null;
-    }
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
-        return response(handle);
     }
 }

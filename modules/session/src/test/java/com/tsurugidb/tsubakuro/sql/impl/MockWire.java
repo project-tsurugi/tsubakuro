@@ -16,7 +16,6 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.sql.impl.testing.ResultSetWireMock;
 import com.tsurugidb.sql.proto.SqlResponse;
@@ -46,8 +45,7 @@ public class MockWire implements Wire {
         try {
             var response = next.handle(serviceId, payload);
             resultSetData = ((SimpleResponse) response).getRelation();
-            return FutureResponse.wrap(Owner.of(response));    
-//            return FutureResponse.wrap(Owner.of(next.handle((int) serviceId, payload)));
+            return FutureResponse.wrap(Owner.of(response));
         } catch (ServerException e) {
             return FutureResponse.raises(e);
         }
@@ -91,15 +89,6 @@ public class MockWire implements Wire {
     @Override
     public void close() throws IOException, InterruptedException {
         handlers.clear();
-    }
-
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle) {
-        return null;
-    }
-    @Override
-    public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws TimeoutException, IOException {
-        return response(handle);
     }
 
     @Override
