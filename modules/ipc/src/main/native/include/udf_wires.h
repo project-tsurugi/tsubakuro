@@ -38,18 +38,23 @@ public:
                 throw std::runtime_error(msg.c_str());
             }
         }
-        std::pair<char*, std::size_t> get_chunk() {
+        std::string_view get_chunk() {
+            if (wrap_around_.data()) {
+                auto rv = wrap_around_;
+                wrap_around_ = std::string_view(nullptr, 0);
+                return rv;
+            }
             if (current_wire_ == nullptr) {
                 current_wire_ = active_wire();
             }
             if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_));
+                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
             }
-            return std::pair<char*, std::size_t>(nullptr, 0);
+            return std::string_view(nullptr, 0);
         }
-        void dispose(std::size_t length) {
+        void dispose() {
             if (current_wire_ != nullptr) {
-                current_wire_->dispose(length);
+                current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_));
                 current_wire_ = nullptr;
                 return;
             }
@@ -70,6 +75,7 @@ public:
         boost::interprocess::managed_shared_memory* managed_shm_ptr_;
         std::string rsw_name_;
         shm_resultset_wires* shm_resultset_wires_{};
+        std::string_view wrap_around_{};
         //   for client
         shm_resultset_wire* current_wire_{};
     };
@@ -127,9 +133,6 @@ public:
         }
         void read(signed char* to) {
             wire_->read(reinterpret_cast<char*>(to), bip_buffer_);
-        }
-        void dispose() {
-            wire_->dispose(bip_buffer_);
         }
         void close() {
             wire_->close();

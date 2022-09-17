@@ -20,6 +20,7 @@
 #include <atomic>
 #include <stdexcept> // std::runtime_error
 #include <vector>
+#include <string_view>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -67,7 +68,7 @@ private:
  */
 class response_header {
 public:
-    using index_type = std::uint16_t;
+    using index_type = message_header::index_type;
     using msg_type = std::uint16_t;
     using length_type = std::uint32_t;
 
@@ -104,7 +105,7 @@ private:
  */
 class length_header {
 public:
-    using length_type = std::uint16_t;
+    using length_type = std::uint32_t;
 
     static constexpr std::size_t size = sizeof(length_type);
 
@@ -165,6 +166,45 @@ public:
     simple_wire& operator = (simple_wire const&) = delete;
     simple_wire& operator = (simple_wire&&) = delete;
 
+    /**
+     * @brief peep the current header.
+     */
+    T peep(const char* base, bool wait_flag = false) {
+        while (true) {
+            if(stored_valid() >= T::size) {
+                break;
+            }
+            if (wait_flag) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                wait_for_read_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
+                c_empty_.wait(lock, [this](){ return stored_valid() >= T::size; });
+                wait_for_read_ = false;
+            } else {
+                if (stored_valid() < T::size) { return T(); }
+            }
+        }
+        if ((base + capacity_) >= (read_address(base) + sizeof(T))) {  //NOLINT
+            T header(read_address(base));  // normal case
+            return header;
+        }
+        char buf[sizeof(T)];  // in case for ring buffer full  //NOLINT
+        std::size_t first_part = capacity_ - index(poped_);
+        memcpy(buf, read_address(base), first_part);  //NOLINT
+        memcpy(buf + first_part, base, sizeof(T) - first_part);  //NOLINT
+        T header(static_cast<char*>(buf));
+        return header;
+    }
+
+    /**
+     * @brief begin new record which will be flushed on commit
+     */
+    void brand_new() {
+        std::size_t length = T::size;
+        if (length > room()) { wait_to_write(length); }
+        pushed_ += length;
+    }
+
     char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
         if (buffer_handle_ != 0) {
             return static_cast<char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
@@ -207,6 +247,7 @@ protected:
             memcpy(to + first_part, base, length - first_part);  //NOLINT
         }
     }
+    std::size_t stored_valid() const { return (pushed_valid_ - poped_); }  //NOLINT
 
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};  //NOLINT
     std::size_t capacity_;  //NOLINT
@@ -230,43 +271,8 @@ public:
     unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
-     * @brief peep the current header.
-     */
-    message_header peep(const char* base, bool wait_flag = false) {
-        while (true) {
-            if(stored_valid() >= message_header::size) {
-                break;
-            }
-            if (wait_flag) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                wait_for_read_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return stored_valid() >= message_header::size; });
-                wait_for_read_ = false;
-            } else {
-                if (stored_valid() < message_header::size) { return message_header(); }
-            }
-        }
-        if ((base + capacity_) >= (read_address(base) + sizeof(message_header))) {  //NOLINT
-            message_header header(read_address(base));  // normal case
-            return header;
-        }
-        char buf[sizeof(message_header)];  // in case for ring buffer full  //NOLINT
-        std::size_t first_part = capacity_ - index(poped_);
-        memcpy(buf, read_address(base), first_part);  //NOLINT
-        memcpy(buf + first_part, base, sizeof(message_header) - first_part);  //NOLINT
-        message_header header(static_cast<char*>(buf));
-        return header;
-    }
-
-    /**
      * @brief push a request message into the queue one by one byte.
      */
-    void brand_new() {
-        std::size_t length = message_header::size;
-        if (length > room()) { wait_to_write(length); }
-        pushed_ += length;
-    }
     void write(char* base, const int b) {
         std::size_t length = 1;
         char c = b & 0xff;  // NOLINT
@@ -328,8 +334,6 @@ public:
 
 private:
     std::unique_ptr<char[]> copy_of_payload_{};  // in case of ring buffer wrap around  //NOLINT
-
-    std::size_t stored_valid() const { return (pushed_valid_ - poped_); }  //NOLINT
 };
 
 
@@ -369,13 +373,13 @@ public:
         }
         return header_received_;
     }
-    response_header::length_type get_length() const {
+    [[nodiscard]] response_header::length_type get_length() const {
         return header_received_.get_length();
     }
-    response_header::index_type get_idx() const {
+    [[nodiscard]] response_header::index_type get_idx() const {
         return header_received_.get_idx();
     }
-    response_header::msg_type get_type() const {
+    [[nodiscard]] response_header::msg_type get_type() const {
         return header_received_.get_type();
     }
     /**
@@ -390,13 +394,6 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             c_full_.notify_one();
         }
-    }
-    /**
-     * @brief dispose the message in the queue at read_point that has completed read and is no longer needed
-     *  used by endpoint IF
-     */
-    void dispose([[maybe_unused]] const char* base) {
-        poped_ += (header_received_.get_length() + response_header::size);
     }
     void close() {
         closed_.store(true);
@@ -464,43 +461,27 @@ public:
             }
             write(get_bip_address(managed_shm_ptr_), from, length);
         }
-        /**
-         * @brief begin new record which will be flushed on commit
-        */
-        void brand_new() {
-            std::size_t length = length_header::size;
-            if (length > room()) { wait_to_write(length); }
-            pushed_ += length;
-        }
-        void flush(char* base) {
-            length_header header(pushed_ - (pushed_valid_ + length_header::size));
-            write_in_buffer(base, buffer_address(base, pushed_valid_), header.get_buffer(), length_header::size);
-            pushed_valid_.store(pushed_.load());
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (wait_for_read_) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.notify_one();
-            }
-            continued_ = false;
+        void flush() {
+            flush(get_bip_address(managed_shm_ptr_));
         }
 
         /**
-         * @brief provide the current chunk to MsgPack.
+         * @brief provide the current chunk
          */
-        std::pair<char*, std::size_t> get_chunk(char* base, std::int64_t timeout = 0) {
-            if (chunk_end_ < poped_) {
-                chunk_end_ = poped_;
-            }
-            if (!(chunk_end_ < pushed_valid_)) {
+        std::string_view get_chunk(char* base, std::string_view& wrap_around, std::int64_t timeout = 0) {
+            auto header = peep(base, true);
+            auto length = header.get_length();
+
+            if (!(stored_valid() >= (length + length_header::size))) {
                 if (timeout == 0) {
                     boost::interprocess::scoped_lock lock(m_mutex_);
-                    wait_for_column_ = true;
+                    wait_for_read_ = true;
                     std::atomic_thread_fence(std::memory_order_acq_rel);
-                    c_empty_.wait(lock, [this](){ return chunk_end_ < pushed_valid_; });
-                    wait_for_column_ = false;
+                    c_empty_.wait(lock, [this, length](){ return stored_valid() >= (length + length_header::size); });
+                    wait_for_read_ = false;
                 } else {
                     boost::interprocess::scoped_lock lock(m_mutex_);
-                    wait_for_column_ = true;
+                    wait_for_read_ = true;
                     std::atomic_thread_fence(std::memory_order_acq_rel);
                     if (!c_empty_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
@@ -508,26 +489,27 @@ public:
 #else
                                              boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
 #endif
-                                             [this](){ return chunk_end_ < pushed_valid_; })) {
+                                             [this, length](){ return stored_valid() >= (length + length_header::size); })) {
                         throw std::runtime_error("record has not been received within the specified time");
                     }
-                    wait_for_column_ = false;
+                    wait_for_read_ = false;
                 }
             }
-            auto chunk_start = chunk_end_;
-            if ((pushed_valid_ / capacity_) == (chunk_start / capacity_)) {
-                chunk_end_ = pushed_valid_;
-            } else {
-                chunk_end_ = (pushed_valid_ / capacity_) * capacity_;
+
+            if ((poped_ / capacity_) == ((poped_ + length) / capacity_)) {
+                return std::string_view(read_address(base, length_header::size), length);
             }
-            return std::pair<char*, std::size_t>(buffer_address(base, chunk_start), chunk_end_ - chunk_start);
+            auto buffer_end = (pushed_valid_ / capacity_) * capacity_;
+            std::size_t first_length = buffer_end - (poped_ + length_header::size);
+            wrap_around = std::string_view(read_address(base, length_header::size + first_length), length - first_length);
+            return std::string_view(read_address(base, length_header::size), first_length);
         }
         /**
          * @brief dispose of data that has completed read and is no longer needed
          */
-        void dispose(std::size_t length) {
-            poped_ += length;
-            chunk_end_ = 0;
+        void dispose(char* base) {
+            auto header = peep(base);
+            poped_ += (header.get_length() + length_header::size);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (wait_for_write_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -566,13 +548,25 @@ public:
                 write_in_buffer(base, buffer_address(base, pushed_), from, length);
                 pushed_ += length;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (wait_for_column_) {
+                if (wait_for_read_) {
                     boost::interprocess::scoped_lock lock(m_mutex_);
                     c_empty_.notify_one();
                 } else {
                     envelope_->notify_record_arrival();
                 }
             }
+        }
+
+        void flush(char* base) {
+            length_header header(pushed_ - (pushed_valid_ + length_header::size));
+            write_in_buffer(base, buffer_address(base, pushed_valid_), header.get_buffer(), length_header::size);
+            pushed_valid_.store(pushed_.load());
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (wait_for_read_) {
+                boost::interprocess::scoped_lock lock(m_mutex_);
+                c_empty_.notify_one();
+            }
+            continued_ = false;
         }
 
         void set_closed() {
@@ -588,12 +582,9 @@ public:
             managed_shm_ptr_ = managed_shm_ptr;
         }
 
-        std::size_t chunk_end_{0};
-
         boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
-        std::atomic_bool wait_for_column_{};
-        std::atomic_bool closed_{};
-        bool continued_{};
+        std::atomic_bool closed_{};  // written by client, read by server
+        bool continued_{};  // used by server only
         unidirectional_simple_wires* envelope_{};
     };
 

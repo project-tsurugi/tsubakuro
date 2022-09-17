@@ -33,7 +33,6 @@ public class IpcWire extends Thread {
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] header, byte[] payload);
     private static native int awaitNative(long wireHandle) throws IOException;
-//    private static native int awaitNative(long wireHandle, long timeout) throws TimeoutException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native void closeNative(long wireHandle);

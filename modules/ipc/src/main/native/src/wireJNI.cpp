@@ -82,7 +82,7 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_awaitNat
         auto header = swc->get_response_wire().await();
         return header.get_idx();
     } catch (std::runtime_error &e) {
-        jclass classj = env->FindClass("Ljava.io.IOException;");
+        jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
         env->ThrowNew(classj, e.what());
         env->DeleteLocalRef(classj);
@@ -124,7 +124,6 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_re
         return NULL;
     }
     response_wire.read(dst);
-    response_wire.dispose();
     env->ReleaseByteArrayElements(dstj, dst, 0);
 
     return dstj;
@@ -212,8 +211,8 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     auto buf = rwc->get_chunk();
-    if(buf.second > 0) {
-        return env->NewDirectByteBuffer(buf.first, buf.second);
+    if(buf.data()) {
+        return env->NewDirectByteBuffer(static_cast<void*>(const_cast<char*>(buf.data())), buf.length());
     }
     return nullptr;
 }
@@ -224,11 +223,11 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_disposeUsedDataNative
-(JNIEnv *, jclass, jlong handle, jlong length)
+(JNIEnv *, jclass, jlong handle, jlong)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    rwc->dispose(length);
+    rwc->dispose();
 }
 
 /*
