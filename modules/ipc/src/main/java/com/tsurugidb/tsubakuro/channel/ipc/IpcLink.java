@@ -11,15 +11,15 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Link;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.LinkMessage;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 
 /**
  * IpcLink type.
  */
-public class IpcLink extends Link {
+public final class IpcLink extends Link {
     private long wireHandle = 0;  // for c++
     private boolean closed = false;
     private Receiver receiver;
@@ -31,10 +31,11 @@ public class IpcLink extends Link {
 
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] header, byte[] payload);
-    private static native int awaitNative(long wireHandle) throws IOException;
+    private static native int awaitNative(long wireHandle);
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native void closeNative(long wireHandle);
+    private static native void destroyNative(long wireHandle);
 
     static final Logger LOG = LoggerFactory.getLogger(IpcLink.class);
 
@@ -61,6 +62,7 @@ public class IpcLink extends Link {
     public IpcLink(String name) throws IOException {
         this.wireHandle = openNative(name);
         this.receiver = new Receiver();
+        receiver.start();
         LOG.trace("begin Session via shared memory, name = {}", name);
     }
 
@@ -84,14 +86,12 @@ public class IpcLink extends Link {
     }
 
     public LinkMessage receive() {
-        int slot;
-        try {
-            slot = awaitNative(wireHandle);
-        } catch (IOException e) {
-            return null;
+        int slot = awaitNative(wireHandle);
+        if (slot >= 0) {
+            var info = (byte) getInfoNative(wireHandle);
+            return new LinkMessage(info, receiveNative(wireHandle), slot);
         }
-        var info = (byte) getInfoNative(wireHandle);
-        return new LinkMessage(info, receiveNative(wireHandle), slot);
+        return null;
     }
 
     @Override
@@ -103,20 +103,16 @@ public class IpcLink extends Link {
     }
 
     @Override
-    public void start() {
-        receiver.start();
-    }
-
-    @Override
     public void close() throws IOException {
         if (!closed) {
             closeNative(wireHandle);
+            try {
+                receiver.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            destroyNative(wireHandle);
             closed = true;
-        }
-        try {
-            receiver.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }

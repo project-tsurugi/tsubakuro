@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 
 /**

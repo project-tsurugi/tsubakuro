@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

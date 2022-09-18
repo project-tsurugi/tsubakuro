@@ -7,22 +7,32 @@ import java.io.EOFException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Link;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.LinkMessage;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseBox;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 
-public class StreamLink extends Link {
+public final class StreamLink extends Link {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
     private Receiver receiver;
+    private final AtomicBoolean helloResponseArrived = new AtomicBoolean();
+    private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
+    private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
 
     private boolean valid = false;
     private boolean closed = false;
@@ -60,45 +70,87 @@ public class StreamLink extends Link {
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
         this.receiver = new Receiver();
+        this.helloResponse.set(null);
+        this.helloResponseArrived.set(false);
+        this.receiver.start();
     }
 
     public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
+    public LinkMessage helloResponse() throws IOException {
+        lock.lock();
+        try {
+            while (Objects.isNull(helloResponse.get())) {
+                condition.await();
+            }
+            return helloResponse.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private boolean pull() throws IOException {
         var message = receive();
-        if (Objects.nonNull(message)) {
-            byte info = message.getInfo();
-            int slot = message.getSlot();
+        if (Objects.isNull(message)) {
+            return false;
+        }
 
-            if (info == RESPONSE_SESSION_PAYLOAD) {
-                LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-                responseBox.push(slot, message.getBytes(), false);
-            } else if (info == RESPONSE_SESSION_BODYHEAD) {
-                LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
-                responseBox.push(slot, message.getBytes(), true);
-            } else if (info == RESPONSE_RESULT_SET_PAYLOAD) {
-                byte writer = message.getWriter();
-                LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
-                resultSetBox.push(slot, writer, message.getBytes());
-            } else if (info == RESPONSE_RESULT_SET_HELLO) {
-                resultSetBox.pushHello(message.getString(), slot);
-            } else if (info == RESPONSE_RESULT_SET_BYE) {
-                resultSetBox.pushBye(slot);
-            } else if ((info == RESPONSE_SESSION_HELLO_OK) || (info == RESPONSE_SESSION_HELLO_NG)) {
-                LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-                valid = true;
-            } else {
-                throw new IOException("invalid info in the response");
+        byte info = message.getInfo();
+        int slot = message.getSlot();
+        switch (info) {
+
+        case RESPONSE_SESSION_PAYLOAD:
+            LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
+            responseBox.push(slot, message.getBytes(), false);
+            return true;
+
+        case RESPONSE_SESSION_BODYHEAD:
+            LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
+            responseBox.push(slot, message.getBytes(), true);
+            return true;
+
+        case RESPONSE_RESULT_SET_PAYLOAD:
+            byte writer = message.getWriter();
+            LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
+            resultSetBox.push(slot, writer, message.getBytes());
+            return true;
+
+        case RESPONSE_RESULT_SET_HELLO:
+            LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
+            resultSetBox.pushHello(message.getString(), slot);
+            return true;
+
+        case RESPONSE_RESULT_SET_BYE:
+            LOG.trace("receive RESPONSE_RESULT_SET_BYE");
+            resultSetBox.pushBye(slot);
+            return true;
+
+        case RESPONSE_SESSION_HELLO_OK:
+        case RESPONSE_SESSION_HELLO_NG:
+            LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+            lock.lock();
+            try {
+                helloResponse.set(message);
+                condition.signal();
+            } finally {
+                lock.unlock();
             }
             return true;
+
+        default:
+            throw new IOException("invalid info in the response");
+
         }
-        return false;
     }
+
     public ResultSetBox getResultSetBox() {
         return resultSetBox;
     }
+
     public void sendResutSetByeOk(int slot) throws IOException {
         send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
@@ -195,11 +247,6 @@ public class StreamLink extends Link {
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
         return new ResultSetWireImpl(this);
-    }
-
-    @Override
-    public void start() {
-        receiver.start();
     }
 
     @Override

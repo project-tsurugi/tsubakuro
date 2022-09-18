@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.UnsupportedEncodingException;
 
@@ -22,10 +22,10 @@ public class LinkMessage {
         this.writer = 0;
     }
 
-    public byte getInfo() {  // used only by FutureSessionWireImpl
+    public byte getInfo() {  // used only by FutureWireImpl
         return info;
     }
-    public String getString() {  // used only by FutureSessionWireImpl
+    public String getString() {  // used only by FutureWireImpl
         try {
             return new String(bytes, "UTF-8");
         } catch (UnsupportedEncodingException e) {

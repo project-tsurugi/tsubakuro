@@ -84,9 +84,7 @@ public:
         try {
             managed_shared_memory_ =
                 std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::create_only, name_.c_str(), shm_size);
-            managed_shared_memory_->destroy<unidirectional_message_wire>(request_wire_name);
-            managed_shared_memory_->destroy<unidirectional_response_wire>(response_wire_name);
-            
+
             auto req_wire = managed_shared_memory_->construct<unidirectional_message_wire>(request_wire_name)(managed_shared_memory_.get(), request_buffer_size);
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
 

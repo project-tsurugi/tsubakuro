@@ -9,13 +9,13 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
- * FutureSessionWireImpl type.
+ * FutureWireImpl type.
  */
-public class FutureSessionWireImpl implements FutureResponse<Wire> {
+public class FutureWireImpl implements FutureResponse<Wire> {
 
     IpcConnectorImpl connector;
 
-    FutureSessionWireImpl(IpcConnectorImpl connector) {
+    FutureWireImpl(IpcConnectorImpl connector) {
         this.connector = connector;
     }
 

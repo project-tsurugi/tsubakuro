@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,18 +10,20 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.framework.proto.FrameworkRequest;
 
 /**
- * SessionWireImpl type.
+ * WireImpl type.
  */
-public final class SessionWireImpl implements Wire {
+public class WireImpl implements Wire {
 
-    static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
+    static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
     private Link link;
     private final long sessionID;
@@ -29,15 +31,14 @@ public final class SessionWireImpl implements Wire {
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
-     * @param link the stream object by which this SessionWireImpl is connected to the SQL server
+     * @param link the stream object by which this WireImpl is connected to the SQL server
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      * @throws IOException error occurred in openNative()
      */
-    public SessionWireImpl(@Nonnull Link link, long sessionID) throws IOException {
+    public WireImpl(@Nonnull Link link, long sessionID) throws IOException {
         this.link = link;
         this.sessionID = sessionID;
         this.responseBox = link.getResponseBox();
-        link.start();
         LOG.trace("begin Session via ipc, id = {}", sessionID);
     }
 
