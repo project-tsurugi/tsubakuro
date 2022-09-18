@@ -74,20 +74,15 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNati
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNative
-  (JNIEnv *env, jclass, jlong handle)
+  (JNIEnv *, jclass, jlong handle)
 {
-    try {
-        session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-        auto header = swc->get_response_wire().await();
+    auto header = swc->get_response_wire().await();
+    if (header.get_type() != 0) {
         return header.get_idx();
-    } catch (std::runtime_error &e) {
-        jclass classj = env->FindClass("Ljava/io/IOException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
-        return -1;
     }
+    return -1;
 }
 
 /*
@@ -141,6 +136,20 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_closeNat
 
     if (swc != nullptr) {
         swc->get_response_wire().close();
+    }
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    destroyNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_destroyNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    if (swc != nullptr) {
         delete swc;
     }
 }

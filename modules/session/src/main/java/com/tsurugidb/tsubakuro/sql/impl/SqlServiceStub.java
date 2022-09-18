@@ -31,7 +31,7 @@ import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.SecondChannelResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.SecondChannelResponse;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 

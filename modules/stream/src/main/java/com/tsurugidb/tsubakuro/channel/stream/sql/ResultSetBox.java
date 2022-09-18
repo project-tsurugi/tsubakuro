@@ -8,7 +8,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseBox;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 
 /**
  * ResultSetBox type.

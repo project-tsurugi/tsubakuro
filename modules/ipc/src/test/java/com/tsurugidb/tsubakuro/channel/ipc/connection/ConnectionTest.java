@@ -12,14 +12,14 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.ipc.sql.CommunicationChecker;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ServerWireImpl;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 
 class ConnectionTest {
     private static String dbName = "tsubakuro";
 
     @Test
     void connect() throws Exception {
-        SessionWireImpl client;
+        WireImpl client;
         ServerConnectionImpl serverConnection;
         ServerWireImpl server;
 
@@ -31,7 +31,7 @@ class ConnectionTest {
         var id = serverConnection.listen();
         assertEquals(id, 1);
         server = serverConnection.accept(id);
-        client = (SessionWireImpl) future.get();
+        client = (WireImpl) future.get();
 
         CommunicationChecker.check(server, client);
 
@@ -52,7 +52,7 @@ class ConnectionTest {
 
             var start = System.currentTimeMillis();
             Throwable exception = assertThrows(TimeoutException.class, () -> {
-                var client = (SessionWireImpl) future.get(1, TimeUnit.SECONDS);
+                var client = (WireImpl) future.get(1, TimeUnit.SECONDS);
             });
             assertEquals("connection response has not been accepted within the specified time", exception.getMessage());
             var duration = System.currentTimeMillis() - start;

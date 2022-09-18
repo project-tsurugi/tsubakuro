@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 
@@ -8,8 +8,6 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public abstract class Link implements ServerResource {
 
     protected ResponseBox responseBox = new ResponseBox(this);
-
-    public abstract void start();
 
     public abstract void send(int s, byte[] frameHeader, byte[] payload) throws IOException;
 

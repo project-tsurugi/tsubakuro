@@ -33,6 +33,6 @@ public final class StreamConnectorImpl implements Connector {
 
         var streamWire = new StreamLink(hostname, port);
         streamWire.hello();
-        return new FutureSessionWireImpl(streamWire);
+        return new FutureWireImpl(streamWire);
     }
 }

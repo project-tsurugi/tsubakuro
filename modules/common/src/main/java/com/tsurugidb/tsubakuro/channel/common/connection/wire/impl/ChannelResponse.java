@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,6 +13,7 @@ import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 

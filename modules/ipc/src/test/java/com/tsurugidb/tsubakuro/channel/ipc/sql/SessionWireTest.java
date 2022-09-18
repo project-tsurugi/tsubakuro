@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
@@ -22,7 +22,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 
 class SessionWireTest {
     static final int SERVICE_ID_SQL = 3;
-    private SessionWireImpl client;
+    private WireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
     private final long sessionID = 1;
@@ -31,7 +31,7 @@ class SessionWireTest {
     void requestBegin() throws Exception {
         try {
             server = new ServerWireImpl(dbName, sessionID);
-            client = new SessionWireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -50,7 +50,7 @@ class SessionWireTest {
     void inconsistentResponse() {
         try {
             server = new ServerWireImpl(dbName, sessionID);
-            client = new SessionWireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
     
             // REQUEST test begin
             // client side send Request
@@ -80,7 +80,7 @@ class SessionWireTest {
     @Test
     void timeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionID);
-        client = new SessionWireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
 
         // REQUEST test begin
         // client side send Request
@@ -109,7 +109,7 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            client = new SessionWireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID); // not exist
+            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID); // not exist
         });
         // FIXME: check error code instead of message
         assertEquals("cannot find a session with the specified name", exception.getMessage());

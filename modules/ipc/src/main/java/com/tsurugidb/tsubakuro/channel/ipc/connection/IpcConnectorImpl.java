@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -47,13 +47,13 @@ public final class IpcConnectorImpl implements Connector {
 
         handle = getConnectorNative(name);
         id = requestNative(handle);
-        return new FutureSessionWireImpl(this);
+        return new FutureWireImpl(this);
     }
 
     public Wire getSessionWire() throws IOException {
         waitNative(handle, id);
         close();
-        return new SessionWireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
+        return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
     }
 
     public Wire getSessionWire(long timeout, TimeUnit unit) throws TimeoutException, IOException {
@@ -63,7 +63,7 @@ public final class IpcConnectorImpl implements Connector {
         }
         waitNative(handle, id, timeoutNano);
         close();
-        return new SessionWireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
+        return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
     }
 
     public boolean checkConnection() {
