@@ -1,19 +1,25 @@
-package com.tsurugidb.tsubakuro.channel.stream;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
-public class StreamMessage {
+public class LinkMessage {
     public final byte[] bytes;
     private final byte info;
     private final int slot;
     private final byte writer;
 
-    public StreamMessage(byte info, byte[] bytes, int slot, byte writer) throws IOException {
+    public LinkMessage(byte info, byte[] bytes, int slot, byte writer) {
         this.info = info;
         this.bytes = bytes;
         this.slot = slot;
         this.writer = writer;
+    }
+
+    public LinkMessage(byte info, byte[] bytes, int slot) {
+        this.info = info;
+        this.bytes = bytes;
+        this.slot = slot;
+        this.writer = 0;
     }
 
     public byte getInfo() {  // used only by FutureSessionWireImpl

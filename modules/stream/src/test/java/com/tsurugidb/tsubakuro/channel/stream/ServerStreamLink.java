@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.net.Socket;
 import java.net.SocketException;
 
-public class ServerStreamWire {
+public class ServerStreamLink {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
@@ -18,7 +18,7 @@ public class ServerStreamWire {
     private byte info;
     private int slot;
 
-    public ServerStreamWire(Socket socket) throws IOException {
+    public ServerStreamLink(Socket socket) throws IOException {
         this.socket = socket;
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
@@ -30,7 +30,7 @@ public class ServerStreamWire {
         int length = (int) payload.length;
     //    System.out.println("sendResponse " + length + " bytes, slot = " + s);
 
-    header[0] = StreamWire.RESPONSE_SESSION_PAYLOAD;  // info
+    header[0] = StreamLink.RESPONSE_SESSION_PAYLOAD;  // info
     header[1] = strip(s);       // slot
     header[2] = strip(s >> 8);  // slot
     header[3] = strip(length);
@@ -54,7 +54,7 @@ public class ServerStreamWire {
     int length = payload.length;
     //    System.out.println("sendRecordByeOk, slot = " + s);
 
-    header[0] = StreamWire.RESPONSE_RESULT_SET_HELLO;  // info
+    header[0] = StreamLink.RESPONSE_RESULT_SET_HELLO;  // info
     header[1] = strip(s);       // slot
     header[2] = strip(s >> 8);  // slot
     header[3] = strip(length);
@@ -74,7 +74,7 @@ public class ServerStreamWire {
         int length = (int) payload.length;
     //    System.out.println("sendRecord " + length + " bytes, slot = " + s + ", writer = " + w);
 
-    header[0] = StreamWire.RESPONSE_RESULT_SET_PAYLOAD;  // info
+    header[0] = StreamLink.RESPONSE_RESULT_SET_PAYLOAD;  // info
     header[1] = strip(s);       // slot
     header[2] = strip(s >> 8);  // slot
     header[3] = strip(w);  // writer

@@ -15,18 +15,18 @@
  */
 
 #include <jni.h>
-#include "com_tsurugidb_tsubakuro_channel_ipc_IpcWire.h"
+#include "com_tsurugidb_tsubakuro_channel_ipc_IpcLink.h"
 #include "com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
 
 using namespace tateyama::common::wire;
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    openNative
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_openNative
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_openNative
 (JNIEnv *env, jclass, jstring name)
 {
     session_wire_container* swc;
@@ -49,11 +49,11 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_openNat
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    sendNative
  * Signature: (JI[B[B)V
  */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_sendNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNative
   (JNIEnv *env, jclass, jlong handle, jint slot, jbyteArray header, jbyteArray payload) {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
@@ -69,11 +69,11 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_sendNati
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    awaitNative
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_awaitNative
+JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNative
   (JNIEnv *env, jclass, jlong handle)
 {
     try {
@@ -91,11 +91,11 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_awaitNat
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    getInfoNative
  * Signature: (J)I
  */
-JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_getInfoNative
+JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_getInfoNative
   (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -104,11 +104,11 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_getInfoN
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    receiveNative
  * Signature: (J)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_receiveNative
+JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_receiveNative
   (JNIEnv *env, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -130,11 +130,11 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_re
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcWire
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    closeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcWire_closeNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_closeNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
