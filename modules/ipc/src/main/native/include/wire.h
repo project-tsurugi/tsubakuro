@@ -458,11 +458,14 @@ public:
         void write(const char* from, std::size_t length) {
             if (!continued_) {
                 brand_new();
+                continued_ = true;
             }
             write(get_bip_address(managed_shm_ptr_), from, length);
         }
         void flush() {
-            flush(get_bip_address(managed_shm_ptr_));
+            if (continued_) {
+                flush(get_bip_address(managed_shm_ptr_));
+            }
         }
 
         /**
