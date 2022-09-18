@@ -13,9 +13,9 @@ import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
+import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.channel.stream.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.sql.proto.SqlResponse;
@@ -34,7 +34,7 @@ class SessionWireTest {
     void requestBegin() {
         try {
             server = new ServerWireImpl(PORT, sessionID);
-            client = new SessionWireImpl(new StreamWire(HOST, PORT), sessionID);
+            client = new SessionWireImpl(new StreamLink(HOST, PORT), sessionID);
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -53,7 +53,7 @@ class SessionWireTest {
     void inconsistentResponse() {
         try {
             server = new ServerWireImpl(PORT, sessionID);
-            client = new SessionWireImpl(new StreamWire(HOST, PORT), sessionID);
+            client = new SessionWireImpl(new StreamLink(HOST, PORT), sessionID);
 
             // REQUEST test begin
             // client side send Request
@@ -83,7 +83,7 @@ class SessionWireTest {
     void timeout() {
         try {
             server = new ServerWireImpl(PORT, sessionID);
-            client = new SessionWireImpl(new StreamWire(HOST, PORT), sessionID);
+            client = new SessionWireImpl(new StreamLink(HOST, PORT), sessionID);
 
             // REQUEST test begin
             // client side send Request
@@ -114,7 +114,7 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            client = new SessionWireImpl(new StreamWire(HOST, PORT), sessionID);
+            client = new SessionWireImpl(new StreamLink(HOST, PORT), sessionID);
         });
         assertTrue(exception.getMessage().contains("Connection refused"));
     }

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.ipc.sql.CommunicationChecker;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ServerWireImpl;
-import com.tsurugidb.tsubakuro.channel.ipc.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
 
 class ConnectionTest {
     private static String dbName = "tsubakuro";

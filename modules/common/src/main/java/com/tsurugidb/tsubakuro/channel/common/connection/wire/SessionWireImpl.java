@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.ipc;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,8 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 
@@ -24,24 +23,22 @@ public final class SessionWireImpl implements Wire {
 
     static final Logger LOG = LoggerFactory.getLogger(SessionWireImpl.class);
 
-    private IpcWire ipcWire;
-    private final String dbName;
+    private Link link;
     private final long sessionID;
     private final ResponseBox responseBox;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
-     * @param dbName the name of the SQL server to which this SessionWireImpl is to be connected
+     * @param link the stream object by which this SessionWireImpl is connected to the SQL server
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      * @throws IOException error occurred in openNative()
      */
-    public SessionWireImpl(String dbName, long sessionID) throws IOException {
-        ipcWire = new IpcWire(dbName + "-" + String.valueOf(sessionID));
-        this.dbName = dbName;
+    public SessionWireImpl(@Nonnull Link link, long sessionID) throws IOException {
+        this.link = link;
         this.sessionID = sessionID;
-        this.responseBox = ipcWire.getResponseBox();
-        ipcWire.start();
-        LOG.trace("begin Session via stream, id = {}", sessionID);
+        this.responseBox = link.getResponseBox();
+        link.start();
+        LOG.trace("begin Session via ipc, id = {}", sessionID);
     }
 
     /**
@@ -53,7 +50,7 @@ public final class SessionWireImpl implements Wire {
      */
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
-        if (Objects.isNull(ipcWire)) {
+        if (Objects.isNull(link)) {
             throw new IOException("already closed");
         }
         var header = FrameworkRequest.Header.newBuilder().setMessageVersion(1).setServiceId(serviceId).setSessionId(sessionID).build();
@@ -79,10 +76,10 @@ public final class SessionWireImpl implements Wire {
     */
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
-        if (Objects.isNull(ipcWire)) {
+        if (Objects.isNull(link)) {
             throw new IOException("already closed");
         }
-        return ipcWire.createResultSetWire();
+        return link.createResultSetWire();
     }
 
     /**
@@ -90,10 +87,15 @@ public final class SessionWireImpl implements Wire {
      */
     @Override
     public void close() throws IOException {
-        if (Objects.nonNull(ipcWire)) {
-            ipcWire.close();
-            ipcWire = null;
+        try {
+            if (Objects.nonNull(link)) {
+                link.close();
+                link = null;
+            }
+        } catch (ServerException | InterruptedException e) {
+            throw new IOException(e);
         }
+
     }
 
     byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
@@ -103,9 +105,5 @@ public final class SessionWireImpl implements Wire {
         } catch (IOException e) {
             throw new IOException(e);
         }
-    }
-
-    public String getDbName() {
-        return dbName;
     }
 }

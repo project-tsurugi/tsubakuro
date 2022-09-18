@@ -1,15 +1,13 @@
-package com.tsurugidb.tsubakuro.channel.ipc;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
-// import java.util.Objects;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
-
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
 
 /**
  * ResponseBox type.
@@ -17,7 +15,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ChannelResponse;
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
 
-    private final IpcWire ipcWire;
+    private final Link link;
     private Abox[] boxes;
 
     private static class Abox {
@@ -38,9 +36,9 @@ public class ResponseBox {
         }
     }
 
-    public ResponseBox(@Nonnull IpcWire ipcWire) {
+    public ResponseBox(@Nonnull Link link) {
         this.boxes = new Abox[SIZE];
-        this.ipcWire = ipcWire;
+        this.link = link;
 
         for (int i = 0; i < SIZE; i++) {
             boxes[i] = null;
@@ -52,7 +50,7 @@ public class ResponseBox {
         var channelResponse = new ChannelResponse();
         boxes[slot] = new Abox(channelResponse);
         synchronized (this) {
-            ipcWire.send(slot, header, payload);
+            link.send(slot, header, payload);
         }
         return channelResponse;
     }
@@ -81,7 +79,12 @@ public class ResponseBox {
 
     public int lookFor() {
         synchronized (this) {
-            return ipcWire.lookFor();
+            for (byte i = 0; i < SIZE; i++) {
+                if (Objects.isNull(boxes[i])) {
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 

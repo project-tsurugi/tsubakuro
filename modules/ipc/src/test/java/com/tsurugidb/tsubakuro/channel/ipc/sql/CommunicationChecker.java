@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.tsurugidb.tsubakuro.channel.ipc.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.SessionWireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
