@@ -83,7 +83,7 @@ import com.tsurugidb.sql.proto.SqlCommon.TypeInfo;
  *     </tr>
  *     <tr>
  *       <td> {@code TIME_POINT} </td>
- *       <td> {@link Instant}, {@link java.sql.Timestamp} </td>
+ *       <td> {@link LocalDateTime}, {@link java.sql.Timestamp} </td>
  *     </tr>
  *     <tr>
  *       <td> {@code DATETIME_INTERVAL} </td>

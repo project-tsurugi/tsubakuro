@@ -6,7 +6,6 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.OffsetTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -248,7 +247,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(SqlCommon.TimePoint.newBuilder()
-                        .setOffsetSeconds(value.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(value)))
+                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
                         .setNanoAdjustment(value.getNano()))
                 .build();
     }
@@ -280,7 +279,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimeOfDayWithTimeZoneValue(SqlCommon.TimeOfDayWithTimeZone.newBuilder()
-                        .setOffsetNanoseconds(value.toLocalTime().toNanoOfDay())
+                        .setOffsetNanoseconds(1000000000L * (60L * (60L * value.getHour() + value.getMinute()) + value.getSecond()) + value.getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();
     }
@@ -309,11 +308,10 @@ public final class Parameters {
     public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull OffsetDateTime value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        var localDateTime = value.toLocalDateTime();
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(SqlCommon.TimePointWithTimeZone.newBuilder()
-                        .setOffsetSeconds(localDateTime.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(localDateTime)))
+                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
                         .setNanoAdjustment(value.getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();

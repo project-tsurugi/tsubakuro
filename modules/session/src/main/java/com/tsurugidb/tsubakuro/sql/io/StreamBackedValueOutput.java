@@ -52,7 +52,6 @@ import java.time.LocalTime;
 import java.time.LocalDateTime;
 import java.time.OffsetTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -270,8 +269,7 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     public void writeTimePoint(@Nonnull LocalDateTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT);
-
-        var offsetSecond = value.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(value));
+        var offsetSecond = 24 * 3600 * value.toLocalDate().toEpochDay() + value.toLocalTime().toSecondOfDay();
         var offsetNano = value.getNano();
         Base128Variant.writeSigned(offsetSecond, output);
         Base128Variant.writeUnsigned(offsetNano, output);
@@ -281,7 +279,6 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     public void writeTimeOfDayWithTimeZone(@Nonnull OffsetTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_OF_DAY_WITH_TIME_ZONE);
-
         var offset = value.toLocalTime().toNanoOfDay();
         assert offset >= 0;
         var timeZoneOffset = value.getOffset().getTotalSeconds() / 60;
@@ -293,9 +290,8 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     public void writeTimePointWithTimeZone(@Nonnull OffsetDateTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT_WITH_TIME_ZONE);
-
         var localDateTime = value.toLocalDateTime();
-        var offsetSecond = localDateTime.toEpochSecond(ZoneId.systemDefault().getRules().getOffset(localDateTime));
+        var offsetSecond = 24 * 3600 * localDateTime.toLocalDate().toEpochDay() + localDateTime.toLocalTime().toSecondOfDay();
         var offsetNano = value.getNano();
         var timeZoneOffset = value.getOffset().getTotalSeconds() / 60;
         Base128Variant.writeSigned(offsetSecond, output);

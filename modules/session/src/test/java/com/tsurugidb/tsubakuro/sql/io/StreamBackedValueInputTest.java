@@ -14,8 +14,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 
@@ -180,12 +181,32 @@ class StreamBackedValueInputTest {
 
     @Test
     void readTimePoint() {
-        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 0), ZoneId.systemDefault()),
+        assertSerDe(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(0)),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(LocalDateTime.ofInstant(Instant.parse("2022-05-04T12:34:56.789Z"), ZoneId.systemDefault()),
+        assertSerDe(LocalDateTime.of(LocalDate.of(2022, 05, 04), LocalTime.of(12, 34, 56, 789_000_000)),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
-        assertSerDe(LocalDateTime.ofInstant(Instant.ofEpochSecond(0, 123_456_789), ZoneId.systemDefault()),
+        assertSerDe(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(123_456_789)),
                 StreamBackedValueOutput::writeTimePoint, StreamBackedValueInput::readTimePoint);
+    }
+
+    @Test
+    void readTimeOfDayWithTimeZone() {
+        assertSerDe(OffsetTime.of(LocalTime.of(0, 0, 0), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimeOfDayWithTimeZone, StreamBackedValueInput::readTimeOfDayWithTimeZone);
+        assertSerDe(OffsetTime.of(LocalTime.of(12, 34, 56), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimeOfDayWithTimeZone, StreamBackedValueInput::readTimeOfDayWithTimeZone);
+        assertSerDe(OffsetTime.of(LocalTime.of(0, 0, 0, 123_456_789), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimeOfDayWithTimeZone, StreamBackedValueInput::readTimeOfDayWithTimeZone);
+    }
+
+    @Test
+    void readTimePointWithTimeZone() {
+        assertSerDe(OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(0)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimePointWithTimeZone, StreamBackedValueInput::readTimePointWithTimeZone);
+        assertSerDe(OffsetDateTime.of(LocalDate.of(2022, 05, 04), LocalTime.of(12, 34, 56, 789_000_000), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimePointWithTimeZone, StreamBackedValueInput::readTimePointWithTimeZone);
+        assertSerDe(OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(123_456_789)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)),
+                StreamBackedValueOutput::writeTimePointWithTimeZone, StreamBackedValueInput::readTimePointWithTimeZone);
     }
 
     @Test
