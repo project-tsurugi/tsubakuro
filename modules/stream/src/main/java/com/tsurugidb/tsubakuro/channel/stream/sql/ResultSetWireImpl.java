@@ -6,13 +6,13 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
+import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 
 /**
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private StreamWire streamWire;
+    private StreamLink streamWire;
     private ResultSetBox resultSetBox;
     private int slot;
     private ByteBufferBackedInput byteBufferBackedInput;
@@ -52,7 +52,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Class constructor, called from FutureResultWireImpl.
      * @param streamWire the stream object of the Wire
      */
-    public ResultSetWireImpl(StreamWire streamWire) {
+    public ResultSetWireImpl(StreamLink streamWire) {
         this.streamWire = streamWire;
         this.resultSetBox = streamWire.getResultSetBox();
         this.byteBufferBackedInput = null;

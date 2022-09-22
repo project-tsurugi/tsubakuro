@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseWireHandle;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -32,43 +31,26 @@ class SessionImplTest {
     SqlResponse.Response nextResponse;
     private final long specialTimeoutValue = 9999;
 
-    class ResponseWireHandleDummy extends ResponseWireHandle {
-        ResponseWireHandleDummy() {
-        }
-    }
-
     class ChannelResponseMock implements Response {
         private final SessionWireMock wire;
-        private ResponseWireHandle handle;
 
         ChannelResponseMock(SessionWireMock wire) {
             this.wire = wire;
-            this.handle = new ResponseWireHandleDummy();
         }
         @Override
         public boolean isMainResponseReady() {
-            return Objects.nonNull(handle);
+            return true;
         }
         @Override
         public ByteBuffer waitForMainResponse() throws IOException {
-            return wire.response(handle);
+            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
         }
         @Override
         public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
-            return wire.response(handle);
+            return waitForMainResponse();
         }
         @Override
         public void close() throws IOException, InterruptedException {
-        }
-        @Override
-        public ChannelResponseMock duplicate() {
-            return null;
-        }
-        @Override
-        public void release() {
-        }
-        @Override
-        public void setResultSetMode() {
         }
     }
 
@@ -118,26 +100,8 @@ class SessionImplTest {
         }
 
         @Override
-        public ByteBuffer response(ResponseWireHandle handle) throws IOException {
-            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
-        }
-
-        @Override
-        public ByteBuffer response(ResponseWireHandle handle, long timeout, TimeUnit unit) throws IOException {
-            return response(handle); // dummy as it is test for session
-        }
-
-        @Override
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
-        }
-
-        @Override
-        public void release(ResponseWireHandle responseWireHandle) {
-        }
-
-        @Override
-        public void setResultSetMode(ResponseWireHandle responseWireHandle) {
         }
 
         @Override

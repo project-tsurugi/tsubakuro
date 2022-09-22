@@ -15,18 +15,18 @@
  */
 
 #include <jni.h>
-#include "com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl.h"
+#include "com_tsurugidb_tsubakuro_channel_ipc_IpcLink.h"
 #include "com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
 
 using namespace tateyama::common::wire;
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    openNative
  * Signature: (Ljava/lang/String;)J
  */
-JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_openNative
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_openNative
 (JNIEnv *env, jclass, jstring name)
 {
     session_wire_container* swc;
@@ -49,133 +49,102 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    getResponseHandleNative
- * Signature: (J)J
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    sendNative
+ * Signature: (JI[B[B)V
  */
-JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_getResponseHandleNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNative
+  (JNIEnv *env, jclass, jlong handle, jint slot, jbyteArray header, jbyteArray payload) {
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    auto h_address = env->GetByteArrayElements(header, nullptr);
+    auto p_address = env->GetByteArrayElements(payload, nullptr);
+
+    auto& request_wire = swc->get_request_wire();
+    request_wire.write(static_cast<signed char*>(h_address), env->GetArrayLength(header), true);
+    request_wire.write(static_cast<signed char*>(p_address), env->GetArrayLength(payload), false);
+    request_wire.flush(slot);
+    env->ReleaseByteArrayElements(header, h_address, JNI_ABORT);
+    env->ReleaseByteArrayElements(payload, p_address, JNI_ABORT);
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    awaitNative
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNative
   (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(swc->get_response_box()));
+    auto header = swc->get_response_wire().await();
+    if (header.get_type() != 0) {
+        return header.get_idx();
+    }
+    return -1;
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    sendNative
- * Signature: (J[B)V
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    getInfoNative
+ * Signature: (J)I
  */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_sendNative__J_3B
-(JNIEnv *env, jclass, jlong handle, jbyteArray array)
+JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_getInfoNative
+  (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    auto address = env->GetByteArrayElements(array, nullptr);
-    swc->write(static_cast<signed char*>(address), env->GetArrayLength(array));
-    env->ReleaseByteArrayElements(array, address, JNI_ABORT);
+    return swc->get_response_wire().get_type();
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    sendNative
- * Signature: (JLjava/nio/ByteBuffer;)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_sendNative__JLjava_nio_ByteBuffer_2
-(JNIEnv *env, jclass, jlong handle, jobject buf)
-{
-    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-
-    swc->write(static_cast<signed char*>(env->GetDirectBufferAddress(buf)), env->GetDirectBufferCapacity(buf));
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    setQueryModeNative
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_setQueryModeNative
-(JNIEnv *, jclass, jlong responseWireHandle)
-{
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(responseWireHandle));
-    r->set_query_mode();
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    flushNative
- * Signature: (JJZ)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_flushNative
-(JNIEnv *, jclass, jlong handle)
-{
-    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-    swc->flush();
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    receiveNative
- * Signature: (J)Ljava/nio/ByteBuffer;
+ * Signature: (J)[B
  */
-JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__J
-(JNIEnv *env, jclass, jlong handle)
+JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_receiveNative
+  (JNIEnv *env, jclass, jlong handle)
 {
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    auto& response_wire = swc->get_response_wire();
 
-    auto b = r->recv();
-    return env->NewDirectByteBuffer(b.first, b.second);
+    auto len = response_wire.get_length();
+    jbyteArray dstj = env->NewByteArray(static_cast<jint>(len));
+    if (dstj == NULL) {
+        return NULL;
+    }
+    jbyte* dst = env->GetByteArrayElements(dstj, NULL);
+    if (dst == NULL) {
+        return NULL;
+    }
+    response_wire.read(dst);
+    env->ReleaseByteArrayElements(dstj, dst, 0);
+
+    return dstj;
 }
 
 /*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    receiveNative
- * Signature: (JJ)Ljava/nio/ByteBuffer;
- */
-JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_receiveNative__JJ
-(JNIEnv *env, jclass, jlong handle, jlong timeout)
-{
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
-
-    try {
-        auto b = r->recv(timeout);
-        return env->NewDirectByteBuffer(b.first, b.second);
-    } catch (std::runtime_error &e) {
-        jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
-        return nullptr;
-    }
-}
-
-pthread_mutex_t release_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
- * Method:    releaseNative
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_releaseNative
-(JNIEnv *, jclass, jlong handle)
-{
-    response_box::response *r = reinterpret_cast<response_box::response*>(static_cast<std::uintptr_t>(handle));
-
-    if (int ret = pthread_mutex_lock(&release_mutex); ret != 0) {
-        std::abort();
-    }
-    r->dispose();
-    if (int ret = pthread_mutex_unlock(&release_mutex); ret != 0) {
-        std::abort();
-    }
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    closeNative
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_SessionWireImpl_closeNative
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_closeNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+
+    if (swc != nullptr) {
+        swc->get_response_wire().close();
+    }
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    destroyNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_destroyNative
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
@@ -251,8 +220,8 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     auto buf = rwc->get_chunk();
-    if(buf.second > 0) {
-        return env->NewDirectByteBuffer(buf.first, buf.second);
+    if(buf.data()) {
+        return env->NewDirectByteBuffer(static_cast<void*>(const_cast<char*>(buf.data())), buf.length());
     }
     return nullptr;
 }
@@ -263,11 +232,11 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_disposeUsedDataNative
-(JNIEnv *, jclass, jlong handle, jlong length)
+(JNIEnv *, jclass, jlong handle, jlong)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    rwc->dispose(length);
+    rwc->dispose();
 }
 
 /*

@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.channel.common.connection.wire;
+package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,42 +13,31 @@ import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+
 /**
  * A simple implementation of {@link Response} which just returns payload data.
  */
 public class ChannelResponse implements Response {
 
     private static final int SLEEP_UNIT = 10;  // 10mS per sleep
-    private final Wire wire;
-    private final AtomicBoolean queryMode = new AtomicBoolean();
-    private final AtomicReference<ResponseWireHandle> handle = new AtomicReference<>();
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
+    private final AtomicReference<ByteBuffer> second = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
 
     /**
-     * Creates a new instance with a Wire
-     * @param wire the Wire from which a main response will come
+     * Creates a new instance
      */
-    public ChannelResponse(@Nonnull Wire wire) {
-        Objects.requireNonNull(wire);
-        this.wire = wire;
-        queryMode.setPlain(false);
-    }
-
-    /**
-     * Creates a new instance, without any attached channel.
-     * @param main the main response data
-     */
-    public ChannelResponse(@Nonnull ByteBuffer main) {
-        this.main.set(main);
-        this.wire = null;
+    public ChannelResponse() {
     }
 
     @Override
     public boolean isMainResponseReady() {
-        return Objects.nonNull(handle) || Objects.nonNull(main);
+        return Objects.nonNull(main.get());
     }
 
     @Override
@@ -59,10 +48,9 @@ public class ChannelResponse implements Response {
 
         lock.lock();
         try {
-            while (Objects.isNull(handle.get())) {
+            while (Objects.isNull(main.get())) {
                 noSet.await();
             }
-            main.set(wire.response(handle.get()));
             return main.get();
         } catch (InterruptedException e) {
             throw new IOException(e);
@@ -79,11 +67,53 @@ public class ChannelResponse implements Response {
 
         lock.lock();
         try {
-            while (Objects.isNull(handle.get())) {
+            while (Objects.isNull(main.get())) {
                 noSet.await();
             }
-            main.set(wire.response(handle.get(), timeout, unit));
             return main.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public boolean isSecondResponseReady() {
+        return Objects.nonNull(second.get());
+    }
+
+    @Override
+    public ByteBuffer waitForSecondResponse() throws IOException {
+        if (Objects.nonNull(second.get())) {
+            return second.get();
+        }
+
+        lock.lock();
+        try {
+            while (Objects.isNull(second.get())) {
+                noSet.await();
+            }
+            return second.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        if (Objects.nonNull(second.get())) {
+            return second.get();
+        }
+
+        lock.lock();
+        try {
+            while (Objects.isNull(second.get())) {
+                noSet.await();
+            }
+            return second.get();
         } catch (InterruptedException e) {
             throw new IOException(e);
         } finally {
@@ -96,60 +126,34 @@ public class ChannelResponse implements Response {
         closed.set(true);
     }
 
-    /**
-     * @implNote Either this method or setResponseHandle() can be called first.
-     */
-    @Override
-    public void setResultSetMode() {
+    public void setMainResponse(@Nonnull ByteBuffer response) {
         lock.lock();
         try {
-            queryMode.set(true);
-            if (Objects.nonNull(handle.get())) {
-                wire.setResultSetMode(handle.get());
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * @implNote It must be called before release() is called.
-     */
-    @Override
-    public Response duplicate() {
-        lock.lock();
-        try {
-            ChannelResponse channelResponse = new ChannelResponse(wire);
-            channelResponse.setResponseHandle(handle.get());
-            return channelResponse;
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void release() throws IOException {
-        lock.lock();
-        try {
-            if (Objects.nonNull(handle.get())) {
-                wire.release(handle.get());
-                handle.set(null);
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    public void setResponseHandle(ResponseWireHandle h) {
-        lock.lock();
-        try {
-            handle.set(h);
+            main.set(skipFrameworkHeader(response));
             noSet.signal();
-            if (queryMode.get()) {
-                wire.setResultSetMode(handle.get());
-            }
         } finally {
             lock.unlock();
         }
+    }
+
+    public void setSecondResponse(@Nonnull ByteBuffer response) {
+        lock.lock();
+        try {
+            second.set(skipFrameworkHeader(response));
+            noSet.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private ByteBuffer skipFrameworkHeader(ByteBuffer response) {
+        try {
+            response.rewind();
+            FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
+            return response;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;  // FIXME
     }
 }

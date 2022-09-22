@@ -12,7 +12,7 @@ import java.util.ArrayDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.stream.ServerStreamWire;
+import com.tsurugidb.tsubakuro.channel.stream.ServerStreamLink;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.framework.proto.FrameworkRequest;
@@ -26,7 +26,7 @@ public class ServerWireImpl implements Closeable {
 
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
-    private ServerStreamWire serverStreamWire;
+    private ServerStreamLink serverStreamLink;
     private final ArrayDeque<Message> receiveQueue;
     private final ReceiveWorker receiver;
     private final ArrayDeque<Message> sendQueue;
@@ -57,12 +57,12 @@ public class ServerWireImpl implements Closeable {
             try {
                 serverSocket = new ServerSocket(port);
 
-                serverStreamWire = new ServerStreamWire(serverSocket.accept());
+                serverStreamLink = new ServerStreamLink(serverSocket.accept());
                 LOG.info("accept client: {}", port);
-                while (serverStreamWire.receive()) {
-                    LOG.debug("received: ", serverStreamWire.getInfo());
-                    if (serverStreamWire.getInfo() != 3) {  // StreamWire.REQUEST_RESULT_SET_BYE_OK = 3
-                        receiveQueue.add(new Message(serverStreamWire.getBytes()));
+                while (serverStreamLink.receive()) {
+                    LOG.debug("received: ", serverStreamLink.getInfo());
+                    if (serverStreamLink.getInfo() != 3) {  // StreamLink.REQUEST_RESULT_SET_BYE_OK = 3
+                        receiveQueue.add(new Message(serverStreamLink.getBytes()));
                     }
                 }
             } catch (IOException e) {
@@ -84,12 +84,12 @@ public class ServerWireImpl implements Closeable {
         @Override
         public void run() {
             try {
-                serverStreamWire.sendRecordHello(0, name);
+                serverStreamLink.sendRecordHello(0, name);
                 while (true) {
-                    if (serverStreamWire.isSnedOk()) {
+                    if (serverStreamLink.isSnedOk()) {
                         while (!sendQueue.isEmpty()) {
                             var entry = sendQueue.poll().getBytes();
-                            serverStreamWire.sendRecord(0, 0, entry);
+                            serverStreamLink.sendRecord(0, 0, entry);
                             if (entry.length == 0) {
                                 return;
                             }
@@ -131,7 +131,7 @@ public class ServerWireImpl implements Closeable {
 
     @Override
     public void close() throws IOException {
-        serverStreamWire.close();
+        serverStreamLink.close();
         receiver.close();
     }
 
@@ -174,7 +174,7 @@ public class ServerWireImpl implements Closeable {
             header.writeDelimitedTo(buffer);
             response.writeDelimitedTo(buffer);
             var bytes = buffer.toByteArray();
-            serverStreamWire.sendResponse(0, bytes);
+            serverStreamLink.sendResponse(0, bytes);
         } catch (IOException e) {
             throw new IOException(e);
         }
@@ -187,14 +187,14 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
-        //    serverStreamWire.sendRecord(0, 0, ba);
+        //    serverStreamLink.sendRecord(0, 0, ba);
         sendQueue.add(new Message(ba));
         sender.notifyEvent();
     }
 
     public void eorRSL(long handle) throws IOException {
         byte[] ba = new byte[0];
-        //    serverStreamWire.sendRecord(0, 0, ba);
+        //    serverStreamLink.sendRecord(0, 0, ba);
         sendQueue.add(new Message(ba));
         sender.notifyEvent();
     }

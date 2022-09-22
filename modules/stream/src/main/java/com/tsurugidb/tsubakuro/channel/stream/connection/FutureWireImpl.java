@@ -4,29 +4,29 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.stream.StreamWire;
-import com.tsurugidb.tsubakuro.channel.stream.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
- * FutureSessionWireImpl type.
+ * FutureWireImpl type.
  */
-public class FutureSessionWireImpl implements FutureResponse<Wire> {
+public class FutureWireImpl implements FutureResponse<Wire> {
 
-    StreamWire streamWire;
+    StreamLink streamLink;
 
-    FutureSessionWireImpl(StreamWire streamWire) {
-        this.streamWire = streamWire;
+    FutureWireImpl(StreamLink streamLink) {
+        this.streamLink = streamLink;
     }
 
     @Override
     public Wire get() throws IOException {
-        var message = streamWire.receive();  // mutual exclusion is unnecessay here
+        var message = streamLink.helloResponse();  // mutual exclusion is unnecessay here
         var rc = message.getInfo();
         var rv = message.getString();
-        if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {
-            return new SessionWireImpl(streamWire, Long.parseLong(rv));
+        if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
+            return new WireImpl(streamLink, Long.parseLong(rv));
         }
         return null;
     }
@@ -34,11 +34,11 @@ public class FutureSessionWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException {
         // FIXME: consider SO_TIMEOUT
-        var message = streamWire.receive();  // mutual exclusion is unnecessay here
+        var message = streamLink.helloResponse();
         var rc = message.getInfo();
         var rv = message.getString();
-        if (rc == StreamWire.RESPONSE_SESSION_HELLO_OK) {
-            return new SessionWireImpl(streamWire, Long.parseLong(rv));
+        if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
+            return new WireImpl(streamLink, Long.parseLong(rv));
         }
         return null;
     }

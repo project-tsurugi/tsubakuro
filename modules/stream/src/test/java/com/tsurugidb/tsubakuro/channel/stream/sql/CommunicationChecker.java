@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import com.tsurugidb.tsubakuro.channel.stream.SessionWireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -17,7 +17,7 @@ public final class CommunicationChecker {
     private CommunicationChecker() {
     }
 
-    public static void check(ServerWireImpl server, SessionWireImpl client) {
+    public static void check(ServerWireImpl server, WireImpl client) {
         try {
             // REQUEST test begin
             // client side send Request

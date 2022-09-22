@@ -38,10 +38,12 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_Server
         return NULL;
     }
 
-    wire.read(reinterpret_cast<char*>(dst), length);
+    memcpy(dst, wire.payload().data(), length);
     env->ReleaseByteArrayElements(dstj, dst, 0);
     return dstj;
 }
+
+static const unsigned char RESPONSE_PAYLOAD = 1;
 
 JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireImpl_putNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle, jbyteArray srcj)
@@ -55,9 +57,9 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireIm
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    auto& response = container->get_response(0);
-    memcpy(response.get_buffer(capacity), src, capacity);
-    response.flush();
+    // use slot 0 only in test
+    response_header header(0, capacity, RESPONSE_PAYLOAD);
+    container->write(src, header);
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
