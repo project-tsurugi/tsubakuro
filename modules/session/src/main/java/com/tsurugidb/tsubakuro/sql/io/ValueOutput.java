@@ -2,9 +2,11 @@ package com.tsurugidb.tsubakuro.sql.io;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -159,7 +161,23 @@ public interface ValueOutput extends AutoCloseable {
      * @throws IOException if I/O error was occurred while writing the contents
      * @throws InterruptedException if interrupted while writing the contents
      */
-    void writeTimePoint(Instant value) throws IOException, InterruptedException;
+    void writeTimePoint(LocalDateTime value) throws IOException, InterruptedException;
+
+    /**
+     * Writes a {@link EntryType#TIME_OF_DAY_WITH_TIME_ZONE} entry.
+     * @param value the value
+     * @throws IOException if I/O error was occurred while writing the contents
+     * @throws InterruptedException if interrupted while writing the contents
+     */
+    void writeTimeOfDayWithTimeZone(OffsetTime value) throws IOException, InterruptedException;
+
+    /**
+     * Writes a {@link EntryType#TIME_POINT_WITH_TIME_ZONE} entry.
+     * @param value the value
+     * @throws IOException if I/O error was occurred while writing the contents
+     * @throws InterruptedException if interrupted while writing the contents
+     */
+    void writeTimePointWithTimeZone(OffsetDateTime value) throws IOException, InterruptedException;
 
     /**
      * Writes a {@link EntryType#DATETIME_INTERVAL} entry.

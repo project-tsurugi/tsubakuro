@@ -1,9 +1,11 @@
 package com.tsurugidb.tsubakuro.sql.impl.testing;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
@@ -130,9 +132,21 @@ public class EntrySequenceValueOutput implements ValueOutput {
     }
 
     @Override
-    public void writeTimePoint(Instant value) {
+    public void writeTimePoint(LocalDateTime value) {
         Objects.requireNonNull(value);
         destination.accept(Entry.forTimePoint(value));
+    }
+
+    @Override
+    public void writeTimeOfDayWithTimeZone(OffsetTime value) {
+        Objects.requireNonNull(value);
+        destination.accept(Entry.forTimeOfDayWithTimeZone(value));
+    }
+
+    @Override
+    public void writeTimePointWithTimeZone(OffsetDateTime value) {
+        Objects.requireNonNull(value);
+        destination.accept(Entry.forTimePointWithTimeZone(value));
     }
 
     @Override

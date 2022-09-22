@@ -4,9 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +18,8 @@ import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlCommon.Bit;
 import com.tsurugidb.sql.proto.SqlCommon.TimePoint;
+import com.tsurugidb.sql.proto.SqlCommon.TimeOfDayWithTimeZone;
+import com.tsurugidb.sql.proto.SqlCommon.TimePointWithTimeZone;
 import com.tsurugidb.sql.proto.SqlRequest.Parameter;
 
 class ParametersTest {
@@ -113,15 +118,36 @@ class ParametersTest {
     }
     
     @Test
-    void ofInstant() {
+    void ofLocalDateTime() {
         assertEquals(
                      param().setTimePointValue(TimePoint.newBuilder()
                                                .setOffsetSeconds(100)
                                                .setNanoAdjustment(200))
                      .build(),
-                     Parameters.of(TN, Instant.ofEpochSecond(100, 200)));
+                     Parameters.of(TN, LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(100L * 1000_000_000 + 200))));
     }
     
+    @Test
+    void ofOffsetTime() {
+        assertEquals(
+            param().setTimeOfDayWithTimeZoneValue(TimeOfDayWithTimeZone.newBuilder()
+                                      .setOffsetNanoseconds(100L * 1000 * 1000 * 1000 + 200)
+                                      .setTimeZoneOffset(9 * 60))
+            .build(),
+            Parameters.of(TN, OffsetTime.of(LocalTime.ofNanoOfDay(100L * 1000 * 1000 * 1000 + 200), ZoneOffset.ofTotalSeconds((9 * 60 * 60)))));
+    }
+
+    @Test
+    void ofOffsetDateTime() {
+        assertEquals(
+                    param().setTimePointWithTimeZoneValue(TimePointWithTimeZone.newBuilder()
+                                        .setOffsetSeconds(100)
+                                        .setNanoAdjustment(200)
+                                        .setTimeZoneOffset(9 * 60))
+            .build(),
+            Parameters.of(TN, OffsetDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(1000_000_000L * 100 + 200), ZoneOffset.ofTotalSeconds((9 * 60 * 60)))));
+    }
+
     @Test
     void referenceColumnPosition() {
         assertEquals(param().setReferenceColumnPosition(100).build(), Parameters.referenceColumn(TN, 100));

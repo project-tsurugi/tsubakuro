@@ -37,9 +37,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -77,9 +80,9 @@ public class StreamBackedValueInput implements ValueInput {
             // 0xed
             EntryType.DECIMAL,
             // 0xee
-            null,
+            EntryType.TIME_OF_DAY_WITH_TIME_ZONE,
             // 0xef
-            null,
+            EntryType.TIME_POINT_WITH_TIME_ZONE,
             // 0xf0
             EntryType.CHARACTER,
             // 0xf1
@@ -250,6 +253,12 @@ public class StreamBackedValueInput implements ValueInput {
             return true;
         case TIME_POINT:
             readTimePoint();
+            return true;
+        case TIME_OF_DAY_WITH_TIME_ZONE:
+            readTimeOfDayWithTimeZone();
+            return true;
+        case TIME_POINT_WITH_TIME_ZONE:
+            readTimePointWithTimeZone();
             return true;
         case DATETIME_INTERVAL:
             readDateTimeInterval();
@@ -465,12 +474,33 @@ public class StreamBackedValueInput implements ValueInput {
     }
 
     @Override
-    public Instant readTimePoint() throws IOException {
+    public LocalDateTime readTimePoint() throws IOException {
         require(EntryType.TIME_POINT);
         clearHeaderInfo();
         var seconds = Base128Variant.readSigned(input);
-        var nanos = Base128Variant.readUnsigned(input);
-        return Instant.ofEpochSecond(seconds, nanos);
+        long nanos = Base128Variant.readUnsigned(input);
+        var days = seconds / (24 * 3600);
+        return LocalDateTime.of(LocalDate.ofEpochDay(days), LocalTime.ofNanoOfDay(1000_000_000L * (seconds - (24 * 3600 * days)) + nanos));
+    }
+
+    @Override
+    public OffsetTime readTimeOfDayWithTimeZone() throws IOException {
+        require(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
+        clearHeaderInfo();
+        var offset = Base128Variant.readUnsigned(input);
+        var timeZoneOffsetInMinites = (int) Base128Variant.readSigned(input);
+        return OffsetTime.of(LocalTime.ofNanoOfDay(offset), ZoneOffset.ofTotalSeconds(timeZoneOffsetInMinites * 60));
+    }
+
+    @Override
+    public OffsetDateTime readTimePointWithTimeZone()throws IOException {
+        require(EntryType.TIME_POINT_WITH_TIME_ZONE);
+        clearHeaderInfo();
+        var seconds = Base128Variant.readSigned(input);
+        long nanos = Base128Variant.readUnsigned(input);
+        var timeZoneOffsetInMinites = (int) Base128Variant.readSigned(input);
+        var days = seconds / (24 * 3600);
+        return OffsetDateTime.of(LocalDate.ofEpochDay(days), LocalTime.ofNanoOfDay(1000_000_000L * (seconds - (24 * 3600 * days)) + nanos), ZoneOffset.ofTotalSeconds(timeZoneOffsetInMinites * 60));
     }
 
     @Override

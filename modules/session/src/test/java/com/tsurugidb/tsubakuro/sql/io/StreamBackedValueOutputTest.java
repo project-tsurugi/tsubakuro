@@ -22,6 +22,8 @@ import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_OCTET;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_ROW;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY_WITH_TIME_ZONE;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT_WITH_TIME_ZONE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_UNKNOWN;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MIN_DECIMAL_COMPACT_COEFFICIENT;
@@ -33,9 +35,12 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.Month;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -305,16 +310,47 @@ class StreamBackedValueOutputTest {
     void writeTimePoint() {
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(0, 0))));
+                perform(o -> o.writeTimePoint(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(0)))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(+4096), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(+4096, 0))));
+                perform(o -> o.writeTimePoint(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(+4096)))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(-4096), uint(0)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(-4096, 0))));
+                // ZoneOffset.ofTotalSeconds(0) is used as LocalTime.ofSecondOfDay() can not be used with a parameter of -4096
+                perform(o -> o.writeTimePoint(LocalDateTime.ofEpochSecond(-4096, 0, ZoneOffset.ofTotalSeconds(0)))));
         assertArrayEquals(
                 sequence(HEADER_TIME_POINT, sint(0), uint(123_456_789)),
-                perform(o -> o.writeTimePoint(Instant.ofEpochSecond(0, 123_456_789))));
+                perform(o -> o.writeTimePoint(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(123_456_789)))));
+    }
+
+    @Test
+    void writeTimeOfDayWithTimeZone() {
+        assertArrayEquals(
+                sequence(HEADER_TIME_OF_DAY_WITH_TIME_ZONE, uint(0), sint(9 * 60)),
+                perform(o -> o.writeTimeOfDayWithTimeZone(OffsetTime.of(LocalTime.ofSecondOfDay(0), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+        assertArrayEquals(
+                sequence(HEADER_TIME_OF_DAY_WITH_TIME_ZONE, uint(TimeUnit.SECONDS.toNanos(4096)), sint(9 * 60)),
+                perform(o -> o.writeTimeOfDayWithTimeZone(OffsetTime.of(LocalTime.ofSecondOfDay(4096), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+        assertArrayEquals(
+                sequence(HEADER_TIME_OF_DAY_WITH_TIME_ZONE, uint(TimeUnit.DAYS.toNanos(1) - 1), sint(9 * 60)),
+                perform(o -> o.writeTimeOfDayWithTimeZone(OffsetTime.of(LocalTime.of(23, 59, 59, 999_999_999), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+    }
+
+    @Test
+    void writeTimePointWithTimeZone() {
+        assertArrayEquals(
+                sequence(HEADER_TIME_POINT_WITH_TIME_ZONE, sint(0), uint(0), sint(9 * 60)),
+                perform(o -> o.writeTimePointWithTimeZone(OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(0)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+        assertArrayEquals(
+                sequence(HEADER_TIME_POINT_WITH_TIME_ZONE, sint(+4096), uint(0), sint(9 * 60)),
+                perform(o -> o.writeTimePointWithTimeZone(OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofSecondOfDay(+4096)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+        assertArrayEquals(
+                sequence(HEADER_TIME_POINT_WITH_TIME_ZONE, sint(-4096), uint(0), sint(9 * 60)),
+                // ZoneOffset.ofTotalSeconds(0) is used as LocalTime.ofSecondOfDay() can not be used with a parameter of -4096
+                perform(o -> o.writeTimePointWithTimeZone(OffsetDateTime.of(LocalDateTime.ofEpochSecond(-4096, 0, ZoneOffset.ofTotalSeconds(0)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
+        assertArrayEquals(
+                sequence(HEADER_TIME_POINT_WITH_TIME_ZONE, sint(0), uint(123_456_789), sint(9 * 60)),
+                perform(o -> o.writeTimePointWithTimeZone(OffsetDateTime.of(LocalDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(123_456_789)), ZoneOffset.ofTotalSeconds(9 * 60 * 60)))));
     }
 
     @Test

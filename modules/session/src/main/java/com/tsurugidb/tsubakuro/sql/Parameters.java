@@ -1,9 +1,11 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.OffsetTime;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -239,13 +241,13 @@ public final class Parameters {
      * @param value the value
      * @return the created place-holder
      */
-    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull Instant value) {
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull LocalDateTime value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(SqlCommon.TimePoint.newBuilder()
-                        .setOffsetSeconds(value.getEpochSecond())
+                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
                         .setNanoAdjustment(value.getNano()))
                 .build();
     }
@@ -262,6 +264,71 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(value)
+                .build();
+    }
+
+    /**
+     * Returns a new {@code TIME_OF_DAY_WITH_TIME_ZONE} parameter.
+     * @param name the place-holder name
+     * @param value the value
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull OffsetTime value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setTimeOfDayWithTimeZoneValue(SqlCommon.TimeOfDayWithTimeZone.newBuilder()
+                        .setOffsetNanoseconds(1000000000L * (60L * (60L * value.getHour() + value.getMinute()) + value.getSecond()) + value.getNano())
+                        .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
+                .build();
+    }
+
+    /**
+     * Returns a new {@code TIME_OF_DAY_WITH_TIME_ZONE} parameter.
+     * @param name the place-holder name
+     * @param value the value
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull SqlCommon.TimeOfDayWithTimeZone value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setTimeOfDayWithTimeZoneValue(value)
+                .build();
+    }
+
+    /**
+     * Returns a new {@code TIME_POINT_WITH_TIME_ZONE} parameter.
+     * @param name the place-holder name
+     * @param value the value
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull OffsetDateTime value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setTimePointWithTimeZoneValue(SqlCommon.TimePointWithTimeZone.newBuilder()
+                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
+                        .setNanoAdjustment(value.getNano())
+                        .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
+                .build();
+    }
+
+    /**
+     * Returns a new {@code TIME_POINT_WITH_TIME_ZONE} parameter.
+     * @param name the place-holder name
+     * @param value the value
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull SqlCommon.TimePointWithTimeZone value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setTimePointWithTimeZoneValue(value)
                 .build();
     }
 
