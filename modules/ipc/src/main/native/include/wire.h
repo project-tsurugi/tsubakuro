@@ -281,6 +281,10 @@ public:
         write_in_buffer(base, buffer_address(base, pushed_.load()), &c, 1);
         pushed_ += length;
     }
+
+    /**
+     * @brief flush the current message.
+     */
     void flush(char* base, message_header::index_type index) {
         message_header header(index, pushed_.load() - (pushed_valid_.load() + message_header::size));
         write_in_buffer(base, buffer_address(base, pushed_valid_.load()), header.get_buffer(), message_header::size);
@@ -293,29 +297,18 @@ public:
     }
 
     /**
-     * @brief get the address of the first request message in the queue.
+     * @brief get the first request message in the queue.
      */
-    const char* payload(const char* base, std::size_t length) {
+    std::string_view payload(const char* base) {
+        std::size_t length = peep(base).get_length();
         if (index(poped_.load() + message_header::size) < index(poped_.load() + message_header::size + length)) {
-            return read_address(base, message_header::size);
+            return std::string_view(read_address(base, message_header::size), length);
         }
-        copy_of_payload_.resize(length);
-        auto address =  copy_of_payload_.data();
+        copy_of_payload_ = std::make_unique<std::string>();
+        copy_of_payload_->resize(length);
+        auto address =  copy_of_payload_->data();
         read_from_buffer(address, base, read_address(base, message_header::size), length);
-        return address;  // ring buffer wrap around case
-    }
-
-    /**
-     * @brief pop the current message.
-     */
-    void read(char* to, const char* base, std::size_t length) {
-        read_from_buffer(to, base, read_address(base, message_header::size), length);
-        poped_ += message_header::size + length;
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_write_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_full_.notify_one();
-        }
+        return std::string_view(address, length);  // ring buffer wrap around case
     }
 
     /**
@@ -325,8 +318,8 @@ public:
     void dispose(const char* base, const std::size_t read_point) {
         if (poped_.load() == read_point) {
             poped_ += (peep(base).get_length() + message_header::size);
-            if (!copy_of_payload_.empty()) {
-                copy_of_payload_ = std::string();
+            if (copy_of_payload_) {
+                copy_of_payload_ = nullptr;
             }
             return;
         }
@@ -334,7 +327,7 @@ public:
     }
 
 private:
-    std::string copy_of_payload_{};  // in case of ring buffer wrap around
+    std::unique_ptr<std::string> copy_of_payload_{};  // in case of ring buffer wrap around
 };
 
 

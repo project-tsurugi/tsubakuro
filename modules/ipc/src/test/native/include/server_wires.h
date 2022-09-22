@@ -58,8 +58,8 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void read(char* to, std::size_t msg_len) {
-            wire_->read(to, bip_buffer_, msg_len);
+        std::string_view payload() {
+            return wire_->payload(bip_buffer_);
         }
     private:
         unidirectional_message_wire* wire_{};

@@ -38,7 +38,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_Server
         return NULL;
     }
 
-    wire.read(reinterpret_cast<char*>(dst), length);
+    memcpy(dst, wire.payload().data(), length);
     env->ReleaseByteArrayElements(dstj, dst, 0);
     return dstj;
 }
