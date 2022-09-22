@@ -432,7 +432,7 @@ public final class Entry {
      * @return the value
      */
     public OffsetDateTime getTimePointWithTimeZoneValue() {
-        check(EntryType.TIME_POINT);
+        check(EntryType.TIME_POINT_WITH_TIME_ZONE);
         return (OffsetDateTime) value;
     }
 
