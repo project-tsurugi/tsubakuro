@@ -240,7 +240,7 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
 
     @Override
     public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, InterruptedException {
-        requireColumnType(EntryType.TIME_OF_DAY);
+        requireColumnType(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
         var value = input.readTimeOfDayWithTimeZone();
         columnConsumed();
         return value;
@@ -248,7 +248,7 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
 
     @Override
     public OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, InterruptedException {
-        requireColumnType(EntryType.TIME_POINT);
+        requireColumnType(EntryType.TIME_POINT_WITH_TIME_ZONE);
         var value = input.readTimePointWithTimeZone();  // FIXME
         columnConsumed();
         return value;
