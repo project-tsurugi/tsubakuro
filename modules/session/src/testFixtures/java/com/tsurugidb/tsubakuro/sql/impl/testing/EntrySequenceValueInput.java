@@ -242,13 +242,13 @@ public class EntrySequenceValueInput implements ValueInput {
 
     @Override
     public OffsetTime readTimeOfDayWithTimeZone() {
-        var next = fetchNext(EntryType.TIME_OF_DAY);
+        var next = fetchNext(EntryType.TIME_OF_DAY_WITH_TIME_ZONE);
         return next.getTimeOfDayWithTimeZoneValue();
     }
 
     @Override
     public OffsetDateTime readTimePointWithTimeZone() {
-        var next = fetchNext(EntryType.TIME_POINT);
+        var next = fetchNext(EntryType.TIME_POINT_WITH_TIME_ZONE);
         return next.getTimePointWithTimeZoneValue();
     }
 
