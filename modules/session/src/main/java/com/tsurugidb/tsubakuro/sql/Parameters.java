@@ -247,7 +247,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(SqlCommon.TimePoint.newBuilder()
-                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
+                        .setOffsetSeconds((value.toLocalDate().toEpochDay() * 24 * 3600) + (60 * (60 * value.getHour() + value.getMinute()) + value.getSecond()))
                         .setNanoAdjustment(value.getNano()))
                 .build();
     }
@@ -311,7 +311,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(SqlCommon.TimePointWithTimeZone.newBuilder()
-                        .setOffsetSeconds(60 * (60 * value.getHour() + value.getMinute()) + value.getSecond())
+                        .setOffsetSeconds(value.toEpochSecond())
                         .setNanoAdjustment(value.getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();
