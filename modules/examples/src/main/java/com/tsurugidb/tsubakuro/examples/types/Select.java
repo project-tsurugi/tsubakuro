@@ -1,6 +1,5 @@
 package com.tsurugidb.tsubakuro.examples.types;
 
-import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlClient;

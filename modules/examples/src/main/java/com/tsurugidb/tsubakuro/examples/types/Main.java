@@ -7,19 +7,13 @@ import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.util.LoadBuilder;
-import com.tsurugidb.sql.proto.SqlRequest;
-import org.apache.commons.cli.*;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static java.time.ZoneOffset.UTC;
 
 public final class Main {
     private Main() {
@@ -61,11 +55,11 @@ public final class Main {
                 tx.executeStatement(
                         prep,
                         List.of(
-                                Parameters.of("p0", LocalDate.of(2000, 1, 1+i)),
-                                Parameters.of("p1", LocalTime.of(12, 0, 0+i)),
-                                Parameters.of("p2", OffsetTime.of(12, 0, 0+i, 0, ZoneOffset.UTC)),
-                                Parameters.of("p3", LocalDateTime.of(2000, 1, 1+i, 12, 0, 0+i)),
-                                Parameters.of("p4", OffsetDateTime.of(2000, 1, 1+i, 12, 0, 0+i, 0, ZoneOffset.UTC))
+                                Parameters.of("p0", LocalDate.of(2000, 1, 1 + i)),
+                                Parameters.of("p1", LocalTime.of(12, 0, i)),
+                                Parameters.of("p2", OffsetTime.of(12, 0, i, 0, ZoneOffset.UTC)),
+                                Parameters.of("p3", LocalDateTime.of(2000, 1, 1 + i, 12, 0, i)),
+                                Parameters.of("p4", OffsetDateTime.of(2000, 1, 1 + i, 12, 0, i, 0, ZoneOffset.UTC))
                         )
                 ).await();
             }
@@ -84,9 +78,9 @@ public final class Main {
                 tx.executeStatement(
                         prep,
                         List.of(
-                                Parameters.of("p0", BigDecimal.valueOf(111+i)),
-                                Parameters.of("p1", BigDecimal.valueOf(11.111+i)),
-                                Parameters.of("p2", BigDecimal.valueOf(11111.1+i))
+                                Parameters.of("p0", BigDecimal.valueOf(111 + i)),
+                                Parameters.of("p1", BigDecimal.valueOf(11.111 + i)),
+                                Parameters.of("p2", BigDecimal.valueOf(11111.1 + i))
                                 )
                 ).await();
             }
