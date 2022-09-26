@@ -84,7 +84,7 @@ public final class StreamLink extends Link {
             while (Objects.isNull(helloResponse.get())) {
                 if (timeout != 0) {
                     if (!condition.await(timeout, unit)) {
-                        throw new TimeoutException();
+                        throw new TimeoutException("server has not reapond to the request within the specified time");
                     }
                 } else {
                     condition.await();

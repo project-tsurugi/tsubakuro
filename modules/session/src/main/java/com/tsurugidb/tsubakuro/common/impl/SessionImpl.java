@@ -43,7 +43,7 @@ public class SessionImpl implements Session {
      */
     public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
 
-    private Wire wire;  // FIXME use Wire
+    private Wire wire;
 
     private final ExecutorService executor;
     private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
@@ -88,7 +88,8 @@ public class SessionImpl implements Session {
      * @param Wire the wire that connects to the Database
      */
     @Override
-    public void connect(Wire w) {
+    public void connect(@Nonnull Wire w) {
+        Objects.requireNonNull(w);
         wire = w;
     }
 
@@ -100,10 +101,6 @@ public class SessionImpl implements Session {
             boolean background) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
-    
-        if (Objects.isNull(wire)) {
-            System.out.println("wire is null");
-        }
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
         return convert(future, processor, background);
     }

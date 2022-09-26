@@ -35,11 +35,10 @@ public class FutureWireImpl implements FutureResponse<Wire> {
             if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
                 return new WireImpl(streamLink, Long.parseLong(rv));
             }
-            return null;
+            throw new IOException("the server has declined the connection request");
         } catch (TimeoutException e) {
-            return null;
+            throw new IOException(e);
         }
-
     }
 
     @Override
