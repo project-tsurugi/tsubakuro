@@ -7,11 +7,12 @@ import java.io.EOFException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,6 @@ public final class StreamLink extends Link {
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
     private Receiver receiver;
-    private final AtomicBoolean helloResponseArrived = new AtomicBoolean();
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
@@ -71,7 +71,6 @@ public final class StreamLink extends Link {
         this.inStream = new DataInputStream(socket.getInputStream());
         this.receiver = new Receiver();
         this.helloResponse.set(null);
-        this.helloResponseArrived.set(false);
         this.receiver.start();
     }
 
@@ -79,11 +78,17 @@ public final class StreamLink extends Link {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
-    public LinkMessage helloResponse() throws IOException {
+    public LinkMessage helloResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         lock.lock();
         try {
             while (Objects.isNull(helloResponse.get())) {
-                condition.await();
+                if (timeout != 0) {
+                    if (!condition.await(timeout, unit)) {
+                        throw new TimeoutException();
+                    }
+                } else {
+                    condition.await();
+                }
             }
             return helloResponse.get();
         } catch (InterruptedException e) {

@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.channel.stream.connection;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
@@ -22,25 +23,23 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException {
-        var message = streamLink.helloResponse();  // mutual exclusion is unnecessay here
-        var rc = message.getInfo();
-        var rv = message.getString();
-        if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
-            return new WireImpl(streamLink, Long.parseLong(rv));
-        }
-        return null;
+        return get(0, null);  // No timeout
     }
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException {
-        // FIXME: consider SO_TIMEOUT
-        var message = streamLink.helloResponse();
-        var rc = message.getInfo();
-        var rv = message.getString();
-        if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
-            return new WireImpl(streamLink, Long.parseLong(rv));
+        try {
+            var message = streamLink.helloResponse(timeout, unit);
+            var rc = message.getInfo();
+            var rv = message.getString();
+            if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
+                return new WireImpl(streamLink, Long.parseLong(rv));
+            }
+            return null;
+        } catch (TimeoutException e) {
+            return null;
         }
-        return null;
+
     }
 
     @Override
