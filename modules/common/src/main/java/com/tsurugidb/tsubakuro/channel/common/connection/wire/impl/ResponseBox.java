@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
  */
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
+    private static final int INVALID_SLOT = -1;
 
     private final Link link;
     private Abox[] boxes;
@@ -46,13 +47,22 @@ public class ResponseBox {
     }
 
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
-        int slot = lookFor();
-        var channelResponse = new ChannelResponse();
-        boxes[slot] = new Abox(channelResponse);
         synchronized (this) {
+            int slot = INVALID_SLOT;
+            for (byte i = 0; i < SIZE; i++) {
+                if (Objects.isNull(boxes[i])) {
+                    slot = i;
+                    break;
+                }
+            }
+            if (slot == INVALID_SLOT) {
+                throw new IOException("no available response box");
+            }
+            var channelResponse = new ChannelResponse();
+            boxes[slot] = new Abox(channelResponse);
             link.send(slot, header, payload);
+            return channelResponse;
         }
-        return channelResponse;
     }
 
     public void push(int slot, byte[] payload, boolean head) {
@@ -74,17 +84,6 @@ public class ResponseBox {
             }
         } finally {
             l.unlock();
-        }
-    }
-
-    public int lookFor() {
-        synchronized (this) {
-            for (byte i = 0; i < SIZE; i++) {
-                if (Objects.isNull(boxes[i])) {
-                    return i;
-                }
-            }
-            return -1;
         }
     }
 
