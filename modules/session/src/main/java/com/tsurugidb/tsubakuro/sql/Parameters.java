@@ -308,10 +308,11 @@ public final class Parameters {
     public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull OffsetDateTime value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
+        var localDateTime = value.toLocalDateTime();
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(SqlCommon.TimePointWithTimeZone.newBuilder()
-                        .setOffsetSeconds(value.toEpochSecond())
+                        .setOffsetSeconds((localDateTime.toLocalDate().toEpochDay() * 24 * 3600) + (60 * (60 * localDateTime.getHour() + localDateTime.getMinute()) + localDateTime.getSecond()))
                         .setNanoAdjustment(value.getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();

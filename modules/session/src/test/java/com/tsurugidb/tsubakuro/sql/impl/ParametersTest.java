@@ -134,19 +134,18 @@ class ParametersTest {
                                       .setOffsetNanoseconds(100L * 1000 * 1000 * 1000 + 200)
                                       .setTimeZoneOffset(9 * 60))
             .build(),
-            Parameters.of(TN, OffsetTime.of(LocalTime.ofNanoOfDay(100L * 1000 * 1000 * 1000 + 200), ZoneOffset.ofTotalSeconds((9 * 60 * 60)))));
+            Parameters.of(TN, OffsetTime.of(LocalTime.ofNanoOfDay(100L * 1000 * 1000 * 1000 + 200), ZoneOffset.ofTotalSeconds(9 * 60 * 60))));
     }
 
     @Test
     void ofOffsetDateTime() {
-        var zoneOffset = 9 * 60 * 60;
         assertEquals(
                     param().setTimePointWithTimeZoneValue(TimePointWithTimeZone.newBuilder()
                                         .setOffsetSeconds(100)
                                         .setNanoAdjustment(200)
                                         .setTimeZoneOffset(9 * 60))
             .build(),
-            Parameters.of(TN, OffsetDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(1000_000_000L * (100 + zoneOffset) + 200), ZoneOffset.ofTotalSeconds((zoneOffset)))));
+            Parameters.of(TN, OffsetDateTime.of(LocalDate.ofEpochDay(0), LocalTime.ofNanoOfDay(1000_000_000L * 100 + 200), ZoneOffset.ofTotalSeconds(9 * 60 * 60))));
     }
 
     @Test
