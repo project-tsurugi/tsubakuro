@@ -102,3 +102,11 @@ tasks.register('runUpdateExpirationTime', JavaExec) {
     mainClass = 'com.tsurugidb.tsubakuro.examples.updateExpirationTime.Main'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
 }
+
+tasks.register('runTestTypes', JavaExec) {
+    dependsOn ':tsubakuro-ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    mainClass = 'com.tsurugidb.tsubakuro.examples.types.Main'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
+}
