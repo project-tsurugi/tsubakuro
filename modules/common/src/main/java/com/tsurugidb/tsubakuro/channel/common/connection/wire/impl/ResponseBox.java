@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
@@ -15,9 +16,6 @@ import javax.annotation.Nonnull;
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
     private static final int INVALID_SLOT = -1;
-
-    private final Link link;
-    private Abox[] boxes;
 
     private static class Abox {
         private ChannelResponse channelResponse;
@@ -37,39 +35,37 @@ public class ResponseBox {
         }
     }
 
-    public ResponseBox(@Nonnull Link link) {
-        this.boxes = new Abox[SIZE];
-        this.link = link;
+    private final Link link;
+    private AtomicReferenceArray<Abox> boxes = new AtomicReferenceArray<>(SIZE);
 
-        for (int i = 0; i < SIZE; i++) {
-            boxes[i] = null;
-        }
+    public ResponseBox(@Nonnull Link link) {
+        this.link = link;
     }
 
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
-        synchronized (this) {
-            int slot = INVALID_SLOT;
-            for (byte i = 0; i < SIZE; i++) {
-                if (Objects.isNull(boxes[i])) {
+        var channelResponse = new ChannelResponse();
+        var box = new Abox(channelResponse);
+        int slot = INVALID_SLOT;
+        for (byte i = 0; i < SIZE; i++) {
+            if (Objects.isNull(boxes.get(i))) {
+                if (boxes.compareAndSet(i, null, box)) {
                     slot = i;
                     break;
                 }
             }
-            if (slot == INVALID_SLOT) {
-                throw new IOException("no available response box");
-            }
-            var channelResponse = new ChannelResponse();
-            boxes[slot] = new Abox(channelResponse);
-            link.send(slot, header, payload);
-            return channelResponse;
         }
+        if (slot == INVALID_SLOT) {
+            throw new IOException("no available response box");
+        }
+        link.send(slot, header, payload);
+        return channelResponse;
     }
 
     public void push(int slot, byte[] payload, boolean head) {
-        Lock l =  boxes[slot].lock;
+        Lock l =  boxes.get(slot).lock;
         l.lock();
         try {
-            var box = boxes[slot];
+            var box = boxes.get(slot);
             if (head) {
                 box.expected = 2;
             }
@@ -80,7 +76,7 @@ public class ResponseBox {
             }
             box.received++;
             if (box.expected == box.received) {
-                boxes[slot] = null;
+                boxes.set(slot, null);
             }
         } finally {
             l.unlock();
