@@ -41,17 +41,20 @@ public class LoadBuilder {
     private static final Map<SqlCommon.AtomType, String> ATOM_TYPE_NAMES = Map.ofEntries(
             Map.entry(SqlCommon.AtomType.BIT, "VARBIT"), //$NON-NLS-1$
             Map.entry(SqlCommon.AtomType.BOOLEAN, "BOOLEAN"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.CHARACTER, "VARCHAR"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.CHARACTER, "VARCHAR(*)"), //$NON-NLS-1$
             Map.entry(SqlCommon.AtomType.DATE, "DATE"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.DATETIME_INTERVAL, "DATETIME_INTERVAL"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.DECIMAL, "DECIMAL"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.FLOAT4, "FLOAT"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.FLOAT8, "DOUBLE"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.DATETIME_INTERVAL, "INTERVAL"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.DECIMAL, "DECIMAL(*,*)"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.FLOAT4, "REAL"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.FLOAT8, "DOUBLE PRECISION"), //$NON-NLS-1$
             Map.entry(SqlCommon.AtomType.INT4, "INT"), //$NON-NLS-1$
             Map.entry(SqlCommon.AtomType.INT8, "BIGINT"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.OCTET, "VAROCTET"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.OCTET, "VARBINARY(*)"), //$NON-NLS-1$
             Map.entry(SqlCommon.AtomType.TIME_OF_DAY, "TIME"), //$NON-NLS-1$
-            Map.entry(SqlCommon.AtomType.TIME_POINT, "TIME_POINT")); //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.TIME_OF_DAY_WITH_TIME_ZONE, "TIME WITH TIME ZONE"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.TIME_POINT, "TIMESTAMP"), //$NON-NLS-1$
+            Map.entry(SqlCommon.AtomType.TIME_POINT_WITH_TIME_ZONE, "TIMESTAMP WITH TIME ZONE")); //$NON-NLS-1$
+
 
     private final TableMetadata destination;
 
@@ -362,7 +365,7 @@ public class LoadBuilder {
             buf.append("INSERT"); //$NON-NLS-1$
             break;
         case OVERWRITE:
-            buf.append("UPDATE OR INSERT"); //$NON-NLS-1$
+            buf.append("INSERT OR REPLACE"); //$NON-NLS-1$
             break;
         case SKIP:
             buf.append("INSERT IF NOT EXISTS"); //$NON-NLS-1$

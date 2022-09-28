@@ -227,7 +227,7 @@ class LoadBuilderTest {
         var ps = capturePlaceholders;
         assertEquals(1, ps.size());
         assertEquals(
-                tokenize("UPDATE OR INSERT INTO D.S.T (C1) VALUES(", ph(ps.get(0)), ")"),
+                tokenize("INSERT OR REPLACE INTO D.S.T (C1) VALUES(", ph(ps.get(0)), ")"),
                 captureSource);
     }
 
