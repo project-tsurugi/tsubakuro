@@ -14,6 +14,12 @@ This module provides the following interfaces and classes.
 [HttpTokenProvider]:src/main/java/com/tsurugidb/tsubakuro/auth/http/HttpTokenProvider.java
 [JwtTicketProvider]:src/main/java/com/tsurugidb/tsubakuro/auth/http/JwtTicketProvider.java
 
+## Gradle artifact
+
+```gradle
+implementation 'com.tsurugidb.tsubakuro:tsubakuro-auth-http:${tsubakuroVersion}'
+```
+
 ## Examples
 
 ### retrieves a mock ticket
