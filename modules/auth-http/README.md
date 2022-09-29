@@ -17,18 +17,33 @@ This module provides the following interfaces and classes.
 ## Gradle artifact
 
 ```gradle
-implementation 'com.tsurugidb.tsubakuro:tsubakuro-auth-http:${tsubakuroVersion}'
+implementation "com.tsurugidb.tsubakuro:tsubakuro-auth-http:${tsubakuroVersion}"
 ```
 
-## Examples
+## Integration tests
 
-### retrieves a mock ticket
+see [Jetty base directory for integration tests](config/jetty-base/README.md).
+
+## Example
 
 ```java
-TicketProvider tickets = new JwtTicketProvider(new HttpTokenProvider("http://example.com/harinoki"));
+TicketProvider provider = new JwtTicketProvider(
+        new HttpTokenProvider("http://example.com/path/to/harinoki"));
 
-Ticket ticket = tickets.issue("test1", "password1");
-ticket = ticket.refresh(ticket, 10, TimeUnit.MINUTES);
+// retrieve refresh token
+Ticket ticket = provider.issue("test1", "password1");
 
-Credential cred = ticket.toCredential(TokenKind.ACCESS);
+// retrieve access token
+ticket = provider.refresh(ticket, 10, TimeUnit.MINUTES);
+
+// establish a OLTP session with access token
+Session session = SessionBuilder.connect("...")
+        .withCredential(ticket.toCredential(TokenKind.ACCESS))
+        .create();
+
+// ...
+
+// update access token on the ticket
+ticket = provider.refresh(ticket, 10, TimeUnit.MINUTES);
+session.updateCredential(ticket.toCredential(TokenKind.ACCESS)).await();
 ```
