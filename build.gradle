@@ -8,6 +8,7 @@ dependencies {
     implementation project(':tsubakuro-connector')
     implementation project(':tsubakuro-session')
     implementation project(':tsubakuro-console')
+    implementation project(':tsubakuro-auth-http')
 }
 
 shadowJar {
