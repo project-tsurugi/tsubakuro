@@ -242,6 +242,11 @@ public class HttpTokenProvider implements TokenProvider {
                         response.message("authentication failed"));
             }
         }
+        if (response.status == 404) {
+            throw new InvalidResponseException(MessageFormat.format(
+                    "authentication service was not found (may be wrong endpoint): uri={0}",
+                    target));
+        }
         if (500 <= response.status && response.status <= 599) {
             throw new CoreServiceException(
                     CoreServiceCode.SYSTEM_ERROR,
