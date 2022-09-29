@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'tsubakuro.java-base'
 }
 
 def clientApiProjects = [
