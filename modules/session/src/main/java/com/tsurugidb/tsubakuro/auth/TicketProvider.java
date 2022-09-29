@@ -35,10 +35,11 @@ public interface TicketProvider {
      * @param userId the user ID
      * @param password the password
      * @return the authentication token
+     * @throws InterruptedException if interrupted while requesting authentication to the service
      * @throws IOException if I/O error was occurred while requesting authentication to the service
      * @throws CoreServiceException if authentication was failed
      */
-    Ticket issue(@Nonnull String userId, @Nonnull String password) throws IOException, CoreServiceException;
+    Ticket issue(@Nonnull String userId, @Nonnull String password) throws InterruptedException, IOException, CoreServiceException;
 
     /**
      * Requests to extend access expiration time of the given {@link Ticket}.
@@ -50,17 +51,44 @@ public interface TicketProvider {
      * This never modifies the input {@link Ticket} object.
      * </p>
      * @param ticket the old {@link Ticket} to refresh access expiration time
-     * @param expiration the maximum time to extend the access expiration from now
+     * @param expiration the maximum time to extend the access expiration from now,
+     *      or {@code <= 0} to use default expiration time
      * @param unit the time unit of expiration
      * @return the refreshed {@link Ticket}
      * @throws IllegalArgumentException if the input ticket is not provided by this object
      * @throws IllegalArgumentException if the input ticket does not support
      *      {@link Ticket#getRefreshExpirationTime() refresh}
+     * @throws InterruptedException if interrupted while requesting authentication to the service
      * @throws IOException if I/O error was occurred while requesting authentication to the service
      * @throws CoreServiceException if refresh operation was failed in the authentication mechanism
      */
     Ticket refresh(
             @Nonnull Ticket ticket,
             long expiration,
-            @Nonnull TimeUnit unit) throws IOException, CoreServiceException;
+            @Nonnull TimeUnit unit) throws InterruptedException, IOException, CoreServiceException;
+
+    /**
+     * Requests to extend access expiration time of the given {@link Ticket}.
+     * <p>
+     * This operation is equivalent to {@link #refresh(Ticket, long, TimeUnit) refresh(ticket, 0, TimeUnit.SECONDS)}.
+     * </p>
+     * <p>
+     * This operation requires which the {@link Ticket#getRefreshExpirationTime() refresh expiration time} is
+     * remained in the given ticket.
+     * </p>
+     * <p>
+     * This never modifies the input {@link Ticket} object.
+     * </p>
+     * @param ticket the old {@link Ticket} to refresh access expiration time
+     * @return the refreshed {@link Ticket}
+     * @throws IllegalArgumentException if the input ticket is not provided by this object
+     * @throws IllegalArgumentException if the input ticket does not support
+     *      {@link Ticket#getRefreshExpirationTime() refresh}
+     * @throws InterruptedException if interrupted while requesting authentication to the service
+     * @throws IOException if I/O error was occurred while requesting authentication to the service
+     * @throws CoreServiceException if refresh operation was failed in the authentication mechanism
+     */
+    default Ticket refresh(@Nonnull Ticket ticket) throws InterruptedException, IOException, CoreServiceException {
+        return refresh(ticket, 0, TimeUnit.SECONDS);
+    }
 }
