@@ -1,0 +1,29 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.tsurugidb.tsubakuro'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(11)
+    }
+}
+
+ext {
+    tsubakuroVersion = '0.0.1-SNAPSHOT'
+    buildTimestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
+    buildRevision = System.getenv("GITHUB_SHA") ?: ""
+    createdBy = "Gradle ${gradle.gradleVersion}"
+    buildJdk = "${javaToolchains.launcherFor(java.toolchain).get().getMetadata().javaRuntimeVersion} ${javaToolchains.launcherFor(java.toolchain).get().getMetadata().vendor} ${javaToolchains.launcherFor(java.toolchain).get().getMetadata().jvmVersion}"
+    buildOs = "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}"
+}
+
+tasks.withType(JavaCompile) { task ->
+    task.options.encoding 'UTF-8'
+}
+
+tasks.withType(Javadoc) { task ->
+    task.options.encoding 'UTF-8'
+}
