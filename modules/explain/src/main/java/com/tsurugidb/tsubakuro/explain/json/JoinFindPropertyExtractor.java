@@ -27,15 +27,15 @@ public class JoinFindPropertyExtractor implements PropertyExtractor {
         var info = PropertyExtractorUtil.findSourceIndex(object);
         var kind = JsonUtil.getString(object, "operator_kind");
         if (info.isEmpty()) {
-            return Map.of(
+            return PropertyExtractorUtil.attributes(
                     "join-type", kind,
                     "source", "broadcast",
                     "access", "point");
         }
         var results = new LinkedHashMap<String, String>();
         results.put("join-type", kind);
+        results.putAll(info.get().toAttributes());
         results.put("access", "point");
-        info.get().toAttributes().forEach(it -> results.put(it.getKey(), it.getValue()));
         return results;
     }
 

@@ -1,8 +1,9 @@
 package com.tsurugidb.tsubakuro.explain.json;
 
 import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,6 +17,39 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tsurugidb.tsubakuro.explain.PlanGraphException;
 
 final class PropertyExtractorUtil {
+
+    static Map<String, String> attributes() {
+        return Map.of();
+    }
+
+    static Map<String, String> attributes(@Nonnull String key, @Nonnull String value) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(value);
+        return Map.of(key, value);
+    }
+
+    static Map<String, String> attributes(@Nonnull String... keyOrValues) {
+        Objects.requireNonNull(keyOrValues);
+        if (keyOrValues.length % 2 != 0) {
+            throw new IllegalArgumentException("invalid key value pairs");
+        }
+        // preserves entry order
+        var results = new LinkedHashMap<String, String>();
+        for (int i = 0, n = keyOrValues.length; i < n; i += 2) {
+            var key = Objects.requireNonNull(keyOrValues[i]);
+            var value = Objects.requireNonNull(keyOrValues[i + 1]);
+            results.put(key, value);
+        }
+        return Collections.unmodifiableMap(results);
+    }
+
+    static Map<String, String> attributes(@Nonnull Map<String, String> map) {
+        Objects.requireNonNull(map);
+        if (map.size() <= 1) {
+            return Map.copyOf(map);
+        }
+        return Collections.unmodifiableMap(map);
+    }
 
     static String getSourceExchangeRef(@Nonnull JsonNode node) throws PlanGraphException {
         Objects.requireNonNull(node);
@@ -72,16 +106,16 @@ final class PropertyExtractorUtil {
             this.features = Set.copyOf(features);
         }
 
-        List<Map.Entry<String, String>> toAttributes() {
+        Map<String, String> toAttributes() {
             if (index == null) {
-                return List.of(
-                        Map.entry("source", "table"),
-                        Map.entry("table", table));
+                return attributes(
+                        "source", "table",
+                        "table", table);
             }
-            return List.of(
-                    Map.entry("source", "index"),
-                    Map.entry("table", table),
-                    Map.entry("index", index));
+            return attributes(
+                    "source", "index",
+                    "table", table,
+                    "index", index);
 
         }
     }

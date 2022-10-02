@@ -25,7 +25,7 @@ public class WritePropertyExtractor implements PropertyExtractor {
         JsonUtil.checkKind(object, "write");
         var info = PropertyExtractorUtil.getDestinationIndex(object);
         var kind = JsonUtil.getString(object, "operator_kind");
-        return Map.of(
+        return PropertyExtractorUtil.attributes(
                 "write-kind", kind,
                 "table", info.table);
     }

@@ -25,9 +25,9 @@ public class ForwardExchangePropertyExtractor implements PropertyExtractor {
         JsonUtil.checkKind(object, "forward");
         var limit = JsonUtil.findInteger(object, "limit");
         if (limit.isEmpty()) {
-            return Map.of();
+            return PropertyExtractorUtil.attributes();
         }
-        return Map.of("limit", String.valueOf(limit.getAsLong()));
+        return PropertyExtractorUtil.attributes("limit", String.valueOf(limit.getAsLong()));
     }
 
     @Override

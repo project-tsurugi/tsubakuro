@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.explain;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -30,11 +31,7 @@ public class BasicPlanNode implements PlanNode {
      * @param attributes the node attributes
      */
     public BasicPlanNode(@Nonnull String kind, @Nonnull Map<String, String> attributes) {
-        Objects.requireNonNull(kind);
-        Objects.requireNonNull(attributes);
-        this.kind = kind;
-        this.title = kind;
-        this.attributes = Map.copyOf(attributes);
+        this(kind, kind, attributes);
     }
 
     /**
@@ -49,9 +46,16 @@ public class BasicPlanNode implements PlanNode {
         Objects.requireNonNull(attributes);
         this.kind = kind;
         this.title = title;
-        this.attributes = Map.copyOf(attributes);
+        this.attributes = copyMap(attributes);
     }
 
+    private static Map<String, String> copyMap(Map<String, String> attributes) {
+        if (attributes.size() <= 1) {
+            return Map.copyOf(attributes);
+        }
+        // preserves entry order
+        return Collections.unmodifiableMap(new LinkedHashMap<>(attributes));
+    }
 
     @Override
     public String getKind() {

@@ -25,7 +25,7 @@ public class AggregateExchangePropertyExtractor implements PropertyExtractor {
         Objects.requireNonNull(object);
         JsonUtil.checkKind(object, "aggregate");
         var grouped = !JsonUtil.getArray(object, "group_keys").isEmpty();
-        return Map.of(
+        return PropertyExtractorUtil.attributes(
                 "whole", String.valueOf(!grouped),
                 "incremental", "true");
     }

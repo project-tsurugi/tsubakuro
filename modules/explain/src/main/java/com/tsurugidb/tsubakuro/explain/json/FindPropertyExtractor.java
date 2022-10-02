@@ -26,8 +26,8 @@ public class FindPropertyExtractor implements PropertyExtractor {
         JsonUtil.checkKind(object, "find");
         var info = PropertyExtractorUtil.getSourceIndex(object);
         var results = new LinkedHashMap<String, String>();
+        results.putAll(info.toAttributes());
         results.put("access", "point");
-        info.toAttributes().forEach(it -> results.put(it.getKey(), it.getValue()));
         return results;
     }
 

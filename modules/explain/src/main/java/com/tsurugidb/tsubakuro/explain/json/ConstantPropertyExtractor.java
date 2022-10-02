@@ -26,7 +26,7 @@ public class ConstantPropertyExtractor implements PropertyExtractor {
     public ConstantPropertyExtractor(@Nullable String title, @Nonnull Map<String, String> attributes) {
         Objects.requireNonNull(attributes);
         this.title = title;
-        this.attributes = Map.copyOf(attributes);
+        this.attributes = PropertyExtractorUtil.attributes(attributes);
     }
 
     @Override

@@ -27,8 +27,8 @@ public class ScanPropertyExtractor implements PropertyExtractor {
         var info = PropertyExtractorUtil.getSourceIndex(object);
         var access = PropertyExtractorUtil.hasScanRange(object) ? "range-scan" : "full-scan";
         var results = new LinkedHashMap<String, String>();
+        results.putAll(info.toAttributes());
         results.put("access", access);
-        info.toAttributes().forEach(it -> results.put(it.getKey(), it.getValue()));
         return results;
     }
 

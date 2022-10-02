@@ -24,7 +24,7 @@ public class JoinGroupPropertyExtractor implements PropertyExtractor {
         Objects.requireNonNull(object);
         JsonUtil.checkKind(object, "join_group");
         var kind = JsonUtil.getString(object, "operator_kind");
-        return Map.of(
+        return PropertyExtractorUtil.attributes(
                 "join-type", kind,
                 "source", "flow",
                 "access", "merge");

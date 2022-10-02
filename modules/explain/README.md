@@ -104,20 +104,20 @@ var generator = DotGenerator.newBuilder()
     * `source` - access pattern
       * `table` - find from primary index
       * `index` - find from secondary index
-    * `access` - always `point`
     * `table` - source table name
     * `index` - source secondary index name (optional)
+    * `access` - always `point`
 * `scan`
   * title - `scan`
   * attributes
     * `source` - access pattern
       * `table` - scan on primary index
       * `index` - scan on secondary index, may or may not access to primary index
+    * `table` - source table name
+    * `index` - source secondary index name (optional)
     * `access`- access pattern
       * `full-scan` - full scan
       * `range-scan` - range scan
-    * `table` - source table name
-    * `index` - source secondary index name (optional)
 * `values`
   * title - `values`
   * attributes
@@ -153,9 +153,9 @@ var generator = DotGenerator.newBuilder()
       * `table` - find from primary index
       * `index` - find from secondary index
       * `broadcast` - scan on broadcast exchange
-    * `access` - always `point`
     * `table` - source table name (optional)
     * `index` - source secondary index name (optional)
+    * `access` - always `point`
 * `join_scan`
   * title - `join`
   * attributes
@@ -168,11 +168,11 @@ var generator = DotGenerator.newBuilder()
       * `table` - find from primary index
       * `index` - find from secondary index
       * `broadcast` - scan on broadcast exchange
+    * `table` - source table name (optional)
+    * `index` - source secondary index name (optional)
     * `access`- access pattern
       * `full-scan` - full scan
       * `range-scan` - range scan
-    * `table` - source table name (optional)
-    * `index` - source secondary index name (optional)
 * `join_group`
   * title - `join`
   * attributes

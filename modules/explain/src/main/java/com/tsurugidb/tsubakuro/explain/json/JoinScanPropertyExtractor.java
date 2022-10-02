@@ -28,15 +28,15 @@ public class JoinScanPropertyExtractor implements PropertyExtractor {
         var access = PropertyExtractorUtil.hasScanRange(object) ? "range-scan" : "full-scan";
         var kind = JsonUtil.getString(object, "operator_kind");
         if (info.isEmpty()) {
-            return Map.of(
+            return PropertyExtractorUtil.attributes(
                     "join-type", kind,
                     "source", "broadcast",
                     "access", access);
         }
         var results = new LinkedHashMap<String, String>();
         results.put("join-type", kind);
+        results.putAll(info.get().toAttributes());
         results.put("access", access);
-        info.get().toAttributes().forEach(it -> results.put(it.getKey(), it.getValue()));
         return results;
     }
 
