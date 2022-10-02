@@ -1,0 +1,65 @@
+{
+    "kind": "drop_table",
+    "schema": {
+        "kind": "schema",
+        "binding": {
+            "name": "SC"
+        }
+    },
+    "target": {
+        "kind": "storage",
+        "binding": {
+            "simple_name": "T0",
+            "columns": [
+                {
+                    "simple_name": "C0",
+                    "type": {
+                        "kind": "int4"
+                    },
+                    "criteria": {
+                        "nullity": "nullable"
+                    },
+                    "default_value": {
+                        "kind": "nothing"
+                    },
+                    "owner": {
+                        "kind": "table",
+                        "simple_name": "C0"
+                    }
+                },
+                {
+                    "simple_name": "C1",
+                    "type": {
+                        "kind": "int4"
+                    },
+                    "criteria": {
+                        "nullity": "nullable"
+                    },
+                    "default_value": {
+                        "kind": "nothing"
+                    },
+                    "owner": {
+                        "kind": "table",
+                        "simple_name": "C1"
+                    }
+                },
+                {
+                    "simple_name": "C2",
+                    "type": {
+                        "kind": "int4"
+                    },
+                    "criteria": {
+                        "nullity": "nullable"
+                    },
+                    "default_value": {
+                        "kind": "nothing"
+                    },
+                    "owner": {
+                        "kind": "table",
+                        "simple_name": "C2"
+                    }
+                }
+            ]
+        }
+    }
+}

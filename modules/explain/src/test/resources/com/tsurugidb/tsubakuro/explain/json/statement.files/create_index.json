@@ -1,0 +1,23 @@
+{
+    "kind": "create_index",
+    "schema": {
+        "kind": "schema",
+        "binding": {
+            "name": "SC"
+        }
+    },
+    "definition": {
+        "kind": "relation",
+        "binding": {
+            "kind": "index",
+            "table": "T0",
+            "simple_name": "I0",
+            "keys": [],
+            "values": [],
+            "features": [
+                "find",
+                "scan"
+            ]
+        }
+    }
+}

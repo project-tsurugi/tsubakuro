@@ -1,0 +1,23 @@
+{
+    "kind": "drop_index",
+    "schema": {
+        "kind": "schema",
+        "binding": {
+            "name": "SC"
+        }
+    },
+    "target": {
+        "kind": "relation",
+        "binding": {
+            "kind": "index",
+            "table": "T0",
+            "simple_name": "I0",
+            "keys": [],
+            "values": [],
+            "features": [
+                "find",
+                "scan"
+            ]
+        }
+    }
+}

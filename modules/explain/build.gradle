@@ -1,0 +1,22 @@
+plugins {
+    id 'tsubakuro.java-library-conventions'
+}
+
+dependencies {
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
+
+    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+task run(type: JavaExec) {
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.tsurugidb.tsubakuro.explain.json.Main'
+    workingDir = System.getProperty("user.dir")
+}

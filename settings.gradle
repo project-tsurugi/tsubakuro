@@ -10,6 +10,7 @@ include "${rootProject.name}-console"
 include "${rootProject.name}-bootstrap"
 include "${rootProject.name}-auth-http"
 include "${rootProject.name}-auth-mock"
+include "${rootProject.name}-explain"
 include "${rootProject.name}-examples"
 
 rootProject.children.each { project ->
