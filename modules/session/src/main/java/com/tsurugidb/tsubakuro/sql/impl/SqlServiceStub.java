@@ -49,6 +49,10 @@ public class SqlServiceStub implements SqlService {
      */
     public static final int SERVICE_ID = Constants.SERVICE_ID_SQL;
 
+    static final String FORMAT_ID_LEGACY_EXPLAIN = "jogasaki-statement.json"; //$NON-NLS-1$
+
+    static final long FORMAT_VERSION_LEGACY_EXPLAIN = 1;
+
     private final Session session;
 
     private final ServerResourceHolder resources = new ServerResourceHolder();
@@ -267,8 +271,8 @@ public class SqlServiceStub implements SqlService {
             case OUTPUT:
                 LOG.warn("deprecated response: {}", detailResponse);
                 return new BasicStatementMetadata(
-                        "deprecated",
-                        0,
+                        FORMAT_ID_LEGACY_EXPLAIN,
+                        FORMAT_VERSION_LEGACY_EXPLAIN,
                         detailResponse.getOutput(),
                         List.of());
 

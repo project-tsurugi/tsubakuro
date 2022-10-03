@@ -3,7 +3,6 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -473,7 +472,8 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var result = future.get();
-            assertNotNull(result.getFormatId());
+            assertEquals(SqlServiceStub.FORMAT_ID_LEGACY_EXPLAIN, result.getFormatId());
+            assertEquals(SqlServiceStub.FORMAT_VERSION_LEGACY_EXPLAIN, result.getFormatVersion());
             assertEquals("TESTING", result.getContents());
             assertEquals(List.of(), result.getColumns());
         }
