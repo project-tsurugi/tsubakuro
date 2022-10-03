@@ -1,0 +1,157 @@
+// comment test
+{
+    "kind": "write", /* c-style */
+    "operator_kind": "insert",
+    "destination": {
+        "kind": "relation",
+        "binding": {
+            "kind": "index",
+            "table": "T0",
+            "simple_name": "I0",
+            "keys": [],
+            "values": [],
+            "features": [
+                "find",
+                "scan"
+            ]
+        }
+    },
+    "columns": [
+        {
+            "kind": "variable",
+            "binding": {
+                "kind": "table_column",
+                "simple_name": "C0",
+                "type": {
+                    "kind": "int4"
+                },
+                "criteria": {
+                    "nullity": "nullable"
+                },
+                "default_value": {
+                    "kind": "nothing"
+                },
+                "owner": {
+                    "kind": "table",
+                    "simple_name": "C0"
+                }
+            },
+            "resolution": {
+                "kind": "table_column",
+                "simple_name": "C0",
+                "owner": "T0",
+                "type": {
+                    "kind": "int4"
+                }
+            }
+        },
+        {
+            "kind": "variable",
+            "binding": {
+                "kind": "table_column",
+                "simple_name": "C1",
+                "type": {
+                    "kind": "int4"
+                },
+                "criteria": {
+                    "nullity": "nullable"
+                },
+                "default_value": {
+                    "kind": "nothing"
+                },
+                "owner": {
+                    "kind": "table",
+                    "simple_name": "C1"
+                }
+            },
+            "resolution": {
+                "kind": "table_column",
+                "simple_name": "C1",
+                "owner": "T0",
+                "type": {
+                    "kind": "int4"
+                }
+            }
+        },
+        {
+            "kind": "variable",
+            "binding": {
+                "kind": "table_column",
+                "simple_name": "C2",
+                "type": {
+                    "kind": "int4"
+                },
+                "criteria": {
+                    "nullity": "nullable"
+                },
+                "default_value": {
+                    "kind": "nothing"
+                },
+                "owner": {
+                    "kind": "table",
+                    "simple_name": "C2"
+                }
+            },
+            "resolution": {
+                "kind": "table_column",
+                "simple_name": "C2",
+                "owner": "T0",
+                "type": {
+                    "kind": "int4"
+                }
+            }
+        }
+    ],
+    "tuples": [
+        [
+            {
+                "kind": "immediate",
+                "this": "@1",
+                "value": {
+                    "kind": "int4",
+                    "value": 0
+                },
+                "type": {
+                    "kind": "int4"
+                },
+                "resolution": {
+                    "type": {
+                        "kind": "int4"
+                    }
+                }
+            },
+            {
+                "kind": "immediate",
+                "this": "@2",
+                "value": {
+                    "kind": "int4",
+                    "value": 1
+                },
+                "type": {
+                    "kind": "int4"
+                },
+                "resolution": {
+                    "type": {
+                        "kind": "int4"
+                    }
+                }
+            },
+            {
+                "kind": "immediate",
+                "this": "@3",
+                "value": {
+                    "kind": "int4",
+                    "value": 2
+                },
+                "type": {
+                    "kind": "int4"
+                },
+                "resolution": {
+                    "type": {
+                        "kind": "int4"
+                    }
+                }
+            }
+        ]
+    ]
+}

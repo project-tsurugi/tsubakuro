@@ -1,0 +1,614 @@
+[
+    {
+        "kind": "process",
+        "this": "@1",
+        "operators": [
+            {
+                "kind": "scan",
+                "this": "@2",
+                "source": {
+                    "kind": "relation",
+                    "binding": {
+                        "kind": "index",
+                        "table": "T0",
+                        "simple_name": "I0",
+                        "keys": [],
+                        "values": [],
+                        "features": [
+                            "find",
+                            "scan"
+                        ]
+                    }
+                },
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "C0",
+                                "type": {
+                                    "kind": "int4"
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "C0"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@3",
+                                "label": "j0"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "C1",
+                                "type": {
+                                    "kind": "int4"
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "C1"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@4",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "C2",
+                                "type": {
+                                    "kind": "int4"
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "C2"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@5",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    }
+                ],
+                "lower": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "upper": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "input_ports": [],
+                "output_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "offer",
+                            "this": "@6",
+                            "index": 0
+                        }
+                    }
+                ]
+            },
+            {
+                "kind": "offer",
+                "this": "@6",
+                "destination": {
+                    "kind": "relation",
+                    "binding": {
+                        "kind": "exchange",
+                        "this": "@7"
+                    }
+                },
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@3",
+                                "label": "j0"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@8",
+                                "label": "j0"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@4",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@9",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@5",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@10",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    }
+                ],
+                "input_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "scan",
+                            "this": "@2",
+                            "index": 0
+                        }
+                    }
+                ],
+                "output_ports": []
+            }
+        ],
+        "upstreams": [],
+        "downstreams": [
+            {
+                "kind": "broadcast",
+                "this": "@7"
+            }
+        ]
+    },
+    {
+        "kind": "broadcast",
+        "this": "@7",
+        "columns": [
+            {
+                "kind": "variable",
+                "binding": {
+                    "kind": "exchange_column",
+                    "this": "@8",
+                    "label": "j0"
+                },
+                "resolution": {
+                    "kind": "unresolved"
+                }
+            },
+            {
+                "kind": "variable",
+                "binding": {
+                    "kind": "exchange_column",
+                    "this": "@9",
+                    "label": "j1"
+                },
+                "resolution": {
+                    "kind": "unresolved"
+                }
+            },
+            {
+                "kind": "variable",
+                "binding": {
+                    "kind": "exchange_column",
+                    "this": "@10",
+                    "label": "j2"
+                },
+                "resolution": {
+                    "kind": "unresolved"
+                }
+            }
+        ],
+        "upstreams": [
+            {
+                "kind": "process",
+                "this": "@1"
+            }
+        ],
+        "downstreams": [
+            {
+                "kind": "process",
+                "this": "@11"
+            }
+        ]
+    },
+    {
+        "kind": "process",
+        "this": "@11",
+        "operators": [
+            {
+                "kind": "scan",
+                "this": "@12",
+                "source": {
+                    "kind": "relation",
+                    "binding": {
+                        "kind": "index",
+                        "table": "T0",
+                        "simple_name": "I0",
+                        "keys": [],
+                        "values": [],
+                        "features": [
+                            "find",
+                            "scan"
+                        ]
+                    }
+                },
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "C0",
+                                "type": {
+                                    "kind": "int4"
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "C0"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@13",
+                                "label": "c0"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "C1",
+                                "type": {
+                                    "kind": "int4"
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "C1"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@14",
+                                "label": "c1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    }
+                ],
+                "lower": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "upper": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "input_ports": [],
+                "output_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "join_find",
+                            "this": "@15",
+                            "index": 0
+                        }
+                    }
+                ]
+            },
+            {
+                "kind": "join_find",
+                "this": "@15",
+                "operator_kind": "inner",
+                "source": {
+                    "kind": "relation",
+                    "binding": {
+                        "kind": "exchange",
+                        "this": "@7"
+                    }
+                },
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@9",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@16",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@10",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@17",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    }
+                ],
+                "keys": [
+                    {
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "exchange_column",
+                                "this": "@8",
+                                "label": "j0"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "value": {
+                            "kind": "variable_reference",
+                            "this": "@18",
+                            "variable": {
+                                "kind": "variable",
+                                "binding": {
+                                    "kind": "stream_variable",
+                                    "this": "@13",
+                                    "label": "c0"
+                                },
+                                "resolution": {
+                                    "kind": "unresolved"
+                                }
+                            },
+                            "resolution": {}
+                        }
+                    }
+                ],
+                "condition": {
+                    "kind": "compare",
+                    "this": "@19",
+                    "operator_kind": "equal",
+                    "left": {
+                        "kind": "variable_reference",
+                        "this": "@20",
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@14",
+                                "label": "c1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "resolution": {}
+                    },
+                    "right": {
+                        "kind": "variable_reference",
+                        "this": "@21",
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@16",
+                                "label": "j1"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        },
+                        "resolution": {}
+                    },
+                    "resolution": {}
+                },
+                "input_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "scan",
+                            "this": "@12",
+                            "index": 0
+                        }
+                    }
+                ],
+                "output_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "emit",
+                            "this": "@22",
+                            "index": 0
+                        }
+                    }
+                ]
+            },
+            {
+                "kind": "emit",
+                "this": "@22",
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@17",
+                                "label": "j2"
+                            },
+                            "resolution": {
+                                "kind": "unresolved"
+                            }
+                        }
+                    }
+                ],
+                "input_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "join_find",
+                            "this": "@15",
+                            "index": 0
+                        }
+                    }
+                ],
+                "output_ports": []
+            }
+        ],
+        "upstreams": [
+            {
+                "kind": "broadcast",
+                "this": "@7"
+            }
+        ],
+        "downstreams": []
+    }
+]
