@@ -88,7 +88,7 @@ public interface SqlClient extends ServerResource {
      * @return a future response of statement metadata
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<String> explain(@Nonnull String source) throws IOException {
+    default FutureResponse<StatementMetadata> explain(@Nonnull String source) throws IOException {
         throw new UnsupportedOperationException();
     }
 
