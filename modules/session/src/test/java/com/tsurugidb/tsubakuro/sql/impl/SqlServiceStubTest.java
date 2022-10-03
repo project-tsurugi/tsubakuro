@@ -3,13 +3,14 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -22,9 +23,9 @@ import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlStatus;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
@@ -424,50 +425,80 @@ class SqlServiceStubTest {
         assertFalse(wire.hasRemaining());
     }
 
-//    @Test
-//    void sendDescribeStatementSuccess() throws Exception {
-//        var columns = List.of(
-//                Types.column("a", Types.of(BigDecimal.class)),
-//                Types.column("b", Types.of(String.class)),
-//                Types.column("c", Types.of(double.class)));
-//        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-//                RequestHandler.returns(SqlResponse.Explain.newBuilder()
-//                        .setText("OK")
-//                        .build())));
-//
-//        var message = SqlRequest.DescribeStatement.newBuilder()
-//                .setSql("SELECT 1")
-//                .build();
-//        try (
-//            var service = new SqlServiceStub(session);
-//            var future = service.send(message);
-//        ) {
-//            var result = future.get();
-//            assertEquals("OK", result.getPlanText());
-//            assertEquals(columns, result.getColumns());
-//        }
-//        assertFalse(wire.hasRemaining());
-//    }
+    @Test
+    void sendExplainSuccess() throws Exception {
+        var columns = List.of(
+                Types.column("a", Types.of(BigDecimal.class)),
+                Types.column("b", Types.of(String.class)),
+                Types.column("c", Types.of(double.class)));
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setSuccess(SqlResponse.Explain.Success.newBuilder()
+                                .setFormatId("T")
+                                .setFormatVersion(123)
+                                .setContents("TESTING")
+                                .addAllColumns(columns))
+                        .build())));
+        acceptDisconnect();  // FIXME
 
-//    @Test
-//    void sendDescribeStatementEngineError() throws Exception {
-//        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-//                RequestHandler.returns(SqlResponse.DescribeStatement.newBuilder()
-//                        .setEngineError(newEngineError())
-//                        .build())));
-//
-//        var message = SqlRequest.DescribeStatement.newBuilder()
-//                .setSql("SELECT 1")
-//                .build();
-//        try (
-//            var service = new SqlServiceStub(session);
-//            var future = service.send(message);
-//        ) {
-//            var error = assertThrows(SqlServiceException.class, () -> future.await());
-//            assertEquals(SqlServiceCode.UNKNOWN, error.getDiagnosticCode());
-//        }
-//        assertFalse(wire.hasRemaining());
-//    }
+        var message = SqlRequest.Explain.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            assertEquals("T", result.getFormatId());
+            assertEquals(123, result.getFormatVersion());
+            assertEquals("TESTING", result.getContents());
+            assertEquals(columns, result.getColumns());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendExplainOutput() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setOutput("TESTING")
+                        .build())));
+        acceptDisconnect();  // FIXME
+
+        var message = SqlRequest.Explain.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            assertNotNull(result.getFormatId());
+            assertEquals("TESTING", result.getContents());
+            assertEquals(List.of(), result.getColumns());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendExplainError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+        acceptDisconnect();  // FIXME
+
+        var message = SqlRequest.Explain.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            assertThrows(SqlServiceException.class, () -> future.get());
+        }
+        assertFalse(wire.hasRemaining());
+    }
 
     @Test
     void sendDescribeTableSuccess() throws Exception {
