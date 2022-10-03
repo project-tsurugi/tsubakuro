@@ -60,8 +60,31 @@ message ExecuteQuery {
 
 /* For response to Explain. */
 message Explain {
+
+  // request is successfully completed.
+  message Success {
+
+    // the content format ID.
+    string format_id = 1;
+
+    // the content format version.
+    uint64 format_version = 2;
+
+    // the explain result contents.
+    string contents = 3;
+
+    // the result set column information, or empty if it does not provided.
+    repeated common.Column columns = 4;
+  }
+
+  // the response body.
   oneof result {
-    string output = 1;  /* The result output string of the explain. */
+    // request is successfully completed.
+    Success success = 11;
+
+    // deprecated: The result output string of the explain.
+    string output = 1;
+
     Error error = 2;
   }
 }

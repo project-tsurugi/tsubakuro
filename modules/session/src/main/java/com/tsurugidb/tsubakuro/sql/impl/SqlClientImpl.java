@@ -6,14 +6,15 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.SqlService;
+import com.tsurugidb.tsubakuro.sql.StatementMetadata;
+import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -66,7 +67,7 @@ public class SqlClientImpl implements SqlClient {
     }
 
     @Override
-    public FutureResponse<String> explain(
+    public FutureResponse<StatementMetadata> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         var resuest = SqlRequest.Explain.newBuilder()

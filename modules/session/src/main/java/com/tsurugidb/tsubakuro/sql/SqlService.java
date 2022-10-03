@@ -79,7 +79,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<String> send(
+    default FutureResponse<StatementMetadata> send(
             @Nonnull SqlRequest.Explain request) throws IOException {
         throw new UnsupportedOperationException();
     }

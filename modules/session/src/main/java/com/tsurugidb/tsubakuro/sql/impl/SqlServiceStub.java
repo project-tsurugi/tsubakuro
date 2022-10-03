@@ -1,9 +1,10 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -14,26 +15,27 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
-import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
-import com.tsurugidb.tsubakuro.sql.SqlServiceException;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.ResultSet;
-import com.tsurugidb.tsubakuro.sql.SqlService;
-import com.tsurugidb.tsubakuro.sql.TableMetadata;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.RelationCursor;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
-import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
-import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.SecondChannelResponse;
+import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.RelationCursor;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.SqlService;
+import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
+import com.tsurugidb.tsubakuro.sql.SqlServiceException;
+import com.tsurugidb.tsubakuro.sql.StatementMetadata;
+import com.tsurugidb.tsubakuro.sql.TableMetadata;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
-import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 
 /**
  * An interface to communicate with SQL service.
@@ -46,6 +48,10 @@ public class SqlServiceStub implements SqlService {
      * The SQL service ID.
      */
     public static final int SERVICE_ID = Constants.SERVICE_ID_SQL;
+
+    static final String FORMAT_ID_LEGACY_EXPLAIN = "jogasaki-statement.json"; //$NON-NLS-1$
+
+    static final long FORMAT_VERSION_LEGACY_EXPLAIN = 1;
 
     private final Session session;
 
@@ -81,6 +87,17 @@ public class SqlServiceStub implements SqlService {
                 "{0}.{1} is not set",
                 aClass.getSimpleName(),
                 name));
+    }
+
+    static BrokenResponseException newResultNotRecognized(
+            @Nonnull Class<? extends Message> aClass, @Nonnull String name, @Nonnull Enum<?> kind) {
+        assert aClass != null;
+        assert name != null;
+        return new BrokenResponseException(MessageFormat.format(
+                "{0}.{1} is not recognized ({2})",
+                aClass.getSimpleName(),
+                name,
+                kind));
     }
 
     class TransactionBeginProcessor implements MainResponseProcessor<Transaction> {
@@ -240,9 +257,9 @@ public class SqlServiceStub implements SqlService {
                 new StatementDisposeProcessor().asResponseProcessor());
     }
 
-    static class DescribeStatementProcessor implements MainResponseProcessor<String> {
+    static class DescribeStatementProcessor implements MainResponseProcessor<StatementMetadata> {
         @Override
-        public String process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
             if (!SqlResponse.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
                 // FIXME log error message
@@ -250,16 +267,31 @@ public class SqlServiceStub implements SqlService {
             }
             var detailResponse = response.getExplain();
             LOG.trace("receive (explain): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.Explain.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+            switch (detailResponse.getResultCase()) {
+            case OUTPUT:
+                LOG.warn("deprecated response: {}", detailResponse);
+                return new BasicStatementMetadata(
+                        FORMAT_ID_LEGACY_EXPLAIN,
+                        FORMAT_VERSION_LEGACY_EXPLAIN,
+                        detailResponse.getOutput(),
+                        List.of());
+
+            case SUCCESS:
+                return new StatementMetadataAdapter(detailResponse.getSuccess());
+
+            case ERROR:
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+
+            case RESULT_NOT_SET:
+                break; // not recognized
             }
-            return detailResponse.getOutput();
+            throw newResultNotRecognized(SqlResponse.Explain.class, "result", detailResponse.getResultCase());
         }
     }
 
     @Override
-    public FutureResponse<String> send(
+    public FutureResponse<StatementMetadata> send(
             @Nonnull SqlRequest.Explain request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (explain): {}", request); //$NON-NLS-1$

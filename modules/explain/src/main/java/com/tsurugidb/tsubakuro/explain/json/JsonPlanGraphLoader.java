@@ -33,6 +33,23 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
 
     static final Logger LOG = LoggerFactory.getLogger(JsonPlanGraphLoader.class);
 
+    /**
+     * The explain content format ID which this implementation supports.
+     */
+    public static final String SUPPORTED_FORMAT_ID = "jogasaki-statement.json"; //$NON-NLS-1$
+
+    /**
+     * The minimum format version number which this this implementation supports.
+     * @see #SUPPORTED_FORMAT_VERSION_MIN
+     */
+    public static final long SUPPORTED_FORMAT_VERSION_MIN = 0;
+
+    /**
+     * The maximum format version number which this this implementation supports.
+     * @see #SUPPORTED_FORMAT_VERSION_MIN
+     */
+    public static final long SUPPORTED_FORMAT_VERSION_MAX = 1;
+
     private static final String KIND_SUFFIX_STATEMENT = "_statement"; //$NON-NLS-1$
 
     private static final Map<String, Function<Config, StatementAnalyzer>> DEFAULT_STATEMENT_ANALYZERS = Map.ofEntries(
@@ -322,6 +339,14 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
     }
 
     @Override
+    public boolean isSupported(String formatId, long formatVersion) {
+        Objects.requireNonNull(formatId);
+        return formatId.equals(SUPPORTED_FORMAT_ID)
+                && SUPPORTED_FORMAT_VERSION_MIN <= formatVersion
+                && formatVersion <= SUPPORTED_FORMAT_VERSION_MAX;
+    }
+
+    @Override
     public PlanGraph load(@Nonnull String text) throws PlanGraphException {
         Objects.requireNonNull(text);
         LOG.trace("loading JSON text: {}", text); //$NON-NLS-1$
@@ -333,7 +358,6 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
         }
         return analyzeStatement(node);
     }
-
 
     private PlanGraph analyzeStatement(JsonNode node) throws PlanGraphException {
         var kind = JsonUtil.getKind(node) + KIND_SUFFIX_STATEMENT;

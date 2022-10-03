@@ -7,10 +7,10 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.SqlClientImpl;
-import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
@@ -101,7 +101,7 @@ public interface SqlClient extends ServerResource {
      * @see #explain(PreparedStatement, Collection)
      * @see Parameters
      */
-    default FutureResponse<String> explain(
+    default FutureResponse<StatementMetadata> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull SqlRequest.Parameter... parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -117,7 +117,7 @@ public interface SqlClient extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      * @see Parameters
      */
-    default FutureResponse<String> explain(
+    default FutureResponse<StatementMetadata> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         throw new UnsupportedOperationException();
