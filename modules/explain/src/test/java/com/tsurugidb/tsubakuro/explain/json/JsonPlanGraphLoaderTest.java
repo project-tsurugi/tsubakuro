@@ -333,6 +333,51 @@ class JsonPlanGraphLoaderTest {
     }
 
     @Test
+    void load_format() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        var graph = loader.load(
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_ID,
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MAX,
+                contents);
+        get(graph, "emit");
+    }
+
+    @Test
+    void load_format_id_mismatch() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        assertThrows(PlanGraphException.class, () -> loader.load(
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_ID + "=INVALID",
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MIN,
+                contents));
+    }
+
+    @Test
+    void load_format_version_less() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        assertThrows(PlanGraphException.class, () -> loader.load(
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_ID,
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MIN - 1,
+                contents));
+    }
+
+    @Test
+    void load_format_version_greater() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        assertThrows(PlanGraphException.class, () -> loader.load(
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_ID,
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MAX + 11,
+                contents));
+    }
+
+    @Test
     void broken_json() throws Exception {
         var generator = JsonPlanGraphLoader.newBuilder()
                 .build();
