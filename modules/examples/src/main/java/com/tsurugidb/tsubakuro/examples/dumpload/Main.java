@@ -11,6 +11,8 @@ import com.tsurugidb.tsubakuro.sql.util.LoadBuilder;
 import com.tsurugidb.sql.proto.SqlRequest;
 import org.apache.commons.cli.*;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.*;
@@ -118,6 +120,8 @@ public final class Main {
                             .mapping(cols.get(8), 8)
                             .mapping(cols.get(9), 9)
                             .mapping(cols.get(10), 10)
+                            .mapping(cols.get(11), 11)
+                            .mapping(cols.get(12), 12)
                             .errorOnCoflict().style(LoadBuilder.Style.ERROR).build(client);
                     var load = l.await();
                     load.submit(tx, files).get();
@@ -126,7 +130,7 @@ public final class Main {
             } else {
                 try (
                         var prep = client.prepare(
-                                "INSERT INTO load_target(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10)",
+                                "INSERT INTO load_target(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10, :p11, :p12)",
                                 Placeholders.of("p0", int.class),
                                 Placeholders.of("p1", int.class),
                                 Placeholders.of("p2", long.class),
@@ -137,7 +141,9 @@ public final class Main {
                                 Placeholders.of("p7", LocalTime.class),
                                 Placeholders.of("p8", OffsetTime.class),
                                 Placeholders.of("p9", LocalDateTime.class),
-                                Placeholders.of("p10", OffsetDateTime.class)
+                                Placeholders.of("p10", OffsetDateTime.class),
+                                Placeholders.of("p11", BigDecimal.class),
+                                Placeholders.of("p12", BigDecimal.class)
                         ).await();
                         Transaction tx = client.createTransaction().await()
                 ) {
@@ -154,7 +160,9 @@ public final class Main {
                                             Parameters.referenceColumn("p7", "c7"),
                                             Parameters.referenceColumn("p8", "c8"),
                                             Parameters.referenceColumn("p9", "c9"),
-                                            Parameters.referenceColumn("p10", "c10")
+                                            Parameters.referenceColumn("p10", "c10"),
+                                            Parameters.referenceColumn("p11", "c11"),
+                                            Parameters.referenceColumn("p12", "c12")
                                     ),
                                     files)
                             .await();
@@ -181,7 +189,9 @@ public final class Main {
                     "c7 TIME," +
                     "c8 TIME WITH TIME ZONE," +
                     "c9 TIMESTAMP," +
-                    "c10 TIMESTAMP WITH TIME ZONE" +
+                    "c10 TIMESTAMP WITH TIME ZONE," +
+                    "c11 DECIMAL(5,3)," +
+                    "c12 DECIMAL(10)" +
                     ")").await();
             transaction.commit().get();
         }
@@ -199,7 +209,9 @@ public final class Main {
                     "c7 TIME," +
                     "c8 TIME WITH TIME ZONE," +
                     "c9 TIMESTAMP," +
-                    "c10 TIMESTAMP WITH TIME ZONE" +
+                    "c10 TIMESTAMP WITH TIME ZONE," +
+                    "c11 DECIMAL(5,3)," +
+                    "c12 DECIMAL(10)" +
                     ")").await();
             transaction.commit().get();
         }
@@ -207,7 +219,7 @@ public final class Main {
         // insert initial data
         try (
                 var prep = client.prepare(
-                        "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10)",
+                        "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10, :p11, :p12)",
                         Placeholders.of("p0", int.class),
                         Placeholders.of("p1", int.class),
                         Placeholders.of("p2", long.class),
@@ -218,7 +230,9 @@ public final class Main {
                         Placeholders.of("p7", LocalTime.class),
                         Placeholders.of("p8", OffsetTime.class),
                         Placeholders.of("p9", LocalDateTime.class),
-                        Placeholders.of("p10", OffsetDateTime.class)
+                        Placeholders.of("p10", OffsetDateTime.class),
+                        Placeholders.of("p11", BigDecimal.class),
+                        Placeholders.of("p12", BigDecimal.class)
                 ).await();
                 Transaction tx = client.createTransaction().await()
         ) {
@@ -236,7 +250,9 @@ public final class Main {
                                 Parameters.of("p7", LocalTime.of(12, 0, i)),
                                 Parameters.of("p8", OffsetTime.of(12, 0, i, 0, ZoneOffset.UTC)),
                                 Parameters.of("p9", LocalDateTime.of(2000, 1, 1+i, 12, 0, i, 0)),
-                                Parameters.of("p10", OffsetDateTime.of(2000, 1, 1+i, 12, 0, i, 0, ZoneOffset.UTC))
+                                Parameters.of("p10", OffsetDateTime.of(2000, 1, 1+i, 12, 0, i, 0, ZoneOffset.UTC)),
+                                Parameters.of("p11", BigDecimal.valueOf(1000+i, 3)),
+                                Parameters.of("p12", BigDecimal.valueOf(1000+i))
                         )
                 ).await();
             }
