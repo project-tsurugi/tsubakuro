@@ -13,6 +13,7 @@ import org.apache.commons.cli.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -112,6 +113,11 @@ public final class Main {
                             .mapping(cols.get(3), 3)
                             .mapping(cols.get(4), 4)
                             .mapping(cols.get(5), 5)
+                            .mapping(cols.get(6), 6)
+                            .mapping(cols.get(7), 7)
+                            .mapping(cols.get(8), 8)
+                            .mapping(cols.get(9), 9)
+                            .mapping(cols.get(10), 10)
                             .errorOnCoflict().style(LoadBuilder.Style.ERROR).build(client);
                     var load = l.await();
                     load.submit(tx, files).get();
@@ -120,13 +126,18 @@ public final class Main {
             } else {
                 try (
                         var prep = client.prepare(
-                                "INSERT INTO load_target(pk, c1, c2, c3, c4, c5) VALUES(:p0, :p1, :p2, :p3, :p4, :p5)",
+                                "INSERT INTO load_target(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10)",
                                 Placeholders.of("p0", int.class),
                                 Placeholders.of("p1", int.class),
                                 Placeholders.of("p2", long.class),
                                 Placeholders.of("p3", float.class),
                                 Placeholders.of("p4", double.class),
-                                Placeholders.of("p5", String.class)
+                                Placeholders.of("p5", String.class),
+                                Placeholders.of("p6", LocalDate.class),
+                                Placeholders.of("p7", LocalTime.class),
+                                Placeholders.of("p8", OffsetTime.class),
+                                Placeholders.of("p9", LocalDateTime.class),
+                                Placeholders.of("p10", OffsetDateTime.class)
                         ).await();
                         Transaction tx = client.createTransaction().await()
                 ) {
@@ -138,7 +149,12 @@ public final class Main {
                                             Parameters.referenceColumn("p2", "c2"),
                                             Parameters.referenceColumn("p3", "c3"),
                                             Parameters.referenceColumn("p4", "c4"),
-                                            Parameters.referenceColumn("p5", "c5")
+                                            Parameters.referenceColumn("p5", "c5"),
+                                            Parameters.referenceColumn("p6", "c6"),
+                                            Parameters.referenceColumn("p7", "c7"),
+                                            Parameters.referenceColumn("p8", "c8"),
+                                            Parameters.referenceColumn("p9", "c9"),
+                                            Parameters.referenceColumn("p10", "c10")
                                     ),
                                     files)
                             .await();
@@ -154,26 +170,55 @@ public final class Main {
     public static void prepareData(SqlClient client) throws Exception {
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            transaction.executeStatement("CREATE TABLE dump_source (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            transaction.executeStatement("CREATE TABLE dump_source (" +
+                    "pk INT PRIMARY KEY, " +
+                    "c1 INT, " +
+                    "c2 BIGINT, " +
+                    "c3 FLOAT, " +
+                    "c4 DOUBLE, " +
+                    "c5 VARCHAR(10), " +
+                    "c6 DATE, " +
+                    "c7 TIME," +
+                    "c8 TIME WITH TIME ZONE," +
+                    "c9 TIMESTAMP," +
+                    "c10 TIMESTAMP WITH TIME ZONE" +
+                    ")").await();
             transaction.commit().get();
         }
 
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            transaction.executeStatement("CREATE TABLE load_target (pk INT PRIMARY KEY, c1 INT, c2 BIGINT, c3 FLOAT, c4 DOUBLE, c5 VARCHAR(10))").await();
+            transaction.executeStatement("CREATE TABLE load_target (" +
+                    "pk INT PRIMARY KEY, " +
+                    "c1 INT, " +
+                    "c2 BIGINT, " +
+                    "c3 FLOAT, " +
+                    "c4 DOUBLE, " +
+                    "c5 VARCHAR(10), " +
+                    "c6 DATE, " +
+                    "c7 TIME," +
+                    "c8 TIME WITH TIME ZONE," +
+                    "c9 TIMESTAMP," +
+                    "c10 TIMESTAMP WITH TIME ZONE" +
+                    ")").await();
             transaction.commit().get();
         }
 
         // insert initial data
         try (
                 var prep = client.prepare(
-                        "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5) VALUES(:p0, :p1, :p2, :p3, :p4, :p5)",
+                        "INSERT INTO dump_source(pk, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10) VALUES(:p0, :p1, :p2, :p3, :p4, :p5, :p6, :p7, :p8, :p9, :p10)",
                         Placeholders.of("p0", int.class),
                         Placeholders.of("p1", int.class),
                         Placeholders.of("p2", long.class),
                         Placeholders.of("p3", float.class),
                         Placeholders.of("p4", double.class),
-                        Placeholders.of("p5", String.class)
+                        Placeholders.of("p5", String.class),
+                        Placeholders.of("p6", LocalDate.class),
+                        Placeholders.of("p7", LocalTime.class),
+                        Placeholders.of("p8", OffsetTime.class),
+                        Placeholders.of("p9", LocalDateTime.class),
+                        Placeholders.of("p10", OffsetDateTime.class)
                 ).await();
                 Transaction tx = client.createTransaction().await()
         ) {
@@ -186,7 +231,12 @@ public final class Main {
                                 Parameters.of("p2", 100L * i),
                                 Parameters.of("p3", 1000.0f * i),
                                 Parameters.of("p4", 10000.0 * i),
-                                Parameters.of("p5", String.valueOf(100000 * i))
+                                Parameters.of("p5", String.valueOf(100000 * i)),
+                                Parameters.of("p6", LocalDate.of(2000, 1, 1+i)),
+                                Parameters.of("p7", LocalTime.of(12, 0, i)),
+                                Parameters.of("p8", OffsetTime.of(12, 0, i, 0, ZoneOffset.UTC)),
+                                Parameters.of("p9", LocalDateTime.of(2000, 1, 1+i, 12, 0, i, 0)),
+                                Parameters.of("p10", OffsetDateTime.of(2000, 1, 1+i, 12, 0, i, 0, ZoneOffset.UTC))
                         )
                 ).await();
             }

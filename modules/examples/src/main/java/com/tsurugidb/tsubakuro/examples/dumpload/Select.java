@@ -39,6 +39,24 @@ public class Select {
                         case CHARACTER:
                             System.out.println(resultSet.fetchCharacterValue());
                             break;
+                        case DECIMAL:
+                            System.out.println(resultSet.fetchDecimalValue());
+                            break;
+                        case DATE:
+                            System.out.println(resultSet.fetchDateValue());
+                            break;
+                        case TIME_OF_DAY:
+                            System.out.println(resultSet.fetchTimeOfDayValue());
+                            break;
+                        case TIME_OF_DAY_WITH_TIME_ZONE:
+                            System.out.println(resultSet.fetchTimeOfDayWithTimeZoneValue());
+                            break;
+                        case TIME_POINT:
+                            System.out.println(resultSet.fetchTimePointValue());
+                            break;
+                        case TIME_POINT_WITH_TIME_ZONE:
+                            System.out.println(resultSet.fetchTimePointWithTimeZoneValue());
+                            break;
                         default:
                             throw new IOException("the column type is invalid");
                     }
