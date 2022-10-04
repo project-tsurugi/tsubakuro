@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.examples.dumpload;
 
+import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
@@ -8,11 +9,9 @@ import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.util.LoadBuilder;
-import com.tsurugidb.sql.proto.SqlRequest;
 import org.apache.commons.cli.*;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.*;
@@ -178,41 +177,41 @@ public final class Main {
     public static void prepareData(SqlClient client) throws Exception {
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            transaction.executeStatement("CREATE TABLE dump_source (" +
-                    "pk INT PRIMARY KEY, " +
-                    "c1 INT, " +
-                    "c2 BIGINT, " +
-                    "c3 FLOAT, " +
-                    "c4 DOUBLE, " +
-                    "c5 VARCHAR(10), " +
-                    "c6 DATE, " +
-                    "c7 TIME," +
-                    "c8 TIME WITH TIME ZONE," +
-                    "c9 TIMESTAMP," +
-                    "c10 TIMESTAMP WITH TIME ZONE," +
-                    "c11 DECIMAL(5,3)," +
-                    "c12 DECIMAL(10)" +
-                    ")").await();
+            transaction.executeStatement("CREATE TABLE dump_source ("
+                    + "pk INT PRIMARY KEY, "
+                    + "c1 INT, "
+                    + "c2 BIGINT, "
+                    + "c3 FLOAT, "
+                    + "c4 DOUBLE, "
+                    + "c5 VARCHAR(10), "
+                    + "c6 DATE, "
+                    + "c7 TIME,"
+                    + "c8 TIME WITH TIME ZONE,"
+                    + "c9 TIMESTAMP,"
+                    + "c10 TIMESTAMP WITH TIME ZONE,"
+                    + "c11 DECIMAL(5,3),"
+                    + "c12 DECIMAL(10)"
+                    + ")").await();
             transaction.commit().get();
         }
 
         try (Transaction transaction = client.createTransaction().await()) {
             // create table
-            transaction.executeStatement("CREATE TABLE load_target (" +
-                    "pk INT PRIMARY KEY, " +
-                    "c1 INT, " +
-                    "c2 BIGINT, " +
-                    "c3 FLOAT, " +
-                    "c4 DOUBLE, " +
-                    "c5 VARCHAR(10), " +
-                    "c6 DATE, " +
-                    "c7 TIME," +
-                    "c8 TIME WITH TIME ZONE," +
-                    "c9 TIMESTAMP," +
-                    "c10 TIMESTAMP WITH TIME ZONE," +
-                    "c11 DECIMAL(5,3)," +
-                    "c12 DECIMAL(10)" +
-                    ")").await();
+            transaction.executeStatement("CREATE TABLE load_target ("
+                    + "pk INT PRIMARY KEY, "
+                    + "c1 INT, "
+                    + "c2 BIGINT, "
+                    + "c3 FLOAT, "
+                    + "c4 DOUBLE, "
+                    + "c5 VARCHAR(10), "
+                    + "c6 DATE, "
+                    + "c7 TIME,"
+                    + "c8 TIME WITH TIME ZONE,"
+                    + "c9 TIMESTAMP,"
+                    + "c10 TIMESTAMP WITH TIME ZONE,"
+                    + "c11 DECIMAL(5,3),"
+                    + "c12 DECIMAL(10)"
+                    + ")").await();
             transaction.commit().get();
         }
 
@@ -246,13 +245,13 @@ public final class Main {
                                 Parameters.of("p3", 1000.0f * i),
                                 Parameters.of("p4", 10000.0 * i),
                                 Parameters.of("p5", String.valueOf(100000 * i)),
-                                Parameters.of("p6", LocalDate.of(2000, 1, 1+i)),
+                                Parameters.of("p6", LocalDate.of(2000, 1, 1 + i)),
                                 Parameters.of("p7", LocalTime.of(12, 0, i)),
                                 Parameters.of("p8", OffsetTime.of(12, 0, i, 0, ZoneOffset.UTC)),
-                                Parameters.of("p9", LocalDateTime.of(2000, 1, 1+i, 12, 0, i, 0)),
-                                Parameters.of("p10", OffsetDateTime.of(2000, 1, 1+i, 12, 0, i, 0, ZoneOffset.UTC)),
-                                Parameters.of("p11", BigDecimal.valueOf(1000+i, 3)),
-                                Parameters.of("p12", BigDecimal.valueOf(1000+i))
+                                Parameters.of("p9", LocalDateTime.of(2000, 1, 1 + i, 12, 0, i, 0)),
+                                Parameters.of("p10", OffsetDateTime.of(2000, 1, 1 + i, 12, 0, i, 0, ZoneOffset.UTC)),
+                                Parameters.of("p11", BigDecimal.valueOf(1000 + i, 3)),
+                                Parameters.of("p12", BigDecimal.valueOf(1000 + i))
                         )
                 ).await();
             }
