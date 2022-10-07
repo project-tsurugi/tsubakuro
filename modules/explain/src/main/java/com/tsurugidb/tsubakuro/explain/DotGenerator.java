@@ -2,10 +2,7 @@ package com.tsurugidb.tsubakuro.explain;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,7 +241,7 @@ public class DotGenerator {
     public void write(@Nonnull PlanGraph graph, @Nonnull Appendable output) throws IOException {
         Objects.requireNonNull(output);
         Objects.requireNonNull(graph);
-        var nodes = sort(graph);
+        var nodes = PlanGraphUtil.sort(graph.getNodes());
         var identifiers = computeIdentifiers(nodes);
 
         for (var line : header) {
@@ -254,22 +251,6 @@ public class DotGenerator {
         for (var line : footer) {
             append(output, line);
         }
-    }
-
-    private static List<PlanNode> sort(PlanGraph graph) {
-        var work = new ArrayDeque<PlanNode>(graph.getSources());
-        var saw = new HashSet<PlanNode>();
-        var results = new ArrayList<PlanNode>();
-        while (!work.isEmpty()) {
-            var next = work.removeFirst();
-            if (next.getUpstreams().stream().allMatch(saw::contains)) {
-                results.add(next);
-                saw.add(next);
-                work.addAll(next.getDownstreams());
-            }
-        }
-        assert saw.size() == results.size();
-        return results;
     }
 
     private static Map<PlanNode, String> computeIdentifiers(List<PlanNode> nodes) {
