@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * Each field value will be encrypted using public key file.
  * </p>
  */
-public class FileCredential {
+public class FileCredential implements Credential {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileCredential.class);
 
