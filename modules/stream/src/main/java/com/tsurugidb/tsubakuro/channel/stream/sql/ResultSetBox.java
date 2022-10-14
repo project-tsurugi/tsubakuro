@@ -74,6 +74,7 @@ public class ResultSetBox {
                 }
                 boxes[slot].availableCondition.await();
             } catch (InterruptedException e) {
+                System.err.println(e);
                 e.printStackTrace();
             } finally {
                 l.unlock();
@@ -92,6 +93,7 @@ public class ResultSetBox {
                 }
                 availableCondition.await();
             } catch (InterruptedException e) {
+                System.err.println(e);
                 e.printStackTrace();
             } finally {
                 lock.unlock();
@@ -125,7 +127,7 @@ public class ResultSetBox {
             l.unlock();
         }
     }
-    
+
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
         Lock l =  boxes[slot].lock;
         l.lock();

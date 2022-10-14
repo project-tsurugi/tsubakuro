@@ -44,6 +44,7 @@ public class Select {
                 transaction.commit().await();
 
             } catch (ServerException | InterruptedException | IOException | TimeoutException e) {
+                System.err.println(e);
                 e.printStackTrace();
             }
         }

@@ -60,6 +60,7 @@ public final class StreamLink extends Link {
                     }
                 }
             } catch (IOException e) {
+                System.err.println(e);
                 e.printStackTrace();
             }
         }
@@ -263,6 +264,7 @@ public final class StreamLink extends Link {
         try {
             receiver.join();
         } catch (InterruptedException e) {
+            System.err.println(e);
             e.printStackTrace();
         }
     }

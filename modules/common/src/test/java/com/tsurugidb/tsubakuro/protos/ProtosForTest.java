@@ -444,25 +444,6 @@ public final class ProtosForTest {
         }
     }
     
-    static class DisconnectChecker {
-        static SqlRequest.Disconnect.Builder builder() {
-            return
-                SqlRequest.Disconnect.newBuilder();
-        }
-        static boolean check(SqlRequest.Disconnect dst) {
-            return
-                true;
-        }
-        @Test
-        void test() {
-            try {
-                assertTrue(check(SqlRequest.Disconnect.parseFrom(builder().build().toByteArray())));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
     public static class ExplainChecker {
         public static SqlRequest.Explain.Builder builder() {
             return
@@ -737,34 +718,6 @@ public final class ProtosForTest {
                 (dst.getSessionHandle().getHandle() == id)
                 && SqlRequest.Request.RequestCase.DISPOSE_PREPARED_STATEMENT.equals(dst.getRequestCase())
                 && DisposePreparedStatementChecker.check(dst.getDisposePreparedStatement());
-        }
-        @Test
-        void test() {
-            try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
-    public static class DisconnectRequestChecker {
-        static SqlRequest.Request.Builder builder(long id) {
-            return
-                SqlRequest.Request.newBuilder()
-                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
-                .setDisconnect(DisconnectChecker.builder());
-        }
-        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
-            return
-                SqlRequest.Request.newBuilder()
-                .setDisconnect(DisconnectChecker.builder());
-        }
-        public static boolean check(SqlRequest.Request dst, long id) {
-            return
-                (dst.getSessionHandle().getHandle() == id)
-                && SqlRequest.Request.RequestCase.DISCONNECT.equals(dst.getRequestCase())
-                && DisconnectChecker.check(dst.getDisconnect());
         }
         @Test
         void test() {

@@ -85,13 +85,6 @@ class SqlServiceStubTest {
 //        return builder.build();
 //    }
 
-    void acceptDisconnect() {
-        wire.next(accepts(SqlRequest.Request.RequestCase.DISCONNECT,
-        RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
-                .setSuccess(newVoid())
-                .build())));
-    }
-
     @Test
     void sendBeginSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
@@ -120,7 +113,6 @@ class SqlServiceStubTest {
                     .setSuccess(newVoid())
                     .build())));
             });
-            acceptDisconnect();  // FIXME
         }
         assertFalse(wire.hasRemaining());
     }
@@ -155,7 +147,6 @@ class SqlServiceStubTest {
                 .setSuccess(newVoid())
                 .build())));
             });
-            acceptDisconnect();  // FIXME
         }
         assertFalse(wire.hasRemaining());
     }
@@ -166,7 +157,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.Begin.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Begin.newBuilder()
                 .setOption(SqlRequest.TransactionOption.getDefaultInstance())
@@ -186,7 +176,6 @@ class SqlServiceStubTest {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
                 RequestHandler.returns(SqlResponse.Begin.newBuilder()
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Begin.newBuilder()
                 .setOption(SqlRequest.TransactionOption.getDefaultInstance())
@@ -206,7 +195,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
@@ -226,7 +214,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
@@ -247,7 +234,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
@@ -267,7 +253,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
@@ -310,7 +295,6 @@ class SqlServiceStubTest {
                     .setSuccess(newVoid())
                     .build())));
             });
-            acceptDisconnect();  // FIXME
         }
         assertFalse(wire.hasRemaining());
     }
@@ -322,6 +306,7 @@ class SqlServiceStubTest {
             sqlResponse.writeDelimitedTo(buffer);
             return buffer.toByteArray();
         } catch (IOException e) {
+            System.err.println(e);
             e.printStackTrace();
         }
         return null;
@@ -357,7 +342,6 @@ class SqlServiceStubTest {
                 .setSuccess(newVoid())
                 .build())));
             });
-            acceptDisconnect();  // FIXME
         }
         assertFalse(wire.hasRemaining());
     }
@@ -368,7 +352,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.Prepare.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Prepare.newBuilder()
                 .setSql("SELECT 1")
@@ -389,7 +372,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.DisposePreparedStatement.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
@@ -409,7 +391,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.DisposePreparedStatement.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
@@ -438,7 +419,6 @@ class SqlServiceStubTest {
                                 .setContents("TESTING")
                                 .addAllColumns(columns))
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
@@ -462,7 +442,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.Explain.newBuilder()
                         .setOutput("TESTING")
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
@@ -486,7 +465,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.Explain.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
@@ -514,7 +492,6 @@ class SqlServiceStubTest {
                                 .setTableName("C")
                                 .addAllColumns(columns))
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.DescribeTable.newBuilder()
                 .setName("T")
@@ -538,7 +515,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.DescribeTable.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.DescribeTable.newBuilder()
                 .setName("T")
@@ -559,7 +535,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteStatement.newBuilder()
                 .setSql("SELECT 1")
@@ -579,7 +554,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteStatement.newBuilder()
                 .setSql("SELECT 1")
@@ -615,7 +589,6 @@ class SqlServiceStubTest {
                             },
                         }),
                         SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
                 .setSql("SELECT 1")
@@ -714,7 +687,6 @@ class SqlServiceStubTest {
                                 1.25,
                             },
                         }))));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
             .setSql("SELECT 1")
@@ -938,7 +910,6 @@ class SqlServiceStubTest {
                             { "c" },
                         }),
                         SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder())
@@ -981,7 +952,6 @@ class SqlServiceStubTest {
                         { "b" },
                         { "c" },
                     }))));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteDump.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder())
@@ -1003,7 +973,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteLoad.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
@@ -1026,7 +995,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-        acceptDisconnect();  // FIXME
 
         var message = SqlRequest.ExecuteLoad.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
