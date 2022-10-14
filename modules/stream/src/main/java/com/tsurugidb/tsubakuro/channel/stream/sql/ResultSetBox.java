@@ -74,6 +74,7 @@ public class ResultSetBox {
                 }
                 boxes[slot].availableCondition.await();
             } catch (InterruptedException e) {
+                System.err.println(e);
                 e.printStackTrace();
             } finally {
                 l.unlock();
@@ -92,6 +93,7 @@ public class ResultSetBox {
                 }
                 availableCondition.await();
             } catch (InterruptedException e) {
+                System.err.println(e);
                 e.printStackTrace();
             } finally {
                 lock.unlock();

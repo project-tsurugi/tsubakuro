@@ -50,7 +50,8 @@ public final class Main {
             .create(10, TimeUnit.SECONDS);) {
                 session.updateExpirationTime(timeout, TimeUnit.SECONDS).get();
         } catch (Exception e) {
-           e.printStackTrace();
+            System.err.println(e);
+            e.printStackTrace();
         }
     }
 }

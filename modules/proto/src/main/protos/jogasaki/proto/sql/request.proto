@@ -289,10 +289,6 @@ message DisposePreparedStatement {
   common.PreparedStatement prepared_statement_handle = 1;
 }
 
-/* For disconnect current session. */
-message Disconnect {
-}
-
 /* For explain prepared sql. */
 message Explain {
   common.PreparedStatement prepared_statement_handle = 1;
@@ -320,7 +316,7 @@ message Request {
     Commit commit = 8;
     Rollback rollback = 9;
     DisposePreparedStatement dispose_prepared_statement = 10;
-    Disconnect disconnect = 11;
+    // Disconnect disconnect = 11;
     Explain explain = 12;
     ExecuteDump execute_dump = 13;
     ExecuteLoad execute_load = 14;

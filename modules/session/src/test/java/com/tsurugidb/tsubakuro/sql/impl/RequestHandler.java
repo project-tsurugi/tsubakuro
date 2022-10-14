@@ -133,6 +133,7 @@ public interface RequestHandler {
             response.writeDelimitedTo(buffer);
             return buffer.toByteArray();
         } catch (IOException e) {
+            System.err.println(e);
             e.printStackTrace();
         }
         return null;

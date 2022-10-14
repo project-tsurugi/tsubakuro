@@ -116,7 +116,7 @@ public final class Main {
                 }
             }
         } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
-            System.out.println(e);
+            System.err.println(e);
             e.printStackTrace();
         } catch (ParseException e) {
             System.err.printf("cmd parser failed." + e);

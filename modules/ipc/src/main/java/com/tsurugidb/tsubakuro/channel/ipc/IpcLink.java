@@ -109,6 +109,7 @@ public final class IpcLink extends Link {
             try {
                 receiver.join();
             } catch (InterruptedException e) {
+                System.err.println(e);
                 e.printStackTrace();
             }
             destroyNative(wireHandle);

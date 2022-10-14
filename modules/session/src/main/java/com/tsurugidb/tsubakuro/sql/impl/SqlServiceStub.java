@@ -591,31 +591,10 @@ public class SqlServiceStub implements SqlService {
         }
     }
 
-    // for compatibility
-    @Override
-    public FutureResponse<Void> send(
-            @Nonnull SqlRequest.Disconnect request) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (disconnect): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                toDelimitedByteArray(SqlRequest.Request.newBuilder()
-                    .setDisconnect(request)
-                    .build()),
-                new DisconnectProcessor().asResponseProcessor());
-    }
-
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        try {
-            LOG.trace("closing underlying resources"); //$NON-NLS-1$
-            resources.close();
-        } finally {
-            var futureResponse = send(SqlRequest.Disconnect.newBuilder().build());
-            if (Objects.nonNull(futureResponse)) {
-                futureResponse.get();
-            }
-        }
+        LOG.trace("closing underlying resources"); //$NON-NLS-1$
+        resources.close();
     }
 
     private byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {

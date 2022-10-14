@@ -71,9 +71,6 @@ class SessionImplTest {
                 case ROLLBACK:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
-                case DISCONNECT:
-                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                    break;
                 case EXPLAIN:
                     nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
                     break;

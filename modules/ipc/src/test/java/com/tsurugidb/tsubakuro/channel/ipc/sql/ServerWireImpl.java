@@ -74,6 +74,7 @@ public class ServerWireImpl implements Closeable {
             sessionID = header.getSessionId();
             return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            System.err.println(e);
             e.printStackTrace();
             throw new IOException("error: ServerWireImpl.get()");
         }
