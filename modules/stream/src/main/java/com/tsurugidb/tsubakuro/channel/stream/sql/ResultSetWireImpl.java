@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
@@ -35,9 +36,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 source = ByteBuffer.wrap(buffer);
                 return true;
             } catch (IOException e) {
-                System.err.println(e);
-                e.printStackTrace();
-                return false;
+                throw new UncheckedIOException(e);
             }
         }
 
@@ -63,6 +62,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
      */
+    @Override
     public ResultSetWire connect(String name) throws IOException {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
@@ -74,6 +74,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Provides the Input to retrieve the received data.
      */
+    @Override
     public InputStream getByteBufferBackedInput() {
         if (Objects.isNull(byteBufferBackedInput)) {
             try {
@@ -85,9 +86,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 }
                 byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
             } catch (IOException e) {
-                System.err.println(e);
-                e.printStackTrace();
-                return null;
+                throw new UncheckedIOException(e);
             }
         }
         return byteBufferBackedInput;
@@ -96,6 +95,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Close the wire
      */
+    @Override
     public void close() throws IOException {
         if (Objects.nonNull(streamWire)) {
             while (true) {
