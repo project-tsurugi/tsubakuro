@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 
@@ -74,7 +74,7 @@ public class ResultSetBox {
                 }
                 boxes[slot].availableCondition.await();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new IOException(e);
             } finally {
                 l.unlock();
             }
@@ -92,7 +92,7 @@ public class ResultSetBox {
                 }
                 availableCondition.await();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new IOException(e);
             } finally {
                 lock.unlock();
             }
@@ -125,7 +125,7 @@ public class ResultSetBox {
             l.unlock();
         }
     }
-    
+
     public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
         Lock l =  boxes[slot].lock;
         l.lock();
