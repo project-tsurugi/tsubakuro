@@ -44,6 +44,7 @@ public class SecondChannelResponse implements Response {
         try {
             return response.waitForSecondResponse(timeout, unit);
         } catch (Exception e) {
+            System.err.println(e);
             e.printStackTrace();
             throw e;
         }

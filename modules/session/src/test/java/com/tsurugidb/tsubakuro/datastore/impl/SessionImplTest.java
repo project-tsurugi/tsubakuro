@@ -101,10 +101,12 @@ class SessionImplTest {
                     assertEquals(Path.of("/tmp/backup-1"), source);
                 }
             } catch (Exception e) {
+                System.err.println(e);
                 e.printStackTrace();
                 System.err.println(e);
             }
         } catch (Exception e) {
+            System.err.println(e);
             e.printStackTrace();
             System.err.println(e);
         }

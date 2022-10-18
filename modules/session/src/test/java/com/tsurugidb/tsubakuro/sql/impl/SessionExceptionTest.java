@@ -80,9 +80,6 @@ class SesstionExceptionTest {
                 case ROLLBACK:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
-                case DISCONNECT:
-                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                    break;
                 case EXPLAIN:
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setExplain(SqlResponse.Explain.newBuilder()

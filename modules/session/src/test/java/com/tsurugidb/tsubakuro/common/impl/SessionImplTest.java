@@ -73,6 +73,7 @@ class SessionImplTest {
             session.connect(wire);
             session.updateExpirationTime(300, TimeUnit.MINUTES).get();
         } catch (Exception e) {
+            System.err.println(e);
             e.printStackTrace();
             fail("cought some exception");
         }

@@ -152,6 +152,7 @@ public class ChannelResponse implements Response {
             FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
             return response;
         } catch (IOException e) {
+            System.err.println(e);
             e.printStackTrace();
         }
         return null;  // FIXME
