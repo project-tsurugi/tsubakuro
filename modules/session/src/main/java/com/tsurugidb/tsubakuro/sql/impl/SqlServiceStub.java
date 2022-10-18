@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
@@ -101,14 +102,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     class TransactionBeginProcessor implements MainResponseProcessor<Transaction> {
+        private final AtomicReference<SqlResponse.Begin> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.BEGIN.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.BEGIN.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getBegin());
             }
-            var detailResponse = response.getBegin();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (Begin): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Begin.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -133,14 +139,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class TransactionCommitProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (commit): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -164,14 +175,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (rollback): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -195,14 +211,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     class StatementPrepareProcessor implements MainResponseProcessor<PreparedStatement> {
+        private final AtomicReference<SqlResponse.Prepare> detailResponseCache = new AtomicReference<>();
+
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.PREPARE.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.PREPARE.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getPrepare());
             }
-            var detailResponse = response.getPrepare();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (prepare): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Prepare.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -227,14 +248,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class StatementDisposeProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (dispose prepared statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -258,14 +284,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class DescribeStatementProcessor implements MainResponseProcessor<StatementMetadata> {
+        private final AtomicReference<SqlResponse.Explain> detailResponseCache = new AtomicReference<>();
+
         @Override
         public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getExplain());
             }
-            var detailResponse = response.getExplain();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (explain): {}", detailResponse); //$NON-NLS-1$
             switch (detailResponse.getResultCase()) {
             case OUTPUT:
@@ -304,14 +335,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class DescribeTableProcessor implements MainResponseProcessor<TableMetadata> {
+        private final AtomicReference<SqlResponse.DescribeTable> detailResponseCache = new AtomicReference<>();
+
         @Override
         public TableMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.DESCRIBE_TABLE.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.DESCRIBE_TABLE.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getDescribeTable());
             }
-            var detailResponse = response.getDescribeTable();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (describe table): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.DescribeTable.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -335,14 +371,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class ExecuteProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (execute (prepared) statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -379,14 +420,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class SecondResponseProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (execute query body): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -497,14 +543,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class BatchProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (batch): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -542,14 +593,19 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class LoadProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (execute load): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
@@ -574,14 +630,19 @@ public class SqlServiceStub implements SqlService {
 
     // for compatibility
     static class DisconnectProcessor implements MainResponseProcessor<Void> {
+        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-            if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                // FIXME log error message
-                throw new IOException("response type is inconsistent with the request type");
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getResultOnly());
             }
-            var detailResponse = response.getResultOnly();
+            var detailResponse = detailResponseCache.get();
             LOG.trace("receive (disconnect): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
