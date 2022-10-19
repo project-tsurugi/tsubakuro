@@ -33,6 +33,7 @@ public final class StreamLink extends Link {
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
+    private static final long JOIN_TIMEOUT = 100;
 
     private boolean valid = false;
     private boolean closed = false;
@@ -40,6 +41,7 @@ public final class StreamLink extends Link {
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
+    public static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -54,10 +56,14 @@ public final class StreamLink extends Link {
     private class Receiver extends Thread {
         public void run() {
             try {
-                while (true) {
+                while (!receiver.isInterrupted()) {
                     if (!pull()) {
                         break;
                     }
+                }
+                if (!closed) {
+                    socket.close();
+                    closed = true;
                 }
             } catch (IOException e) {
                 System.err.println(e);
@@ -235,10 +241,7 @@ public final class StreamLink extends Link {
             if (length > 0) {
                 // payload受信
                 bytes = new byte[length];
-                int size = 0;
-                while (size < length) {
-                    size += inStream.read(bytes, size, length - size);
-                }
+                inStream.readFully(bytes, 0, length);
             } else {
                 bytes = null;
             }
@@ -258,14 +261,16 @@ public final class StreamLink extends Link {
     @Override
     public void close() throws IOException {
         if (!closed) {
-            socket.close();
+            send(REQUEST_SESSION_BYE, 0);
             closed = true;
         }
         try {
-            receiver.join();
+            receiver.join(JOIN_TIMEOUT);
+            if (receiver.getState() != Thread.State.TERMINATED) {
+                receiver.interrupt();
+            }
         } catch (InterruptedException e) {
-            System.err.println(e);
-            e.printStackTrace();
+            throw new IOException(e);
         }
     }
 }

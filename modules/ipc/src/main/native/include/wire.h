@@ -494,7 +494,7 @@ public:
                 }
             }
 
-            if ((poped_.load() / capacity_) == ((poped_.load() + length) / capacity_)) {
+            if (((poped_.load() + length_header::size) / capacity_) == ((poped_.load() + length) / capacity_)) {
                 return std::string_view(read_address(base, length_header::size), length);
             }
             auto buffer_end = (pushed_valid_.load() / capacity_) * capacity_;

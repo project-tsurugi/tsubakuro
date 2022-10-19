@@ -107,6 +107,9 @@ public class ServerStreamLink {
 
             // info受信
             info = inStream.readByte();
+            if (info == StreamLink.REQUEST_SESSION_BYE) {
+                throw new EOFException();
+            }
 
             // slot受信
             slot = 0;

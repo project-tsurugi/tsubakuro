@@ -53,6 +53,9 @@ public:
             return std::string_view(nullptr, 0);
         }
         void dispose() {
+            if (wrap_around_.data()) {
+                return;
+            }
             if (current_wire_ != nullptr) {
                 current_wire_->dispose(current_wire_->get_bip_address(managed_shm_ptr_));
                 current_wire_ = nullptr;
