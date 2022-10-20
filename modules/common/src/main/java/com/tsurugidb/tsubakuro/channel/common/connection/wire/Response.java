@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -49,41 +50,19 @@ public interface Response extends ServerResource {
             throws IOException, ServerException, InterruptedException, TimeoutException;
 
     /**
-     * Returns whether or not the sub response body is already available.
-     * That is, {@link #waitForSecondResponse()} returns the sub response data without blocking.
-     * Behavior is undefined if this response is already {@link Response#close() closed}.
-     * @return {@code true} if the sub response is already available, otherwise {@code false}
+     * Retrieves sub-responses in this response.
+     * You can read each sub-responses data only once.
+     * Even if If sub-responses data have not been completed, you can retrieve them partially.
+     * The stream will be blocked when the stream position reached to the incomplete area of the sub-response.
+     * @param id the sub-responses name
+     * @return contents of body of the sub-response
+     * @throws NoSuchElementException if there is no such the data channel
+     * @throws IOException if I/O error was occurred while opening the sub-responses
+     * @throws ServerException if server error was occurred while opening the sub-responses
+     * @throws InterruptedException if interrupted by other threads while opening the sub-responses
+     * @see #getSubResponseIds()
      */
-    default boolean isSecondResponseReady() {
-        return false;
-    }
-
-    /**
-     * Returns the sub response body.
-     * If the sub response body is not ready, this operation was blocked until it would be ready.
-     * @return ByteBuffer of the sub response body
-     * @throws IOException if I/O error was occurred while retrieving sub response body
-     * @throws ServerException if server error was occurred while retrieving sub response body
-     * @throws InterruptedException if interrupted while retrieving sub response body
-     */
-    default ByteBuffer waitForSecondResponse() throws IOException, ServerException, InterruptedException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns the sub response body.
-     * If the sub response body is not ready, this operation was blocked until it would be ready.
-     * @param timeout the maximum time to wait
-     * @param unit the time unit of {@code timeout}
-     * @return ByteBuffer of the sub response body
-     * @throws IOException if I/O error was occurred while retrieving sub response body
-     * @throws ServerException if server error was occurred while retrieving sub response body
-     * @throws InterruptedException if interrupted while retrieving sub response body
-     * @throws TimeoutException if the wait time out;
-     *      please attention that this exception may occur shorter time than the {@code timeout}
-     */
-    default ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit)
-            throws IOException, ServerException, InterruptedException, TimeoutException {
+    default InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 }

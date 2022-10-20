@@ -1,10 +1,8 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
-// import java.util.Objects;
-// import java.util.concurrent.TimeUnit;
-// import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
@@ -73,16 +71,24 @@ public final class IpcLink extends Link {
     }
 
     private boolean pull() {
-        var message = receive();
+        try {
+            var message = receive();
 
-        if (Objects.isNull(message)) {
+            if (Objects.isNull(message)) {
+                return false;
+            }
+            if (message.getInfo() != RESPONSE_NULL) {
+                if (message.getInfo() == RESPONSE_BODYHEAD) {
+                    responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
+                } else {
+                    responseBox.push(message.getSlot(), message.getBytes());
+                }
+                return true;
+            }
             return false;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        if (message.getInfo() != RESPONSE_NULL) {
-            responseBox.push(message.getSlot(), message.getBytes(), message.getInfo() == RESPONSE_BODYHEAD);
-            return true;
-        }
-        return false;
     }
 
     public LinkMessage receive() {

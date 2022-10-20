@@ -16,15 +16,13 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.SecondChannelResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
@@ -419,29 +417,6 @@ public class SqlServiceStub implements SqlService {
                 new ExecuteProcessor().asResponseProcessor());
     }
 
-    static class SecondResponseProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getResultOnly());
-            }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (execute query body): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
-            }
-            return null;
-        }
-    }
-
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
 
         QueryProcessor() {
@@ -457,54 +432,32 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         void doTest(@Nonnull SqlResponse.Response message) throws IOException, ServerException, InterruptedException {
-            if (SqlResponse.Response.ResponseCase.EXECUTE_QUERY.equals(message.getResponseCase())) {
-                return; // OK
-            } else if (SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(message.getResponseCase())) {
+            if (SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(message.getResponseCase())) {
                 var detailResponse = message.getResultOnly();
                 if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                     var errorResponse = detailResponse.getError();
                     throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
                 }
+                return;
             }
-            throw new AssertionError(); // may not occur
+            throw new AssertionError(); // should not occur
         }
 
         @Override
         public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-    //        validateMetadata(response);
+            test(response);
             try (
                 var owner = Owner.of(response);
+                var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
+                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
             ) {
-                test(response);
-                var sqlResponse = cache.get();
-                var secondChannelResponse = new SecondChannelResponse(response);
-                var detailResponse = sqlResponse.getExecuteQuery();
-                var metadata = new ResultSetMetadataAdapter(detailResponse.getRecordMeta());
+                var metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
+                metadataInput.close();
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
-
-                var dataInput = session.getWire().createResultSetWire().connect(detailResponse.getName()).getByteBufferBackedInput();
-                RelationCursor cursor;
-                if (Objects.nonNull(dataInput)) {
-                    cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
-                } else {
-                    cursor = new EmptyRelationCursor();
-                }
-                var futureResponse = FutureResponse.wrap(Owner.of(secondChannelResponse));
-                var future = new ForegroundFutureResponse<Void>(futureResponse, new SecondResponseProcessor().asResponseProcessor());
-                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, future);
+                var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
+                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this);
                 return resources.register(resultSetImpl);
-            } catch (SqlServiceException e) {
-                throw e;
-            } catch (Exception e) {
-                // if sub-response seems broken, check main-response for detect errors.
-                try {
-                    test(response);
-                } catch (Throwable t) {
-                    t.addSuppressed(e);
-                    throw t;
-                }
-                throw e;
             }
         }
     }

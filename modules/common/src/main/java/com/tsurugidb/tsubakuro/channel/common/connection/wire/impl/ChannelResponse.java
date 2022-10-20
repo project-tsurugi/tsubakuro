@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -14,17 +15,22 @@ import java.util.concurrent.locks.Condition;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
  */
 public class ChannelResponse implements Response {
-
     private static final int SLEEP_UNIT = 10;  // 10mS per sleep
+    public static final String METADATA_CHANNEL_ID = "metadata";
+    public static final String RELATION_CHANNEL_ID = "relation";
+
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
-    private final AtomicReference<ByteBuffer> second = new AtomicReference<>();
+    private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
+    private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
@@ -79,46 +85,13 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public boolean isSecondResponseReady() {
-        return Objects.nonNull(second.get());
-    }
-
-    @Override
-    public ByteBuffer waitForSecondResponse() throws IOException {
-        if (Objects.nonNull(second.get())) {
-            return second.get();
+    public InputStream openSubResponse(String id) throws IOException, InterruptedException {
+        if (id.equals(METADATA_CHANNEL_ID)) {
+            return metadataChannel();
+        } else if (id.equals(RELATION_CHANNEL_ID)) {
+            return relationChannel();
         }
-
-        lock.lock();
-        try {
-            while (Objects.isNull(second.get())) {
-                noSet.await();
-            }
-            return second.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        if (Objects.nonNull(second.get())) {
-            return second.get();
-        }
-
-        lock.lock();
-        try {
-            while (Objects.isNull(second.get())) {
-                noSet.await();
-            }
-            return second.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        } finally {
-            lock.unlock();
-        }
+        throw new IOException("illegal SubResponse id");
     }
 
     @Override
@@ -126,7 +99,56 @@ public class ChannelResponse implements Response {
         closed.set(true);
     }
 
+
+    private InputStream relationChannel() throws IOException, InterruptedException {
+        return waitForResultSet().getByteBufferBackedInput();
+    }
+
+    private ResultSetWire waitForResultSet() throws IOException, InterruptedException {
+        if (Objects.nonNull(resultSet.get())) {
+            return resultSet.get();
+        }
+
+        lock.lock();
+        try {
+            while (Objects.isNull(resultSet.get())) {
+                noSet.await();
+            }
+            return resultSet.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+//    private ResultSetWire waitForResultSet(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+//        if (Objects.nonNull(resultSet.get())) {
+//            return resultSet.get();
+//        }
+//
+//        lock.lock();
+//        try {
+//            while (Objects.isNull(resultSet.get())) {
+//                noSet.await();
+//            }
+//            return resultSet.get();
+//        } catch (InterruptedException e) {
+//            throw new IOException(e);
+//        } finally {
+//            lock.unlock();
+//        }
+//    }
+
+    private InputStream metadataChannel() throws IOException, InterruptedException {
+        if (Objects.isNull(metadata.get())) {
+            waitForResultSet();
+        }
+        var recordMeta = metadata.get().getRecordMeta();
+        return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
+    }
+
+    // called from receiver thread
     public void setMainResponse(@Nonnull ByteBuffer response) {
+        Objects.requireNonNull(response);
         lock.lock();
         try {
             main.set(skipFrameworkHeader(response));
@@ -136,10 +158,16 @@ public class ChannelResponse implements Response {
         }
     }
 
-    public void setSecondResponse(@Nonnull ByteBuffer response) {
+    public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire resultSetWire) throws IOException {
+        Objects.requireNonNull(response);
+        Objects.requireNonNull(resultSetWire);
+        var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
+        var detailResponse = sqlResponse.getExecuteQuery();
+        resultSetWire.connect(detailResponse.getName());
         lock.lock();
         try {
-            second.set(skipFrameworkHeader(response));
+            metadata.set(detailResponse);
+            resultSet.set(resultSetWire);
             noSet.signal();
         } finally {
             lock.unlock();

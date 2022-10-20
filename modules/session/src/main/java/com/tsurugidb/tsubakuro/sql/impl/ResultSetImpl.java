@@ -25,7 +25,6 @@ import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
  * A basic implementation of {@link ResultSet} which just delegate operations to
@@ -46,12 +45,6 @@ public class ResultSetImpl implements ResultSet {
     private final ResponseTester tester;
 
     private final AtomicBoolean tested = new AtomicBoolean();
-
-    private final FutureResponse<Void> futureResponse;
-
-    private Timeout timeout;
-
-    private boolean stausGotton;
 
     /**
      * Tests if the response is valid.
@@ -80,21 +73,16 @@ public class ResultSetImpl implements ResultSet {
             @Nonnull ResultSetMetadata metadata,
             @Nonnull RelationCursor cursor,
             @Nonnull Response response,
-            @Nonnull ResponseTester checker,
-            @Nonnull FutureResponse<Void> futureResponse) {
+            @Nonnull ResponseTester checker) {
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(cursor);
         Objects.requireNonNull(response);
         Objects.requireNonNull(checker);
-        Objects.requireNonNull(futureResponse);
         this.closeHandler = closeHandler;
         this.metadata = metadata;
         this.cursor = cursor;
         this.response = response;
         this.tester = checker;
-        this.futureResponse = futureResponse;
-        this.timeout = new Timeout();
-        this.stausGotton = false;
     }
 
     @Override
@@ -109,8 +97,7 @@ public class ResultSetImpl implements ResultSet {
             if (cursor.nextRow()) {
                 return true;
             }
-            timeout.waitFor(futureResponse);
-            stausGotton = true;
+            checkResponse();
             return false;
         } catch (IOException | ServerException e) {
             checkResponse(e);
@@ -362,7 +349,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public void setCloseTimeout(Timeout t) {
         cursor.setCloseTimeout(t);
-        timeout = t;
     }
 
     @Override
@@ -386,9 +372,6 @@ public class ResultSetImpl implements ResultSet {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
-        }
-        if (!stausGotton) {
-            timeout.waitFor(futureResponse);
         }
     }
 }

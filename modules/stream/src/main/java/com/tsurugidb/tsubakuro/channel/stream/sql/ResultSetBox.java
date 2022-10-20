@@ -1,9 +1,9 @@
 package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -16,79 +16,36 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 public class ResultSetBox {
     private static final int SIZE = ResponseBox.responseBoxSize();
 
-    private Abox[] boxes;
-    private Map<String, Integer> map;
+    private ResultSetWireImpl[] boxes = new ResultSetWireImpl[SIZE];
+    private Map<String, Integer> map = new HashMap<>();;
     private Lock lock = new ReentrantLock();
     private Condition availableCondition = lock.newCondition();
-
-    private static class MessageQueue {
-        ArrayDeque<ResultSetResponse> queue;
-
-        MessageQueue() {
-            this.queue = new ArrayDeque<ResultSetResponse>();
-        }
-        public boolean isEmpty() {
-            return queue.isEmpty();
-        }
-        public void add(ResultSetResponse e) {
-            queue.add(e);
-        }
-        public ResultSetResponse poll() {
-            return queue.poll();
-        }
-        public void clear() {
-            queue.clear();
-        }
-    }
-
-    private static class Abox {
-        private Lock lock = new ReentrantLock();
-        private Condition availableCondition = lock.newCondition();
-        private MessageQueue queues = new MessageQueue();
-        private boolean eor;
-
-        Abox() {
-            this.eor = false;
-        }
-    }
+    private Lock[] slotLock = new ReentrantLock[SIZE];
+    private Condition[] slotCondition = new Condition[SIZE];
 
     public ResultSetBox() {
-        this.map = new HashMap<>();
-        this.boxes = new Abox[SIZE];
-
         for (int i = 0; i < SIZE; i++) {
-            boxes[i] = new Abox();
+            slotLock[i] = new ReentrantLock();
+            slotCondition[i] = slotLock[i].newCondition();
         }
     }
 
-    public ResultSetResponse receive(int slot) throws IOException {
-        while (true) {
-            Lock l =  boxes[slot].lock;
-            l.lock();
-            try {
-                if (!boxes[slot].queues.isEmpty()) {
-                    return boxes[slot].queues.poll();
-                }
-                if (boxes[slot].eor) {
-                    return new ResultSetResponse(0, null);
-                }
-                boxes[slot].availableCondition.await();
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            } finally {
-                l.unlock();
-            }
-        }
-    }
-
-    public byte hello(String name) throws IOException {
+    public void register(String name, ResultSetWireImpl resultSetWire) throws IOException {
         while (true) {
             lock.lock();
             try {
                 if (map.containsKey(name)) {
                     var slot = (byte) map.get(name).intValue();
                     map.remove(name);
-                    return slot;
+                    Lock l =  slotLock[slot];
+                    l.lock();
+                    try {
+                        boxes[slot] = resultSetWire;
+                        slotCondition[slot].signal();
+                    } finally {
+                        l.unlock();
+                    }
+                    return;
                 }
                 availableCondition.await();
             } catch (InterruptedException e) {
@@ -99,7 +56,7 @@ public class ResultSetBox {
         }
     }
 
-    public void pushHello(String name, int slot) {  // for RESPONSE_RESULT_SET_HELLO
+    public void pushHello(String name, int slot) throws IOException {  // for RESPONSE_RESULT_SET_HELLO
         lock.lock();
         try {
             if (map.containsKey(name)) {
@@ -107,33 +64,42 @@ public class ResultSetBox {
             } else {
                 map.put(name, slot);
             }
-            boxes[slot].eor = false;
-            boxes[slot].queues.clear();
             availableCondition.signal();
         } finally {
             lock.unlock();
         }
     }
 
-    public void push(int slot, int writerId, byte[] payload) {  // for RESPONSE_RESULT_SET_PAYLOAD
-        Lock l =  boxes[slot].lock;
-        l.lock();
-        try {
-            boxes[slot].queues.add(new ResultSetResponse(writerId, payload));
-            boxes[slot].availableCondition.signal();
-        } finally {
-            l.unlock();
+    public void push(int slot, int writerId, byte[] payload) throws IOException {  // for RESPONSE_RESULT_SET_PAYLOAD
+        if (Objects.isNull(boxes[slot])) {
+            waitRegistration(slot);
         }
+        boxes[slot].add(new ResultSetResponse(writerId, payload));
     }
 
-    public void pushBye(int slot) {  // for RESPONSE_RESULT_SET_BYE
-        Lock l =  boxes[slot].lock;
-        l.lock();
-        try {
-            boxes[slot].eor = true;
-            boxes[slot].availableCondition.signal();
-        } finally {
-            l.unlock();
+    public void pushBye(int slot) throws IOException {  // for RESPONSE_RESULT_SET_BYE
+        if (Objects.isNull(boxes[slot])) {
+            waitRegistration(slot);
+        }
+        var box = boxes[slot];
+        boxes[slot] = null;
+        box.endOfRecords(slot);
+    }
+
+    private void waitRegistration(int slot) throws IOException {
+        while (true) {
+            Lock l =  slotLock[slot];
+            l.lock();
+            try {
+                if (Objects.nonNull(boxes[slot])) {
+                    return;
+                }
+                slotCondition[slot].await();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                l.unlock();
+            }
         }
     }
 }

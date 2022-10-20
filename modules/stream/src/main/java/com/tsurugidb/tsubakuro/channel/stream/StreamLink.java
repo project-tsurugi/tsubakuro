@@ -4,6 +4,7 @@ import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.EOFException;
+import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Objects;
@@ -55,19 +56,18 @@ public final class StreamLink extends Link {
 
     private class Receiver extends Thread {
         public void run() {
-            try {
-                while (!receiver.isInterrupted()) {
-                    if (!pull()) {
-                        break;
-                    }
+            while (!receiver.isInterrupted()) {
+                if (!pull()) {
+                    break;
                 }
+            }
+            try {
                 if (!closed) {
                     socket.close();
                     closed = true;
                 }
             } catch (IOException e) {
-                System.err.println(e);
-                e.printStackTrace();
+                throw new UncheckedIOException(e);
             }
         }
     }
@@ -105,57 +105,61 @@ public final class StreamLink extends Link {
         }
     }
 
-    private boolean pull() throws IOException {
-        var message = receive();
-        if (Objects.isNull(message)) {
-            return false;
-        }
-
-        byte info = message.getInfo();
-        int slot = message.getSlot();
-        switch (info) {
-
-        case RESPONSE_SESSION_PAYLOAD:
-            LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-            responseBox.push(slot, message.getBytes(), false);
-            return true;
-
-        case RESPONSE_SESSION_BODYHEAD:
-            LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
-            responseBox.push(slot, message.getBytes(), true);
-            return true;
-
-        case RESPONSE_RESULT_SET_PAYLOAD:
-            byte writer = message.getWriter();
-            LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
-            resultSetBox.push(slot, writer, message.getBytes());
-            return true;
-
-        case RESPONSE_RESULT_SET_HELLO:
-            LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
-            resultSetBox.pushHello(message.getString(), slot);
-            return true;
-
-        case RESPONSE_RESULT_SET_BYE:
-            LOG.trace("receive RESPONSE_RESULT_SET_BYE");
-            resultSetBox.pushBye(slot);
-            return true;
-
-        case RESPONSE_SESSION_HELLO_OK:
-        case RESPONSE_SESSION_HELLO_NG:
-            LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-            lock.lock();
-            try {
-                helloResponse.set(message);
-                condition.signal();
-            } finally {
-                lock.unlock();
+    private boolean pull() {
+        try {
+            var message = receive();
+            if (Objects.isNull(message)) {
+                return false;
             }
-            return true;
 
-        default:
-            throw new IOException("invalid info in the response");
+            byte info = message.getInfo();
+            int slot = message.getSlot();
+            switch (info) {
 
+            case RESPONSE_SESSION_PAYLOAD:
+                LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
+                responseBox.push(slot, message.getBytes());
+                return true;
+    
+            case RESPONSE_SESSION_BODYHEAD:
+                LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
+                responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
+                return true;
+
+            case RESPONSE_RESULT_SET_PAYLOAD:
+                byte writer = message.getWriter();
+                LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
+                resultSetBox.push(slot, writer, message.getBytes());
+                return true;
+
+            case RESPONSE_RESULT_SET_HELLO:
+                LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
+                resultSetBox.pushHello(message.getString(), slot);
+                return true;
+
+            case RESPONSE_RESULT_SET_BYE:
+                LOG.trace("receive RESPONSE_RESULT_SET_BYE");
+                resultSetBox.pushBye(slot);
+                return true;
+
+            case RESPONSE_SESSION_HELLO_OK:
+            case RESPONSE_SESSION_HELLO_NG:
+                LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                lock.lock();
+                try {
+                    helloResponse.set(message);
+                    condition.signal();
+                } finally {
+                    lock.unlock();
+                }
+                return true;
+
+            default:
+                throw new IOException("invalid info in the response");
+
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
