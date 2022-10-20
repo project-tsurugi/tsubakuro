@@ -29,7 +29,7 @@ public class ChannelResponse implements Response {
     public static final String RELATION_CHANNEL_ID = "relation";
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
-    private final AtomicReference<SqlResponse.ExecuteQuery> head = new AtomicReference<>();
+    private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
     private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
@@ -100,11 +100,11 @@ public class ChannelResponse implements Response {
     }
 
 
-    private InputStream relationChannel() throws IOException {
+    private InputStream relationChannel() throws IOException, InterruptedException {
         return waitForResultSet().getByteBufferBackedInput();
     }
 
-    private ResultSetWire waitForResultSet() throws IOException {
+    private ResultSetWire waitForResultSet() throws IOException, InterruptedException {
         if (Objects.nonNull(resultSet.get())) {
             return resultSet.get();
         }
@@ -115,8 +115,6 @@ public class ChannelResponse implements Response {
                 noSet.await();
             }
             return resultSet.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
         } finally {
             lock.unlock();
         }
@@ -140,16 +138,17 @@ public class ChannelResponse implements Response {
 //        }
 //    }
 
-    private InputStream metadataChannel() throws IOException {
-        if (Objects.isNull(resultSet.get())) {
+    private InputStream metadataChannel() throws IOException, InterruptedException {
+        if (Objects.isNull(metadata.get())) {
             waitForResultSet();
         }
-        var recordMeta = head.get().getRecordMeta();
+        var recordMeta = metadata.get().getRecordMeta();
         return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
     }
 
     // called from receiver thread
     public void setMainResponse(@Nonnull ByteBuffer response) {
+        Objects.requireNonNull(response);
         lock.lock();
         try {
             main.set(skipFrameworkHeader(response));
@@ -160,12 +159,14 @@ public class ChannelResponse implements Response {
     }
 
     public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire resultSetWire) throws IOException {
+        Objects.requireNonNull(response);
+        Objects.requireNonNull(resultSetWire);
         var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
         var detailResponse = sqlResponse.getExecuteQuery();
         resultSetWire.connect(detailResponse.getName());
         lock.lock();
         try {
-            head.set(detailResponse);
+            metadata.set(detailResponse);
             resultSet.set(resultSetWire);
             noSet.signal();
         } finally {

@@ -89,11 +89,11 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (Objects.isNull(byteBufferBackedInput)) {
             try {
                 var buffer = receive().getPayload();
-                if (Objects.isNull(buffer)) {
-                    close();
-                    return null;
+                if (Objects.nonNull(buffer)) {
+                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
+                } else {
+                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
                 }
-                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
