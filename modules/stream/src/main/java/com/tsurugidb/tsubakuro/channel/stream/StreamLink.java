@@ -43,7 +43,6 @@ public final class StreamLink extends Link {
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
     public static final byte REQUEST_SESSION_BYE = 4;
-    private static final byte REQUEST_RESULT_SET_CLOSE = 5;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -166,10 +165,6 @@ public final class StreamLink extends Link {
 
     public ResultSetBox getResultSetBox() {
         return resultSetBox;
-    }
-
-    public void sendResutSetClose(int slot) throws IOException {
-        send(REQUEST_RESULT_SET_CLOSE, slot);
     }
 
     public void sendResutSetByeOk(int slot) throws IOException {
