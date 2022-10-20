@@ -1,13 +1,18 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.tsurugidb.tsubakuro.sql.SqlServiceException;
+import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -15,6 +20,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 public class SimpleResponse implements Response {
 
     private final ByteBuffer main;
+
+    private final ByteBuffer metadata;
 
     private final ByteBuffer relation;
 
@@ -27,9 +34,10 @@ public class SimpleResponse implements Response {
      * @param main the main response data
      * @param sub the sub response data
      */
-    public SimpleResponse(ByteBuffer main, ByteBuffer relation, ByteBuffer status) {
+    public SimpleResponse(ByteBuffer main, ByteBuffer metadata, ByteBuffer relation, ByteBuffer status) {
         Objects.requireNonNull(main);
         this.main = main;
+        this.metadata = metadata;
         this.relation = relation;
         this.status = status;
     }
@@ -40,7 +48,7 @@ public class SimpleResponse implements Response {
      * @param subMap map of sub response ID and its data
      */
     public SimpleResponse(ByteBuffer main) {
-        this(main, null, null);
+        this(main, null, null, null);
     }
 
     @Override
@@ -60,18 +68,21 @@ public class SimpleResponse implements Response {
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) {
         return waitForMainResponse();
     }
-    
-    @Override
-    public ByteBuffer waitForSecondResponse() {
-        if (Objects.nonNull(status)) {
-            return status;
-        }
-        return null;
-    }
 
     @Override
-    public ByteBuffer waitForSecondResponse(long timeout, TimeUnit unit) {
-        return waitForSecondResponse();
+    public InputStream openSubResponse(String id) throws IOException,SqlServiceException, InterruptedException {
+        if (id.equals(ChannelResponse.METADATA_CHANNEL_ID)) {
+            if (Objects.nonNull(metadata)) {
+                return new ByteBufferInputStream(metadata);
+            }
+            throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "metadata is not received");
+        } else if (id.equals(ChannelResponse.RELATION_CHANNEL_ID)) {
+            if (Objects.nonNull(relation)) {
+                return new ByteBufferInputStream(relation);
+            }
+            throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "relation data is not set up");
+        }
+        throw new IOException("illegal SubResponse id");
     }
 
     private void checkOpen() {

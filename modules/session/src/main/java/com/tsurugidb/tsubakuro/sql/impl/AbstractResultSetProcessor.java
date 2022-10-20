@@ -31,10 +31,6 @@ abstract class AbstractResultSetProcessor<T extends Message>
 
     private final ServerResourceHolder resources;
 
-    //    private final String metadataChannel;
-
-    //    private final String relationChannel;
-
     protected final AtomicReference<T> cache = new AtomicReference<>();
 
     private final AtomicBoolean passed = new AtomicBoolean();

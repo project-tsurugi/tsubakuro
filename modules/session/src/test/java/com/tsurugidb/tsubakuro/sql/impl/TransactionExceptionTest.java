@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -24,6 +25,7 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlStatus;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.session.ProtosForTest;
 
 class TransactionExceptionTest {
@@ -48,6 +50,10 @@ class TransactionExceptionTest {
         @Override
         public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
             return waitForMainResponse();
+        }
+        @Override
+        public InputStream openSubResponse(String id) {
+            return new ByteBufferInputStream(ByteBuffer.allocate(0));
         }
         @Override
         public void close() throws IOException, InterruptedException {

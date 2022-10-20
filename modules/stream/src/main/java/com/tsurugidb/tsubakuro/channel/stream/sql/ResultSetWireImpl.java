@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
@@ -13,10 +17,14 @@ import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private StreamLink streamWire;
-    private ResultSetBox resultSetBox;
-    private int slot;
+    private final StreamLink streamLink;
+    private final ResultSetBox resultSetBox;
+    private final Lock lock = new ReentrantLock();
+    private final Condition availableCondition = lock.newCondition();
+    private final ConcurrentLinkedQueue<ResultSetResponse> queues = new ConcurrentLinkedQueue<>();
     private ByteBufferBackedInput byteBufferBackedInput;
+    private boolean closed;
+    private boolean eor;
 
     class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
@@ -29,7 +37,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         @Override
         protected boolean next() {
             try {
-                var buffer = resultSetBox.receive(slot).getPayload();
+                var buffer = receive().getPayload();
                 if (Objects.isNull(buffer)) {
                     return false;
                 }
@@ -49,12 +57,14 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     /**
      * Class constructor, called from FutureResultWireImpl.
-     * @param streamWire the stream object of the Wire
+     * @param streamLink the stream object of the Wire
      */
-    public ResultSetWireImpl(StreamLink streamWire) {
-        this.streamWire = streamWire;
-        this.resultSetBox = streamWire.getResultSetBox();
+    public ResultSetWireImpl(StreamLink streamLink) {
+        this.streamLink = streamLink;
+        this.resultSetBox = streamLink.getResultSetBox();
         this.byteBufferBackedInput = null;
+        this.closed = false;
+        this.eor = false;
     }
 
     /**
@@ -67,7 +77,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
-        slot = resultSetBox.hello(name);
+        resultSetBox.register(name, this);
         return this;
     }
 
@@ -78,8 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     public InputStream getByteBufferBackedInput() {
         if (Objects.isNull(byteBufferBackedInput)) {
             try {
-                var receivedData = resultSetBox.receive(slot);
-                var buffer = receivedData.getPayload();
+                var buffer = receive().getPayload();
                 if (Objects.isNull(buffer)) {
                     close();
                     return null;
@@ -93,19 +102,55 @@ public class ResultSetWireImpl implements ResultSetWire {
     }
 
     /**
+     * Receive resultSet payload
+     */
+    private ResultSetResponse receive() throws IOException {
+        while (true) {
+            lock.lock();
+            try {
+                if (!queues.isEmpty()) {
+                    return queues.poll();
+                }
+                if (eor) {
+                    return new ResultSetResponse(0, null);
+                }
+                availableCondition.await();
+            } catch (InterruptedException e) {
+                throw new IOException(e);
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    /**
      * Close the wire
      */
     @Override
     public void close() throws IOException {
-        if (Objects.nonNull(streamWire)) {
-            while (true) {
-                var entry = resultSetBox.receive(slot);
-                if (Objects.isNull(entry.getPayload())) {
-                    break;
-                }
+        closed = true;
+    }
+
+    public void add(ResultSetResponse resultSetResponse) {
+        queues.add(resultSetResponse);
+        lock.lock();
+        try {
+            availableCondition.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void endOfRecords(int slot) throws IOException {
+        eor = true;
+        streamLink.sendResutSetByeOk(slot);
+        if (!closed) {
+            lock.lock();
+            try {
+                availableCondition.signal();
+            } finally {
+                lock.unlock();
             }
-            streamWire.sendResutSetByeOk(slot);
-            streamWire = null;
         }
     }
 }

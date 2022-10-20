@@ -10,6 +10,8 @@ import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+
 /**
  * ResponseBox type.
  */
@@ -18,16 +20,12 @@ public class ResponseBox {
     private static final int INVALID_SLOT = -1;
 
     private static class Abox {
-        private ChannelResponse channelResponse;
+        private final ChannelResponse channelResponse;
         private final Lock lock = new ReentrantLock();
         private final Condition availableCondition = lock.newCondition();
-        private int expected;
-        private int received;
 
         Abox(@Nonnull ChannelResponse channelResponse) {
             this.channelResponse = channelResponse;
-            this.expected = 1;
-            this.received = 0;
         }
 
         ChannelResponse channelResponse() {
@@ -61,29 +59,30 @@ public class ResponseBox {
         return channelResponse;
     }
 
-    public void push(int slot, byte[] payload, boolean head) {
+    public void push(int slot, byte[] payload) {
         Lock l =  boxes.get(slot).lock;
         l.lock();
         try {
             var box = boxes.get(slot);
-            if (head) {
-                box.expected = 2;
-            }
-            if (box.received == 0) {
-                box.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
-            } else {
-                box.channelResponse().setSecondResponse(ByteBuffer.wrap(payload));
-            }
-            box.received++;
-            if (box.expected == box.received) {
-                boxes.set(slot, null);
-            }
+            box.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
+            boxes.set(slot, null);
         } finally {
             l.unlock();
         }
     }
 
-    public static byte responseBoxSize() {
-        return (byte) SIZE;
+    public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
+        Lock l =  boxes.get(slot).lock;
+        l.lock();
+        try {
+            var box = boxes.get(slot);
+            box.channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
+        } finally {
+            l.unlock();
+        }
+    }
+
+    public static int responseBoxSize() {
+        return SIZE;
     }
 }

@@ -31,13 +31,16 @@ public interface RequestHandler {
     /**
      * Creates a new request handler which returns the given response payload.
      * @param response the response payload
+     * @param metadata the metadata
      * @param relation the resultSet
+     * @param status the status
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, Relation relation, ByteBuffer status) {
+    static RequestHandler returns(ByteBuffer response, ByteBuffer metadata, Relation relation, ByteBuffer status) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        return (id, request) -> new SimpleResponse(response, relation.getByteBuffer(), status);
+        Objects.requireNonNull(status);
+        return (id, request) -> new SimpleResponse(status, metadata, relation.getByteBuffer(), null);
     }
     static RequestHandler returns(ByteBuffer response) {
         Objects.requireNonNull(response);
@@ -50,13 +53,13 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, Relation relation, byte[] status) {
+    static RequestHandler returns(byte[] response, ByteBuffer metadata, Relation relation, byte[] status) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
         if (Objects.nonNull(status)) {
-            return returns(ByteBuffer.wrap(response), relation, ByteBuffer.wrap(status));
+            return returns(ByteBuffer.wrap(response), metadata, relation, ByteBuffer.wrap(status));
         }
-        return returns(ByteBuffer.wrap(response), relation, null);
+        return returns(ByteBuffer.wrap(response), metadata, relation, ByteBuffer.wrap(response));
     }
     static RequestHandler returns(byte[] response) {
         Objects.requireNonNull(response);
@@ -107,13 +110,14 @@ public interface RequestHandler {
     static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation, SqlResponse.ResultOnly status) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setExecuteQuery(response).build();
+        var metadata = ByteBuffer.wrap(response.getRecordMeta().toByteArray());
         var sqlStatus = SqlResponse.Response.newBuilder().setResultOnly(status).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation, toDelimitedByteArray(sqlStatus));
+        return returns(toDelimitedByteArray(sqlResponse), metadata, relation, toDelimitedByteArray(sqlStatus));
     }
     static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), relation, null);
+        return returns(toDelimitedByteArray(sqlResponse), null, relation, null);
     }
 
     /**
