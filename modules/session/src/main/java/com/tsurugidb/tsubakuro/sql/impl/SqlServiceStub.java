@@ -450,7 +450,9 @@ public class SqlServiceStub implements SqlService {
                 var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
                 var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
             ) {
-                test(response);
+                if (response.isMainResponseReady()) {
+                    test(response);
+                }
                 var metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
                 metadataInput.close();
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
