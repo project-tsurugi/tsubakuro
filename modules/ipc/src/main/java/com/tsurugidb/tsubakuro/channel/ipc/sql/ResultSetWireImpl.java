@@ -24,13 +24,18 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
+        private boolean closed;
 
         ByteBufferBackedInputForIpc(ByteBuffer source, ResultSetWireImpl resultSetWireImpl) {
             super(source);
             this.resultSetWireImpl = resultSetWireImpl;
+            this.closed = false;
         }
 
         protected boolean next() {
+            if (closed) {
+                return false;
+            }
             disposeUsedDataNative(wireHandle, source.capacity());
             source = getChunkNative(wireHandle);
             if (Objects.isNull(source)) {
@@ -38,11 +43,12 @@ public class ResultSetWireImpl implements ResultSetWire {
             }
             return true;
         }
-        
+
         @Override
         public void close() throws IOException {
             super.close();
             resultSetWireImpl.close();
+            closed = true;
         }
     }
 
