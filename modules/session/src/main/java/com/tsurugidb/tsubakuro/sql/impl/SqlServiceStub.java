@@ -448,8 +448,8 @@ public class SqlServiceStub implements SqlService {
             try (
                 var owner = Owner.of(response);
                 var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
-                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
             ) {
+                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
                 if (response.isMainResponseReady()) {
                     test(response);
                 }
