@@ -236,7 +236,9 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWir
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    rwc->dispose(size);
+    if (size > 0) {
+        rwc->dispose();
+    }
 }
 
 /*

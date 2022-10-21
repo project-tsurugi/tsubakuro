@@ -52,8 +52,8 @@ public:
             }
             return std::string_view(nullptr, 0);
         }
-        void dispose(std::size_t size) {
-            if (wrap_around_.data() || (size == 0)) {
+        void dispose() {
+            if (wrap_around_.data()) {
                 return;
             }
             if (current_wire_ != nullptr) {
@@ -105,9 +105,6 @@ public:
         void flush(message_header::index_type index) {
             wire_->flush(bip_buffer_, index);
         }
-//        void read(char* to, std::size_t msg_len) {
-//            wire_->read(to, bip_buffer_, msg_len);
-//        }
         void disconnect() {
             wire_->brand_new();
             wire_->flush(bip_buffer_, message_header::not_use);
