@@ -41,7 +41,6 @@ public final class StreamLink extends Link {
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
-    public static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -170,7 +169,7 @@ public final class StreamLink extends Link {
         send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
 
-    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, SESSION_BYE, RESULT_SET_BYE_OK
+    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
         byte[] header = new byte[7];
 
         header[0] = i;  // info
@@ -184,7 +183,7 @@ public final class StreamLink extends Link {
         synchronized (outStream) {
             outStream.write(header, 0, header.length);
         }
-        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : ((i == REQUEST_SESSION_BYE) ? "SESSION_BYE" : "RESULT_SET_BYE_OK")), s); //$NON-NLS-1$
+        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : "RESULT_SET_BYE_OK"), s); //$NON-NLS-1$
     }
 
     @Override
@@ -250,8 +249,10 @@ public final class StreamLink extends Link {
             }
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
-            socket.close();
-            socketClosed = true;
+            if (!socketClosed) {
+                socket.close();
+                socketClosed = true;
+            }
             return null;
         }
     }
@@ -264,7 +265,8 @@ public final class StreamLink extends Link {
     @Override
     public void close() throws IOException {
         if (!socketClosed) {
-            send(REQUEST_SESSION_BYE, 0);
+            socket.close();
+            socketClosed = true;
         }
         try {
             receiver.join(JOIN_TIMEOUT);
