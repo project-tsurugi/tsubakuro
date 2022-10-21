@@ -418,7 +418,6 @@ public class SqlServiceStub implements SqlService {
     }
 
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
-
         QueryProcessor() {
             super(resources);
         }
@@ -446,12 +445,14 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-            test(response);
             try (
                 var owner = Owner.of(response);
                 var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
-                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
             ) {
+                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
+                if (response.isMainResponseReady()) {
+                    test(response);
+                }
                 var metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
                 metadataInput.close();
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$

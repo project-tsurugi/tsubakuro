@@ -36,13 +36,11 @@ public final class StreamLink extends Link {
     private final Condition condition = lock.newCondition();
     private static final long JOIN_TIMEOUT = 100;
 
-    private boolean valid = false;
-    private boolean closed = false;
+    private boolean socketClosed = false;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
-    public static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -62,9 +60,9 @@ public final class StreamLink extends Link {
                 }
             }
             try {
-                if (!closed) {
+                if (!socketClosed) {
                     socket.close();
-                    closed = true;
+                    socketClosed = true;
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -251,8 +249,10 @@ public final class StreamLink extends Link {
             }
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
-            socket.close();
-            closed = true;
+            if (!socketClosed) {
+                socket.close();
+                socketClosed = true;
+            }
             return null;
         }
     }
@@ -264,9 +264,9 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed) {
-            send(REQUEST_SESSION_BYE, 0);
-            closed = true;
+        if (!socketClosed) {
+            socket.close();
+            socketClosed = true;
         }
         try {
             receiver.join(JOIN_TIMEOUT);

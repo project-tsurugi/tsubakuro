@@ -52,8 +52,8 @@ public:
             }
             return std::string_view(nullptr, 0);
         }
-        void dispose() {
-            if (wrap_around_.data()) {
+        void dispose(std::size_t size) {
+            if (wrap_around_.data() || (size == 0)) {
                 return;
             }
             if (current_wire_ != nullptr) {
