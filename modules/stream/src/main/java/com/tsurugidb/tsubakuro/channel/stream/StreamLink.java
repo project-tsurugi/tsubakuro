@@ -36,8 +36,7 @@ public final class StreamLink extends Link {
     private final Condition condition = lock.newCondition();
     private static final long JOIN_TIMEOUT = 100;
 
-    private boolean valid = false;
-    private boolean closed = false;
+    private boolean socketClosed = false;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
@@ -62,9 +61,9 @@ public final class StreamLink extends Link {
                 }
             }
             try {
-                if (!closed) {
+                if (!socketClosed) {
                     socket.close();
-                    closed = true;
+                    socketClosed = true;
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -171,7 +170,7 @@ public final class StreamLink extends Link {
         send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
 
-    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
+    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, SESSION_BYE, RESULT_SET_BYE_OK
         byte[] header = new byte[7];
 
         header[0] = i;  // info
@@ -185,7 +184,7 @@ public final class StreamLink extends Link {
         synchronized (outStream) {
             outStream.write(header, 0, header.length);
         }
-        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : "RESULT_SET_BYE_OK"), s); //$NON-NLS-1$
+        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : ((i == REQUEST_SESSION_BYE) ? "SESSION_BYE" : "RESULT_SET_BYE_OK")), s); //$NON-NLS-1$
     }
 
     @Override
@@ -252,7 +251,7 @@ public final class StreamLink extends Link {
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
             socket.close();
-            closed = true;
+            socketClosed = true;
             return null;
         }
     }
@@ -264,9 +263,8 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed) {
+        if (!socketClosed) {
             send(REQUEST_SESSION_BYE, 0);
-            closed = true;
         }
         try {
             receiver.join(JOIN_TIMEOUT);
