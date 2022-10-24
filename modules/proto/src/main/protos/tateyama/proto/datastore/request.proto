@@ -22,10 +22,6 @@ message Request {
         BackupEnd backup_end = 12;
         // estimates backup operation magnitude.
         BackupEstimate backup_estimate = 14;
-        // restores datastore from backup data.
-        RestoreBackup restore_backup = 15;
-        // restores datastore from Point-in-Time recovery tag.
-        RestoreTag restore_tag = 16;
         // retrieves the list of registered Point-in-Time recovery tags.
         TagList tag_list = 17;
         // creates a new Point-in-Time recovery tag.
@@ -34,8 +30,17 @@ message Request {
         TagGet tag_get = 19;
         // removes a Point-in-Time recovery tag.
         TagRemove tag_remove = 20;
+        // begins to restore datastore.
+        RestoreBegin restore_begin = 21;
+        // retrieves the restore status.
+        RestoreStatus restore_status = 22;
+        // removes a restore operation.
+        RestoreCancel restore_cancel = 23;
+        // disposes a restore job history.
+        RestoreDispose restore_dispose = 24;
     }
-    reserved 21 to 99;
+    reserved 15 to 16;
+    reserved 25 to 99;
 }
 
 // starts backup operation.
@@ -52,27 +57,6 @@ message BackupEnd {
 
 // estimates backup operation magnitude.
 message BackupEstimate {}
-
-// restores datastore from backup data.
-message RestoreBackup {
-    // path to backup data.
-    string path = 1;
-
-    // whether or not keeps the backup data.
-    bool keep_backup = 2;
-
-    // the restore label.
-    string label = 3;
-}
-
-// restores datastore from Point-in-Time recovery tag.
-message RestoreTag {
-    // the tag name.
-    string name = 1;
-
-    // the restore label.
-    string label = 2;
-}
 
 // retrieves the list of registered Point-in-Time recovery tags.
 message TagList {}
@@ -96,4 +80,41 @@ message TagGet {
 message TagRemove {
     // the tag name.
     string name = 1;
+}
+
+// begins to restore datastore.
+message RestoreBegin {
+
+    // the restore source.
+    oneof source {
+        // restores from backup directory path.
+        string backup_directory = 1;
+
+        // restores from point-in-time recovery tag name.
+        string tag_name = 2;
+    }
+
+    // whether or not keeps the backup source.
+    bool keep_backup = 3;
+
+    // the restore label.
+    string label = 4;
+}
+
+// retrieves the restore status.
+message RestoreStatus {
+    // the restore job ID.
+    uint64 id = 1;
+}
+
+// removes a restore job.
+message RestoreCancel {
+    // the restore job ID.
+    uint64 id = 1;
+}
+
+// disposes a restore job history.
+message RestoreDispose {
+    // the restore job ID.
+    uint64 id = 1;
 }
