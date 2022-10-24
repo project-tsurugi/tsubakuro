@@ -80,63 +80,6 @@ message BackupEstimate {
     }
 }
 
-// restores datastore from backup data.
-message RestoreBackup {
-    reserved 1 to 10;
-
-    // request is successfully completed.
-    message NotFound {
-        string path = 1;
-    }
-    message PermissionError {
-        string path = 1;
-    }
-    message BrokenData {
-        string path = 1;
-        string detail = 2;
-    }
-
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Void success = 12;
-
-        // target backup is not found.
-        NotFound not_found = 13;
-
-        // cannot access to target backup by permission error.
-        PermissionError permission_error = 14;
-
-        // the target 
-        BrokenData broken_data = 15;
-
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
-    }
-}
-
-// restores datastore from Point-in-Time recovery tag.
-message RestoreTag {
-    reserved 1 to 10;
-    
-    // the target tag is not found.
-    message NotFound {
-        string name = 1;
-    }
-
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Void success = 11;
-
-        // target tag is not found.
-        NotFound not_found  = 12;
-
-        // unknown error was occurred.
-        UnknownError unknown_error = 13;
-    }
-}
-
 // retrieves the list of registered Point-in-Time recovery tags.
 message TagList {
     reserved 1 to 10;
@@ -247,6 +190,165 @@ message TagRemove {
 
         // target tag is not found.
         NotFound not_found = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// begins to restore datastore.
+message RestoreBegin {
+    reserved 1 to 10;
+
+    // operation was successfully started.
+    message Success {
+        // the restore job ID.
+        uint64 id = 1;
+    }
+
+    // target backup is not found.
+    message NotFound {
+        // source file path or tag name.
+        string path = 1;
+    }
+
+    // cannot access to target backup by permission error.
+    message PermissionError {
+        // source file path or tag name.
+        string path = 1;
+    }
+
+    // the backup file seems broken.
+    message BrokenData {
+        // broken file path.
+        string path = 1;
+        string detail = 2;
+    }
+
+    // the response body.
+    oneof result {
+        // operation was successfully started.
+        Success success = 12;
+
+        // target backup is not found.
+        NotFound not_found = 13;
+
+        // cannot access to target backup by permission error.
+        PermissionError permission_error = 14;
+
+        // the backup file seems broken.
+        BrokenData broken_data = 15;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// retrieves the restore status.
+message RestoreStatus {
+    reserved 1 to 10;
+
+    // kind of restore job status.
+    enum StatusKind {
+        // the restore status is not specified.
+        RESTORE_STATUS_KIND_UNSPECIFIED = 0;
+
+        // preparing restore operation.
+        PREPARING = 1;
+
+        // restore operation is running.
+        RUNNING = 2;
+
+        // restore operation was completed.
+        COMPLETED = 3;
+
+        // restore operation was failed.
+        FAILED = 4;
+
+        // restore operation was canceled.
+        CANCELED = 5;
+    }
+
+    // request is successfully completed.
+    message Success {
+        // the restore job ID.
+        uint64 id = 1;
+
+        // the restore status.
+        StatusKind status = 2;
+
+        // the restore job label, or empty if it is not specified.
+        string label = 3;
+
+        // the restore job owner.
+        string owner = 4;
+
+        // the restore source description.
+        string source = 5;
+
+        // the restore start time (UNIX time in milliseconds).
+        uint64 start_time = 6;
+
+        // the elapsed finish time (UNIX time in milliseconds), or 0 to N/A.
+        uint64 elapsed_finish_time = 7;
+
+        // the job progress ([0, 1]).
+        float progress = 8;
+    }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 12;
+
+        // target restore operation is not found.
+        Void not_found = 13;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// revokes a restore job.
+message RestoreCancel {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // operation was successfully disposed.
+        Void success = 12;
+
+        // the target restore operation was not found.
+        Void not_found = 13;
+
+        // cannot remove the job by permission error.
+        Void permission_error = 14;
+
+        // the cancel request was rejected (already running).
+        Void rejected = 15;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}
+
+// disposes a restore job history.
+message RestoreDispose {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // operation was successfully disposed.
+        Void success = 12;
+
+        // the target restore operation was not found.
+        Void not_found = 13;
+
+        // cannot remove the job by permission error.
+        Void permission_error = 14;
+
+        // the restore operation has not been finished yut.
+        Void not_finished = 15;
 
         // unknown error was occurred.
         UnknownError unknown_error = 11;

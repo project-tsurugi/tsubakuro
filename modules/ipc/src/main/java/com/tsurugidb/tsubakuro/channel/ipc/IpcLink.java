@@ -66,7 +66,9 @@ public final class IpcLink extends Link {
 
     @Override
     public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload) {
-        sendNative(wireHandle, s, frameHeader, payload);
+        synchronized (this) {
+            sendNative(wireHandle, s, frameHeader, payload);
+        }
         LOG.trace("send {}", payload);
     }
 
@@ -115,11 +117,11 @@ public final class IpcLink extends Link {
             try {
                 receiver.join();
             } catch (InterruptedException e) {
-                System.err.println(e);
-                e.printStackTrace();
+                throw new IOException(e);
+            } finally {
+                destroyNative(wireHandle);
+                closed = true;
             }
-            destroyNative(wireHandle);
-            closed = true;
         }
     }
 }

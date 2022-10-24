@@ -52,28 +52,6 @@ public interface DatastoreService extends ServerResource {
     }
 
     /**
-     * Requests {@code RestoreBackup} to datastore service.
-     * @param request the request
-     * @return the future response of the request,
-     *      which may raise error if the request was failed
-     * @throws IOException if I/O error was occurred while sending the request
-     */
-    default FutureResponse<Void> send(DatastoreRequest.RestoreBackup request) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Requests {@code RestoreTag} to datastore service.
-     * @param request the request
-     * @return the future response of the request,
-     *      which may raise error if the request was failed
-     * @throws IOException if I/O error was occurred while sending the request
-     */
-    default FutureResponse<Void> send(DatastoreRequest.RestoreTag request) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Requests {@code TagList} to datastore service.
      * @param request the request
      * @return the future response of the request,

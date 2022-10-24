@@ -31,7 +31,9 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         protected boolean next() {
-            disposeUsedDataNative(wireHandle, source.capacity());
+            if (source.capacity() > 0) {
+                disposeUsedDataNative(wireHandle, source.capacity());
+            }
             source = getChunkNative(wireHandle);
             if (Objects.isNull(source)) {
                 return false;

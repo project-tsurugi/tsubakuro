@@ -42,16 +42,16 @@ public:
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
 
-    message_header(index_type idx, length_type length) : idx_(idx), length_(length) {}
-    message_header() : message_header(0, 0) {}
-    explicit message_header(const char* buffer) {
+    message_header(index_type idx, length_type length) noexcept : idx_(idx), length_(length) {}
+    message_header() noexcept : message_header(0, 0) {}
+    explicit message_header(const char* buffer) noexcept {
         std::memcpy(&idx_, buffer, sizeof(index_type));
         std::memcpy(&length_, buffer + sizeof(index_type), sizeof(length_type));  //NOLINT
     }
 
     [[nodiscard]] length_type get_length() const { return length_; }
     [[nodiscard]] index_type get_idx() const { return idx_; }
-    char* get_buffer() {
+    char* get_buffer() noexcept {
         std::memcpy(buffer_, &idx_, sizeof(index_type));  //NOLINT
         std::memcpy(buffer_ + sizeof(index_type), &length_, sizeof(length_type));  //NOLINT
         return static_cast<char*>(buffer_);
@@ -75,9 +75,9 @@ public:
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type) + sizeof(msg_type);
 
-    response_header(index_type idx, length_type length, msg_type type) : idx_(idx), type_(type), length_(length) {}
-    response_header() : response_header(0, 0, 0) {}
-    explicit response_header(const char* buffer) {
+    response_header(index_type idx, length_type length, msg_type type) noexcept : idx_(idx), type_(type), length_(length) {}
+    response_header() noexcept : response_header(0, 0, 0) {}
+    explicit response_header(const char* buffer) noexcept {
         std::memcpy(&idx_, buffer, sizeof(index_type));
         std::memcpy(&type_, buffer + sizeof(index_type), sizeof(msg_type));  //NOLINT
         std::memcpy(&length_, buffer + (sizeof(index_type) + sizeof(msg_type)), sizeof(length_type));  //NOLINT
@@ -86,7 +86,7 @@ public:
     [[nodiscard]] index_type get_idx() const { return idx_; }
     [[nodiscard]] length_type get_length() const { return length_; }
     [[nodiscard]] msg_type get_type() const { return type_; }
-    char* get_buffer() {
+    char* get_buffer() noexcept {
         std::memcpy(buffer_, &idx_, sizeof(index_type));  //NOLINT
         std::memcpy(buffer_ + sizeof(index_type), &type_, sizeof(msg_type));  //NOLINT
         std::memcpy(buffer_ + (sizeof(index_type) + sizeof(msg_type)), &length_, sizeof(length_type));  //NOLINT
@@ -110,15 +110,15 @@ public:
 
     static constexpr std::size_t size = sizeof(length_type);
 
-    explicit length_header(length_type length) : length_(length) {}
-    explicit length_header(std::size_t length) : length_(static_cast<length_type>(length)) {}
-    length_header() : length_header(static_cast<length_type>(0)) {}
-    explicit length_header(const char* buffer) {
+    explicit length_header(length_type length) noexcept : length_(length) {}
+    explicit length_header(std::size_t length) noexcept : length_(static_cast<length_type>(length)) {}
+    length_header() noexcept : length_header(static_cast<length_type>(0)) {}
+    explicit length_header(const char* buffer) noexcept {
         std::memcpy(&length_, buffer, sizeof(length_type));
     }
 
     [[nodiscard]] length_type get_length() const { return length_; }
-    char* get_buffer() {
+    char* get_buffer() noexcept {
         std::memcpy(buffer_, &length_, sizeof(length_type));  //NOLINT
         return static_cast<char*>(buffer_);
     };
@@ -152,7 +152,7 @@ public:
     /**
      * @brief Construct a new object for result_set_wire.
      */
-    simple_wire() {
+    simple_wire() noexcept {
         buffer_handle_ = 0;
         capacity_ = 0;
     }
@@ -206,7 +206,7 @@ public:
         pushed_ += length;
     }
 
-    char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+    char* get_bip_address(boost::interprocess::managed_shared_memory* managed_shm_ptr) noexcept {
         if (buffer_handle_ != 0) {
             return static_cast<char*>(managed_shm_ptr->get_address_from_handle(buffer_handle_));
         }
@@ -220,7 +220,7 @@ protected:
     std::size_t stored() const { return (pushed_.load() - poped_.load()); }  //NOLINT
     std::size_t room() const { return capacity_ - stored(); }  //NOLINT
     std::size_t index(std::size_t n) const { return n %  capacity_; }  //NOLINT
-    char* buffer_address(char* base, std::size_t n) { return base + index(n); }  //NOLINT
+    char* buffer_address(char* base, std::size_t n) noexcept { return base + index(n); }  //NOLINT
     const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_.load() + offset); }  //NOLINT
     const char* read_address(const char* base) const { return base + index(poped_.load()); }  //NOLINT
     void wait_to_write(std::size_t length) {
@@ -230,7 +230,7 @@ protected:
         c_full_.wait(lock, [this, length](){ return room() >= length; });
         wait_for_write_ = false;
     }
-    void write_in_buffer(char *base, char* to, const char* from, std::size_t length) {
+    void write_in_buffer(char *base, char* to, const char* from, std::size_t length) noexcept {
         if((base + capacity_) >= (to + length)) {  //NOLINT
             memcpy(to, from, length);
         } else {
@@ -269,7 +269,7 @@ protected:
 // for request
 class unidirectional_message_wire : public simple_wire<message_header> {
 public:
-    unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<message_header>(managed_shm_ptr, capacity) {}
+    unidirectional_message_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) noexcept : simple_wire<message_header>(managed_shm_ptr, capacity) {}
 
     /**
      * @brief push a request message into the queue one by one byte.
@@ -285,7 +285,7 @@ public:
     /**
      * @brief flush the current message.
      */
-    void flush(char* base, message_header::index_type index) {
+    void flush(char* base, message_header::index_type index) noexcept {
         message_header header(index, pushed_.load() - (pushed_valid_.load() + message_header::size));
         write_in_buffer(base, buffer_address(base, pushed_valid_.load()), header.get_buffer(), message_header::size);
         pushed_valid_.store(pushed_.load());
@@ -299,7 +299,7 @@ public:
     /**
      * @brief get the first request message in the queue.
      */
-    std::string_view payload(const char* base) {
+    std::string_view payload(const char* base) noexcept {
         std::size_t length = peep(base).get_length();
         if (index(poped_.load() + message_header::size) < index(poped_.load() + message_header::size + length)) {
             return std::string_view(read_address(base, message_header::size), length);
@@ -312,10 +312,23 @@ public:
     }
 
     /**
+     * @brief pop the current message.
+     */
+    void read(char* to, const char* base) noexcept {
+        std::size_t length = peep(base).get_length();
+        read_from_buffer(to, base, read_address(base, message_header::size), length);
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_write_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
+        }
+    }
+
+    /**
      * @brief dispose the message in the queue at read_point that has completed read and is no longer needed
      *  used by endpoint IF
      */
-    void dispose(const char* base, const std::size_t read_point) {
+    void dispose(const char* base, const std::size_t read_point) noexcept {
         if (poped_.load() == read_point) {
             poped_ += (peep(base).get_length() + message_header::size);
             if (copy_of_payload_) {
@@ -334,7 +347,7 @@ private:
 // for response
 class unidirectional_response_wire : public simple_wire<response_header> {
 public:
-    unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<response_header>(managed_shm_ptr, capacity) {}
+    unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) noexcept : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
     /**
      * @brief wait for response arrival and return its header.
@@ -380,7 +393,7 @@ public:
     /**
      * @brief pop the current message.
      */
-    void read(char* to, const char* base) {
+    void read(char* to, const char* base) noexcept {
         auto length = static_cast<std::size_t>(header_received_.get_length());
         read_from_buffer(to, base, read_address(base, response_header::size), length);
         poped_ += response_header::size + length;
@@ -390,7 +403,7 @@ public:
             c_full_.notify_one();
         }
     }
-    void close() {
+    void close() noexcept {
         closed_.store(true);
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
@@ -457,7 +470,7 @@ public:
             }
             write(get_bip_address(managed_shm_ptr_), from, length);
         }
-        void flush() {
+        void flush() noexcept {
             if (continued_) {
                 flush(get_bip_address(managed_shm_ptr_));
             }
@@ -519,18 +532,18 @@ public:
          */
         [[nodiscard]] bool has_record() const { return pushed_valid_.load() > poped_.load(); }
 
-        void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) {
+        void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) noexcept {
             buffer_handle_ = handle;
             capacity_ = capacity;
         }
-        void detach_buffer() {
+        void detach_buffer() noexcept {
             buffer_handle_ = 0;
             capacity_ = 0;
         }
         bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
             return handle == buffer_handle_;
         }
-        void reset_handle() { buffer_handle_ = 0; }
+        void reset_handle() noexcept { buffer_handle_ = 0; }
         [[nodiscard]] boost::interprocess::managed_shared_memory::handle_t get_handle() const { return buffer_handle_; }
 
     private:
@@ -555,7 +568,7 @@ public:
             }
         }
 
-        void flush(char* base) {
+        void flush(char* base) noexcept {
             length_header header(pushed_.load() - (pushed_valid_.load() + length_header::size));
             write_in_buffer(base, buffer_address(base, pushed_valid_.load()), header.get_buffer(), length_header::size);
             pushed_valid_.store(pushed_.load());
@@ -567,7 +580,7 @@ public:
             continued_ = false;
         }
 
-        void set_closed() {
+        void set_closed() noexcept {
             closed_ = true;
             if (wait_for_write_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -575,7 +588,7 @@ public:
             }
         }
 
-        void set_environments(unidirectional_simple_wires* envelope, boost::interprocess::managed_shared_memory* managed_shm_ptr) {
+        void set_environments(unidirectional_simple_wires* envelope, boost::interprocess::managed_shared_memory* managed_shm_ptr) noexcept {
             envelope_ = envelope;
             managed_shm_ptr_ = managed_shm_ptr;
         }
@@ -597,7 +610,7 @@ public:
         }
         reserved_ = static_cast<char*>(managed_shm_ptr->allocate_aligned(wire_size, Alignment));
     }
-    ~unidirectional_simple_wires() {
+    ~unidirectional_simple_wires() noexcept {
         if (reserved_ != nullptr) {
             managed_shm_ptr_->deallocate(reserved_);
         }
@@ -638,7 +651,7 @@ public:
         only_one_buffer_ = false;
         return &unidirectional_simple_wires_.at(index);
     }
-    void release(unidirectional_simple_wire* wire) {
+    void release(unidirectional_simple_wire* wire) noexcept {
         char* buffer = wire->get_bip_address(managed_shm_ptr_);
 
         unidirectional_simple_wires_.at(search_wire(wire)).reset_handle();
@@ -711,7 +724,7 @@ public:
     /**
      * @brief notify that the client does not read record any more
      */
-    void set_closed() {
+    void set_closed() noexcept {
         for (auto&& wire: unidirectional_simple_wires_) {
             wire.set_closed();
         }
@@ -722,7 +735,7 @@ public:
     /**
      * @brief mark the end of the result set by the sql service
      */
-    void set_eor() {
+    void set_eor() noexcept {
         eor_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_record_) {
@@ -733,7 +746,7 @@ public:
     [[nodiscard]] bool is_eor() const { return eor_; }
 
 private:
-    std::size_t search_free_wire() {
+    std::size_t search_free_wire() noexcept {
         if (count_using_ == next_index_) {
             count_using_++;
             return next_index_++;
@@ -746,7 +759,7 @@ private:
         }
         std::abort();  // FIXME
     }
-    std::size_t search_wire(unidirectional_simple_wire* wire) {
+    std::size_t search_wire(unidirectional_simple_wire* wire) noexcept {
         for (std::size_t index = 0; index < next_index_; index++) {
             if (unidirectional_simple_wires_.at(index).equal(wire->get_handle())) {
                 return index;
@@ -758,7 +771,7 @@ private:
     /**
      * @brief notify the arrival of a record
      */
-    void notify_record_arrival() {
+    void notify_record_arrival() noexcept {
         if (wait_for_record_) {
             boost::interprocess::scoped_lock lock(m_record_);
             c_record_.notify_one();
@@ -808,7 +821,7 @@ public:
     connection_queue& operator = (connection_queue const&) = delete;
     connection_queue& operator = (connection_queue&&) = delete;
 
-    std::size_t request() {
+    std::size_t request() noexcept {
         std::size_t rv = ++requested_;
 
         std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -888,7 +901,7 @@ public:
         }
         s_terminated_.wait();
     }
-    bool is_terminated() { return terminate_; }
+    bool is_terminated() noexcept { return terminate_; }
     void confirm_terminated() { s_terminated_.post(); }
 
 private:
