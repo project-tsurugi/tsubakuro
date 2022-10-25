@@ -572,23 +572,18 @@ class SqlServiceStubTest {
     void sendQuerySuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_QUERY,
                 RequestHandler.returns(
-                        SqlResponse.ExecuteQuery.newBuilder()
-                                .setName(RS_RD)
-                                .setRecordMeta(
-                                    toResultSetMetadata(
-                                        Types.column("a", Types.of(BigDecimal.class)),
-                                        Types.column("b", Types.of(String.class)),
-                                        Types.column("c", Types.of(double.class)))
-                                )
-                                .build(),
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
+                        toResultSetMetadata(
+                            Types.column("a", Types.of(BigDecimal.class)),
+                            Types.column("b", Types.of(String.class)),
+                            Types.column("c", Types.of(double.class))).toByteArray(),
                         Relation.of(new Object[][] {
                             {
                                 new BigDecimal("3.14"),
                                 "Hello, world!",
                                 1.25,
                             },
-                        }),
-                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
+                        }))));
 
         var message = SqlRequest.ExecuteQuery.newBuilder()
                 .setSql("SELECT 1")
@@ -898,18 +893,14 @@ class SqlServiceStubTest {
     void sendDumpSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_DUMP,
                 RequestHandler.returns(
-                        SqlResponse.ExecuteQuery.newBuilder()
-                                .setName(RS_RD)
-                                .setRecordMeta(
-                                    toResultSetMetadata(
-                                        Types.column("path", Types.of(String.class))))
-                                .build(),
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
+                        toResultSetMetadata(
+                            Types.column("path", Types.of(String.class))).toByteArray(),
                         Relation.of(new Object[][] {
                             { "a" },
                             { "b" },
                             { "c" },
-                        }),
-                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
+                        }))));
 
         var message = SqlRequest.ExecuteDump.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder())

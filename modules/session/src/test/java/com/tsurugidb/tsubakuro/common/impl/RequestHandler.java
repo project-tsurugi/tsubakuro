@@ -30,16 +30,8 @@ public interface RequestHandler {
     /**
      * Creates a new request handler which returns the given response payload.
      * @param response the response payload
-     * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, ByteBuffer metadata, Relation relation, ByteBuffer status) {
-        Objects.requireNonNull(response);
-        Objects.requireNonNull(metadata);
-        Objects.requireNonNull(relation);
-        Objects.requireNonNull(status);
-        return (id, request) -> new SimpleResponse(response, metadata, relation.getByteBuffer(), status);
-    }
     static RequestHandler returns(ByteBuffer response) {
         Objects.requireNonNull(response);
         return (id, request) -> new SimpleResponse(response);
@@ -48,18 +40,8 @@ public interface RequestHandler {
     /**
      * Creates a new request handler which returns the given response payload.
      * @param response the response payload
-     * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, ByteBuffer metadata, Relation relation, byte[] status) {
-        Objects.requireNonNull(response);
-        Objects.requireNonNull(metadata);
-        Objects.requireNonNull(relation);
-        if (Objects.nonNull(status)) {
-            return returns(ByteBuffer.wrap(response), metadata, relation, ByteBuffer.wrap(status));
-        }
-        return returns(ByteBuffer.wrap(response), metadata, relation, null);
-    }
     static RequestHandler returns(byte[] response) {
         Objects.requireNonNull(response);
         return returns(ByteBuffer.wrap(response));

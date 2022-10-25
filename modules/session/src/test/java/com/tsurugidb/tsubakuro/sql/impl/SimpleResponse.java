@@ -25,7 +25,7 @@ public class SimpleResponse implements Response {
 
     private final ByteBuffer relation;
 
-    private final ByteBuffer status;
+//    private final ByteBuffer status;
 
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -34,12 +34,11 @@ public class SimpleResponse implements Response {
      * @param main the main response data
      * @param sub the sub response data
      */
-    public SimpleResponse(ByteBuffer main, ByteBuffer metadata, ByteBuffer relation, ByteBuffer status) {
+    public SimpleResponse(ByteBuffer main, ByteBuffer metadata, ByteBuffer relation) {
         Objects.requireNonNull(main);
         this.main = main;
         this.metadata = metadata;
         this.relation = relation;
-        this.status = status;
     }
 
     /**
@@ -48,7 +47,7 @@ public class SimpleResponse implements Response {
      * @param subMap map of sub response ID and its data
      */
     public SimpleResponse(ByteBuffer main) {
-        this(main, null, null, null);
+        this(main, null, null);
     }
 
     @Override

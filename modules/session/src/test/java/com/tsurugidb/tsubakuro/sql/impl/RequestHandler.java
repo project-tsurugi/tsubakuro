@@ -33,14 +33,12 @@ public interface RequestHandler {
      * @param response the response payload
      * @param metadata the metadata
      * @param relation the resultSet
-     * @param status the status
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, ByteBuffer metadata, Relation relation, ByteBuffer status) {
+    static RequestHandler returns(ByteBuffer response, ByteBuffer metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        Objects.requireNonNull(status);
-        return (id, request) -> new SimpleResponse(status, metadata, relation.getByteBuffer(), null);
+        return (id, request) -> new SimpleResponse(response, metadata, relation.getByteBuffer());
     }
     static RequestHandler returns(ByteBuffer response) {
         Objects.requireNonNull(response);
@@ -53,13 +51,13 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, ByteBuffer metadata, Relation relation, byte[] status) {
+    static RequestHandler returns(byte[] response, byte[] metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        if (Objects.nonNull(status)) {
-            return returns(ByteBuffer.wrap(response), metadata, relation, ByteBuffer.wrap(status));
+        if (Objects.nonNull(metadata)) {
+            return returns(ByteBuffer.wrap(response), ByteBuffer.wrap(metadata), relation);
         }
-        return returns(ByteBuffer.wrap(response), metadata, relation, ByteBuffer.wrap(response));
+        return returns(ByteBuffer.wrap(response), null, relation);
     }
     static RequestHandler returns(byte[] response) {
         Objects.requireNonNull(response);
@@ -75,7 +73,7 @@ public interface RequestHandler {
 //        Objects.requireNonNull(response);
 //        return returns(response.toByteArray());
 //    }
-
+    // for each response without result set transfer
     static RequestHandler returns(SqlResponse.ResultOnly response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
@@ -107,17 +105,20 @@ public interface RequestHandler {
         return returns(toDelimitedByteArray(sqlResponse));
     }
 
-    static RequestHandler returns(SqlResponse.ExecuteQuery response, Relation relation, SqlResponse.ResultOnly status) {
+    // for result set transfer (normal case)
+    static RequestHandler returns(SqlResponse.ResultOnly response, byte[] metadata, Relation relation) {
         Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setExecuteQuery(response).build();
-        var metadata = ByteBuffer.wrap(response.getRecordMeta().toByteArray());
-        var sqlStatus = SqlResponse.Response.newBuilder().setResultOnly(status).build();
-        return returns(toDelimitedByteArray(sqlResponse), metadata, relation, toDelimitedByteArray(sqlStatus));
+        Objects.requireNonNull(metadata);
+        Objects.requireNonNull(relation);
+        var sqlStatus = SqlResponse.Response.newBuilder().setResultOnly(response).build();
+        return returns(toDelimitedByteArray(sqlStatus), metadata, relation);
     }
+    // for result set transfer without metadata case (error)
     static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
         Objects.requireNonNull(response);
+        Objects.requireNonNull(relation);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-        return returns(toDelimitedByteArray(sqlResponse), null, relation, null);
+        return returns(toDelimitedByteArray(sqlResponse), null, relation);
     }
 
     /**
