@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +35,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final AtomicReference<V> result = new AtomicReference<>();
 
+    private final AtomicBoolean closed = new AtomicBoolean();
+
     /**
      * Creates a new instance.
      * @param delegate the decoration target
@@ -46,6 +49,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         Objects.requireNonNull(mapper);
         this.delegate = delegate;
         this.mapper = mapper;
+        this.closed.set(false);
     }
 
     @Override
@@ -72,6 +76,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             return Owner.of(delegate.get());
         }
         try (Owner<Response> response = Owner.of(delegate.get())) {
+            if (closed.get()) {
+                throw new IOException("Future is already closed");
+            }
             response.get().waitForMainResponse();
             return response.move();
         }
@@ -85,6 +92,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         long timeoutMillis = Math.max(unit.toMillis(timeout), 2);
         try (Owner<Response> response = Owner.of(delegate.get(timeoutMillis / 2, TimeUnit.MILLISECONDS))) {
             try {
+                if (closed.get()) {
+                    throw new IOException("Future is already closed");
+                }
                 response.get().waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 unprocessed.set(response.release());
@@ -122,8 +132,12 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        Owner.close(unprocessed.getAndSet(null));
-        delegate.close();
+        try {
+            Owner.close(unprocessed.getAndSet(null));
+            delegate.close();
+        } finally {
+            closed.set(true);
+        }
     }
 
     @Override

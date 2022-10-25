@@ -70,7 +70,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         return service.send(SqlRequest.ExecuteStatement.newBuilder()
@@ -82,7 +82,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         return service.send(SqlRequest.ExecuteQuery.newBuilder()
@@ -97,7 +97,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
@@ -115,7 +115,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
@@ -142,7 +142,7 @@ public class TransactionImpl implements Transaction {
                     throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameterTable);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var request = SqlRequest.Batch.newBuilder()
@@ -178,7 +178,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
         Objects.requireNonNull(option);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
@@ -201,7 +201,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(files);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
@@ -219,7 +219,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
-        if (Objects.isNull(service)) {
+        if (cleanuped) {
             throw new IOException("already closed");
         }
         var rv = service.send(SqlRequest.Commit.newBuilder()
@@ -232,15 +232,12 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public FutureResponse<Void> rollback() throws IOException {
-        if (Objects.isNull(service)) {
-            throw new IOException("already closed");
+        if (cleanuped) {
+            return FutureResponse.returns(null);
         }
-        if (!cleanuped) {
-            var rv = submitRollback();
-            cleanuped = true;
-            return rv;
-        }
-        return FutureResponse.returns(null);
+        var rv = submitRollback();
+        cleanuped = true;
+        return rv;
     }
 
     private FutureResponse<Void> submitRollback() throws IOException {
@@ -263,7 +260,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(service) && !cleanuped) {
+        if (!cleanuped) {
             // FIXME need to consider rollback is suitable here
             try (var rollback = submitRollback()) {
                 if (timeout == 0) {
