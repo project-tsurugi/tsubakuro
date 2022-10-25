@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -71,12 +70,12 @@ public class SqlServiceStub implements SqlService {
     //        return null;
     //    }
 
-    //    static SqlServiceException newEngineError(
-    //            @Nonnull SqlResponse.EngineError message) {
-    //        assert message != null;
-    //        // FIXME impl
-    //        return new SqlServiceException(SqlServiceCode.UNKNOWN, message.getMessageText());
-    //    }
+    // static SqlServiceException newEngineError(
+    //     @Nonnull SqlResponse.EngineError message) {
+    //     assert message != null;
+    //     // FIXME impl
+    //     return new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, message.getMessageText());
+    //}
 
     static BrokenResponseException newResultNotSet(
             @Nonnull Class<? extends Message> aClass, @Nonnull String name) {
@@ -282,52 +281,40 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class DescribeStatementProcessor implements MainResponseProcessor<StatementMetadata> {
-        private final AtomicReference<SqlResponse.Explain> detailResponseCache = new AtomicReference<>();
+        private final AtomicReference<SqlResponse.DescribeStatement> detailResponseCache = new AtomicReference<>();
 
         @Override
         public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (Objects.isNull(detailResponseCache.get())) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
+                if (!SqlResponse.Response.ResponseCase.DESCRIBE_STATEMENT.equals(response.getResponseCase())) {
                     // FIXME log error message
                     throw new IOException("response type is inconsistent with the request type");
                 }
-                detailResponseCache.set(response.getExplain());
+                detailResponseCache.set(response.getDescribeStatement());
             }
             var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (explain): {}", detailResponse); //$NON-NLS-1$
+            LOG.trace("receive: {}", detailResponse); //$NON-NLS-1$
             switch (detailResponse.getResultCase()) {
-            case OUTPUT:
-                LOG.warn("deprecated response: {}", detailResponse);
-                return new BasicStatementMetadata(
-                        FORMAT_ID_LEGACY_EXPLAIN,
-                        FORMAT_VERSION_LEGACY_EXPLAIN,
-                        detailResponse.getOutput(),
-                        List.of());
-
             case SUCCESS:
                 return new StatementMetadataAdapter(detailResponse.getSuccess());
-
             case ERROR:
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
-
-            case RESULT_NOT_SET:
-                break; // not recognized
             }
-            throw newResultNotRecognized(SqlResponse.Explain.class, "result", detailResponse.getResultCase());
+            throw new AssertionError(); // may not occur
         }
     }
 
     @Override
     public FutureResponse<StatementMetadata> send(
-            @Nonnull SqlRequest.Explain request) throws IOException {
+            @Nonnull SqlRequest.DescribeStatement request) throws IOException {
         Objects.requireNonNull(request);
-        LOG.trace("send (explain): {}", request); //$NON-NLS-1$
+        LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
-                    .setExplain(request)
+                    .setDescribeStatement(request)
                     .build()),
                 new DescribeStatementProcessor().asResponseProcessor());
     }

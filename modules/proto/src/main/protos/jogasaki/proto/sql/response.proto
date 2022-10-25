@@ -9,6 +9,137 @@ option java_outer_classname = "SqlResponse";
 import "jogasaki/proto/sql/common.proto";
 import "jogasaki/proto/sql/status.proto";
 
+// empty message.
+message Void {}
+
+// SQL engine error code.
+// - CT_xxx - compiler error
+// - RT_xxx - execution engine error
+// - TX_xxx - transaction engine error
+// - SV_xxx - service layer error
+enum EngineErrorCode {
+    // invalid message.
+    ENGINE_ERROR_CODE_UNSPECIFIED = 0;
+
+    // unknown service error.
+    SV_UNKNOWN = 1;
+
+    // the SQL client session is timeout.
+    SV_SESSION_TIMEOUT = 2;
+
+    // transaction ID is not valid.
+    SV_INVALID_TRANSACTION_ID = 3;
+
+    // prepared statement ID is not valid.
+    SV_INVALID_STATEMENT_ID = 4;
+
+    // beginning transaction is restricted by the system.
+    // It maybe shutdown, restore, or lockout.
+    SV_TRANSACTION_UNAVAILABLE = 5;
+
+    // statement type is invalid for the operation.
+    // e.g. load operation with SELECT statement.
+    SV_INCONSISTENT_STATEMENT = 6;
+
+    reserved 7 to 1000;
+
+    // unknown compiler error.
+    CT_UNKNOWN = 1001;
+
+    // SQL syntax is wrong.
+    CT_SYNTAX_ERROR = 1002;
+
+    // the target feature is not supported.
+    CT_FEATURE_UNSUPPORTED = 1003;
+
+    reserved 1004 to 1010;
+
+    // the target operation does not support for the operand type.
+    CT_TYPE_INVALID = 1011;
+
+    // the input type is inconsistent for the operation.
+    CT_TYPE_INCONSISTENT = 1012;
+
+    // the input type is ambiguous for the operation.
+    CT_TYPE_AMBIGUOUS = 1013;
+
+    reserved 1014 to 1100;
+
+    // the table or view is not found.
+    CT_TABLE_NOT_FOUND = 1101;
+
+    CT_TABLE_INCONSISTENT = 1102;
+
+    CT_TABLE_DUPLICATE = 1103;
+
+    CT_PRIMARY_KEY_DUPLICATE = 1104;
+
+    CT_UNIQUE_KEY_DUPLICATE = 1105;
+
+    CT_INDEX_DUPLICATE = 1106;
+
+    // the table column is not found.
+    CT_COLUMN_NOT_FOUND = 1201;
+
+    CT_COLUMN_INCONSISTENT = 1202;
+
+    CT_COLUMN_INVALID_AGGREGATION = 1203;
+
+    // the variable is not found.
+    CT_VARIABLE_NOT_FOUND = 1301;
+
+    // the function is not found.
+    CT_FUNCTION_NOT_FOUND = 1401;
+
+    CT_FUNCTION_AMBIGUOUS = 1402;
+
+    CT_ELEMENTS_NUMBER_INCONSISTENT = 1501;
+
+    reserved 1502 to 2000;
+
+    RT_UNKNOWN = 2001;
+
+    RT_TABLE_ALREADY_EXISTS = 2101;
+
+    RT_TABLE_NOT_FOUND = 2102;
+
+    RT_PRIMARY_KEY_CONFLICT = 2201;
+
+    RT_UNIQUE_KEY_CONFLICT = 2202;
+
+    RT_DECIMAL_OVERFLOW = 2301;
+
+    reserved 2302 to 3000;
+
+    // unknown transaction engine error.
+    TX_UNKNOWN = 3001;
+
+    // aborted by optimistic concurrency control between short transactions.
+    TX_OCC_SERIALIZATION_ERROR = 3101;
+
+    // OCC reads write preserved entries.
+    TX_OCC_CONFLICT_WRITE_PRESERVE = 3201;
+}
+
+// SQL engine error was occurred.
+message EngineError {
+    // the error code.
+    EngineErrorCode code = 1;
+
+    // the message text.
+    string message_text = 2;
+
+    // the message ID in the message resource (optional).
+    string message_id = 3;
+
+    // the arguments for the message ID (optional).
+    repeated string message_arguments = 4;
+
+    // the corresponding transaction is aborted by the service.
+    bool transaction_aborted = 5;
+}
+
+
 /*
  * Definition of sub fields for Response.
  */
@@ -58,35 +189,27 @@ message ExecuteQuery {
   ResultSetMetadata record_meta = 2;
 }
 
-/* For response to Explain. */
-message Explain {
+// describe about a statement.
+message DescribeStatement {
+    reserved 1 to 10;
 
-  // request is successfully completed.
-  message Success {
-
-    // the content format ID.
-    string format_id = 1;
-
-    // the content format version.
-    uint64 format_version = 2;
-
-    // the explain result contents.
-    string contents = 3;
-
-    // the result set column information, or empty if it does not provided.
-    repeated common.Column columns = 4;
-  }
-
-  // the response body.
-  oneof result {
     // request is successfully completed.
-    Success success = 11;
+    message Success {
+        // the resulting column information, only if it is a query.
+        repeated common.Column columns = 1;
 
-    // deprecated: The result output string of the explain.
-    string output = 1;
+        // the JSON style explain text.
+        string plan = 2;
+    }
 
-    Error error = 2;
-  }
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // error was occurred.
+        Error error = 12;
+    }
 }
 
 // describe about a table.
@@ -114,7 +237,7 @@ message DescribeTable {
     // request is successfully completed.
     Success success = 11;
 
-    // engine error was occurred.
+    // error was occurred.
     Error error = 12;
   }
 }
@@ -140,9 +263,11 @@ message Response {
     Begin begin = 2;
     Prepare prepare = 3;
     ExecuteQuery execute_query = 4;
-    Explain explain = 5;
+    // explain is no longer used
+    // Explain explain = 5;
     DescribeTable describe_table = 6;
     Batch batch = 7;
+    DescribeStatement describe_statement = 8;
   }
 }
 

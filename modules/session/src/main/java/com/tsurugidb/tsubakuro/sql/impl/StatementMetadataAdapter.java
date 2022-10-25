@@ -17,39 +17,38 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
  */
 public class StatementMetadataAdapter implements StatementMetadata {
 
-    private final SqlResponse.Explain.Success message;
+    private final SqlResponse.DescribeStatement.Success proto;
 
     /**
      * Creates a new instance.
-     * @param message the explain operation response
+     * @param proto the corresponding protocol buffers message
      */
-    public StatementMetadataAdapter(@Nonnull SqlResponse.Explain.Success message) {
-        Objects.requireNonNull(message);
-        this.message = message;
+    public StatementMetadataAdapter(@Nonnull SqlResponse.DescribeStatement.Success proto) {
+        Objects.requireNonNull(proto);
+        this.proto = proto;
     }
 
     @Override
-    public String getFormatId() {
-        return message.getFormatId();
-    }
-
-    @Override
-    public long getFormatVersion() {
-        return message.getFormatVersion();
-    }
-
-    @Override
-    public String getContents() {
-        return message.getContents();
+    public String getPlanText() {
+        if (Objects.nonNull(proto)) {
+            return proto.getPlan();
+        }
+        return null;
     }
 
     @Override
     public List<? extends Column> getColumns() {
-        return message.getColumnsList();
+        if (Objects.nonNull(proto)) {
+            return proto.getColumnsList();
+        }
+        return null;
     }
 
     @Override
     public String toString() {
-        return String.valueOf(message);
+        if (Objects.nonNull(proto)) {
+            return String.valueOf(proto);
+        }
+        return "Neither message nor proto has not been set.";
     }
 }

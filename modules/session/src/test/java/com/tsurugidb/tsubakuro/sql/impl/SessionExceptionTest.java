@@ -80,14 +80,6 @@ class SesstionExceptionTest {
                 case ROLLBACK:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
-                case EXPLAIN:
-                    nextResponse = SqlResponse.Response.newBuilder()
-                        .setExplain(SqlResponse.Explain.newBuilder()
-                                  .setError(SqlResponse.Error.newBuilder()
-                                            .setStatus(SqlStatus.Status.ERR_UNKNOWN)
-                                            .setDetail(messageForTheTest)))
-                        .build();
-                        break;
                 default:
                     return null;  // dummy as it is test for session
             }

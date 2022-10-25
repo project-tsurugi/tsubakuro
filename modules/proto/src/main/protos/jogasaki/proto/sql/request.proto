@@ -108,6 +108,15 @@ message ParameterSet {
     repeated Parameter elements = 1;
 }
 
+// parameter applied prepared statement.
+message ExecutableStatement {
+    // the prepared statement ID to execute.
+    uint64 id = 1;
+
+    // the arguments of each placeholder.
+    repeated Parameter parameters = 2;
+}
+
 // the transaction type.
 enum TransactionType {
     // use default transaction type.
@@ -289,10 +298,17 @@ message DisposePreparedStatement {
   common.PreparedStatement prepared_statement_handle = 1;
 }
 
-/* For explain prepared sql. */
-message Explain {
-  common.PreparedStatement prepared_statement_handle = 1;
-  repeated Parameter parameters = 2;
+// describe about the statement.
+message DescribeStatement {
+    reserved 1 to 10;
+
+    // the statement to describe.
+    oneof statement {
+        // the source text.
+        string source_text = 11;
+        // the prepared statement with arguments.
+        ExecutableStatement executable_statement = 12;
+    }
 }
 
 // describe about the table.
@@ -316,11 +332,13 @@ message Request {
     Commit commit = 8;
     Rollback rollback = 9;
     DisposePreparedStatement dispose_prepared_statement = 10;
+    // the following two are no longer used
     // Disconnect disconnect = 11;
-    Explain explain = 12;
+    // Explain explain = 12;
     ExecuteDump execute_dump = 13;
     ExecuteLoad execute_load = 14;
     DescribeTable describe_table = 15;
     Batch batch = 16;
+    DescribeStatement describe_statement = 17;
   }
 }
