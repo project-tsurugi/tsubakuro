@@ -71,7 +71,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteStatement.newBuilder()
                 .setTransactionHandle(transaction)
@@ -83,7 +83,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteQuery.newBuilder()
                 .setTransactionHandle(transaction)
@@ -98,7 +98,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
             .setTransactionHandle(transaction)
@@ -116,7 +116,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
         .setTransactionHandle(transaction)
@@ -143,7 +143,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameterTable);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var request = SqlRequest.Batch.newBuilder()
                 .setTransactionHandle(transaction)
@@ -179,7 +179,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(directory);
         Objects.requireNonNull(option);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
                 .setTransactionHandle(transaction)
@@ -202,7 +202,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(files);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
         .setTransactionHandle(transaction)
@@ -220,7 +220,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
         if (cleanuped) {
-            throw new IOException("already closed");
+            throw new IOException("transaction already closed");
         }
         var rv = service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction)
@@ -269,7 +269,7 @@ public class TransactionImpl implements Transaction {
                     rollback.get(timeout, unit);
                 }
             } catch (TimeoutException e) {
-                LOG.warn("disposing transaction is timeout", e);
+                LOG.warn("timeout occurred in the transaction disposal", e);
             } finally {
                 cleanuped = true;
             }

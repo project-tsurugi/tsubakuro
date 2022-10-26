@@ -77,7 +77,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         }
         try (Owner<Response> response = Owner.of(delegate.get())) {
             if (closed.get()) {
-                throw new IOException("Future is already closed");
+                throw new IOException("Future for " + mapper.toString() + " is already closed");
             }
             response.get().waitForMainResponse();
             return response.move();
@@ -93,7 +93,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         try (Owner<Response> response = Owner.of(delegate.get(timeoutMillis / 2, TimeUnit.MILLISECONDS))) {
             try {
                 if (closed.get()) {
-                    throw new IOException("Future is already closed");
+                    throw new IOException("Future for " + mapper.toString() + " is already closed");
                 }
                 response.get().waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
