@@ -36,11 +36,13 @@ public final class StreamLink extends Link {
     private final Condition condition = lock.newCondition();
     private static final long JOIN_TIMEOUT = 100;
 
+    private boolean closeSessionProcessed = false;
     private boolean socketClosed = false;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
+    private static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -49,6 +51,7 @@ public final class StreamLink extends Link {
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
     public static final byte RESPONSE_SESSION_BODYHEAD = 7;
+    public static final byte RESPONSE_SESSION_BYE_OK = 8;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
@@ -158,6 +161,14 @@ public final class StreamLink extends Link {
                 }
                 return true;
 
+            case RESPONSE_SESSION_BYE_OK:
+                LOG.trace("receive RESPONSE_SESSION_BYE_OK");
+                synchronized (outStream) {
+                    socket.close();
+                    socketClosed = true;
+                }
+                return false;
+
             default:
                 throw new IOException("invalid info in the response");
 
@@ -257,12 +268,6 @@ public final class StreamLink extends Link {
             }
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
-            synchronized (outStream) {
-                if (!socketClosed) {
-                    socket.close();
-                    socketClosed = true;
-                }
-            }
             return null;
         }
     }
@@ -274,10 +279,11 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException {
-        synchronized (outStream) {
-            if (!socketClosed) {
-                socket.close();
-                socketClosed = true;
+        if (!closeSessionProcessed) {
+            try {
+                send(REQUEST_SESSION_BYE, 0);
+            } finally {
+                closeSessionProcessed = true;
             }
         }
         try {
