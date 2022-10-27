@@ -25,6 +25,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean closed;
     private boolean eor;
+    private IOException exception;
 
     class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
@@ -65,6 +66,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         this.byteBufferBackedInput = null;
         this.closed = false;
         this.eor = false;
+        this.exception = null;
     }
 
     /**
@@ -114,6 +116,9 @@ public class ResultSetWireImpl implements ResultSetWire {
                 if (eor) {
                     return new ResultSetResponse(0, null);
                 }
+                if (Objects.nonNull(exception)) {
+                    throw exception;
+                }
                 availableCondition.await();
             } catch (InterruptedException e) {
                 throw new IOException(e);
@@ -143,7 +148,18 @@ public class ResultSetWireImpl implements ResultSetWire {
 
     public void endOfRecords(int slot) throws IOException {
         eor = true;
-        streamLink.sendResutSetByeOk(slot);
+        if (!closed) {
+            lock.lock();
+            try {
+                availableCondition.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
+    }
+
+    public void endOfRecords(int slot, IOException e) throws IOException {
+        exception = e;
         if (!closed) {
             lock.lock();
             try {
