@@ -86,6 +86,15 @@ public class ResultSetBox {
         box.endOfRecords(slot);
     }
 
+    public void pushBye(int slot, IOException e) throws IOException {  // for RESPONSE_RESULT_SET_BYE
+        if (Objects.isNull(boxes[slot])) {
+            waitRegistration(slot);
+        }
+        var box = boxes[slot];
+        boxes[slot] = null;
+        box.endOfRecords(slot, e);
+    }
+
     private void waitRegistration(int slot) throws IOException {
         while (true) {
             Lock l =  slotLock[slot];
