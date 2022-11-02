@@ -153,6 +153,16 @@ public enum SqlServiceCode implements DiagnosticCode {
      */
     ERR_INACTIVE_TRANSACTION(-24, SqlStatus.Status.ERR_INACTIVE_TRANSACTION),
 
+    /**
+     * ERR_RESOURCE_LIMIT_REACHED
+     */
+    ERR_RESOURCE_LIMIT_REACHED(-25, SqlStatus.Status.ERR_RESOURCE_LIMIT_REACHED),
+
+    /**
+     * ERR_DATA_CORRUPTION
+     */
+    ERR_DATA_CORRUPTION(-26, SqlStatus.Status.ERR_DATA_CORRUPTION),
+
     ;
     private final int codeNumber;
 
