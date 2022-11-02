@@ -484,7 +484,7 @@ public:
             auto length = header.get_length();
 
             if (!(stored_valid() >= (length + length_header::size))) {
-                if (timeout == 0) {
+                if (timeout <= 0) {
                     boost::interprocess::scoped_lock lock(m_mutex_);
                     wait_for_read_ = true;
                     std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -498,7 +498,7 @@ public:
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
                                              boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
 #else
-                                             boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+                                             boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
 #endif
                                              [this, length](){ return stored_valid() >= (length + length_header::size); })) {
                         throw std::runtime_error("record has not been received within the specified time");
@@ -670,7 +670,7 @@ public:
                     return &wire;
                 }
             }
-            if (timeout == 0) {
+            if (timeout <= 0) {
                 boost::interprocess::scoped_lock lock(m_record_);
                 wait_for_record_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -698,7 +698,7 @@ public:
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
                                                 boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
 #else
-                                                boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+                                                boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
 #endif
                                           [this, &active_wire](){
                                               for (auto&& wire: unidirectional_simple_wires_) {
@@ -838,7 +838,7 @@ public:
         if (accepted_ >= n) {
             return true;
         }
-        if (timeout == 0) {
+        if (timeout <= 0) {
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_accept_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -852,7 +852,7 @@ public:
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
                                         boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
 #else
-                                        boost::get_system_time() + boost::posix_time::microseconds((timeout+500)/1000),
+                                        boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
 #endif
                                         [this, n](){ return (accepted_ >= n); })) {
                 throw std::runtime_error("connection response has not been accepted within the specified time");
