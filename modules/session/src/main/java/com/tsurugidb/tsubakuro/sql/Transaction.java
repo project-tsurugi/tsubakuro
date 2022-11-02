@@ -20,6 +20,8 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement.
+     * If the return value, describing future response of the action, is not gotten before the transaction close,
+     * the outcome of the invocation will be indefinite.
      * @param source the SQL statement text
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
@@ -30,6 +32,8 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement.
+     * If the return value, describing future response of the action, is not gotten before the transaction close,
+     * the outcome of the invocation will be indefinite.
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement
      * @return a future response of the action
@@ -45,6 +49,8 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement.
+     * If the return value, describing future response of the action, is not gotten before the transaction close,
+     * the outcome of the invocation will be indefinite.
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement
      * @return a future response of the action
@@ -58,6 +64,7 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement and retrieve its result.
+     * No valid data can be obtained from a ResultSet that is gotton after the transaction close.
      * @param source the SQL statement text
      * @return a future response of the result set
      * @throws IOException if I/O error was occurred while sending request
@@ -68,6 +75,7 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement and retrieve its result.
+     * No valid data can be obtained from a ResultSet that is gotton after the transaction close.
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement
      * @return a future response of the result set
@@ -83,6 +91,7 @@ public interface Transaction extends ServerResource {
 
     /**
      * Executes a SQL statement and retrieve its result.
+     * No valid data can be obtained from a ResultSet that is gotton after the transaction close.
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement
      * @return a future response of the result set
