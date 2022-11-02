@@ -30,6 +30,7 @@ import com.tsurugidb.tsubakuro.session.ProtosForTest;
 class SessionImplTest {
     SqlResponse.Response nextResponse;
     private final long specialTimeoutValue = 9999;
+    private final String exceptionMessage = "link is already closed";
 
     class ChannelResponseMock implements Response {
         private final SessionWireMock wire;
@@ -55,8 +56,14 @@ class SessionImplTest {
     }
 
     class SessionWireMock implements Wire {
+        private boolean closed = false;
+
         @Override
         public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
+            if (closed) {
+                throw new IOException(exceptionMessage);
+            }
+
             var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {
                 case BEGIN:
@@ -66,6 +73,9 @@ class SessionImplTest {
                     nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
                     break;
                 case DISPOSE_PREPARED_STATEMENT:
+                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
+                    break;
+                case COMMIT:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
                 case ROLLBACK:
@@ -86,6 +96,7 @@ class SessionImplTest {
                     ).build();
                     break;
                 default:
+                    System.out.println("falls default case%n" + request);
                     return null;  // dummy as it is test for session
             }
             return FutureResponse.wrap(Owner.of(new ChannelResponseMock(this)));
@@ -93,32 +104,36 @@ class SessionImplTest {
 
         @Override
         public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) throws IOException {
-            return null; // dummy as it is test for session
+            return send(serviceID, request.array());
         }
 
         @Override
         public ResultSetWire createResultSetWire() throws IOException {
+            if (closed) {
+                throw new IOException(exceptionMessage);
+            }
             return null;  // dummy as it is test for session
         }
 
         @Override
         public void close() throws IOException {
+            closed = true;
         }
     }
 
-    @Disabled("not implemented")  // FIXME implement close handling of Session
     @Test
     void useSessionAfterClose() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
         sqlClient.close();
+        session.close();
 
         Throwable exception = assertThrows(IOException.class, () -> {
                 sqlClient.createTransaction();
         });
         // FIXME: check structured error code instead of message
-        assertEquals("this session is not connected to the Database", exception.getMessage());
+        assertEquals(exceptionMessage, exception.getMessage());
     }
 
     @Disabled("timeout should raise whether error or warning")
@@ -135,7 +150,6 @@ class SessionImplTest {
         assertEquals("java.util.concurrent.TimeoutException: timeout for test", exception.getMessage());
     }
 
-    @Disabled("not implemented")  // FIXME implement close handling of Transaction
     @Test
     void useTransactionAfterClose() throws Exception {
         var session = new SessionImpl();
@@ -149,10 +163,9 @@ class SessionImplTest {
                 transaction.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
             });
         // FIXME: check structured error code instead of message
-        assertEquals("already closed", exception.getMessage());
+        assertEquals("transaction already closed", exception.getMessage());
     }
 
-    @Disabled("not implemented")  // FIXME implement close handling of Session
     @Test
     void useTransactionAfterSessionClose() throws Exception {
         var session = new SessionImpl();
@@ -173,15 +186,14 @@ class SessionImplTest {
                 t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
             });
         // FIXME: check structured error code instead of message
-        assertEquals("already closed", e1.getMessage());
+        assertEquals("transaction already closed", e1.getMessage());
 
         Throwable e2 = assertThrows(IOException.class, () -> {
                 t2.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
             });
-        assertEquals("already closed", e2.getMessage());
+        assertEquals("transaction already closed", e2.getMessage());
     }
 
-    @Disabled("not implemented")  // FIXME implement close handling of PreparedStatement
     @Test
     void usePreparedStatementAfterClose() throws Exception {
         var session = new SessionImpl();
@@ -204,7 +216,6 @@ class SessionImplTest {
         sqlClient.close();
     }
 
-    @Disabled("not implemented")  // FIXME implement close handling of PreparedStatement
     @Test
     void usePreparedStatementAfterSessionClose() throws Exception {
         var session = new SessionImpl();
