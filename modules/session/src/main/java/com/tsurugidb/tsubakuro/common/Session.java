@@ -127,4 +127,12 @@ public interface Session extends ServerResource {
      * @return the wire that this session uses
      */
     Wire getWire();
+
+    /**
+     * Accepts questions about whether the session is closed or not
+     * @return true if the session is closed, false if session is open
+     */
+    default boolean isClosed() {
+        return true;
+    }
 }

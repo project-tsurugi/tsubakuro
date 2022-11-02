@@ -2,6 +2,8 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
@@ -243,5 +245,15 @@ class SessionImplTest {
         assertEquals(Optional.of("D"), info.getDatabaseName());
         assertEquals(Optional.of("S"), info.getSchemaName());
         assertEquals("TBL", info.getTableName());
+    }
+
+    @Test
+    void isClosed() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        assertFalse(session.isClosed());
+
+        session.close();
+        assertTrue(session.isClosed());
     }
 }

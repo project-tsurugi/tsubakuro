@@ -46,6 +46,9 @@ public class SessionImpl implements Session {
     private Wire wire;
 
     private final ExecutorService executor;
+
+    private boolean closed = false;
+
     private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
 
         private final AtomicInteger serial = new AtomicInteger();
@@ -189,6 +192,7 @@ public class SessionImpl implements Session {
         if (Objects.nonNull(wire)) {
             wire.close();
         }
+        closed = true;
     }
 
     /**
@@ -202,6 +206,11 @@ public class SessionImpl implements Session {
     @Override
     public Wire getWire() {
         return wire;
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 
     static CoreServiceException newUnknown(@Nonnull CoreResponse.UnknownError message) {
