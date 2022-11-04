@@ -1,0 +1,196 @@
+# 増分バックアップ関連API案
+
+2022-11-01 arakawa (NT)
+
+## この文書について
+
+* Tsurugi OLTP に対する増分バックアップを実現するにあたり、クライアント側の利用方法のイメージを纏めたもの
+  * 最終決定ではなく、検討のためのたたき台の段階
+
+## バックアップ
+
+### 基本的なデザイン - バックアップ
+
+* 増分バックアップは、まず最初に基本となるフルバックアップ (ベースバックアップ) を作成し、そこに前回からの更新差分 (増分) を積み上げていく
+  * 一連のバックアップを「シリーズ」とよぶ
+  * 増分の計算は、ベースバックアップからではなく、シリーズの直前のバックアップから行う
+* バックアップは Java API (Tsubakuro) を介して行う
+  * Java API は対象のデータベースが稼働している必要があるため、未稼働の場合は別途起動させる
+* フルバックアップでは単純なファイルリストであったが、増分では以下の情報を追加で利用する
+  * ファイルの種類 (WAL, xLOB, metadata, etc.)
+  * ファイルの相対パス
+  * 対象ファイルの移動可否
+  * TBD: 高速化のため、フルバックアップにも一部の情報を輸入したほうがいいかも
+* ベースバックアップは全てのファイルをバックアップ対象とするが、増分は一部のファイルのみを対象とする
+  * 対象となるファイル種は以下
+    * ログファイル
+    * ログアーカイブ
+    * ログメタデータ
+    * xLOBファイル
+    * xLOBメタデータ
+  * 上記のファイル種は、API を通して判別可能である
+* 増分を検出する上で、シリーズを通したファイルの一意性は以下のプロパティの組み合わせで行う
+  * ファイルのグループID
+    * ファイルの種類や、OLTPサーバー上の配置などを識別するための情報
+  * ファイルの相対パス
+    * OLTPサーバー上の各ベースディレクトリ (e.g. ログ保存先) からの相対パス
+
+### 提供するAPI - バックアップ
+
+* [interface DatastoreClient](https://github.com/project-tsurugi/tsubakuro/blob/master/modules/session/src/main/java/com/tsurugidb/tsubakuro/datastore/DatastoreClient.java)
+  * `beginBackupDetail()`
+    * overview
+      * バックアップ操作を開始し、必要なファイルリストを受け取る
+    * parameters
+      * ファイルリストを要求するファイル種の一覧
+        * フルバックアップであればすべてのファイルを対象にするが、増分のみを計算する場合は特定のファイル種だけを指定することになる
+        * このパラメータを指定するのは増分のみで、フルバックアップ作成の際にはそもそもこの引数を指定しないオーバーロードを提供する予定
+    * returns
+      * `FutureResponse<BackupDetail>` - バックアップを行うための情報
+* `interface BackupDetail`
+  * `nextFileSet()`
+    * overview
+      * バックアップ対象のファイルリストの一部を返す
+      * 繰り返し呼び出すことで、ファイルリストの全体を取り出せる
+    * returns
+      * `FileSet` - 次のファイルリストの一部
+      * `null` - ファイルリストを末尾まで読みだした後
+    * note
+      * 単一のファイルセットに特定のファイル種がすべて含まれているとは限らない
+        * 例えば、ログを2つのストレージに分けて保持している場合、少なくとも2つのファイルセットに分割される
+  * `getLogBegin()`
+    * overview
+      * 利用可能なログの開始時刻を返す
+    * returns
+      * `long` - ログの開始時刻 (内部時刻のため、日付等にはマッピング不可)
+    * note
+      * 増分を作成する際、この値が前回の `getLogEnd()` 以下の値であることが要求される
+        * 前回の `getLogEnd()` よりも大きな値である場合、一部のログが失われている
+      * クリーンアップが行われると、この開始時刻が大きくなっていく
+  * `getLogEnd()`
+    * overview
+      * 利用可能なログの終了時刻を返す
+    * returns
+      * `long` - ログの終了時刻 (内部時刻のため、日付等にはマッピング不可)
+    * note
+      * この値は主に増分を計算する際に、ログに抜けがないかを判断するためのものである
+      * クラッシュしてログが壊れている場合、この情報を利用して末尾のトリムを行うかもしれない
+  * `keepAlive()`
+    * overview
+      * API 呼び出しを行わないと一定時間でタイムアウトしてしまうため、このメソッドを通してタイムアウト時間の延長を行う
+    * parameters
+      * タイムアウトを延長する時間
+  * `close()`
+    * overview
+      * バックアップ操作を完了させる
+* `interface FileSet`
+  * `getGroupId()`
+    * overview
+      * このファイルセットに含まれるファイルの一意性を担保するためのグループIDを返す
+    * returns
+      * `String` - グループID
+    * note
+      * 小文字アルファベット、数字、ハイフンのみで構成された文字列にする
+      * 複数のファイルセットにまたがって、同一のグループIDを有する場合がある
+  * `getFileType()`
+    * overview
+      * このファイルセットに含まれるファイルの種類を返す
+    * returns
+      * `String` - ファイルの種類を表す識別子
+  * `getBasePath()`
+    * overview
+      * ファイルセットに含まれる各ファイルの、ベースパスを返す
+    * returns
+      * `Path` - ファイルのベースパス (絶対パス)
+  * `isMutable()`
+    * overview
+      * 対象ファイルが作成後、変更されうるかどうかを返す
+    * returns
+      * `true` - ファイルは変更されうるため、同一ファイルであっても差分検出が必要
+      * `false` - ファイルは作成後変更されないため、同一ファイルであれば差分検出は不要
+  * `isDetached()`
+    * overview
+      * 対象ファイルを移動してよいかどうかを返す
+    * returns
+      * `true` - 対象のファイルを移動してもよい
+      * `false` - 対象のファイルを移動してはならず、コピーしなければならない
+  * `getEntries()`
+    * overview
+      * このファイルセットに含まれる個々のファイルの相対パスを返す
+    * returns
+      * `Collection<Path>` - ファイルのベースパスからの相対パス (相対パス)
+
+### イメージ - フルバックアップ
+
+```java
+// 現在のセッション
+Session session = ...;
+// バックアップ作成先
+Path destination = ...;
+
+try (
+    // ログデータストアにアクセスするクライアントを作成する
+    var client = DatastoreClient.attach(session);
+    // バックアップを開始する (フルバックアップなのでファイル種は指定しない)
+    var backup = client.beginBackupDetail().await();
+) {
+    while (true) {
+        // 次のファイルセットを取り出す
+        var block = backup.nextFileSet();
+
+        // 末尾まで読んだら完了
+        if (block == null) {
+            break;
+        }
+
+        // 全てのファイルをバックアップする
+        for (var path : block.getEntries()) {
+            // コピー元を計算 (<base-path>/<entry-path>)
+            var from = block.getBasePath().resolve(path);
+            // コピー先を計算 (<destination>/<group-id>/<entry-path>)
+            var to = destination.resolve(block.groupId()).resolve(path);
+
+            if (block.isDetached()) {
+                // ... ファイルを移動
+            } else {
+                // ... ファイルをコピー
+            }
+        }
+
+        // 定期的に接続を確保する
+        backup.keepAlive();
+    }
+} // try-with-resources の末尾でバックアップは自動的に終了
+```
+
+## リストア
+
+### 基本的なデザイン - リストア
+
+* 通常のフルバックアップと同様に [oltp restore backup コマンド](https://github.com/project-tsurugi/tateyama/blob/master/docs/cli-spec-ja.md#restore-%E3%82%B5%E3%83%96%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89) を利用してリストア操作を行う
+  * ただし、フルバックアップからのリストアは単にディレクトリを指定していただけなのに対し、増分バックアップでは必要な個々のファイルを指定することになる
+  * リストアに指定する個々のファイルは JSON で指定する
+    * 前述の `BackupDetail` が返すデータ構造とほとんど同じ (一部不要なプロパティがない)
+  * コマンドの引数にディレクトリを指定するか、ファイルリストを指定するかはコマンドパラメータに明記する (--use-file-list)
+* 増分バックアップからリストアを行う際、シリーズから必要なファイルのみを列挙して、ファイルリストを作ることになる
+  * 世代ごとに追加、変更、削除されたファイルを計算し、ファイルリストにまとめる
+
+### ファイルリストのスキーマ - リストア
+
+* `<root>`
+  * `file_sets` - array of `file_set`
+* `object file_set`
+  * `group_id` - `string`
+    * overview
+      * このファイルセットに含まれるファイルの一意性を担保するためのグループID
+    * note
+      * 複数のファイルセットにまたがって、同一のグループIDを有する場合がある
+  * `base_path` - `string`
+    * overview
+      * ファイルセットに含まれる各ファイルのベースパス
+  * `detached` - `boolean`
+    * overview
+      * 対象ファイルを移動してよいかどうか
+  * `entries` - array of `string`
+    * overview
+      * このファイルセットに含まれる個々のファイルの相対パス
