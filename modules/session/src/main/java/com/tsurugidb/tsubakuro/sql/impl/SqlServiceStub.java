@@ -447,19 +447,33 @@ public class SqlServiceStub implements SqlService {
             Objects.requireNonNull(response);
             try (
                 var owner = Owner.of(response);
-                var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
             ) {
-                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
-                if (response.isMainResponseReady()) {
-                    test(response);
+                ResultSetMetadataAdapter metadata = null;
+                while (true) {
+                    var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
+                    if (Objects.nonNull(metadataInput)) {
+                        try {
+                            metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
+                        } finally {
+                            metadataInput.close();
+                        }
+                        break;
+                    }
+                    if (response.isMainResponseReady()) {
+                        test(response);
+                    }
                 }
-                var metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
-                metadataInput.close();
+                var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
                 var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this);
                 return resources.register(resultSetImpl);
             }
+        }
+
+        @Override
+        public boolean isMainResponseRequired() {
+            return false;
         }
     }
 

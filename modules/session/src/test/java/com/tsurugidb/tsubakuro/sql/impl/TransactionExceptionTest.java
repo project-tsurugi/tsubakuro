@@ -53,7 +53,7 @@ class TransactionExceptionTest {
         }
         @Override
         public InputStream openSubResponse(String id) {
-            return new ByteBufferInputStream(ByteBuffer.allocate(0));
+            return null;
         }
         @Override
         public void close() throws IOException, InterruptedException {
