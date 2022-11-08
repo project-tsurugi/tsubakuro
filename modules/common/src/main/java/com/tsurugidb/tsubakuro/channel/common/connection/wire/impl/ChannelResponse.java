@@ -34,6 +34,7 @@ public class ChannelResponse implements Response {
     private final AtomicReference<IOException> exceptionMain = new AtomicReference<>();
     private final AtomicReference<IOException> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean mainResponseGotton = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
 
@@ -64,6 +65,7 @@ public class ChannelResponse implements Response {
                     noSet.await();
                 }
                 if (Objects.nonNull(main.get())) {
+                    mainResponseGotton.set(true);
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
@@ -93,6 +95,7 @@ public class ChannelResponse implements Response {
                     noSet.await();
                 }
                 if (Objects.nonNull(main.get())) {
+                    mainResponseGotton.set(true);
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
@@ -145,13 +148,13 @@ public class ChannelResponse implements Response {
     }
 
     private void waitForResultSetOrMainResponse() throws IOException, InterruptedException {
-        if (isResultSetReady() || isMainResponseReady()) {
+        if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
             return;
         }
 
         lock.lock();
         try {
-            while (isResultSetReady() || isMainResponseReady()) {
+            while (!(isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get()))) {
                 noSet.await();
             }
             return;
