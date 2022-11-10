@@ -93,7 +93,7 @@ public final class IpcLink extends Link {
         }
     }
 
-    public LinkMessage receive() {
+    private LinkMessage receive() {
         int slot = awaitNative(wireHandle);
         if (slot >= 0) {
             var info = (byte) getInfoNative(wireHandle);
