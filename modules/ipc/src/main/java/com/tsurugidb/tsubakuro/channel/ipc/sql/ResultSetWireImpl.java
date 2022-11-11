@@ -11,8 +11,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
  * ResultSetWireImpl type.
  */
 public class ResultSetWireImpl implements ResultSetWire {
-    private static native long createNative(long sessionWireHandle) throws IOException;
-    private static native void connectNative(long handle, String name) throws IOException;
+    private static native long createNative(long sessionWireHandle, String name) throws IOException;
     private static native ByteBuffer getChunkNative(long handle);
     private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
@@ -66,8 +65,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
-        wireHandle = createNative(sessionWireHandle);
-        connectNative(wireHandle, name);
+        wireHandle = createNative(sessionWireHandle, name);
         return this;
     }
 

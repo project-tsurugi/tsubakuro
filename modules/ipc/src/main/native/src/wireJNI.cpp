@@ -157,16 +157,39 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_destroyN
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    createNative
- * Signature: (J)J
+ * Signature: (JLjava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_createNative
-(JNIEnv *env, jclass, jlong handle)
+(JNIEnv *env, jclass, jlong handle, jstring name)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     session_wire_container::resultset_wires_container* rwc {};
     try {
         rwc = swc->create_resultset_wire();
+
+        const char* name_ = env->GetStringUTFChars(name, nullptr);
+        if (name_ == nullptr) {
+            jclass classj = env->FindClass("Ljava/io/IOException;");
+            if (classj == nullptr) { std::abort(); }
+            env->ThrowNew(classj, "name is null");
+            env->DeleteLocalRef(classj);
+            return 0;
+        }
+        jsize len_ = env->GetStringUTFLength(name);
+
+        try {
+            rwc->connect(std::string_view(name_, len_));
+            env->ReleaseStringUTFChars(name, name_);
+        } catch (std::runtime_error &e) {
+            env->ReleaseStringUTFChars(name, name_);
+            jclass classj = env->FindClass("Ljava/io/IOException;");
+            if (classj == nullptr) { std::abort(); }
+            env->ThrowNew(classj, e.what());
+            env->DeleteLocalRef(classj);
+            return 0;
+        }
+
         return static_cast<jlong>(reinterpret_cast<std::uintptr_t>(rwc));
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/io/IOException;");
@@ -174,38 +197,6 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWi
         env->ThrowNew(classj, e.what());
         env->DeleteLocalRef(classj);
         return 0;
-    }
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
- * Method:    connectNative
- * Signature: (JLjava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_connectNative
-(JNIEnv *env, jclass, jlong handle, jstring name)
-{
-    session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
-
-    const char* name_ = env->GetStringUTFChars(name, nullptr);
-    if (name_ == nullptr) {
-        jclass classj = env->FindClass("Ljava/io/IOException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, "name is null");
-        env->DeleteLocalRef(classj);
-        return;
-    }
-    jsize len_ = env->GetStringUTFLength(name);
-
-    try {
-        rwc->connect(std::string_view(name_, len_));
-        env->ReleaseStringUTFChars(name, name_);
-    } catch (std::runtime_error &e) {
-        env->ReleaseStringUTFChars(name, name_);
-        jclass classj = env->FindClass("Ljava/io/IOException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
     }
 }
 
