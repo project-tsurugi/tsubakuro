@@ -9,7 +9,7 @@ public abstract class Link implements ServerResource {
 
     protected ResponseBox responseBox = new ResponseBox(this);
 
-    public abstract void send(int s, byte[] frameHeader, byte[] payload) throws IOException;
+    public abstract void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse);
 
     public abstract ResultSetWire createResultSetWire() throws IOException;
 

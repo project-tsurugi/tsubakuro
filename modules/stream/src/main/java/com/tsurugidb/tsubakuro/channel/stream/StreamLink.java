@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
@@ -203,7 +204,7 @@ public final class StreamLink extends Link {
     }
 
     @Override
-    public void send(int s, byte[] frameHeader, byte[] payload) throws IOException {  // SESSION_PAYLOAD
+    public void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {  // SESSION_PAYLOAD
         byte[] header = new byte[7];
         int length = (int) (frameHeader.length + payload.length);
 
@@ -217,13 +218,19 @@ public final class StreamLink extends Link {
 
         synchronized (outStream) {
             if (socketClosed) {
-                throw new IOException("socket is already closed");
+                channelResponse.setMainResponse(new IOException("socket is already closed"));
+                return;
             }
-            outStream.write(header, 0, header.length);
-            if (length > 0) {
-                // payload送信
-                outStream.write(frameHeader, 0, frameHeader.length);
-                outStream.write(payload, 0, payload.length);
+            try {
+                outStream.write(header, 0, header.length);
+                if (length > 0) {
+                    // payload送信
+                    outStream.write(frameHeader, 0, frameHeader.length);
+                    outStream.write(payload, 0, payload.length);
+                }
+            } catch (IOException e) {
+                channelResponse.setMainResponse(e);
+                return;
             }
         }
         LOG.trace("send SESSION_PAYLOAD, length = {}, slot = {}", length, s);
