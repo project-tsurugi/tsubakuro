@@ -52,6 +52,7 @@ public class ChannelResponse implements Response {
     @Override
     public ByteBuffer waitForMainResponse() throws IOException {
         if (Objects.nonNull(main.get())) {
+            mainResponseGotton.set(true);
             return main.get();
         }
         if (Objects.nonNull(exceptionMain.get())) {
@@ -186,7 +187,7 @@ public class ChannelResponse implements Response {
 //    }
 
     // called from receiver thread
-    public void setMainResponse(@Nonnull ByteBuffer response) {
+    void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
         lock.lock();
         try {
@@ -194,6 +195,16 @@ public class ChannelResponse implements Response {
             noSet.signal();
         } catch (IOException e) {
             exceptionMain.set(e);
+            noSet.signal();
+        } finally {
+            lock.unlock();
+        }
+    }
+    public void setMainResponse(@Nonnull IOException exception) {
+        Objects.requireNonNull(exception);
+        lock.lock();
+        try {
+            exceptionMain.set(exception);
             noSet.signal();
         } finally {
             lock.unlock();

@@ -34,10 +34,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 disposeUsedDataNative(wireHandle, source.capacity());
             }
             source = getChunkNative(wireHandle);
-            if (Objects.isNull(source)) {
-                return false;
-            }
-            return true;
+            return Objects.nonNull(source);
         }
 
         @Override

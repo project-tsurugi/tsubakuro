@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 
@@ -65,7 +66,7 @@ public final class IpcLink extends Link {
     }
 
     @Override
-    public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload) {
+    public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
         synchronized (this) {
             sendNative(wireHandle, s, frameHeader, payload);
         }
