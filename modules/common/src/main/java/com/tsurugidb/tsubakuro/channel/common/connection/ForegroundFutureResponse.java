@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.annotation.Nonnull;
 
@@ -34,6 +36,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final AtomicReference<V> result = new AtomicReference<>();
 
+    private final AtomicBoolean gotton = new AtomicBoolean();
+
     /**
      * Creates a new instance.
      * @param delegate the decoration target
@@ -50,6 +54,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public V get() throws InterruptedException, IOException, ServerException {
+        gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
             return mapped;
@@ -60,6 +65,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
+        gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
             return mapped;
@@ -130,6 +136,15 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
+        if (!gotton.get()) {
+            var obj = get();
+            var cls = obj.getClass();
+            try {
+                cls.getMethod("close").invoke(obj);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new IOException(e);
+            }
+        }
         Owner.close(unprocessed.getAndSet(null));
         delegate.close();
     }
