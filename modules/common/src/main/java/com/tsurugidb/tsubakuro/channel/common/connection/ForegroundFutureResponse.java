@@ -6,7 +6,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.lang.reflect.InvocationTargetException;
 
 import javax.annotation.Nonnull;
 
@@ -16,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 
@@ -136,17 +136,18 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!gotton.get()) {
-            var obj = get();
-            var cls = obj.getClass();
-            try {
-                cls.getMethod("close").invoke(obj);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new IOException(e);
+        try {
+            if (!gotton.get()) {
+                var obj = get();
+                if (obj instanceof ServerResource) {
+                    var serverResource = (ServerResource) obj;
+                    serverResource.close();
+                }
             }
+        } finally {
+            Owner.close(unprocessed.getAndSet(null));
+            delegate.close();
         }
-        Owner.close(unprocessed.getAndSet(null));
-        delegate.close();
     }
 
     @Override
