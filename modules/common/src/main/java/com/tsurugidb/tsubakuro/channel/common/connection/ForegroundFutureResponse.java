@@ -36,6 +36,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final AtomicReference<V> result = new AtomicReference<>();
 
+    private final AtomicBoolean closed = new AtomicBoolean();
+
     private final AtomicBoolean gotton = new AtomicBoolean();
 
     /**
@@ -54,6 +56,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public V get() throws InterruptedException, IOException, ServerException {
+        if (closed.get()) {
+            throw new IOException("Future for " + mapper.toString() + " is already closed");
+        }
         gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
@@ -65,6 +70,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
+        if (closed.get()) {
+            throw new IOException("Future for " + mapper.toString() + " is already closed");
+        }
         gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
@@ -78,11 +86,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             return Owner.of(delegate.get());
         }
         try (Owner<Response> response = Owner.of(delegate.get())) {
-            var resposeBody = response.get();
-            if (Objects.isNull(resposeBody)) {
-                throw new IOException("Future for " + mapper.toString() + " is already closed");
-            }
-            resposeBody.waitForMainResponse();
+            response.get().waitForMainResponse();
             return response.move();
         }
     }
@@ -95,11 +99,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         long timeoutMillis = Math.max(unit.toMillis(timeout), 2);
         try (Owner<Response> response = Owner.of(delegate.get(timeoutMillis / 2, TimeUnit.MILLISECONDS))) {
             try {
-                var resposeBody = response.get();
-                if (Objects.isNull(resposeBody)) {
-                    throw new IOException("Future for " + mapper.toString() + " is already closed");
-                }
-                resposeBody.waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
+                response.get().waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 unprocessed.set(response.release());
                 throw e;
@@ -147,6 +147,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         } finally {
             Owner.close(unprocessed.getAndSet(null));
             delegate.close();
+            closed.set(true);
         }
     }
 

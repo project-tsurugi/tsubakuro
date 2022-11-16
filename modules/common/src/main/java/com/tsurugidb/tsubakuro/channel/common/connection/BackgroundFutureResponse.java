@@ -37,6 +37,8 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
 
     private final AtomicReference<Result<V>> result = new AtomicReference<>();
 
+    private final AtomicBoolean closed = new AtomicBoolean();
+
     private final AtomicBoolean gotton = new AtomicBoolean();
 
     /**
@@ -76,6 +78,9 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
 
     @Override
     public V get() throws InterruptedException, IOException, ServerException {
+        if (closed.get()) {
+            throw new IOException("Future for " + mapper.toString() + " is already closed");
+        }
         gotton.set(true);
         latch.await();
         return result.get().get();
@@ -84,6 +89,9 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     @Override
     public V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
+        if (closed.get()) {
+            throw new IOException("Future for " + mapper.toString() + " is already closed");
+        }
         gotton.set(true);
         if (!latch.await(timeout, unit)) {
             throw new TimeoutException("detects timeout");
@@ -108,6 +116,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
             }
         } finally {
             delegate.close();
+            closed.set(true);
         }
     }
 
