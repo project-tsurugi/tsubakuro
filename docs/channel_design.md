@@ -1,5 +1,5 @@
 # Channel Design Document
-2022.11.16
+2022.11.17
 NT horikawa
 
 このドキュメントでは、tsubakuro - tateyama間の通信路（channel）の設計を記す。
@@ -43,13 +43,14 @@ impl memo: 各情報は、下記formatのtransfer unitの形式にまとめら�
  * response header : slot, type, length
  * data header : length
 * payload: messageやvalueに応じた形式（channel層では既定しない）<br>
-slotについては、ResponseBoxの項参照
+slotについては、ResponseBoxの項参照、本ドキュメントでは、slotとindex(idx)をinterchangeableに使用する。
 
 
 ### 通信の基本動作
 * クライアントがrequest messageをサーバに送り、その処理結果をサーバがresponse messageとしてクライアントに返す一対のデータ転送を基本とする。
 * response messageとvalueの2種類のデータ転送を必要とするrequestもある。
-impl memo: responseはbody, そしてvalue送信実施を伝えるmessageはbody_headとしてtateyamaのendpointから送信される。
+* １つのrequest message送信に対して１つの`Response`オブジェクトを作成し、そのオブジェクト経由でrequestに対応する応答（reaponse message, value）を受け取る。<br>
+impl memo: responseはbody, そしてvalueが送信されることを伝えるmessageはbody_headとしてtateyamaのendpointから送信される。
 
 <img src="channel_design/Conceptual.PNG">
 
@@ -57,8 +58,8 @@ impl memo: responseはbody, そしてvalue送信実施を伝えるmessageはbody
 ### 基本構造
 * request messageはWire::send()によりサーバに送信する。
 * response messageは、send()のreturn valueから取り出すResponseから取得する。
-* valueは、ResponseのsubChannelをopenして得られるInputStream経由で受け取る。<br>
-impl memo: Channelを使う通信の場合、Responseを実装したChannelResponseを使う。
+* valueは、ResponseのsubChannelをopenして得られるInputStream経由で受け取る。複数writerによりResultSetが転送される場合、クライアントが読み出すwriterの切り替えは、サーバによるCOMMIT操作を契機とする。<br>
+impl memo: Channelによる通信をtsubakuroが行う際のResponseオブジェクトとしては`interface Response`を実装した`class ChannelResponse`を使う。
 
 <img src="channel_design/Layer.PNG">
 
@@ -95,8 +96,8 @@ IPCとstreamの２種類を提供する。
 * waitForMainResponse() -> ByteBuffer
   * response channelで転送されたpayload
 * openSubResponse(String id) -> InputStream
-  * idが"metadata"の場合、metadata
-  * idが"relation"の場合、dataChannel
+  * idが"metadata"の場合、metadataを読み込むInputStreamを返す。
+  * idが"relation"の場合、data channelに届くvalueを読み込むInputStreamを返す。
 
 #### ResponseBox
 ##### 役割
@@ -118,6 +119,8 @@ ChannelResponseの配列、そのindexをslotと称する
 
 
 ### IPC channel
+IPC channelは、各通信路をクライアントとサーバの両プロセスがアクセスできる共有メモリに配置するring bufferにより実装する。
+
 #### IPC channelのみで使用する名称
 * コンテナ：通信路を束ねて管理するオブジェクト。
   * sessionが使用する全通信路はsessionコンテナに格納する。
@@ -184,29 +187,59 @@ java層とnative層を接続する層。
 impl memo: IPCでは、データのコピーを避けるため、data channel内のバッファに格納されたデータを（コピーすることなく）InputStreamとして上位に提供する。
 
 #### native層API
+payloadのバイト列を、JNI層ではsigned char, native層ではcharとして扱うが、本ドキュメントではこの違いを意識しない。
+
 ##### 全通信路共通
-* read()
+* read(char *to)
   * 通信路に書き込まれたmessageのpayloadを読み出し、bufferにコピーする
   * messageが書き込まれていない場合はblockして待つ
 * dispose()
   * 通信路に書き込まれた先頭のmessageを廃棄する
   * 次のread()やpeek()の対象は、dispose()したmessageの次に書き込まれるmessageとなる
-* write()
+* write(const char* from, std::size_t length)
   * 通信路にmessageを書き込む
   * 通信路がbuffer fullにより書き込みできない場合はblockして待つ
 
 ##### request channel
-* peek()
+* peep(bool wait = true)
   * 通信路に書き込まれたmessageのheader部分を取り出す
-  * messageが書き込まれていない場合はblockして待つ
+  * waitがtrueの場合、messageが書き込まれていない状況ではblockして待つ
+  * サーバが使うメソッド
+* flush(message_header::index_type index)
+  * 複数のwrite()操作で1つのrequest messageを送信するため、最後のwrite()実行後にflush()をcallする。
+  * クライアントが使うメソッド
+* write(const char* from, std::size_t length, bool first = false)
+  * 複数のwrite()操作で1つのrequest messageを送信するため、最初のwrite()はfirstフラグをtrueとする。
+  * クライアントが使うメソッド
+* void disconnect()
+  * セッションの切断を要求する
+  * クライアントが使うメソッド
+
+##### response channel
+* await() -> response_header
+  * response messageの到着をブロックして待つ
+  * クライアントが使うメソッド
+* get_length(), get_idx(), get_idx() -> response_header::length_type, response_header::index_type, response_header::msg_type
+  * Ring bufferの先頭にあるresponse messageのheaderから各種情報を取得する。
+  * クライアントが使うメソッド
+* read(char *to)
+  * response channelのread()は、ring bufferにあるresponse messageをdisposeする操作を最後に行う
+  * クライアントが使うメソッド
+* close()
+  * response channelをcloseする。これにより、サーバ側でring bufferに空き領域がないためにスレッドがブロックされている場合、そのスレッドは解放される。
+  * クライアントが使うメソッド
 
 ##### data channel
 * get_chunk()
-  * 通信路にmessageのpayload部分を取り出す
+  * Ring bufferにvalueが到着するまでブロックして待つ。
+  * Ring bufferに格納されたvalueを取り出す。サーバによるcommit操作が1回のcallで返すchunkの区切りとなる。
+  * Ring bufferがwrap aroundした場合は、2回のget_chunk()呼び出しによりサーバによるcommit操作を区切りとするvalueを読み出す。
+  * クライアントが使うメソッド
 
 ##### Sessionコンテナ
 * create_resultset_wire() -> resultset_wires_container*
   * data channelを作成する。
+  * クライアントが使うメソッド
 
 
 ### Stream channel
