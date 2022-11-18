@@ -61,6 +61,15 @@ public class ResponseBox {
         boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
     }
 
+    public void close() {
+        for (SlotEntry e : boxes) {
+            var response = e.channelResponse();
+            if (Objects.nonNull(response)) {
+                response.setMainResponse(new IOException("Server clashed"));
+            }
+        }
+    }
+
     public static int responseBoxSize() {
         return SIZE;
     }

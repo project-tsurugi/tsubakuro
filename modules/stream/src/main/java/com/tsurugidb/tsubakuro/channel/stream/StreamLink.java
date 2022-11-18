@@ -111,6 +111,7 @@ public final class StreamLink extends Link {
         try {
             var message = receive();
             if (Objects.isNull(message)) {
+                responseBox.close();
                 return false;
             }
 
