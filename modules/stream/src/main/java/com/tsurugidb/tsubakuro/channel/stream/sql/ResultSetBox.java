@@ -83,7 +83,7 @@ public class ResultSetBox {
         }
         var box = boxes[slot];
         boxes[slot] = null;
-        box.endOfRecords(slot);
+        box.endOfRecords();
     }
 
     public void pushBye(int slot, IOException e) throws IOException {  // for RESPONSE_RESULT_SET_BYE
@@ -92,7 +92,7 @@ public class ResultSetBox {
         }
         var box = boxes[slot];
         boxes[slot] = null;
-        box.endOfRecords(slot, e);
+        box.endOfRecords(e);
     }
 
     private void waitRegistration(int slot) throws IOException {
@@ -108,6 +108,14 @@ public class ResultSetBox {
                 throw new IOException(e);
             } finally {
                 l.unlock();
+            }
+        }
+    }
+
+    public void close() {
+        for (ResultSetWireImpl e : boxes) {
+            if (Objects.nonNull(e)) {
+                e.endOfRecords(new IOException("Server clashed"));
             }
         }
     }
