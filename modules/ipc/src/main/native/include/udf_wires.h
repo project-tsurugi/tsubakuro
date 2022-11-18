@@ -90,9 +90,6 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void brand_new() {
-            wire_->brand_new();
-        }
         void write(const signed char* from, std::size_t length, bool first = false) {
             if (first) {
                 brand_new();
@@ -113,6 +110,10 @@ public:
     private:
         unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
+
+        void brand_new() {
+            wire_->brand_new();
+        }
     };
 
     class response_wire_container {
