@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.ipc;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
@@ -20,7 +21,8 @@ import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
  */
 public final class IpcLink extends Link {
     private long wireHandle = 0;  // for c++
-    private boolean closed = false;
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean serverDown = new AtomicBoolean();
     private Receiver receiver;
 
     public static final byte RESPONSE_NULL = 0;
@@ -30,7 +32,7 @@ public final class IpcLink extends Link {
 
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] header, byte[] payload);
-    private static native int awaitNative(long wireHandle);
+    private static native int awaitNative(long wireHandle) throws IOException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native void closeNative(long wireHandle);
@@ -58,7 +60,7 @@ public final class IpcLink extends Link {
      * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      * @throws IOException error occurred in openNative()
      */
-    public IpcLink(String name) throws IOException {
+    public IpcLink(@Nonnull String name) throws IOException {
         this.wireHandle = openNative(name);
         this.receiver = new Receiver();
         receiver.start();
@@ -67,6 +69,10 @@ public final class IpcLink extends Link {
 
     @Override
     public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
+        if (serverDown.get()) {
+            channelResponse.setMainResponse(new IOException("Link already closed"));
+            return;
+        }
         synchronized (this) {
             sendNative(wireHandle, s, frameHeader, payload);
         }
@@ -78,6 +84,7 @@ public final class IpcLink extends Link {
             var message = receive();
 
             if (Objects.isNull(message)) {
+                responseBox.close();
                 return false;
             }
             if (message.getInfo() != RESPONSE_NULL) {
@@ -95,12 +102,17 @@ public final class IpcLink extends Link {
     }
 
     private LinkMessage receive() {
-        int slot = awaitNative(wireHandle);
-        if (slot >= 0) {
-            var info = (byte) getInfoNative(wireHandle);
-            return new LinkMessage(info, receiveNative(wireHandle), slot);
+        try {
+            int slot = awaitNative(wireHandle);
+            if (slot >= 0) {
+                var info = (byte) getInfoNative(wireHandle);
+                return new LinkMessage(info, receiveNative(wireHandle), slot);
+            }
+            return null;
+        } catch (IOException e) {
+            serverDown.set(true);
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -113,7 +125,7 @@ public final class IpcLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed) {
+        if (!closed.get()) {
             closeNative(wireHandle);
             try {
                 receiver.join();
@@ -121,7 +133,7 @@ public final class IpcLink extends Link {
                 throw new IOException(e);
             } finally {
                 destroyNative(wireHandle);
-                closed = true;
+                closed.set(true);
             }
         }
     }

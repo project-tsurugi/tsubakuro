@@ -22,10 +22,12 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <sys/file.h>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
+#include <boost/interprocess/containers/string.hpp>
 #include <boost/thread/thread_time.hpp>
 
 namespace tateyama::common::wire {
@@ -131,6 +133,7 @@ private:
 
 static constexpr const char* request_wire_name = "request_wire";
 static constexpr const char* response_wire_name = "response_wire";
+static constexpr const char* status_provider_name = "status_provider";
 
 /**
  * @brief One-to-one unidirectional communication of charactor stream with header T
@@ -346,6 +349,7 @@ private:
 
 // for response
 class unidirectional_response_wire : public simple_wire<response_header> {
+    constexpr static int watch_interval = 5;
 public:
     unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) noexcept : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
@@ -365,7 +369,10 @@ public:
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return (stored_valid() >= response_header::size) || closed_.load(); });
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(watch_interval * 1000 * 1000), [this](){ return (stored_valid() >= response_header::size) || closed_.load(); })) {
+                    wait_for_read_ = false;
+                    throw std::runtime_error("response has not been received within the specified time");
+                }
                 wait_for_read_ = false;
             }
         }
@@ -799,6 +806,32 @@ private:
 
 using shm_resultset_wire = unidirectional_simple_wires::unidirectional_simple_wire;
 using shm_resultset_wires = unidirectional_simple_wires;
+
+
+// for status
+class status_provider {
+    using char_allocator = boost::interprocess::allocator<char, boost::interprocess::managed_shared_memory::segment_manager>;
+
+public:
+    status_provider(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view file) : mutex_file_(managed_shm_ptr->get_segment_manager()) {
+        mutex_file_ = file;
+    }
+
+    [[nodiscard]] bool is_alive() {
+        int fd = open(mutex_file_.c_str(), O_WRONLY);  // NOLINT
+        if (fd < 0) {
+            return false;
+        }
+        if (flock(fd, LOCK_EX | LOCK_NB) == 0) {  // NOLINT
+            flock(fd, LOCK_UN);
+            return false;
+        }
+        return true;
+    }
+
+private:
+    boost::interprocess::basic_string<char, std::char_traits<char>, char_allocator> mutex_file_;
+};
 
 
 // implements connect operation

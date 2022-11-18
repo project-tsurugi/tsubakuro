@@ -115,7 +115,7 @@ public class ResultSetBox {
     public void close() {
         for (ResultSetWireImpl e : boxes) {
             if (Objects.nonNull(e)) {
-                e.endOfRecords(new IOException("Server clashed"));
+                e.endOfRecords(new IOException("Server crashed"));
             }
         }
     }
