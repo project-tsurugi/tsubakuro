@@ -146,7 +146,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
     }
 
-    public void endOfRecords(int slot) throws IOException {
+    public void endOfRecords() {
         eor = true;
         if (!closed) {
             lock.lock();
@@ -158,7 +158,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
     }
 
-    public void endOfRecords(int slot, IOException e) throws IOException {
+    public void endOfRecords(IOException e) {
         exception = e;
         if (!closed) {
             lock.lock();
