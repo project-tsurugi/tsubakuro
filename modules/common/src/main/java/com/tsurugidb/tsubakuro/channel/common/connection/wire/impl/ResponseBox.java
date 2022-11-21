@@ -65,7 +65,7 @@ public class ResponseBox {
         for (SlotEntry e : boxes) {
             var response = e.channelResponse();
             if (Objects.nonNull(response)) {
-                response.setMainResponse(new IOException("Server clashed"));
+                response.setMainResponse(new IOException("Server crashed"));
             }
         }
     }

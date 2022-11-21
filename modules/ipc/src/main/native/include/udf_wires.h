@@ -149,7 +149,8 @@ public:
             managed_shared_memory_ = std::make_unique<boost::interprocess::managed_shared_memory>(boost::interprocess::open_only, db_name_.c_str());
             auto req_wire = managed_shared_memory_->find<unidirectional_message_wire>(request_wire_name).first;
             auto res_wire = managed_shared_memory_->find<unidirectional_response_wire>(response_wire_name).first;
-            if (req_wire == nullptr || res_wire == nullptr) {
+            status_provider_ = managed_shared_memory_->find<status_provider>(status_provider_name).first;
+            if (req_wire == nullptr || res_wire == nullptr ||status_provider_ == nullptr ) {
                 throw std::runtime_error("cannot find the session wire");
             }
             request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
@@ -182,12 +183,16 @@ public:
         container->set_closed();
         delete container;
     }
+    status_provider& get_status_provider() {
+        return *status_provider_;
+    }
 
 private:
     std::string db_name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_{};
     response_wire_container response_wire_{};
+    status_provider* status_provider_{};
 };
 
 class connection_container
