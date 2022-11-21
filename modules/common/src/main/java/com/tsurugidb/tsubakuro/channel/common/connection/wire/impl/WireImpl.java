@@ -85,6 +85,9 @@ public class WireImpl implements Wire {
 
     @Override
     public boolean isAlive() {
+        if (Objects.isNull(link)) {
+            return false;
+        }
         return link.isAlive();
     }
 

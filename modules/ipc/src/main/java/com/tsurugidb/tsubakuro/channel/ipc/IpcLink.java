@@ -126,6 +126,9 @@ public final class IpcLink extends Link {
 
     @Override
     public boolean isAlive() {
+        if (closed.get() || (wireHandle == 0)) {
+            return false;
+        }
         return isAliveNative(wireHandle);
     }
 
