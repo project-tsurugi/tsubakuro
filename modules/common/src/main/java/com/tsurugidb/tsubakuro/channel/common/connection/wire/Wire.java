@@ -79,6 +79,14 @@ public interface Wire extends ServerResource {
     }
 
     /**
+     * Provide dead/alive information of the server to which the session is connected
+     * @return true when the server is alive
+     */
+    default boolean isAlive() {
+        return false;
+    }
+
+    /**
      * Closes this connection.
      * This method will be invoked one or more times.
      */

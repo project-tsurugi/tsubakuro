@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
@@ -32,13 +33,11 @@ public final class StreamLink extends Link {
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
     private Receiver receiver;
-    private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
     private final Condition condition = lock.newCondition();
+    private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private static final long JOIN_TIMEOUT = 100;
-
-    private boolean closeSessionProcessed = false;
-    private boolean socketClosed = false;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
@@ -64,9 +63,8 @@ public final class StreamLink extends Link {
                 }
             }
             try {
-                if (!socketClosed) {
+                if (!socket.isClosed()) {
                     socket.close();
-                    socketClosed = true;
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -168,7 +166,6 @@ public final class StreamLink extends Link {
                 LOG.trace("receive RESPONSE_SESSION_BYE_OK");
                 synchronized (outStream) {
                     socket.close();
-                    socketClosed = true;
                 }
                 return false;
 
@@ -197,7 +194,7 @@ public final class StreamLink extends Link {
         header[6] = 0;
 
         synchronized (outStream) {
-            if (socketClosed) {
+            if (socket.isClosed()) {
                 throw new IOException("socket is already closed");
             }
             outStream.write(header, 0, header.length);
@@ -219,7 +216,7 @@ public final class StreamLink extends Link {
         header[6] = strip(length >> 24);
 
         synchronized (outStream) {
-            if (socketClosed) {
+            if (socket.isClosed()) {
                 channelResponse.setMainResponse(new IOException("socket is already closed"));
                 return;
             }
@@ -287,12 +284,20 @@ public final class StreamLink extends Link {
     }
 
     @Override
+    public boolean isAlive() {
+        if (closed.get()) {
+            return false;
+        }
+        return !socket.isClosed();
+    }
+
+    @Override
     public void close() throws IOException {
-        if (!closeSessionProcessed) {
+        if (!closed.get()) {
             try {
                 send(REQUEST_SESSION_BYE, 0);
             } finally {
-                closeSessionProcessed = true;
+                closed.set(true);
             }
         }
         try {

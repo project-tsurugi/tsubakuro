@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
@@ -127,4 +128,16 @@ public interface Session extends ServerResource {
      * @return the wire that this session uses
      */
     Wire getWire();
+
+    /**
+     * Provide dead/alive information of the server to which the session is connected
+     * @return true when the server is alive
+     */
+    default boolean isAlive() {
+        var wire = getWire();
+        if (Objects.isNull(wire)) {
+            return false;
+        }
+        return wire.isAlive();
+    }
 }

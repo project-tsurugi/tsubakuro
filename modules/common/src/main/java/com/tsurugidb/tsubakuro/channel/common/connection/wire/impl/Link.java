@@ -16,4 +16,6 @@ public abstract class Link implements ServerResource {
     public ResponseBox getResponseBox() {
         return responseBox;
     }
+
+    public abstract boolean isAlive();
 }
