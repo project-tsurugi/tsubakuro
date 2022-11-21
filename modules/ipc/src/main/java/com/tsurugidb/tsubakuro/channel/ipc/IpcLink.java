@@ -35,6 +35,7 @@ public final class IpcLink extends Link {
     private static native int awaitNative(long wireHandle) throws IOException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
+    private static native boolean isAliveNative(long wireHandle);
     private static native void closeNative(long wireHandle);
     private static native void destroyNative(long wireHandle);
 
@@ -121,6 +122,11 @@ public final class IpcLink extends Link {
             throw new IOException("already closed");
         }
         return new ResultSetWireImpl(wireHandle);
+    }
+
+    @Override
+    public boolean isAlive() {
+        return isAliveNative(wireHandle);
     }
 
     @Override

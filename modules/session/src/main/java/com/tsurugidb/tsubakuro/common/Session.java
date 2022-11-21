@@ -127,4 +127,12 @@ public interface Session extends ServerResource {
      * @return the wire that this session uses
      */
     Wire getWire();
+
+    /**
+     * Provide dead/alive information of the server to which the session is connected
+     * @return true when the server is alive
+     */
+    default boolean isAlive() {
+        return getWire().isAlive();
+    }
 }

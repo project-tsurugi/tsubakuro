@@ -287,6 +287,11 @@ public final class StreamLink extends Link {
     }
 
     @Override
+    public boolean isAlive() {
+        return !socket.isClosed();
+    }
+
+    @Override
     public void close() throws IOException {
         if (!closeSessionProcessed) {
             try {

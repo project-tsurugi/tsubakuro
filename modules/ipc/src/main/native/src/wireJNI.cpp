@@ -138,6 +138,18 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_re
 
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    isAliveNative
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAliveNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    return swc->get_status_provider().is_alive();
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    closeNative
  * Signature: (J)V
  */

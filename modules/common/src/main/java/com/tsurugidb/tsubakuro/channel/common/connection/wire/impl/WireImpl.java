@@ -83,6 +83,11 @@ public class WireImpl implements Wire {
         return link.createResultSetWire();
     }
 
+    @Override
+    public boolean isAlive() {
+        return link.isAlive();
+    }
+
     /**
      * Close the wire
      */
