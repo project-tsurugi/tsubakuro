@@ -86,6 +86,9 @@ public final class StreamLink extends Link {
     }
 
     public LinkMessage helloResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+        if (socket.isClosed()) {
+            return null;
+        }
         lock.lock();
         try {
             while (Objects.isNull(helloResponse.get())) {
@@ -95,6 +98,9 @@ public final class StreamLink extends Link {
                     }
                 } else {
                     condition.await();
+                }
+                if (socket.isClosed()) {
+                    return null;
                 }
             }
             return helloResponse.get();
@@ -111,6 +117,12 @@ public final class StreamLink extends Link {
             if (Objects.isNull(message)) {
                 responseBox.close();
                 resultSetBox.close();
+                lock.lock();
+                try {
+                    condition.signal();
+                } finally {
+                    lock.unlock();
+                }
                 return false;
             }
 
