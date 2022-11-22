@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.stream.connection;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -31,9 +30,6 @@ public class FutureWireImpl implements FutureResponse<Wire> {
     public Wire get(long timeout, TimeUnit unit) throws IOException {
         try {
             var message = streamLink.helloResponse(timeout, unit);
-            if (Objects.isNull(message)) {
-                throw new IOException("Server crashed");
-            }
             var rc = message.getInfo();
             var rv = message.getString();
             if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {

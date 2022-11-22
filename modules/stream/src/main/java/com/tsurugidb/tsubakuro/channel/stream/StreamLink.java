@@ -86,21 +86,18 @@ public final class StreamLink extends Link {
     }
 
     public LinkMessage helloResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        if (socket.isClosed()) {
-            return null;
-        }
         lock.lock();
         try {
             while (Objects.isNull(helloResponse.get())) {
+                if (socket.isClosed()) {
+                    throw new IOException("Server crashed");
+                }
                 if (timeout != 0) {
                     if (!condition.await(timeout, unit)) {
                         throw new TimeoutException("server has not responded to the request within the specified time");
                     }
                 } else {
                     condition.await();
-                }
-                if (socket.isClosed()) {
-                    return null;
                 }
             }
             return helloResponse.get();
