@@ -37,6 +37,7 @@ public final class StreamLink extends Link {
     private final Condition condition = lock.newCondition();
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean socketError = new AtomicBoolean();
     private static final long JOIN_TIMEOUT = 100;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
@@ -89,7 +90,7 @@ public final class StreamLink extends Link {
         lock.lock();
         try {
             while (Objects.isNull(helloResponse.get())) {
-                if (socket.isClosed()) {
+                if (socketError.get()) {
                     throw new IOException("Server crashed");
                 }
                 if (timeout != 0) {
@@ -283,6 +284,7 @@ public final class StreamLink extends Link {
             }
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
+            socketError.set(true);
             return null;
         }
     }
