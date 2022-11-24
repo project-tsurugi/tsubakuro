@@ -855,7 +855,7 @@ public:
     connection_queue& operator = (connection_queue&&) = delete;
 
     std::size_t request() noexcept {
-        std::size_t rv = ++requested_;
+        std::size_t rv = requested_.fetch_add(1) + 1;
 
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_request_) {
@@ -895,7 +895,7 @@ public:
         return true;
     }
     std::size_t listen(bool wait = false) {
-        if (accepted_ < requested_ || terminate_) {
+        if (accepted_ < requested_.load() || terminate_) {
             return accepted_ + 1;
         }
         if (!wait) {
@@ -905,14 +905,14 @@ public:
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_request_ = true;
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            c_requested_.wait(lock, [this](){ return (accepted_ < requested_) || terminate_; });
+            c_requested_.wait(lock, [this](){ return (accepted_ < requested_.load()) || terminate_; });
             wait_for_request_ = false;
         }
         return accepted_ + 1;
     }
     void accept(std::size_t n) {
         if (n == (accepted_ + 1)) {
-            if (n <= requested_) {
+            if (n <= requested_.load()) {
                 accepted_ = n;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 if (wait_for_accept_) {
@@ -938,7 +938,7 @@ public:
     void confirm_terminated() { s_terminated_.post(); }
 
 private:
-    std::size_t requested_{0};
+    std::atomic_ulong requested_{0};
     std::size_t accepted_{0};
     std::atomic_bool wait_for_request_{};
     std::atomic_bool wait_for_accept_{};
