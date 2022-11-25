@@ -939,7 +939,7 @@ public:
 
 private:
     std::atomic_ulong requested_{0};
-    std::size_t accepted_{0};
+    std::atomic_ulong accepted_{0};
     std::atomic_bool wait_for_request_{};
     std::atomic_bool wait_for_accept_{};
     std::atomic_bool terminate_{};
