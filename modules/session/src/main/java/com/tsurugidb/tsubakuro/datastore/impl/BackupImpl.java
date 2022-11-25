@@ -53,6 +53,7 @@ public class BackupImpl implements Backup {
 
     /**
      * Creates a new instance.
+     * @param backupId the backup ID
      * @param files the files to copy
      */
      public BackupImpl(long backupId, @Nonnull Collection<? extends Path> files) {
@@ -108,6 +109,7 @@ public class BackupImpl implements Backup {
         }
     }
 
+    @Override
     public void setCloseTimeout(@Nonnull Timeout timeout) {
         Objects.requireNonNull(timeout);
         closeTimeout = timeout;

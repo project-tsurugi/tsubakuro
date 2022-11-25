@@ -7,6 +7,8 @@
   * バックアップの種類を明記
   * 増分バックアップのコードイメージを追加
   * リストア時にバックアップファイルに相対パスを利用可能に
+* 2022-11-23
+  * API を整理
 
 ## この文書について
 
@@ -41,13 +43,14 @@
 ### 提供するAPI - バックアップ
 
 * [interface DatastoreClient](https://github.com/project-tsurugi/tsubakuro/blob/master/modules/session/src/main/java/com/tsurugidb/tsubakuro/datastore/DatastoreClient.java)
-  * `beginBackupDetail()`
+  * `beginBackup()`
     * overview
       * バックアップ操作を開始し、必要なファイルリストを受け取る
     * parameters
-      * `BackupType` - バックアップの種類
+      * `type : BackupType` - バックアップの種類
         * フルバックアップであればすべてのファイルを対象にするが、増分のみを計算する場合は特定のファイル種だけを取得することになる
-        * このパラメータを指定するのは増分のみで、フルバックアップ作成の際にはそもそもこの引数を指定しないオーバーロードを提供する予定
+      * `label : String` - バックアップジョブのラベル (optional)
+        * 追跡用
     * returns
       * `FutureResponse<BackupDetail>` - バックアップを行うための情報
 * `enum BackupType`
@@ -64,12 +67,12 @@
       * 構成の変更は主に以下のケースを想定
         * データベースのバージョンアップ等でデータベース側のデータの持ち方が変わり、後方互換性が失われた
         * ユーザー設定によりデータベース側のファイルの配置が大きく変更され、差分の検出が困難になった
-  * `nextFileSet()`
+  * `nextEntries()`
     * overview
       * バックアップ対象のファイルリストの一部を返す
       * 繰り返し呼び出すことで、ファイルリストの全体を取り出せる
     * returns
-      * `FileSet` - 次のファイルリストの一部
+      * list of `BackupDetail.Entry` - 次のファイルリストの一部
       * `null` - ファイルリストを末尾まで読みだした後
     * note
       * 単一のファイルセットに特定のファイル種がすべて含まれているとは限らない
@@ -99,18 +102,7 @@
   * `close()`
     * overview
       * バックアップ操作を完了させる
-* `interface FileSet`
-  * `getFileType()`
-    * overview
-      * このファイルセットに含まれるファイルの種類を返す
-    * returns
-      * `String` - ファイルの種類を表す識別子
-  * `getEntries()`
-    * overview
-      * このファイルセットに含まれる個々のファイルの情報を返す
-    * returns
-      * `FileSet.Entry` - 個々のファイルの情報
-* `interface FileSet.Entry`
+* `interface BackupDetail.Entry`
   * `getSourcePath()`
     * overview
       * バックアップ対象ファイルのデータベース上のパス (絶対パス) を返す
@@ -146,8 +138,8 @@ Path destination = ...;
 try (
     // ログデータストアにアクセスするクライアントを作成する
     var client = DatastoreClient.attach(session);
-    // バックアップを開始する (フルバックアップなのでバックアップの種類は指定しない)
-    var backup = client.beginBackupDetail().await();
+    // バックアップを開始する (フルバックアップなので標準的なすべてのファイルを対象にする)
+    var backup = client.beginBackup(BackupType.STANDARD).await();
 ) {
     while (true) {
         // 次のファイルセットを取り出す
@@ -196,7 +188,7 @@ try (
     // ログデータストアにアクセスするクライアントを作成する
     var client = DatastoreClient.attach(session);
     // バックアップを開始する (増分バックアップではログ(とxLOB)を対象にする)
-    var backup = client.beginBackupDetail(BackupType.TRANSACTION).await();
+    var backup = client.beginBackup(BackupType.TRANSACTION).await();
 ) {
     // ... 構成IDに変更がないかチェック
     // ... ログに分断がないかチェック

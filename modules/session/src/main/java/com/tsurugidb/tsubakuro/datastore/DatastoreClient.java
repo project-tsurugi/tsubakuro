@@ -36,7 +36,7 @@ public interface DatastoreClient extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Backup> beginBackup() throws IOException {
-        return beginBackup(null);
+        return beginBackup((String) null);
     }
 
     /**
@@ -46,6 +46,28 @@ public interface DatastoreClient extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Backup> beginBackup(@Nullable String label) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Starts backup with detailed information.
+     * @param type backup target specification
+     * @return the future response of started backup session
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<BackupDetail> beginBackup(@Nonnull BackupType type) throws IOException {
+        return beginBackup(type, null);
+    }
+
+    /**
+     * Starts backup with detailed information.
+     * @param type backup target specification
+     * @param label the optional job label
+     * @return the future response of started backup session
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<BackupDetail> beginBackup(@Nonnull BackupType type, @Nullable String label)
+            throws IOException {
         throw new UnsupportedOperationException();
     }
 
