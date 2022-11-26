@@ -42,6 +42,8 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Starts a new transaction.
+     * The consequence of close() call of the returned FutureResponse<Transaction> is undefined, 
+     * if the close() is called without get() the Transaction object.
      * @param option the transaction option
      * @return a future response of transaction object
      * @throws IOException if I/O error was occurred while sending request
@@ -70,6 +72,8 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Prepares a SQL statement.
+     * The consequence of close() call of the returned FutureResponse<PreparedStatement> is undefined, 
+     * if the close() is called without get() the PreparedStatement object.
      * @param source the SQL statement text (may includes place-holders)
      * @param placeholders the place-holders in the statement text
      * @return a future response of prepared statement object
@@ -84,6 +88,8 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves execution plan of the statement.
+     * The consequence of close() call of the returned FutureResponse<StatementMetadata> is undefined, 
+     * if the close() is called without get() the StatementMetadata object.
      * @param source the SQL statement text
      * @return a future response of statement metadata
      * @throws IOException if I/O error was occurred while sending request
@@ -111,6 +117,8 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves execution plan of the statement.
+     * The consequence of close() call of the returned FutureResponse<StatementMetadata> is undefined, 
+     * if the close() is called without get() the StatementMetadata object.
      * @param statement the prepared statement
      * @param parameters parameter list for place-holders in the prepared statement
      * @return a future response of statement metadata
@@ -125,6 +133,8 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves metadata for a table.
+     * The consequence of close() call of the returned FutureResponse<TableMetadata> is undefined, 
+     * if the close() is called without get() the TableMetadata object.
      * @param tableName the target table name
      * @return a future response of table metadata
      * @throws IOException if I/O error was occurred while sending request

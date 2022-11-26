@@ -11,12 +11,12 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
-import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.ServerResourceNeedingDisposal;
 
 /**
  * Transaction type.
  */
-public interface Transaction extends ServerResource {
+public interface Transaction extends ServerResourceNeedingDisposal {
 
     /**
      * Executes a SQL statement.
