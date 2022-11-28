@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +17,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.util.ServerResourceNeedingDisposal;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -111,7 +109,10 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
         try {
             if (!gotton.get()) {
                 if (delegate.get().isMainResponseReady()) {
-                    closeValue();
+                    var obj = get();
+                    if (obj instanceof ServerResource) {
+                        ((ServerResource) obj).close();
+                    }
                 } else {
                     throw new IOException("response has not arrived");
                 }
@@ -130,37 +131,5 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     @FunctionalInterface
     private interface Result<V> {
         V get() throws IOException, ServerException, InterruptedException;
-    }
-
-    private class Disposer extends Thread {
-        private ServerResourceNeedingDisposal serverResource;
-
-        Disposer(ServerResourceNeedingDisposal serverResource) {
-            this.serverResource = serverResource;
-        }
-
-        public void run() {
-            try {
-                serverResource.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (ServerException | InterruptedException e) {
-                throw new UncheckedIOException(new IOException(e));
-            }
-        }
-    }
-
-    private void closeValue() throws IOException, ServerException, InterruptedException {
-        var obj = get();
-        if (obj instanceof ServerResource) {
-            if (obj instanceof ServerResourceNeedingDisposal) {
-                Thread disposer = new Disposer((ServerResourceNeedingDisposal) obj);
-                disposer.setDaemon(true);
-                disposer.start();
-            } else {
-                var serverResource = (ServerResource) obj;
-                serverResource.close();
-            }
-        }
     }
 }
