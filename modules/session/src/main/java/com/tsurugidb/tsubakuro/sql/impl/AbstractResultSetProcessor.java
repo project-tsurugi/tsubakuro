@@ -4,22 +4,19 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 //import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
 import com.google.protobuf.Message;
-//import com.tsurugidb.sql.proto.SqlRequest;
-//import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
-//import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
-//import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-//import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
-//import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 
 /**
@@ -72,8 +69,22 @@ abstract class AbstractResultSetProcessor<T extends Message>
             return;
         }
         if (cache.get() == null) {
-            // FIXME consider timeout
             var message = parse(response.waitForMainResponse());
+            cache.compareAndSet(null, message);
+        }
+        doTest(cache.get());
+        passed.set(true);
+    }
+
+    @Override
+    public void test(@Nonnull Response response, long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+        Objects.requireNonNull(response);
+        if (passed.get()) {
+            // already passed
+            return;
+        }
+        if (cache.get() == null) {
+            var message = parse(response.waitForMainResponse(timeout, unit));
             cache.compareAndSet(null, message);
         }
         doTest(cache.get());
@@ -83,4 +94,9 @@ abstract class AbstractResultSetProcessor<T extends Message>
     abstract T parse(@Nonnull ByteBuffer payload) throws IOException;
 
     abstract void doTest(@Nonnull T response) throws IOException, ServerException, InterruptedException;
+
+    @Override
+    public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
+        return process(response, Timeout.DISABLED);
+    }
 }

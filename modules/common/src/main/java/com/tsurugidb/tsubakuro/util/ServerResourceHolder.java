@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
@@ -42,6 +43,14 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
     public void onClosed(ServerResource resource) {
         if (Objects.nonNull(resource)) {
             entries.remove(new IdentityProvider(resource));
+        }
+    }
+
+    @Override
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
+        for (var iter = entries.entrySet().iterator(); iter.hasNext();) {
+            var resource = iter.next().getKey().resource;
+            resource.setCloseTimeout(timeout);
         }
     }
 

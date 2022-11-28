@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
@@ -15,6 +16,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 /**
  * IpcLink type.
@@ -137,7 +139,15 @@ public final class IpcLink extends Link {
         if (!closed.get()) {
             closeNative(wireHandle);
             try {
-                receiver.join();
+                if (timeout != 0) {
+                    timeUnit.timedJoin(receiver, timeout);
+                } else {
+                    receiver.join();
+                }
+                if (receiver.getState() != Thread.State.TERMINATED) {
+                    receiver.interrupt();
+                    throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
+                }
             } catch (InterruptedException e) {
                 throw new IOException(e);
             } finally {

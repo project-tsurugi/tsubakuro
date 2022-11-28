@@ -65,4 +65,25 @@ public interface Response extends ServerResource {
     default InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Retrieves sub-responses in this response.
+     * You can read each sub-responses data only once.
+     * Even if If sub-responses data have not been completed, you can retrieve them partially.
+     * The stream will be blocked when the stream position reached to the incomplete area of the sub-response.
+     * @param id the sub-responses name
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of {@code timeout}
+     * @return contents of body of the sub-response
+     * @throws NoSuchElementException if there is no such the data channel
+     * @throws IOException if I/O error was occurred while opening the sub-responses
+     * @throws ServerException if server error was occurred while opening the sub-responses
+     * @throws InterruptedException if interrupted by other threads while opening the sub-responses
+     * @throws TimeoutException if the wait time out;
+     * @see #getSubResponseIds()
+     */
+    default InputStream openSubResponse(String id, long timeout, TimeUnit unit)
+            throws IOException, ServerException, InterruptedException, TimeoutException {
+        throw new UnsupportedOperationException();
+    }
 }

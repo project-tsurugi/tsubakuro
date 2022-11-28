@@ -2,10 +2,12 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
@@ -22,6 +24,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelRespon
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -34,6 +37,7 @@ import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 
 /**
@@ -56,6 +60,8 @@ public class SqlServiceStub implements SqlService {
 
     private final ServerResourceHolder resources = new ServerResourceHolder();
 
+    private Timeout closeTimeout = Timeout.DISABLED;
+
     /**
      * Creates a new instance.
      * @param session the current session
@@ -63,6 +69,8 @@ public class SqlServiceStub implements SqlService {
     public SqlServiceStub(@Nonnull Session session) {
         Objects.requireNonNull(session);
         this.session = session;
+        this.closeTimeout = session.getCloseTimeout();
+        session.put(this);
     }
 
     // just avoid programming error
@@ -119,6 +127,7 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             var transactionImpl = new TransactionImpl(detailResponse.getTransactionHandle(), SqlServiceStub.this, resources);
+            transactionImpl.setCloseTimeout(closeTimeout);
             return resources.register(transactionImpl);
         }
     }
@@ -228,6 +237,7 @@ public class SqlServiceStub implements SqlService {
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
             var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources);
+            preparedStatementImpl.setCloseTimeout(closeTimeout);
             return resources.register(preparedStatementImpl);
         }
     }
@@ -443,14 +453,31 @@ public class SqlServiceStub implements SqlService {
         }
 
         @Override
-        public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
+        public ResultSet process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
             try (
                 var owner = Owner.of(response);
             ) {
+                InputStream metadataInput;
                 ResultSetMetadataAdapter metadata = null;
                 while (true) {
-                    var metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
+                    Timeout timeoutHere = null;
+                    if (timeout.value() > 0) {
+                        timeoutHere = timeout;
+                    } else if (Objects.nonNull(closeTimeout)) {
+                        if (closeTimeout.value() > 0) {
+                            timeoutHere = closeTimeout;
+                        }
+                    }
+                    if (Objects.nonNull(timeoutHere)) {
+                        try {
+                            metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID, timeoutHere.value(), timeoutHere.unit());
+                        } catch (TimeoutException e) {
+                            throw new ResponseTimeoutException(e);
+                        }
+                    } else {
+                        metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
+                    }
                     if (Objects.nonNull(metadataInput)) {
                         try {
                             metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
@@ -467,6 +494,7 @@ public class SqlServiceStub implements SqlService {
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
                 var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this);
+                resultSetImpl.setCloseTimeout(closeTimeout);
                 return resources.register(resultSetImpl);
             }
         }
@@ -621,9 +649,16 @@ public class SqlServiceStub implements SqlService {
     }
 
     @Override
+    public void setCloseTimeout(Timeout timeout) {
+        closeTimeout = timeout;
+        resources.setCloseTimeout(timeout);
+    }
+
+    @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
         resources.close();
+        session.remove(this);
     }
 
     private byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {

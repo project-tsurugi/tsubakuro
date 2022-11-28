@@ -13,6 +13,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 
 /**
@@ -130,6 +131,12 @@ public interface Session extends ServerResource {
     Wire getWire();
 
     /**
+     * Provides close timeout object to tha caller
+     * @return the close timeout that this session uses
+     */
+    Timeout getCloseTimeout();
+
+    /**
      * Provide dead/alive information of the server to which the session is connected
      * @return true when the server is alive
      */
@@ -140,4 +147,18 @@ public interface Session extends ServerResource {
         }
         return wire.isAlive();
     }
+
+    /**
+     * Put a {@link ServerResource} to this.
+     * The registered object will be closed in {@link ServerResourceHolder#close()}.
+     * @param resource the resource
+     * @return the input resource
+     */
+    void put(@Nonnull ServerResource resource);
+
+    /**
+     * Remove a {@link ServerResource} from this.
+     * If such the object is not registered, this does nothing.
+     */
+    void remove(@Nonnull ServerResource resource);
 }
