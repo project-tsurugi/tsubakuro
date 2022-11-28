@@ -1,12 +1,12 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.util.concurrent.TimeUnit;
-import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.ServerResourceNeedingDisposal;
 
 /**
  * PreparedStatement type.
  */
-public interface PreparedStatement extends ServerResource {
+public interface PreparedStatement extends ServerResourceNeedingDisposal {
     /**
      * set timeout to close(), which won't timeout if this is not performed.
      * @param timeout time length until the close operation timeout

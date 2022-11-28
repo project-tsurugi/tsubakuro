@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -16,6 +17,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.ServerResourceNeedingDisposal;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 
@@ -25,6 +27,7 @@ import com.tsurugidb.tsubakuro.util.Owner;
  * @see BackgroundFutureResponse
  */
 public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXME remove public
+    private static final int POLL_INTERVAL = 1000; // in mS
 
     static final Logger LOG = LoggerFactory.getLogger(ForegroundFutureResponse.class);
 
@@ -138,11 +141,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     public void close() throws IOException, ServerException, InterruptedException {
         try {
             if (!gotton.get()) {
-                var obj = get();
-                if (obj instanceof ServerResource) {
-                    var serverResource = (ServerResource) obj;
-                    serverResource.close();
-                }
+                closeValue();
             }
         } finally {
             Owner.close(unprocessed.getAndSet(null));
@@ -154,5 +153,69 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public String toString() {
         return String.valueOf(delegate);
+    }
+
+    private class Disposer extends Thread {
+        private ServerResource serverResource;
+
+        Disposer() {
+            this.serverResource = null;
+        }
+        Disposer(ServerResource serverResource) {
+            this.serverResource = serverResource;
+        }
+
+        private void waitAndGetServerResource() throws IOException, ServerException, InterruptedException {
+            var response = delegate.get();
+            while (true) {
+                if (response.isMainResponseReady()) {
+                    break;
+                }
+                try {
+                    Thread.sleep(POLL_INTERVAL); 
+                } catch (InterruptedException e) {
+                    // It's OK to catch InterruptedException in Thread.sleep(), let's continue;
+                    continue;
+                }
+            }
+            var obj = get();
+            if (obj instanceof ServerResource) {
+                serverResource = (ServerResource) obj;
+            }
+        }
+        public void run() {
+            try {
+                if (Objects.isNull(serverResource)) {
+                    waitAndGetServerResource();
+                }
+                if (Objects.nonNull(serverResource)) {
+                    serverResource.close();
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } catch (ServerException | InterruptedException e) {
+                throw new UncheckedIOException(new IOException(e));
+            }
+        }
+    }
+
+    private void closeValue() throws IOException, ServerException, InterruptedException {
+        if (delegate.get().isMainResponseReady()) {
+            var obj = get();
+            if (obj instanceof ServerResource) {
+                if (obj instanceof ServerResourceNeedingDisposal) {
+                    Thread disposer = new Disposer((ServerResource) obj);
+                    disposer.setDaemon(true);
+                    disposer.start();
+                } else {
+                    var serverResource = (ServerResource) obj;
+                    serverResource.close();
+                }
+            }
+        } else {
+            Thread disposer = new Disposer();
+            disposer.setDaemon(true);
+            disposer.start();
+        }
     }
 }
