@@ -139,13 +139,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     public void close() throws IOException, ServerException, InterruptedException {
         try {
             if (!gotton.get()) {
-                if (delegate.get().isMainResponseReady()) {
-                    var obj = get();
-                    if (obj instanceof ServerResource) {
-                        ((ServerResource) obj).close();
-                    }
-                } else {
-                    throw new IOException("response has not arrived");
+                var obj = get();
+                if (obj instanceof ServerResource) {
+                    ((ServerResource) obj).close();
                 }
             }
         } finally {
