@@ -1,0 +1,125 @@
+name: Iceaxe-dbtest
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      GHA_PAT:
+        required: true
+      GHCR_PAT:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  Test:
+    runs-on: [self-hosted, docker]
+    timeout-minutes: 30
+    container:
+      image: ghcr.io/project-tsurugi/oltp-sandbox:ubuntu-20.04
+      credentials:
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GHCR_PAT }}
+      volumes:
+        - /work/docker-cache/.gradle:/root/.gradle
+    defaults:
+      run:
+        shell: bash
+    env:
+      TG_IT_TSUBAKURO_PATH: .
+      TG_IT_EISEN_PATH: itest/eisen
+      TG_IT_ICEAXE_PATH: itest/iceaxe
+
+      GPR_USER: ${{ github.repository_owner }}
+      GPR_KEY: ${{ secrets.GHCR_PAT }}
+
+    services:
+      tsurugi:
+        image: ghcr.io/project-tsurugi/tsurugi:latest
+        credentials:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GHCR_PAT }}
+        env:
+          TG_OPTS: --v=30
+
+    steps:
+      - id: Setup_Java
+        name: Setup_Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - id: Checkout
+        name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GHA_PAT }}
+
+      - id: Checkout_Actions
+        name: Checkout_Actions
+        uses: actions/checkout@v3
+        with:
+          repository: project-tsurugi/tsurugi-github-actions
+          path: .github/actions
+          ref: master
+          submodules: recursive
+          token: ${{ secrets.GHA_PAT }}
+
+      - id: Checkout_Eisen
+        name: Checkout_Eisen
+        uses: actions/checkout@v3
+        with:
+          repository: project-tsurugi/eisen
+          path: ${{ env.TG_IT_EISEN_PATH }}
+          ref: master
+          submodules: false
+          token: ${{ secrets.GHA_PAT }}
+          clean: false
+
+      - id: Checkout_Iceaxe
+        name: Checkout_Iceaxe
+        uses: actions/checkout@v3
+        with:
+          repository: project-tsurugi/iceaxe
+          path: ${{ env.TG_IT_ICEAXE_PATH }}
+          ref: master
+          token: ${{ secrets.GHA_PAT }}
+
+      - id: Install_Tsubakuro
+        name: Install_Tsubakuro
+        run: ${{ env.TG_IT_EISEN_PATH }}/scripts/install-tsubakuro.sh
+        env:
+          TG_IT_TSUBAKURO_DIR: ${{ github.workspace }}/${{ env.TG_IT_TSUBAKURO_PATH }}
+        if: contains(github.ref, '/pull/')
+
+      - id: DB_Test
+        name: DB_Test
+        run: |
+          cd ${{ env.TG_IT_ICEAXE_PATH }}/modules/iceaxe-dbtest/
+          ../../gradlew -i ${GRADLE_CLI_OPTS} cleanTest test -Pdbtest.endpoint=tcp://tsurugi:12345
+        env:
+          GRADLE_CLI_OPTS: ${{ (contains(github.ref, '/pull/')) && '-PmavenLocal' || '--refresh-dependencies' }}
+
+      - id: Generate_Annotations
+        name: Generate_Annotations
+        uses: ./.github/actions/tsurugi-annotations-action
+        if: always()
+        with:
+          checker: junit
+          junit_input: |
+            ${{ env.TG_IT_ICEAXE_PATH }}/modules/iceaxe-dbtest/build/test-results/**/TEST-*.xml
+
+      - id: Notify_Slack
+        name: Notify_Slack
+        uses: ./.github/actions/tsurugi-slack-action
+        if: always() && (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        with:
+          kind: 'job-result'
+          channel: 'tsurugi-build'
+          status: ${{ job.status }}
+          step_context: ${{ toJson(steps) }}
+          username: ${{ github.workflow }}
+          job_name: 'Iceaxe / Test'
