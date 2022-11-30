@@ -55,21 +55,21 @@ jobs:
     steps:
       - id: Setup_Java
         name: Setup_Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - id: Checkout
         name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.GHA_PAT }}
           clean: false
 
       - id: Checkout_Actions
         name: Checkout_Actions
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: project-tsurugi/tsurugi-github-actions
           path: .github/actions
@@ -79,7 +79,7 @@ jobs:
 
       - id: Checkout_Eisen
         name: Checkout_Eisen
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: project-tsurugi/eisen
           path: ${{ env.TG_IT_EISEN_PATH }}
@@ -122,7 +122,7 @@ jobs:
 
       - id: Upload_Artifact
         name: Upload_Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: eisen-integration-test
           path: ${{ env.TG_IT_RESULT_PATH }}/eisen_it_result.zip
