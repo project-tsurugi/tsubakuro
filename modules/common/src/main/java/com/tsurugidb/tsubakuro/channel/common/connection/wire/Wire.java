@@ -11,6 +11,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
@@ -84,6 +85,14 @@ public interface Wire extends ServerResource {
      */
     default boolean isAlive() {
         return false;
+    }
+
+    /**
+     * Sets close timeout.
+     * @param t the timeout
+     */
+    default void setCloseTimeout(Timeout t) {
+        throw new UnsupportedOperationException();
     }
 
     /**

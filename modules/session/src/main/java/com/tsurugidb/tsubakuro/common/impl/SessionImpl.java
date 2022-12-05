@@ -19,6 +19,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
@@ -43,7 +44,9 @@ public class SessionImpl implements Session {
      */
     public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
 
+    private final ServiceShelf services = new ServiceShelf();
     private Wire wire;
+    private Timeout closeTimeout;
 
     private final ExecutorService executor;
     private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
@@ -168,25 +171,29 @@ public class SessionImpl implements Session {
             new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
-    /**
-     * set timeout to close(), which won't timeout if this is not performed.
-     * @param t time length until the close operation timeout
-     * @param u unit of timeout
-     */
-    public void setCloseTimeout(long t, TimeUnit u) {
-        setCloseTimeout(new Timeout(t, u, Timeout.Policy.ERROR));
+    @Override
+    public void setCloseTimeout(Timeout timeout) {
+        closeTimeout = timeout;
+        services.setCloseTimeout(timeout);
+    }
+
+    @Override
+    public Timeout getCloseTimeout() {
+        return closeTimeout;
     }
 
     /**
      * Close the Session
      */
     @Override
-    public void close() throws IOException, InterruptedException {
-        // FIXME: close timeout
+    public void close() throws ServerException, IOException, InterruptedException {
         if (Objects.nonNull(executor)) {
             executor.shutdownNow();
         }
         if (Objects.nonNull(wire)) {
+            if (Objects.nonNull(closeTimeout)) {
+                wire.setCloseTimeout(closeTimeout);
+            }
             wire.close();
         }
     }
@@ -202,6 +209,16 @@ public class SessionImpl implements Session {
     @Override
     public Wire getWire() {
         return wire;
+    }
+
+    @Override
+    public void put(@Nonnull ServerResource resource) {
+        services.put(resource);
+    }
+
+    @Override
+    public void remove(@Nonnull ServerResource resource) {
+        services.remove(resource);
     }
 
     static CoreServiceException newUnknown(@Nonnull CoreResponse.UnknownError message) {

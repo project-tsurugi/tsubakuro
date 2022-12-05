@@ -3,7 +3,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
@@ -16,6 +16,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 
 /**
@@ -25,9 +26,10 @@ public class WireImpl implements Wire {
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
-    private Link link;
+    private final Link link;
     private final long sessionID;
     private final ResponseBox responseBox;
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -51,7 +53,7 @@ public class WireImpl implements Wire {
      */
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
-        if (Objects.isNull(link)) {
+        if (closed.get()) {
             throw new IOException("already closed");
         }
         var header = FrameworkRequest.Header.newBuilder().setMessageVersion(1).setServiceId(serviceId).setSessionId(sessionID).build();
@@ -77,7 +79,7 @@ public class WireImpl implements Wire {
     */
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
-        if (Objects.isNull(link)) {
+        if (closed.get()) {
             throw new IOException("already closed");
         }
         return link.createResultSetWire();
@@ -85,10 +87,15 @@ public class WireImpl implements Wire {
 
     @Override
     public boolean isAlive() {
-        if (Objects.isNull(link)) {
+        if (closed.get()) {
             return false;
         }
         return link.isAlive();
+    }
+
+    @Override
+    public void setCloseTimeout(Timeout timeout) {
+        link.setCloseTimeout(timeout);
     }
 
     /**
@@ -97,9 +104,9 @@ public class WireImpl implements Wire {
     @Override
     public void close() throws IOException {
         try {
-            if (Objects.nonNull(link)) {
+            if (!closed.get()) {
                 link.close();
-                link = null;
+                closed.set(true);
             }
         } catch (ServerException | InterruptedException e) {
             throw new IOException(e);

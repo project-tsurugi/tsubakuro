@@ -26,6 +26,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 public final class StreamLink extends Link {
     private Socket socket;
@@ -38,7 +40,6 @@ public final class StreamLink extends Link {
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
-    private static final long JOIN_TIMEOUT = 100;
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
@@ -303,7 +304,7 @@ public final class StreamLink extends Link {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws IOException, ServerException {
         if (!closed.get()) {
             try {
                 send(REQUEST_SESSION_BYE, 0);
@@ -312,9 +313,14 @@ public final class StreamLink extends Link {
             }
         }
         try {
-            receiver.join(JOIN_TIMEOUT);
+            if (timeout != 0) {
+                timeUnit.timedJoin(receiver, timeout);
+            } else {
+                receiver.join();
+            }
             if (receiver.getState() != Thread.State.TERMINATED) {
                 receiver.interrupt();
+                throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
             }
         } catch (InterruptedException e) {
             throw new IOException(e);

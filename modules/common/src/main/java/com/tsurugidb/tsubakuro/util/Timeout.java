@@ -94,6 +94,24 @@ public final class Timeout {
     }
 
     /**
+     * get timeout value
+     *
+     * @return timeout value
+     */
+    public long value() {
+        return this.timeout;
+    }
+
+    /**
+     * get time unit
+     *
+     * @return time unit
+     */
+    public TimeUnit unit() {
+        return this.unit;
+    }
+
+    /**
      * Policy kind when waiting for response is timeout.
      */
     public enum Policy {

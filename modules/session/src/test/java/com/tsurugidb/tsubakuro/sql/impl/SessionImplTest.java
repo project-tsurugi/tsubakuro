@@ -25,6 +25,7 @@ import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.session.ProtosForTest;
 
 class SessionImplTest {
@@ -141,7 +142,7 @@ class SessionImplTest {
     void sessionTimeout() throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
-        session.setCloseTimeout(specialTimeoutValue, TimeUnit.SECONDS);
+        session.setCloseTimeout(new Timeout(specialTimeoutValue, TimeUnit.SECONDS, Timeout.Policy.ERROR));
 
         Throwable exception = assertThrows(IOException.class, () -> {
                 session.close();

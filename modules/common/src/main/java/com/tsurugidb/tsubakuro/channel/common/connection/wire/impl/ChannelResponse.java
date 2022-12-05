@@ -93,7 +93,9 @@ public class ChannelResponse implements Response {
             lock.lock();
             try {
                 while (!isMainResponseReady()) {
-                    noSet.await();
+                    if (!noSet.await(timeout, unit)) {
+                        throw new TimeoutException("response has not arrived within the timeout specified");
+                    }
                 }
                 if (Objects.nonNull(main.get())) {
                     mainResponseGotton.set(true);
@@ -113,8 +115,22 @@ public class ChannelResponse implements Response {
     @Override
     public InputStream openSubResponse(String id) throws IOException, InterruptedException {
         if (id.equals(METADATA_CHANNEL_ID)) {
+            waitForResultSetOrMainResponse();
             return metadataChannel();
         } else if (id.equals(RELATION_CHANNEL_ID)) {
+            waitForResultSetOrMainResponse();
+            return relationChannel();
+        }
+        throw new IOException("illegal SubResponse id");
+    }
+
+    @Override
+    public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
+        if (id.equals(METADATA_CHANNEL_ID)) {
+            waitForResultSetOrMainResponse(timeout, unit);
+            return metadataChannel();
+        } else if (id.equals(RELATION_CHANNEL_ID)) {
+            waitForResultSetOrMainResponse(timeout, unit);
             return relationChannel();
         }
         throw new IOException("illegal SubResponse id");
@@ -126,7 +142,6 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream relationChannel() throws IOException, InterruptedException {
-        waitForResultSetOrMainResponse();
         if (Objects.nonNull(resultSet.get())) {
             return resultSet.get().getByteBufferBackedInput();
         }
@@ -137,7 +152,6 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream metadataChannel() throws IOException, InterruptedException {
-        waitForResultSetOrMainResponse();
         if (Objects.nonNull(metadata.get())) {
             var recordMeta = metadata.get().getRecordMeta();
             return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
@@ -164,29 +178,29 @@ public class ChannelResponse implements Response {
         }
     }
 
+    private void waitForResultSetOrMainResponse(long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
+        if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
+            return;
+        }
+
+        lock.lock();
+        try {
+            while (!(isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get()))) {
+                if (!noSet.await(timeout, unit)) {
+                    throw new TimeoutException("response has not arrived within the timeout specified");
+                }
+            }
+            return;
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private boolean isResultSetReady() {
         return Objects.nonNull(resultSet.get()) || Objects.nonNull(exceptionResultSet.get());
     }
 
-//    private ResultSetWire waitForResultSet(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-//        if (Objects.nonNull(resultSet.get())) {
-//            return resultSet.get();
-//        }
-//
-//        lock.lock();
-//        try {
-//            while (Objects.isNull(resultSet.get())) {
-//                noSet.await();
-//            }
-//            return resultSet.get();
-//        } catch (InterruptedException e) {
-//            throw new IOException(e);
-//        } finally {
-//            lock.unlock();
-//        }
-//    }
-
-    // called from receiver thread
+    // get call from receiver thread
     void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
         lock.lock();

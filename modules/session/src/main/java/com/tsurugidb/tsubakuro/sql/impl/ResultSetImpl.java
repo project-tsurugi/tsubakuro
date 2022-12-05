@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetTime;
 import java.time.OffsetDateTime;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
@@ -46,6 +49,10 @@ public class ResultSetImpl implements ResultSet {
 
     private final AtomicBoolean tested = new AtomicBoolean();
 
+    private long timeout = 0;
+
+    private TimeUnit unit;
+
     /**
      * Tests if the response is valid.
      */
@@ -59,6 +66,18 @@ public class ResultSetImpl implements ResultSet {
          * @throws InterruptedException if interrupted while receiving response
          */
         void test(@Nonnull Response response) throws IOException, ServerException, InterruptedException;
+
+        /**
+         * Tests if the response is valid.
+         * @param response the response
+         * @param timeout the maximum time to wait
+         * @param unit the time unit of {@code timeout}
+         * @throws IOException if I/O error was occurred while receiving response
+         * @throws ServerException if server error was occurred while processing the request
+         * @throws InterruptedException if interrupted while receiving response
+         * @throws TimeoutException if the wait time out
+         */
+        void test(@Nonnull Response response, long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException;
     }
 
     /**
@@ -97,7 +116,14 @@ public class ResultSetImpl implements ResultSet {
             if (cursor.nextRow()) {
                 return true;
             }
-            checkResponse();
+            // check main response whether to finish the request normally
+            if (tested.compareAndSet(false, true)) {
+                try {
+                    tester.test(response, timeout, unit);
+                } catch (TimeoutException e) {
+                    throw new ResponseTimeoutException(e);
+                }
+            }
             return false;
         } catch (IOException | ServerException e) {
             checkResponse(e);
@@ -347,8 +373,12 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void setCloseTimeout(Timeout t) {
-        cursor.setCloseTimeout(t);
+    public void setCloseTimeout(@Nullable Timeout t) {
+        if (Objects.nonNull(t)) {
+            timeout = t.value();
+            unit = t.unit();
+            cursor.setCloseTimeout(t);
+        }
     }
 
     @Override
@@ -364,8 +394,10 @@ public class ResultSetImpl implements ResultSet {
     
                 // check main response whether to finish the request normally
                 if (tested.compareAndSet(false, true)) {
-                    tester.test(response);
+                    tester.test(response, timeout, unit);
                 }
+            } catch (TimeoutException e) {
+                throw new ResponseTimeoutException(e);
             }
         }
         if (Objects.nonNull(closeHandler)) {

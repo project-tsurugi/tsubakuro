@@ -15,9 +15,11 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * A {@link FutureResponse} that converts {@link Response} into specific type in foreground.
@@ -65,7 +67,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         if (mapped != null) {
             return mapped;
         }
-        return processResult(getInternal());
+        return processResult(getInternal(), Timeout.DISABLED);
     }
 
     @Override
@@ -79,7 +81,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         if (mapped != null) {
             return mapped;
         }
-        return processResult(getInternal(timeout, unit));
+        return processResult(getInternal(timeout, unit), new Timeout(timeout, unit, Timeout.Policy.ERROR));
     }
 
     private Owner<Response> getInternal() throws InterruptedException, IOException, ServerException {
@@ -103,14 +105,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 response.get().waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 unprocessed.set(response.release());
-                throw e;
+                throw new ResponseTimeoutException(e);
             }
             unprocessed.set(null);
             return response.move();
         }
     }
 
-    private V processResult(Owner<Response> response) throws IOException, ServerException, InterruptedException {
+    private V processResult(Owner<Response> response, Timeout timeout) throws IOException, ServerException, InterruptedException {
 //        assert response != null;    // comment out in order to prevent SpotBugs violation
         try (response) {
             V mapped;
@@ -120,7 +122,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     return mapped;
                 }
                 LOG.trace("mapping response: {}", response.get()); //$NON-NLS-1$
-                mapped = mapper.process(response.get());
+                mapped = mapper.process(response.get(), timeout);
                 LOG.trace("response mapped: {}", mapped); //$NON-NLS-1$
                 result.set(mapped);
             }

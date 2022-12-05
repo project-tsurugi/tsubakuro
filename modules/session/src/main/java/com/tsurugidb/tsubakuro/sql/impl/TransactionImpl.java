@@ -23,7 +23,6 @@ import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
@@ -37,14 +36,12 @@ public class TransactionImpl implements Transaction {
 
     private final SqlCommon.Transaction transaction;
     private boolean cleanuped;
-    private long timeout;
+    private long timeout = 0;
     private TimeUnit unit;
 
     private final SqlService service;
 
     private final ServerResource.CloseHandler closeHandler;
-
-    private Timeout closeTimeout = Timeout.DISABLED;
 
     private final AtomicBoolean released = new AtomicBoolean();
 
@@ -192,7 +189,6 @@ public class TransactionImpl implements Transaction {
         return service.send(pb.build());
     }
 
-
     @Override
     public FutureResponse<Void> executeLoad(
             @Nonnull PreparedStatement statement,
@@ -247,12 +243,7 @@ public class TransactionImpl implements Transaction {
         return rv;
     }
 
-    /**
-     * set timeout to close(), which won't timeout if this is not performed.
-     * This is used when the transaction is to be closed without commit or rollback.
-     * @param t time length until the close operation timeout
-     * @param u unit of timeout
-     */
+    @Override
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
