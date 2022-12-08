@@ -827,12 +827,12 @@ public final class ProtosForTest {
         static SqlResponse.Begin.Builder builder() {
             return
                 SqlResponse.Begin.newBuilder()
-                .setTransactionHandle(TransactionChecker.builder());
+                .setSuccess(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(TransactionChecker.builder()));
         }
         public static boolean check(SqlResponse.Begin dst) {
             return
-                SqlResponse.Begin.ResultCase.TRANSACTION_HANDLE.equals(dst.getResultCase())
-                && TransactionChecker.check(dst.getTransactionHandle());
+                SqlResponse.Begin.ResultCase.SUCCESS.equals(dst.getResultCase())
+                && TransactionChecker.check(dst.getSuccess().getTransactionHandle());
         }
         
         void test() {
