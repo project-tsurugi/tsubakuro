@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.datastore;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -19,7 +20,7 @@ Session session = ...;
 Path destination = ...;
 try (
     var client = DatastoreClient.attach(session);
-    var backup = client.beginBackupDetail(BackupType.STANDARD).await();
+    var backup = client.beginBackup(BackupType.STANDARD).await();
 ) {
     while (true) {
         // fetch next entries
@@ -114,20 +115,43 @@ public interface BackupDetail extends ServerResource {
      * <p>
      * This "time" has nothing to do with the real clock, so that you cannot retrieve the actual time from it.
      * </p>
-     * @return the start time of available transaction logs
-     * @see #getLogEnd()
+     * <p>
+     * The returned value is an unsigned integer.
+     * To compare two values, you must use {@link Long#compareUnsigned(long, long)}.
+     * </p>
+     * @return the start time of available transaction logs (64-bit unsigned integer)
+     * @see #getLogFinish()
      */
-    long getLogBegin();
+    long getLogStart();
 
     /**
-     * Returns the end time of available transaction logs in this backup.
+     * Returns the maximum time of available transaction logs in this backup.
      * <p>
      * This "time" has nothing to do with the real clock, so that you cannot retrieve the actual time from it.
      * </p>
-     * @return the end time of available transaction logs
-     * @see #getLogBegin()
+     * <p>
+     * The returned value is an unsigned integer.
+     * To compare two values, you must use {@link Long#compareUnsigned(long, long)}.
+     * </p>
+     * @return the maximum time of available transaction logs (64-bit unsigned integer)
+     * @see #getLogStart()
      */
-    long getLogEnd();
+    long getLogFinish();
+
+    /**
+     * Returns the maximum time of available database image in this backup.
+     * <p>
+     * This "time" has nothing to do with the real clock, so that you cannot retrieve the actual time from it.
+     * </p>
+     * <p>
+     * The returned value is an unsigned integer.
+     * To compare two values, you must use {@link Long#compareUnsigned(long, long)}.
+     * </p>
+     * @return the maximum time of available database image (64-bit unsigned integer)
+     *      or {@code empty} if database image is not available in this backup target
+     * @see #getLogStart()
+     */
+    OptionalLong getImageFinish();
 
     /**
      * Retrieves the next backup target files.
