@@ -38,8 +38,23 @@ message ResultOnly {
 
 /* For response to Begin. */
 message Begin {
-  oneof result {
+
+  // request is successfully completed.
+  message Success {
+
+    // the transaction handle.
     common.Transaction transaction_handle = 1;
+
+    // the transaction id for reference.
+    common.TransactionId transaction_id = 2;
+  }
+
+  // the response body.
+  oneof result {
+    // request is successfully completed.
+    Success success = 1;
+
+    // engine error occurred.
     Error error = 2;
   }
 }
