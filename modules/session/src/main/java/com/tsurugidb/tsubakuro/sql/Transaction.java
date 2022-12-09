@@ -271,6 +271,14 @@ public interface Transaction extends ServerResourceNeedingDisposal {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Provides transaction id that is unique to for the duration of the database server's lifetime
+     * @return the id String for this transaction
+     */
+    default String getTransactionId() {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     default void close() throws ServerException, IOException, InterruptedException {
         return;
