@@ -5,8 +5,11 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -74,28 +77,33 @@ public class BackupDetailImpl implements BackupDetail {
 
     private final String configurationId;
 
-    private final long logBegin;
+    private final long logStart;
 
-    private final long logEnd;
+    private final long logFinish;
+
+    private final @Nullable Long imageFinish;
 
     private final Collection<BackupDetail.Entry> entries;
 
     /**
      * Creates a new instance.
      * @param configurationId the configuration ID
-     * @param logBegin the start time of available transaction logs in this backup
-     * @param logEnd the end time of available transaction logs in this backup
+     * @param logBegin the start time of available transaction logs in this backup (64-bit unsigned integer)
+     * @param logEnd the maximum time of available transaction logs in this backup (64-bit unsigned integer)
+     * @param imageFinish the maximum time of available database image in this backup (64-bit unsigned integer)
      * @param entries the next backup target files
      */
     public BackupDetailImpl(
             @Nonnull String configurationId,
             long logBegin, long logEnd,
+            @Nullable Long imageFinish,
             @Nonnull Collection<? extends BackupDetail.Entry> entries) {
         Objects.requireNonNull(configurationId);
         Objects.requireNonNull(entries);
         this.configurationId = configurationId;
-        this.logBegin = logBegin;
-        this.logEnd = logEnd;
+        this.logStart = logBegin;
+        this.logFinish = logEnd;
+        this.imageFinish = imageFinish;
         this.entries = List.copyOf(entries);
     }
 
@@ -105,13 +113,21 @@ public class BackupDetailImpl implements BackupDetail {
     }
 
     @Override
-    public long getLogBegin() {
-        return logBegin;
+    public long getLogStart() {
+        return logStart;
     }
 
     @Override
-    public long getLogEnd() {
-        return logEnd;
+    public long getLogFinish() {
+        return logFinish;
+    }
+
+    @Override
+    public OptionalLong getImageFinish() {
+        if (imageFinish == null) {
+            return OptionalLong.empty();
+        }
+        return OptionalLong.of(imageFinish);
     }
 
     @Override
@@ -124,7 +140,11 @@ public class BackupDetailImpl implements BackupDetail {
 
     @Override
     public String toString() {
-        return String.format("BackupDetai(configurationId=%s, logBegin=%s, logEnd=%s)", //$NON-NLS-1$
-                configurationId, logBegin, logEnd);
+        return String.format("BackupDetai(configurationId=%s, image=%s, log=[%s, %s])", //$NON-NLS-1$
+                configurationId,
+                Optional.ofNullable(imageFinish)
+                        .map(it -> String.format("[, %s]", it)) //$NON-NLS-1$
+                        .orElse("N/A"), //$NON-NLS-1$
+                logStart, logFinish);
     }
 }
