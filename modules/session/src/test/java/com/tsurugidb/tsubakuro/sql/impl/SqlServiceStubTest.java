@@ -89,8 +89,9 @@ class SqlServiceStubTest {
     void sendBeginSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
                 RequestHandler.returns(SqlResponse.Begin.newBuilder()
-                        .setTransactionHandle(SqlCommon.Transaction.newBuilder()
-                                .setHandle(100))
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                            .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                .setHandle(100)))
                         .build())));
 
         var message = SqlRequest.Begin.newBuilder()
@@ -121,8 +122,10 @@ class SqlServiceStubTest {
     void sendBeginSuccessAutoclose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
                 RequestHandler.returns(SqlResponse.Begin.newBuilder()
-                                .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
-                                .build())));
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                            .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                .setHandle(100)))
+                        .build())));
 
         var message = SqlRequest.Begin.newBuilder()
                 .setOption(SqlRequest.TransactionOption.getDefaultInstance())

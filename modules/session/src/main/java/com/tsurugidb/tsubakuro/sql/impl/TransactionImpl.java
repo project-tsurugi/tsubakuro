@@ -24,8 +24,8 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Lang;
-import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
  * Transaction type.
@@ -34,7 +34,7 @@ public class TransactionImpl implements Transaction {
 
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
-    private final SqlCommon.Transaction transaction;
+    private final SqlResponse.Begin.Success transaction;
     private boolean cleanuped;
     private long timeout = 0;
     private TimeUnit unit;
@@ -53,7 +53,7 @@ public class TransactionImpl implements Transaction {
      * @param closeHandler handles {@link #close()} was invoked
      */
     public TransactionImpl(
-            SqlCommon.Transaction transaction,
+            SqlResponse.Begin.Success transaction,
             @Nonnull SqlService service,
             @Nullable ServerResource.CloseHandler closeHandler) {
         Objects.requireNonNull(service);
@@ -71,7 +71,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteStatement.newBuilder()
-                .setTransactionHandle(transaction)
+                            .setTransactionHandle(transaction.getTransactionHandle())
                 .setSql(source)
                 .build());
     }
@@ -83,7 +83,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteQuery.newBuilder()
-                .setTransactionHandle(transaction)
+                .setTransactionHandle(transaction.getTransactionHandle())
                 .setSql(source)
                 .build());
     }
@@ -98,7 +98,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
-            .setTransactionHandle(transaction)
+            .setTransactionHandle(transaction.getTransactionHandle())
             .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
@@ -116,7 +116,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
-        .setTransactionHandle(transaction)
+        .setTransactionHandle(transaction.getTransactionHandle())
         .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
@@ -143,7 +143,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var request = SqlRequest.Batch.newBuilder()
-                .setTransactionHandle(transaction)
+                .setTransactionHandle(transaction.getTransactionHandle())
                 .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
                 .addAllParameterSets(parameterTable.stream()
                         .map(it -> SqlRequest.ParameterSet.newBuilder()
@@ -179,7 +179,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
-                .setTransactionHandle(transaction)
+                .setTransactionHandle(transaction.getTransactionHandle())
                 .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
                 .setDirectory(directory.toString());
         for (SqlRequest.Parameter e : parameters) {
@@ -201,7 +201,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
-        .setTransactionHandle(transaction)
+        .setTransactionHandle(transaction.getTransactionHandle())
         .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
         .addAllFile(files.stream()
         .map(Path::toString)
@@ -219,7 +219,7 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         var rv = service.send(SqlRequest.Commit.newBuilder()
-                .setTransactionHandle(transaction)
+                .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
                 .build());
         cleanuped = true;
@@ -238,7 +238,7 @@ public class TransactionImpl implements Transaction {
 
     private FutureResponse<Void> submitRollback() throws IOException {
         var rv = service.send(SqlRequest.Rollback.newBuilder()
-                .setTransactionHandle(transaction)
+                .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
         return rv;
     }
@@ -247,6 +247,11 @@ public class TransactionImpl implements Transaction {
     public void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
+    }
+
+    @Override
+    public String getTransactionId() {
+        return transaction.getTransactionId().getId();
     }
 
     @Override
@@ -279,7 +284,7 @@ public class TransactionImpl implements Transaction {
      */
     public static OptionalLong getId(@Nullable Transaction transaction) {
         if (transaction instanceof TransactionImpl) {
-            return OptionalLong.of(((TransactionImpl) transaction).transaction.getHandle());
+            return OptionalLong.of(((TransactionImpl) transaction).transaction.getTransactionHandle().getHandle());
         }
         return OptionalLong.empty();
     }

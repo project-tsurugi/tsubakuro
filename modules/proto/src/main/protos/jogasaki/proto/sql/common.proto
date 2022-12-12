@@ -20,6 +20,11 @@ message Transaction {
   uint64 handle = 1;
 }
 
+/* For transaction referenceable id. */
+message TransactionId {
+  string id = 1;
+}
+
 /* For prepared statement handle. */
 message PreparedStatement {
   uint64 handle = 1;

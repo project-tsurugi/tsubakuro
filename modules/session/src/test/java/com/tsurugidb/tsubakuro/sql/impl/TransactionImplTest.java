@@ -27,7 +27,10 @@ class TransactionImplTest {
     void commit() throws Exception {
         var closeCount = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Commit request) throws IOException {
                     assertEquals(100, request.getTransactionHandle().getHandle());
@@ -47,7 +50,10 @@ class TransactionImplTest {
         var rollbackCount = new AtomicInteger();
         var closeCount = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
@@ -68,7 +74,10 @@ class TransactionImplTest {
     void executeText() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.ExecuteStatement request) throws IOException {
                     count.incrementAndGet();
@@ -91,7 +100,10 @@ class TransactionImplTest {
     void executeStatement() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
                     count.incrementAndGet();
@@ -115,7 +127,10 @@ class TransactionImplTest {
     void queryText() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<ResultSet> send(SqlRequest.ExecuteQuery request) throws IOException {
                     count.incrementAndGet();
@@ -152,7 +167,10 @@ class TransactionImplTest {
     void queryStatement() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<ResultSet> send(SqlRequest.ExecutePreparedQuery request) throws IOException {
                     count.incrementAndGet();
@@ -230,7 +248,10 @@ class TransactionImplTest {
     void dumpStatement() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<ResultSet> send(SqlRequest.ExecuteDump request) throws IOException {
                     count.incrementAndGet();
@@ -271,7 +292,10 @@ class TransactionImplTest {
     void load() throws Exception {
         var count = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.ExecuteLoad request) throws IOException {
                     count.incrementAndGet();
@@ -298,7 +322,10 @@ class TransactionImplTest {
         var rollbackCount = new AtomicInteger();
         var closeCount = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
@@ -320,7 +347,10 @@ class TransactionImplTest {
         var rollbackCount = new AtomicInteger();
         var closeCount = new AtomicInteger();
         try (
-            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
+             var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                              .build(),
+                                              new SqlService() {
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();

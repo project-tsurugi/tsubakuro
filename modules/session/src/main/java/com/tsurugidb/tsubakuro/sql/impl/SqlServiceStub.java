@@ -126,7 +126,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            var transactionImpl = new TransactionImpl(detailResponse.getTransactionHandle(), SqlServiceStub.this, resources);
+            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources);
             transactionImpl.setCloseTimeout(closeTimeout);
             return resources.register(transactionImpl);
         }
