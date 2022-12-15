@@ -517,7 +517,8 @@ public:
                 }
             }
 
-            if (((poped_.load() + length_header::size) / capacity_) == ((poped_.load() + length_header::size + length) / capacity_)) {
+            // If end is on a boundary, it is considered to be on the same page.
+            if (((poped_.load() + length_header::size) / capacity_) == ((poped_.load() + length_header::size + length - 1) / capacity_)) {
                 return std::string_view(read_address(base, length_header::size), length);
             }
             auto buffer_end = (pushed_valid_.load() / capacity_) * capacity_;
