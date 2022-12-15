@@ -63,6 +63,14 @@ jobs:
           GPR_USER: ${{ github.repository_owner }}
           GPR_KEY: ${{ secrets.GITHUB_TOKEN }}
 
+      - id: Upload_Artifact
+        name: Upload_Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: libtsubakuro
+          path: modules/ipc/build/native/libtsubakuro.so
+          retention-days: 1
+
       - id: Generate_Annotations
         name: Generate_Annotations
         uses: ./.github/actions/tsurugi-annotations-action
