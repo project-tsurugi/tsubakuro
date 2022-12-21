@@ -30,8 +30,6 @@ public final class IpcConnectorImpl implements Connector {
     private static native void closeConnectorNative(long handle);
 
     private final String name;
-    long handle;
-    long id;
 
     static {
         NativeLibrary.load();
@@ -45,39 +43,28 @@ public final class IpcConnectorImpl implements Connector {
     public FutureResponse<Wire> connect(Credential credential) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
-        handle = getConnectorNative(name);
-        id = requestNative(handle);
-        return new FutureWireImpl(this);
+        long handle = getConnectorNative(name);
+        long id = requestNative(handle);
+        return new FutureWireImpl(this, handle, id);
     }
 
-    public Wire getSessionWire() throws IOException {
+    public Wire getSessionWire(long handle, long id) throws IOException {
         waitNative(handle, id);
-        close();
+        closeConnectorNative(handle);
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
     }
 
-    public Wire getSessionWire(long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    public Wire getSessionWire(long handle, long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
         var timeoutNano = unit.toNanos(timeout);
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
         }
         waitNative(handle, id, timeoutNano);
-        close();
+        closeConnectorNative(handle);
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
     }
 
-    public boolean checkConnection() {
+    public boolean checkConnection(long handle, long id) {
         return checkNative(handle, id);
-    }
-
-    /**
-     * Close the wire
-     * @throws IOException close error
-     */
-    public void close() throws IOException {
-        if (handle != 0) {
-            closeConnectorNative(handle);
-        }
-        handle = 0;
     }
 }

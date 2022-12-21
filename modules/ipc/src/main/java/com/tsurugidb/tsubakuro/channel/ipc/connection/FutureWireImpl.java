@@ -14,24 +14,34 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 public class FutureWireImpl implements FutureResponse<Wire> {
 
     IpcConnectorImpl connector;
+    long handle;
+    long id;
+    boolean done;
 
-    FutureWireImpl(IpcConnectorImpl connector) {
+    FutureWireImpl(IpcConnectorImpl connector, long handle, long id) {
         this.connector = connector;
+        this.handle = handle;
+        this.id = id;
     }
 
     @Override
     public Wire get() throws IOException {
-        return connector.getSessionWire();
+        done = true;
+        return connector.getSessionWire(handle, id);
     }
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
-        return connector.getSessionWire(timeout, unit);
+        done = true;
+        return connector.getSessionWire(handle, id, timeout, unit);
     }
 
     @Override
     public boolean isDone() {
-        return connector.checkConnection();
+        if (done) {
+            return done;
+        }
+        return connector.checkConnection(handle, id);
     }
 
     @Override
