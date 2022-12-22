@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.tsurugidb.tsubakuro.auth.Ticket;
 import com.tsurugidb.tsubakuro.auth.TicketProvider;
 import com.tsurugidb.tsubakuro.auth.TokenKind;
@@ -111,39 +112,43 @@ public class JwtTicketProvider implements TicketProvider {
     }
 
     private <T extends Throwable> JwtTicket restore(String text, Function<String, T> exceptionFactory) throws T {
-        LOG.trace("decoding token: {}", text);
-        var token = JWT.decode(text);
-        LOG.trace("token was decoded: {}", token.getClaims());
-        TokenKind kind = null;
-        if (token.getIssuer() == null) {
-            throw exceptionFactory.apply("token issuer must be set");
+        try {
+            LOG.trace("decoding token: {}", text);
+            var token = JWT.decode(text);
+            LOG.trace("token was decoded: {}", token.getClaims());
+            TokenKind kind = null;
+            if (token.getIssuer() == null) {
+                throw exceptionFactory.apply("token issuer must be set");
+            }
+            if (Objects.equals(token.getSubject(), SUBJECT_ACCESS_TOKEN)) {
+                kind = TokenKind.ACCESS;
+            } else if (Objects.equals(token.getSubject(), SUBJECT_REFRESH_TOKEN)) {
+                kind = TokenKind.REFRESH;
+            } else {
+                throw exceptionFactory.apply(MessageFormat.format(
+                        "invalid token subject: \"{0}\" (expect: \"{1}\" or \"{2}\")",
+                        token.getSubject(),
+                        SUBJECT_ACCESS_TOKEN,
+                        SUBJECT_REFRESH_TOKEN));
+            }
+            if (token.getAudience() == null || token.getAudience().isEmpty()) {
+                throw exceptionFactory.apply("token audience must be set");
+            }
+            if (token.getIssuedAt() == null) {
+                throw exceptionFactory.apply("token issued_at must be set");
+            }
+            if (token.getExpiresAt() == null) {
+                throw exceptionFactory.apply("token expires_at must be set");
+            }
+            var name = token.getClaim(CLAIM_USER_NAME).asString();
+            if (name == null) {
+                throw exceptionFactory.apply("authenticated user name must be set");
+            }
+            LOG.trace("building a JWT ticket: name={}, kind={}", name, kind);
+            return new JwtTicket(this, name, name, Map.of(kind, token));
+        } catch (JWTDecodeException e) {
+            throw new IllegalArgumentException(e);
         }
-        if (Objects.equals(token.getSubject(), SUBJECT_ACCESS_TOKEN)) {
-            kind = TokenKind.ACCESS;
-        } else if (Objects.equals(token.getSubject(), SUBJECT_REFRESH_TOKEN)) {
-            kind = TokenKind.REFRESH;
-        } else {
-            throw exceptionFactory.apply(MessageFormat.format(
-                    "invalid token subject: \"{0}\" (expect: \"{1}\" or \"{2}\")",
-                    token.getSubject(),
-                    SUBJECT_ACCESS_TOKEN,
-                    SUBJECT_REFRESH_TOKEN));
-        }
-        if (token.getAudience() == null || token.getAudience().isEmpty()) {
-            throw exceptionFactory.apply("token audience must be set");
-        }
-        if (token.getIssuedAt() == null) {
-            throw exceptionFactory.apply("token issued_at must be set");
-        }
-        if (token.getExpiresAt() == null) {
-            throw exceptionFactory.apply("token expires_at must be set");
-        }
-        var name = token.getClaim(CLAIM_USER_NAME).asString();
-        if (name == null) {
-            throw exceptionFactory.apply("authenticated user name must be set");
-        }
-        LOG.trace("building a JWT ticket: name={}, kind={}", name, kind);
-        return new JwtTicket(this, name, name, Map.of(kind, token));
     }
 
     private JwtTicket validate(Ticket ticket) {
