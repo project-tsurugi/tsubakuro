@@ -30,10 +30,8 @@ public class FutureWireImpl implements FutureResponse<Wire> {
     public Wire get(long timeout, TimeUnit unit) throws IOException {
         try {
             var message = streamLink.helloResponse(timeout, unit);
-            var rc = message.getInfo();
-            var rv = message.getString();
-            if (rc == StreamLink.RESPONSE_SESSION_HELLO_OK) {
-                return new WireImpl(streamLink, Long.parseLong(rv));
+            if (message.getInfo() == StreamLink.RESPONSE_SESSION_HELLO_OK) {
+                return new WireImpl(streamLink, Long.parseLong(message.getString()));
             }
             throw new IOException("the server has declined the connection request");
         } catch (TimeoutException e) {
