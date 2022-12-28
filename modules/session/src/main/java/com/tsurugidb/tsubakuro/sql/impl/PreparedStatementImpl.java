@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,21 +25,21 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
+    private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
-    SqlCommon.PreparedStatement handle;
+    final SqlCommon.PreparedStatement handle;
 
+    /**
+     * Creates a new instance.
+     * @param handle the SqlCommon.PreparedStatement
+     * @param service the SQL service
+     * @param closeHandler handles {@link #close()} was invoked
+     */
     public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SqlService service, ServerResource.CloseHandler closeHandler) {
         this.handle = handle;
         this.service = service;
         this.closeHandler = closeHandler;
-    }
-
-    public SqlCommon.PreparedStatement getHandle() throws IOException {
-        if (Objects.isNull(handle)) {
-            throw new IOException("already closed");
-        }
-        return handle;
     }
 
     @Override
@@ -59,7 +60,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(handle) && Objects.nonNull(service)) {
+        if (!closed.getAndSet(true) && Objects.nonNull(service)) {
             try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
                 if (timeout == 0) {
                     futureResponse.get();
@@ -75,6 +76,16 @@ public class PreparedStatementImpl implements PreparedStatement {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
-        handle = null;
+    }
+
+    /**
+     * Returns the prepared statement handle
+     * @return the SqlCommon.PreparedStatement
+     */
+    public SqlCommon.PreparedStatement getHandle() throws IOException {
+        if (closed.get()) {
+            throw new IOException("already closed");
+        }
+        return handle;
     }
 }

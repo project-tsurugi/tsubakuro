@@ -35,20 +35,15 @@ public class TransactionImpl implements Transaction {
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
     private final SqlResponse.Begin.Success transaction;
-    private boolean cleanuped;
+    private final AtomicBoolean cleanuped = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
-
     private final SqlService service;
-
     private final ServerResource.CloseHandler closeHandler;
-
-    private final AtomicBoolean released = new AtomicBoolean();
-
 
     /**
      * Creates a new instance.
-     * @param transactionId the transaction ID
+     * @param transaction the SqlResponse.Begin.Success
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
      */
@@ -60,14 +55,13 @@ public class TransactionImpl implements Transaction {
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
-        this.cleanuped = false;
         this.timeout = 0;
     }
 
     @Override
     public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteStatement.newBuilder()
@@ -79,7 +73,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteQuery.newBuilder()
@@ -94,7 +88,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
@@ -112,7 +106,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
@@ -139,7 +133,7 @@ public class TransactionImpl implements Transaction {
                     throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameterTable);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         var request = SqlRequest.Batch.newBuilder()
@@ -175,7 +169,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
         Objects.requireNonNull(option);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
@@ -197,7 +191,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(files);
-        if (cleanuped) {
+        if (cleanuped.get()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
@@ -215,32 +209,21 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
-        if (cleanuped) {
+        if (cleanuped.getAndSet(true)) {
             throw new IOException("transaction already closed");
         }
-        var rv = service.send(SqlRequest.Commit.newBuilder()
+        return service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
                 .build());
-        cleanuped = true;
-        return rv;
     }
 
     @Override
     public FutureResponse<Void> rollback() throws IOException {
-        if (cleanuped) {
+        if (cleanuped.getAndSet(true)) {
             return FutureResponse.returns(null);
         }
-        var rv = submitRollback();
-        cleanuped = true;
-        return rv;
-    }
-
-    private FutureResponse<Void> submitRollback() throws IOException {
-        var rv = service.send(SqlRequest.Rollback.newBuilder()
-                .setTransactionHandle(transaction.getTransactionHandle())
-                .build());
-        return rv;
+        return submitRollback();
     }
 
     @Override
@@ -256,7 +239,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!cleanuped) {
+        if (!cleanuped.getAndSet(true)) {
             // FIXME need to consider rollback is suitable here
             try (var rollback = submitRollback()) {
                 if (timeout == 0) {
@@ -266,8 +249,6 @@ public class TransactionImpl implements Transaction {
                 }
             } catch (TimeoutException e) {
                 LOG.warn("timeout occurred in the transaction disposal", e);
-            } finally {
-                cleanuped = true;
             }
         }
         if (Objects.nonNull(closeHandler)) {
@@ -287,5 +268,11 @@ public class TransactionImpl implements Transaction {
             return OptionalLong.of(((TransactionImpl) transaction).transaction.getTransactionHandle().getHandle());
         }
         return OptionalLong.empty();
+    }
+
+    private FutureResponse<Void> submitRollback() throws IOException {
+        return service.send(SqlRequest.Rollback.newBuilder()
+                .setTransactionHandle(transaction.getTransactionHandle())
+                .build());
     }
 }
