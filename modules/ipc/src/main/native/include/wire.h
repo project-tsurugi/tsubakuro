@@ -28,6 +28,8 @@
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/containers/deque.hpp>
+#include <boost/interprocess/containers/vector.hpp>
 #include <boost/thread/thread_time.hpp>
 
 namespace tateyama::common::wire {
@@ -850,10 +852,69 @@ class connection_queue
 public:
     constexpr static const char* name = "connection_queue";
 
+    class element {
+    public:
+        element() = default;
+
+        /**
+         * @brief Copy and move constructers.
+         */
+        element(element const& e) = delete;
+        element(element&& e) { session_id_ = e.session_id_; }  // for v_requested_.resize(n);
+        element& operator = (element const&) = delete;
+        element& operator = (element&& e) { session_id_ = e.session_id_; return *this; }
+
+        void session_id(std::size_t session_id) {
+            session_id_ = session_id;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            {
+                boost::interprocess::scoped_lock lock(m_accepted_);
+                c_accepted_.notify_one();
+            }
+        }
+        std::size_t session_id(std::int64_t timeout = 0) {
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            if (timeout <= 0) {
+                boost::interprocess::scoped_lock lock(m_accepted_);
+                c_accepted_.wait(lock, [this](){ return (session_id_ != 0); });
+            } else {
+                boost::interprocess::scoped_lock lock(m_accepted_);
+                if (!c_accepted_.timed_wait(lock,
+#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
+                                        boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+#else
+                                        boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
+#endif
+                                        [this](){ return (session_id_ != 0); })) {
+                    throw std::runtime_error("connection response has not been accepted within the specified time");
+                }
+            }
+            return session_id_;
+        }
+        void reuse() {
+            session_id_ = 0;
+        }
+        bool check() {
+            return session_id_ != 0;
+        }
+    private:
+        boost::interprocess::interprocess_mutex m_accepted_{};
+        boost::interprocess::interprocess_condition c_accepted_{};
+        std::size_t session_id_{};
+    };
+
+    using long_allocator = boost::interprocess::allocator<std::size_t, boost::interprocess::managed_shared_memory::segment_manager>;
+    using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
+
     /**
      * @brief Construct a new object.
      */
-    connection_queue() = default;
+    connection_queue(std::size_t n, boost::interprocess::managed_shared_memory::segment_manager* mgr) : q_free_(mgr), q_requested_(mgr), v_requested_(mgr) {
+        v_requested_.resize(n);
+        for(std::size_t i = 0; i < n; i++) {
+            q_free_.emplace_back(i);
+        }
+    }
     ~connection_queue() = default;
 
     /**
@@ -864,81 +925,66 @@ public:
     connection_queue& operator = (connection_queue const&) = delete;
     connection_queue& operator = (connection_queue&&) = delete;
 
-    std::size_t request() noexcept {
-        std::size_t rv = requested_.fetch_add(1) + 1;
+    std::size_t request() {
+        std::size_t rv{};
+        {
+            boost::interprocess::scoped_lock lock(m_requested_);
+
+            if (q_free_.empty()) {
+                throw std::runtime_error("no request available");
+            }
+            rv = q_free_.front();
+            q_free_.pop_front();
+            q_requested_.emplace_back(rv);
+        }
 
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_request_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_requested_.notify_one();
+        if (w_listener_) {
+            boost::interprocess::scoped_lock lock(m_listener_);
+            c_listener_.notify_one();
         }
         return rv;
     }
-    bool check(std::size_t n, bool wait = false, std::int64_t timeout = 0) {
-        if (!wait) {
-            return accepted_ >= n;
-        }
-        if (accepted_ >= n) {
-            return true;
-        }
-        if (timeout <= 0) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            wait_for_accept_ = true;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            c_accepted_.wait(lock, [this, n](){ return (accepted_ >= n); });
-            wait_for_accept_ = false;
-        } else {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            wait_for_accept_ = true;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (!c_accepted_.timed_wait(lock,
-#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                        boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
-#else
-                                        boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
-#endif
-                                        [this, n](){ return (accepted_ >= n); })) {
-                throw std::runtime_error("connection response has not been accepted within the specified time");
-            }
-            wait_for_accept_ = false;
-        }
-        return true;
-    }
-    std::size_t listen(bool wait = false) {
-        if (accepted_ < requested_.load() || terminate_) {
-            return accepted_ + 1;
-        }
-        if (!wait) {
-            return 0;
-        }
+    std::size_t wait(std::size_t id, std::int64_t timeout = 0) {
+        auto& e = v_requested_.at(id);
+        auto rv = e.session_id(timeout);
+        e.reuse();
         {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            wait_for_request_ = true;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            c_requested_.wait(lock, [this](){ return (accepted_ < requested_.load()) || terminate_; });
-            wait_for_request_ = false;
+            boost::interprocess::scoped_lock lock(m_requested_);
+            q_free_.emplace_back(id);
         }
-        return accepted_ + 1;
+        return rv;
     }
-    void accept(std::size_t n) {
-        if (n == (accepted_ + 1)) {
-            if (n <= requested_.load()) {
-                accepted_ = n;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_accepted_.notify_all();
-                return;
-            }
-            throw std::runtime_error("Received an session id that was not requested for connection");
+    bool check(std::size_t id) {
+        return v_requested_.at(id).check();
+    }
+
+    std::size_t listen() {
+        boost::interprocess::scoped_lock lock(m_listener_);
+        w_listener_ = true;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        c_listener_.wait(lock, [this](){ return (!q_requested_.empty() > 0) || terminate_; });
+        w_listener_ = false;
+        return ++session_id_;
+    }
+    void accept(std::size_t session_id) {
+        std::size_t id{};
+        {
+            boost::interprocess::scoped_lock lock(m_requested_);
+            id = q_requested_.front();
+            q_requested_.pop_front();
         }
-        throw std::runtime_error("The session id is not sequential");
+        auto& request = v_requested_.at(id);
+        request.session_id(session_id);
     }
+
+    // for terminate
     void request_terminate() {
         terminate_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_request_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_requested_.notify_one();
+        if (w_listener_) {
+            boost::interprocess::scoped_lock lock(m_listener_);
+            c_listener_.notify_one();
         }
         s_terminated_.wait();
     }
@@ -946,15 +992,18 @@ public:
     void confirm_terminated() { s_terminated_.post(); }
 
 private:
-    std::atomic_ulong requested_{0};
-    std::atomic_ulong accepted_{0};
-    std::atomic_bool wait_for_request_{};
-    std::atomic_bool wait_for_accept_{};
-    std::atomic_bool terminate_{};
-    boost::interprocess::interprocess_mutex m_mutex_{};
-    boost::interprocess::interprocess_condition c_requested_{};
-    boost::interprocess::interprocess_condition c_accepted_{};
+    boost::interprocess::deque<std::size_t, long_allocator> q_free_;
+    boost::interprocess::deque<std::size_t, long_allocator> q_requested_;
+    boost::interprocess::vector<element, element_allocator> v_requested_;
+    boost::interprocess::interprocess_mutex m_requested_{};
+
+    std::atomic_bool w_listener_{false};
+    boost::interprocess::interprocess_mutex m_listener_{};
+    boost::interprocess::interprocess_condition c_listener_{};
+    std::atomic_bool terminate_{false};
     boost::interprocess::interprocess_semaphore s_terminated_{0};
+
+    std::size_t session_id_{};
 };
 
 };  // namespace tateyama::common

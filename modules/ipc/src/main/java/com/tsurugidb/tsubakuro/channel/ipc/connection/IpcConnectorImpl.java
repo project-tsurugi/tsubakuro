@@ -23,9 +23,9 @@ public final class IpcConnectorImpl implements Connector {
     private static final Logger LOG = LoggerFactory.getLogger(IpcConnectorImpl.class);
 
     private static native long getConnectorNative(String name) throws IOException;
-    private static native long requestNative(long handle);
-    private static native void waitNative(long handle, long id);
-    private static native void waitNative(long handle, long id, long timeout) throws TimeoutException;
+    private static native long requestNative(long handle) throws IOException;
+    private static native long waitNative(long handle, long id);
+    private static native long waitNative(long handle, long id, long timeout) throws TimeoutException;
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
 
@@ -44,14 +44,18 @@ public final class IpcConnectorImpl implements Connector {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         long handle = getConnectorNative(name);
-        long id = requestNative(handle);
-        return new FutureWireImpl(this, handle, id);
+        try {
+            long id = requestNative(handle);
+            return new FutureWireImpl(this, handle, id);
+        } catch (IOException e) {
+            throw new IOException("the server has declined the connection request");
+        }
     }
 
     public Wire getSessionWire(long handle, long id) throws IOException {
-        waitNative(handle, id);
+        long sessionId = waitNative(handle, id);
         closeConnectorNative(handle);
-        return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
+        return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
     public Wire getSessionWire(long handle, long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
@@ -59,12 +63,12 @@ public final class IpcConnectorImpl implements Connector {
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
         }
-        waitNative(handle, id, timeoutNano);
+        long sessionId = waitNative(handle, id, timeoutNano);
         closeConnectorNative(handle);
-        return new WireImpl(new IpcLink(name + "-" + String.valueOf(id)), id);
+        return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
-    public boolean checkConnection(long handle, long id) {
+    boolean checkConnection(long handle, long id) {
         return checkNative(handle, id);
     }
 }
