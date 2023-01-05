@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.ipc.connection;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -13,10 +14,10 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  */
 public class FutureWireImpl implements FutureResponse<Wire> {
 
-    IpcConnectorImpl connector;
-    long handle;
-    long id;
-    boolean done;
+    private IpcConnectorImpl connector;
+    private long handle;
+    private long id;
+    private final AtomicBoolean done = new AtomicBoolean();
 
     FutureWireImpl(IpcConnectorImpl connector, long handle, long id) {
         this.connector = connector;
@@ -26,20 +27,20 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException {
-        done = true;
+        done.set(true);
         return connector.getSessionWire(handle, id);
     }
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
-        done = true;
+        done.set(true);
         return connector.getSessionWire(handle, id, timeout, unit);
     }
 
     @Override
     public boolean isDone() {
-        if (done) {
-            return done;
+        if (done.get()) {
+            return true;
         }
         return connector.checkConnection(handle, id);
     }

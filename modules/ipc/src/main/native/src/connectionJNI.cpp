@@ -53,10 +53,50 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
  * Signature: (J)J
  */
 JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_requestNative
-(JNIEnv *, jclass, jlong handle)
+(JNIEnv *env, jclass, jlong handle)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
-    return container->get_connection_queue().request();
+    try {
+        return container->get_connection_queue().request();
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/io/IOException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+        return 0;
+    }
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl
+ * Method:    waitNative
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_waitNative__JJ
+(JNIEnv *, jclass, jlong handle, jlong id)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    return container->get_connection_queue().wait(id);
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl
+ * Method:    waitNative
+ * Signature: (JJJ)J
+ */
+JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_waitNative__JJJ
+(JNIEnv *env, jclass, jlong handle, jlong id, long timeout)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    try {
+        return container->get_connection_queue().wait(id, timeout);
+    } catch (std::runtime_error &e) {
+        jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, e.what());
+        env->DeleteLocalRef(classj);
+        return 0;
+    }
 }
 
 /*
@@ -69,37 +109,6 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_I
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
     return container->get_connection_queue().check(id);
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl
- * Method:    waitNative
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_waitNative__JJ
-(JNIEnv *, jclass, jlong handle, jlong id)
-{
-    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
-    container->get_connection_queue().check(id, true);
-}
-
-/*
- * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl
- * Method:    waitNative
- * Signature: (JJJ)V
- */
-JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_waitNative__JJJ
-(JNIEnv *env, jclass, jlong handle, jlong id, long timeout)
-{
-    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
-    try {
-        container->get_connection_queue().check(id, true, timeout);
-    } catch (std::runtime_error &e) {
-        jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, e.what());
-        env->DeleteLocalRef(classj);
-    }
 }
 
 /*
