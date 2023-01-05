@@ -28,7 +28,6 @@
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/deque.hpp>
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/thread/thread_time.hpp>
 
@@ -227,7 +226,7 @@ public:
 protected:
     std::size_t stored() const { return (pushed_.load() - poped_.load()); }  //NOLINT
     std::size_t room() const { return capacity_ - stored(); }  //NOLINT
-    std::size_t index(std::size_t n) const { return n %  capacity_; }  //NOLINT
+    std::size_t index(std::size_t n) const { return n % capacity_; }  //NOLINT
     char* buffer_address(char* base, std::size_t n) noexcept { return base + index(n); }  //NOLINT
     const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_.load() + offset); }  //NOLINT
     const char* read_address(const char* base) const { return base + index(poped_.load()); }  //NOLINT
@@ -852,17 +851,72 @@ class connection_queue
 public:
     constexpr static const char* name = "connection_queue";
 
+    class index_queue {
+        using long_allocator = boost::interprocess::allocator<std::size_t, boost::interprocess::managed_shared_memory::segment_manager>;
+
+    public:
+        index_queue(std::size_t size, boost::interprocess::managed_shared_memory::segment_manager* mgr) : queue_(mgr), capacity_(size) {
+            queue_.resize(capacity_);
+        }
+        void fill() {
+            for (std::size_t i = 0; i < capacity_; i++) {
+                queue_.at(i) = i;
+            }
+            pushed_ = capacity_;
+        }
+        void push(std::size_t e) {
+            boost::interprocess::scoped_lock lock(mutex_);
+            queue_.at(index(pushed_)) = e;
+            pushed_.fetch_add(1);
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            condition_.notify_one();
+        }
+        [[nodiscard]] std::size_t try_pop() {
+            auto current = poped_.load();
+            while (true) {
+                if (pushed_.load() == current) {
+                    throw std::runtime_error("no request available");
+                }
+                if (poped_.compare_exchange_strong(current, current + 1)) {
+                    return queue_.at(index(current));
+                }
+            }
+        }
+        void wait(std::atomic_bool& terminate) {
+            boost::interprocess::scoped_lock lock(mutex_);
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            condition_.wait(lock, [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
+        }
+        [[nodiscard]] std::size_t pop() {
+            return queue_.at(index(poped_.fetch_add(1)));
+        }
+        void notify() {
+            condition_.notify_one();
+        }
+    private:
+        boost::interprocess::vector<std::size_t, long_allocator> queue_;
+        std::size_t capacity_;
+        boost::interprocess::interprocess_mutex mutex_{};
+        boost::interprocess::interprocess_condition condition_{};
+
+        std::atomic_ulong pushed_{0};
+        std::atomic_ulong poped_{0};
+
+        [[nodiscard]] std::size_t index(std::size_t n) const { return n % capacity_; }
+    };
+
     class element {
     public:
         element() = default;
+        ~element() = default;
 
         /**
          * @brief Copy and move constructers.
          */
         element(element const& e) = delete;
-        element(element&& e) { session_id_ = e.session_id_; }  // for v_requested_.resize(n);
+        element(element&& e) noexcept { session_id_ = e.session_id_; }  // for v_requested_.resize(n);
         element& operator = (element const&) = delete;
-        element& operator = (element&& e) { session_id_ = e.session_id_; return *this; }
+        element& operator = (element&& e) noexcept { session_id_ = e.session_id_; return *this; }
 
         void session_id(std::size_t session_id) {
             session_id_ = session_id;
@@ -872,7 +926,7 @@ public:
                 c_accepted_.notify_one();
             }
         }
-        std::size_t session_id(std::int64_t timeout = 0) {
+        [[nodiscard]] std::size_t session_id(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (timeout <= 0) {
                 boost::interprocess::scoped_lock lock(m_accepted_);
@@ -894,7 +948,7 @@ public:
         void reuse() {
             session_id_ = 0;
         }
-        bool check() {
+        [[nodiscard]] bool check() const {
             return session_id_ != 0;
         }
     private:
@@ -903,17 +957,14 @@ public:
         std::size_t session_id_{};
     };
 
-    using long_allocator = boost::interprocess::allocator<std::size_t, boost::interprocess::managed_shared_memory::segment_manager>;
     using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
 
     /**
      * @brief Construct a new object.
      */
-    connection_queue(std::size_t n, boost::interprocess::managed_shared_memory::segment_manager* mgr) : q_free_(mgr), q_requested_(mgr), v_requested_(mgr) {
+    connection_queue(std::size_t n, boost::interprocess::managed_shared_memory::segment_manager* mgr) : q_free_(n, mgr), q_requested_(n, mgr), v_requested_(mgr) {
         v_requested_.resize(n);
-        for(std::size_t i = 0; i < n; i++) {
-            q_free_.emplace_back(i);
-        }
+        q_free_.fill();
     }
     ~connection_queue() = default;
 
@@ -926,33 +977,15 @@ public:
     connection_queue& operator = (connection_queue&&) = delete;
 
     std::size_t request() {
-        std::size_t rv{};
-        {
-            boost::interprocess::scoped_lock lock(m_requested_);
-
-            if (q_free_.empty()) {
-                throw std::runtime_error("no request available");
-            }
-            rv = q_free_.front();
-            q_free_.pop_front();
-            q_requested_.emplace_back(rv);
-        }
-
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (w_listener_) {
-            boost::interprocess::scoped_lock lock(m_listener_);
-            c_listener_.notify_one();
-        }
-        return rv;
+        auto id = q_free_.try_pop();
+        q_requested_.push(id);
+        return id;
     }
     std::size_t wait(std::size_t id, std::int64_t timeout = 0) {
         auto& e = v_requested_.at(id);
         auto rv = e.session_id(timeout);
         e.reuse();
-        {
-            boost::interprocess::scoped_lock lock(m_requested_);
-            q_free_.emplace_back(id);
-        }
+        q_free_.push(id);
         return rv;
     }
     bool check(std::size_t id) {
@@ -960,20 +993,11 @@ public:
     }
 
     std::size_t listen() {
-        boost::interprocess::scoped_lock lock(m_listener_);
-        w_listener_ = true;
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        c_listener_.wait(lock, [this](){ return (!q_requested_.empty() > 0) || terminate_; });
-        w_listener_ = false;
+        q_requested_.wait(terminate_);
         return ++session_id_;
     }
     void accept(std::size_t session_id) {
-        std::size_t id{};
-        {
-            boost::interprocess::scoped_lock lock(m_requested_);
-            id = q_requested_.front();
-            q_requested_.pop_front();
-        }
+        std::size_t id = q_requested_.pop();
         auto& request = v_requested_.at(id);
         request.session_id(session_id);
     }
@@ -982,24 +1006,17 @@ public:
     void request_terminate() {
         terminate_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (w_listener_) {
-            boost::interprocess::scoped_lock lock(m_listener_);
-            c_listener_.notify_one();
-        }
+        q_requested_.notify();
         s_terminated_.wait();
     }
     bool is_terminated() noexcept { return terminate_; }
     void confirm_terminated() { s_terminated_.post(); }
 
 private:
-    boost::interprocess::deque<std::size_t, long_allocator> q_free_;
-    boost::interprocess::deque<std::size_t, long_allocator> q_requested_;
+    index_queue q_free_;
+    index_queue q_requested_;
     boost::interprocess::vector<element, element_allocator> v_requested_;
-    boost::interprocess::interprocess_mutex m_requested_{};
 
-    std::atomic_bool w_listener_{false};
-    boost::interprocess::interprocess_mutex m_listener_{};
-    boost::interprocess::interprocess_condition c_listener_{};
     std::atomic_bool terminate_{false};
     boost::interprocess::interprocess_semaphore s_terminated_{0};
 
