@@ -140,7 +140,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         try {
-            if (!gotton.get()) {
+            if (!gotton.getAndSet(true)) {
                 var obj = get();
                 if (obj instanceof ServerResource) {
                     ((ServerResource) obj).close();

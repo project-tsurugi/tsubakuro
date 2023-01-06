@@ -305,12 +305,8 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException, ServerException {
-        if (!closed.get()) {
-            try {
-                send(REQUEST_SESSION_BYE, 0);
-            } finally {
-                closed.set(true);
-            }
+        if (!closed.getAndSet(true)) {
+            send(REQUEST_SESSION_BYE, 0);
         }
         try {
             if (timeout != 0) {
