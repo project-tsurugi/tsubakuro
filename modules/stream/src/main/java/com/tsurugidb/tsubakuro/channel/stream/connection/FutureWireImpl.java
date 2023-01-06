@@ -51,8 +51,7 @@ public class FutureWireImpl implements FutureResponse<Wire> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            var wire = get();
-            wire.close();
+            streamLink.emergencyClose();
         }
     }
 }
