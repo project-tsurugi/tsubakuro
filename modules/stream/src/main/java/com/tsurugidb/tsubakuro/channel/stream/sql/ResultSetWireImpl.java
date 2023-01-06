@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -21,7 +23,8 @@ public class ResultSetWireImpl implements ResultSetWire {
     private final ResultSetBox resultSetBox;
     private final Lock lock = new ReentrantLock();
     private final Condition availableCondition = lock.newCondition();
-    private final ConcurrentLinkedQueue<ResultSetResponse> queues = new ConcurrentLinkedQueue<>();
+    private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
+    private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean closed;
     private boolean eor;
@@ -38,7 +41,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         @Override
         protected boolean next() {
             try {
-                var buffer = receive().getPayload();
+                var buffer = receive();
                 if (Objects.isNull(buffer)) {
                     return false;
                 }
@@ -90,7 +93,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     public InputStream getByteBufferBackedInput() {
         if (Objects.isNull(byteBufferBackedInput)) {
             try {
-                var buffer = receive().getPayload();
+                var buffer = receive();
                 if (Objects.nonNull(buffer)) {
                     byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
                 } else {
@@ -106,7 +109,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Receive resultSet payload
      */
-    private ResultSetResponse receive() throws IOException {
+    private byte[] receive() throws IOException {
         while (true) {
             lock.lock();
             try {
@@ -114,7 +117,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                     return queues.poll();
                 }
                 if (eor) {
-                    return new ResultSetResponse(0, null);
+                    return null;
                 }
                 if (Objects.nonNull(exception)) {
                     throw exception;
@@ -136,13 +139,24 @@ public class ResultSetWireImpl implements ResultSetWire {
         closed = true;
     }
 
-    public void add(ResultSetResponse resultSetResponse) {
-        queues.add(resultSetResponse);
-        lock.lock();
-        try {
-            availableCondition.signal();
-        } finally {
-            lock.unlock();
+    public void add(int writerId, byte[] payload) {
+        if (!lists.containsKey(writerId)) {
+            lists.put(writerId, new LinkedList<byte[]>());
+        }
+        var targetList = lists.get(writerId);
+        if (Objects.nonNull(payload)) {
+            targetList.add(payload);
+        } else {
+            queues.addAll(targetList);
+            targetList.clear();
+            {
+                lock.lock();
+                try {
+                    availableCondition.signal();
+                } finally {
+                    lock.unlock();
+                }
+            }
         }
     }
 

@@ -74,7 +74,7 @@ public class ResultSetBox {
         if (Objects.isNull(boxes[slot])) {
             waitRegistration(slot);
         }
-        boxes[slot].add(new ResultSetResponse(writerId, payload));
+        boxes[slot].add(writerId, payload);
     }
 
     public void pushBye(int slot) throws IOException {  // for RESPONSE_RESULT_SET_BYE
