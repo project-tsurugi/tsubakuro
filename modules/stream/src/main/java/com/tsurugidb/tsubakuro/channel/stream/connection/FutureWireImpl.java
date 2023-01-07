@@ -30,16 +30,18 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException {
-        try {
-            var message = streamLink.helloResponse(timeout, unit);
-            if (message.getInfo() == StreamLink.RESPONSE_SESSION_HELLO_OK) {
-                gotton.set(true);
-                return new WireImpl(streamLink, Long.parseLong(message.getString()));
+        if (!gotton.getAndSet(true)) {
+            try {
+                var message = streamLink.helloResponse(timeout, unit);
+                if (message.getInfo() == StreamLink.RESPONSE_SESSION_HELLO_OK) {
+                    return new WireImpl(streamLink, Long.parseLong(message.getString()));
+                }
+                throw new IOException("the server has declined the connection request");
+            } catch (TimeoutException e) {
+                throw new IOException(e);
             }
-            throw new IOException("the server has declined the connection request");
-        } catch (TimeoutException e) {
-            throw new IOException(e);
         }
+        throw new IOException("programming error: FutureWire is already closed");
     }
 
     @Override
@@ -51,7 +53,7 @@ public class FutureWireImpl implements FutureResponse<Wire> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            streamLink.emergencyClose();
+            streamLink.close();
         }
     }
 }

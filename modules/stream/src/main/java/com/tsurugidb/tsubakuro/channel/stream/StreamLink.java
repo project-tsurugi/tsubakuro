@@ -322,9 +322,4 @@ public final class StreamLink extends Link {
             throw new IOException(e);
         }
     }
-
-    public void emergencyClose() throws IOException, InterruptedException {
-        socket.close();
-        receiver.join();
-    }
 }
