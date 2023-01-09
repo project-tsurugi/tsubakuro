@@ -81,9 +81,6 @@ public final class StreamLink extends Link {
         this.receiver = new Receiver();
         this.helloResponse.set(null);
         this.receiver.start();
-    }
-
-    public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 

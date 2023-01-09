@@ -30,9 +30,6 @@ public final class StreamConnectorImpl implements Connector {
     @Override
     public FutureResponse<Wire> connect(Credential credential) throws IOException {
         LOG.trace("will connect to {}:{}", hostname, port); //$NON-NLS-1$
-
-        var streamWire = new StreamLink(hostname, port);
-        streamWire.hello();
-        return new FutureWireImpl(streamWire);
+        return new FutureWireImpl(new StreamLink(hostname, port));
     }
 }
