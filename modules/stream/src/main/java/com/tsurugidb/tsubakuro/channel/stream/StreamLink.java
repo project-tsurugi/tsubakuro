@@ -81,9 +81,6 @@ public final class StreamLink extends Link {
         this.receiver = new Receiver();
         this.helloResponse.set(null);
         this.receiver.start();
-    }
-
-    public void hello() throws IOException {
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
@@ -305,12 +302,8 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException, ServerException {
-        if (!closed.get()) {
-            try {
-                send(REQUEST_SESSION_BYE, 0);
-            } finally {
-                closed.set(true);
-            }
+        if (!closed.getAndSet(true)) {
+            send(REQUEST_SESSION_BYE, 0);
         }
         try {
             if (timeout != 0) {

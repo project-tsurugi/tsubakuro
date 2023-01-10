@@ -60,12 +60,18 @@ public class ServerWireImpl implements Closeable {
                 LOG.info("accept client: {}", port);
                 while (serverStreamLink.receive()) {
                     LOG.debug("received: ", serverStreamLink.getInfo());
-                    // StreamLink.REQUEST_RESULT_SET_BYE_OK = 3
-                    // StreamLink.REQUEST_SESSION_BYE = 4
-                    if (serverStreamLink.getInfo() != 3 && serverStreamLink.getInfo() != 4) {
-                        receiveQueue.add(new Message(serverStreamLink.getBytes()));
-                    } else if (serverStreamLink.getInfo() == 4) {
-                        serverStreamLink.close();
+                    switch (serverStreamLink.getInfo()) {
+                        case 1: // StreamLink.REQUEST_SESSION_HELLO
+                            serverStreamLink.sendResponseHelo();
+                            break;
+                        case 2: // StreamLink.REQUEST_SESSION_PAYLOAD
+                            receiveQueue.add(new Message(serverStreamLink.getBytes()));
+                            break;
+                        case 3: // StreamLink.REQUEST_RESULT_SET_BYE_OK = 3
+                            break;
+                        case 4: // StreamLink.REQUEST_SESSION_BYE = 4
+                            serverStreamLink.close();
+                            break;
                     }
                 }
             } catch (IOException e) {

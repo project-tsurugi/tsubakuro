@@ -12,7 +12,6 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 
@@ -87,7 +86,7 @@ public final class SessionBuilder {
      */
     public Session create() throws IOException, ServerException, InterruptedException {
         try (var fWire = connector.connect(connectionCredential)) {
-            return create0(fWire.get());
+            return  new SessionImpl(fWire.get());
         }
     }
 
@@ -105,23 +104,7 @@ public final class SessionBuilder {
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
         try (var fWire = connector.connect(connectionCredential)) {
-            return create0(fWire.get(timeout, unit));
-        }
-    }
-
-    private static Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
-        assert wire != null;
-        var session = new SessionImpl();
-        boolean green = false;
-        try {
-            session.connect(wire);
-            green = true;
-            return session;
-        } finally {
-            if (!green) {
-                session.close();
-                wire.close();
-            }
+            return new SessionImpl(fWire.get(timeout, unit));
         }
     }
 }

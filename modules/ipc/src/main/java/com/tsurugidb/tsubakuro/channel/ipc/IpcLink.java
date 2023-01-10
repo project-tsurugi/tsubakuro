@@ -136,7 +136,7 @@ public final class IpcLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed.get()) {
+        if (!closed.getAndSet(true)) {
             closeNative(wireHandle);
             try {
                 if (timeout != 0) {
@@ -152,7 +152,6 @@ public final class IpcLink extends Link {
                 throw new IOException(e);
             } finally {
                 destroyNative(wireHandle);
-                closed.set(true);
             }
         }
     }

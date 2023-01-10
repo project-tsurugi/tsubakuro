@@ -25,21 +25,37 @@ public class ServerStreamLink {
         this.sendOk = false;
     }
 
+    public void sendResponseHelo() throws IOException {
+        byte[] header = new byte[7];
+
+        header[0] = StreamLink.RESPONSE_SESSION_HELLO_OK;  // info
+        header[1] = 0;
+        header[2] = 0;
+        header[3] = 0;
+        header[4] = 0;
+        header[5] = 0;
+        header[6] = 0;
+
+        synchronized (this) {
+            outStream.write(header, 0, header.length);
+        }
+    }
+
     public void sendResponse(int s, byte[] payload) throws IOException {
-    byte[] header = new byte[7];
+        byte[] header = new byte[7];
         int length = (int) payload.length;
-    //    System.out.println("sendResponse " + length + " bytes, slot = " + s);
+        //    System.out.println("sendResponse " + length + " bytes, slot = " + s);
 
-    header[0] = StreamLink.RESPONSE_SESSION_PAYLOAD;  // info
-    header[1] = strip(s);       // slot
-    header[2] = strip(s >> 8);  // slot
-    header[3] = strip(length);
-    header[4] = strip(length >> 8);
-    header[5] = strip(length >> 16);
-    header[6] = strip(length >> 24);
+        header[0] = StreamLink.RESPONSE_SESSION_PAYLOAD;  // info
+        header[1] = strip(s);       // slot
+        header[2] = strip(s >> 8);  // slot
+        header[3] = strip(length);
+        header[4] = strip(length >> 8);
+        header[5] = strip(length >> 16);
+        header[6] = strip(length >> 24);
 
-    synchronized (this) {
-        outStream.write(header, 0, header.length);
+        synchronized (this) {
+            outStream.write(header, 0, header.length);
 
             if (length > 0) {
                 // payload送信

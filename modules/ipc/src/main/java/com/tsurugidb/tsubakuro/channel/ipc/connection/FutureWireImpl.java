@@ -47,6 +47,9 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        // FIXME: cancel connection if get() have never been called
+        if (!done.getAndSet(true)) {
+            var wire = get();
+            wire.close();
+        }
     }
 }
