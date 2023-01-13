@@ -51,21 +51,17 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_openNat
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    sendNative
- * Signature: (JI[B[B)V
+ * Signature: (JI[B)V
  */
 JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNative
-  (JNIEnv *env, jclass, jlong handle, jint slot, jbyteArray header, jbyteArray payload) {
+  (JNIEnv *env, jclass, jlong handle, jint slot, jbyteArray message) {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    auto h_address = env->GetByteArrayElements(header, nullptr);
-    auto p_address = env->GetByteArrayElements(payload, nullptr);
+    auto m_address = env->GetByteArrayElements(message, nullptr);
 
     auto& request_wire = swc->get_request_wire();
-    request_wire.write(static_cast<signed char*>(h_address), env->GetArrayLength(header), true);
-    request_wire.write(static_cast<signed char*>(p_address), env->GetArrayLength(payload), false);
-    request_wire.flush(slot);
-    env->ReleaseByteArrayElements(header, h_address, JNI_ABORT);
-    env->ReleaseByteArrayElements(payload, p_address, JNI_ABORT);
+    request_wire.write(static_cast<signed char*>(m_address), env->GetArrayLength(message), slot);
+    env->ReleaseByteArrayElements(message, m_address, JNI_ABORT);
 }
 
 /*

@@ -90,30 +90,17 @@ public:
         message_header peep(bool wait = false) {
             return wire_->peep(bip_buffer_, wait);
         }
-        void write(const signed char* from, std::size_t length, bool first = false) {
-            if (first) {
-                brand_new();
-            }
+        void write(const signed char* from, std::size_t length, message_header::index_type index) {
             const char *ptr = reinterpret_cast<const char*>(from);
-            for (std::size_t i = 0; i < length; i++) {
-                wire_->write(bip_buffer_, *ptr++);
-            }
-        }
-        void flush(message_header::index_type index) {
-            wire_->flush(bip_buffer_, index);
+            wire_->write(bip_buffer_, ptr, message_header(index, length));
         }
         void disconnect() {
-            wire_->brand_new();
-            wire_->flush(bip_buffer_, message_header::not_use);
+            wire_->write(bip_buffer_, nullptr, message_header(message_header::not_use, 0));
         }
 
     private:
         unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
-
-        void brand_new() {
-            wire_->brand_new();
-        }
     };
 
     class response_wire_container {
