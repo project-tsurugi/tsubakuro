@@ -197,7 +197,7 @@ public:
         auto length = static_cast<std::size_t>(header_received_.get_length());
         auto msg_length = min(length, max_payload_length());
         read_from_buffer(to, base, read_address(base, T::size), msg_length);
-        poped_ += T::size + msg_length;
+        poped_.fetch_add(T::size + msg_length);
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_write_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -210,11 +210,11 @@ public:
             {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
-                c_empty_.wait(lock, [this, msg_length](){ return stored_valid() >= msg_length; });
+                c_empty_.wait(lock, [this, msg_length](){ return stored() >= msg_length; });
                 wait_for_read_ = false;
             }
             read_from_buffer(to, base, read_address(base), msg_length);
-            poped_ += msg_length;
+            poped_.fetch_add(msg_length);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (wait_for_write_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -236,10 +236,9 @@ public:
         if (msg_length > T::size) {
             write_in_buffer(base, buffer_address(base, pushed_.load() + T::size), from, msg_length - T::size);
         }
-        pushed_ += msg_length;
+        pushed_.fetch_add(msg_length);
         length -= msg_length;
         from += (msg_length - T::size);  // NOLINT
-        pushed_valid_.store(pushed_.load());
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_read_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -249,10 +248,9 @@ public:
             msg_length = min(length, capacity_);
             if (msg_length > room()) { wait_to_write(msg_length); }
             write_in_buffer(base, buffer_address(base, pushed_.load()), from, msg_length);
-            pushed_ += msg_length;
+            pushed_.fetch_add(msg_length);
             length -= msg_length;
             from += msg_length;  // NOLINT
-            pushed_valid_.store(pushed_.load());
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (wait_for_read_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -267,7 +265,7 @@ public:
      */
     void dispose() noexcept {
         if (need_dispose_ > 0) {
-            poped_ += need_dispose_;
+            poped_.fetch_add(need_dispose_);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (wait_for_write_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -291,16 +289,15 @@ public:
     [[nodiscard]] std::size_t read_point() const { return poped_.load(); }
 
 protected:
-    std::size_t stored() const { return (pushed_.load() - poped_.load()); }  //NOLINT
-    std::size_t room() const { return capacity_ - stored(); }  //NOLINT
-    std::size_t index(std::size_t n) const { return n % capacity_; }  //NOLINT
-    std::size_t max_payload_length() const { return capacity_ - T::size; }  //NOLINT
-    static std::size_t min(std::size_t a, std::size_t b) { return (a > b) ? b : a; }  //NOLINT
-    static std::size_t max(std::size_t a, std::size_t b) { return (a > b) ? a : b; }  //NOLINT
-    char* buffer_address(char* base, std::size_t n) noexcept { return base + index(n); }  //NOLINT
-    const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_.load() + offset); }  //NOLINT
-    const char* read_address(const char* base) const { return base + index(poped_.load()); }  //NOLINT
-    std::size_t stored_valid() const { return (pushed_valid_.load() - poped_.load()); }  //NOLINT
+    [[nodiscard]] std::size_t stored() const { return (pushed_.load() - poped_.load()); }  //NOLINT
+    [[nodiscard]] std::size_t room() const { return capacity_ - stored(); }  //NOLINT
+    [[nodiscard]] std::size_t index(std::size_t n) const { return n % capacity_; }  //NOLINT
+    [[nodiscard]] std::size_t max_payload_length() const { return capacity_ - T::size; }  //NOLINT
+    [[nodiscard]] static std::size_t min(std::size_t a, std::size_t b) { return (a > b) ? b : a; }  //NOLINT
+    [[nodiscard]] static std::size_t max(std::size_t a, std::size_t b) { return (a > b) ? a : b; }  //NOLINT
+    [[nodiscard]] char* buffer_address(char* base, std::size_t n) noexcept { return base + index(n); }  //NOLINT
+    [[nodiscard]] const char* read_address(const char* base, std::size_t offset) const { return base + index(poped_.load() + offset); }  //NOLINT
+    [[nodiscard]] const char* read_address(const char* base) const { return base + index(poped_.load()); }  //NOLINT
 
     void wait_to_write(std::size_t length) {
         boost::interprocess::scoped_lock lock(m_mutex_);
@@ -344,7 +341,6 @@ protected:
     std::size_t capacity_;  //NOLINT
 
     std::atomic_ulong pushed_{0};  //NOLINT
-    std::atomic_ulong pushed_valid_{0};  //NOLINT
     std::atomic_ulong poped_{0};  //NOLINT
 
     std::atomic_bool wait_for_write_{};  //NOLINT
@@ -371,35 +367,21 @@ public:
      */
     message_header peep(const char* base, bool wait_flag = false) {
         while (true) {
-            if(stored_valid() >= message_header::size) {
+            if(stored() >= message_header::size) {
                 break;
             }
             if (wait_flag) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return stored_valid() >= message_header::size; });
+                c_empty_.wait(lock, [this](){ return stored() >= message_header::size; });
                 wait_for_read_ = false;
             } else {
-                if (stored_valid() < message_header::size) { return message_header(); }
+                if (stored() < message_header::size) { return message_header(); }
             }
         }
         copy_header(base);
         return header_received_;
-    }
-
-    /**
-     * @brief flush the current message.
-     */
-    void flush(char* base, message_header::index_type index) noexcept {
-        message_header header(index, pushed_.load() - (pushed_valid_.load() + message_header::size));
-        write_in_buffer(base, buffer_address(base, pushed_valid_.load()), header.get_buffer(), message_header::size);
-        pushed_valid_.store(pushed_.load());
-        std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_read_) {
-            boost::interprocess::scoped_lock lock(m_mutex_);
-            c_empty_.notify_one();
-        }
     }
 };
 
@@ -419,14 +401,14 @@ public:
                 header_received_ = response_header(0, 0, 0);
                 return header_received_;
             }
-            if(stored_valid() >= response_header::size) {
+            if(stored() >= response_header::size) {
                 break;
             }
             {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(watch_interval * 1000 * 1000), [this](){ return (stored_valid() >= response_header::size) || closed_.load(); })) {
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(watch_interval * 1000 * 1000), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
@@ -497,7 +479,7 @@ public:
         void brand_new() {
             std::size_t length = length_header::size;
             if (length > room()) { wait_to_write(length); }
-            pushed_ += length;
+            pushed_.fetch_add(length);
         }
 
         /**
@@ -562,7 +544,7 @@ public:
          */
         void dispose(char* base) {
             copy_header(base);
-            poped_ += (header_received_.get_length() + length_header::size);
+            poped_.fetch_add(header_received_.get_length() + length_header::size);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (wait_for_write_) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
@@ -599,7 +581,7 @@ public:
             }
             if (!closed_) {
                 write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
-                pushed_ += length;
+                pushed_.fetch_add(length);
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 if (wait_for_read_) {
                     boost::interprocess::scoped_lock lock(m_mutex_);
@@ -635,7 +617,10 @@ public:
             managed_shm_ptr_ = managed_shm_ptr;
         }
 
+        [[nodiscard]] std::size_t stored_valid() const { return (pushed_valid_.load() - poped_.load()); }
+
         boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
+        std::atomic_ulong pushed_valid_{0};
         std::atomic_bool closed_{};  // written by client, read by server
         bool continued_{};  // used by server only
         unidirectional_simple_wires* envelope_{};
@@ -892,11 +877,11 @@ public:
             for (std::size_t i = 0; i < capacity_; i++) {
                 queue_.at(i) = i;
             }
-            pushed_ = capacity_;
+            pushed_.store(capacity_);
         }
         void push(std::size_t e) {
             boost::interprocess::scoped_lock lock(mutex_);
-            queue_.at(index(pushed_)) = e;
+            queue_.at(index(pushed_.load())) = e;
             pushed_.fetch_add(1);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             condition_.notify_one();
