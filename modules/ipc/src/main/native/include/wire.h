@@ -177,7 +177,7 @@ public:
     /**
      * @brief provide the view of the first request message in the queue.
      */
-    std::string_view payload(const char* base) noexcept {
+    std::string_view payload(const char* base) {
         auto length = static_cast<std::size_t>(header_received_.get_length());
         if (index(poped_.load() + T::size) < index(poped_.load() + T::size + length)) {
             need_dispose_ = T::size + length;
@@ -193,7 +193,7 @@ public:
     /**
      * @brief read and pop the current message.
      */
-    void read(char* to, const char* base) noexcept {
+    void read(char* to, const char* base) {
         auto length = static_cast<std::size_t>(header_received_.get_length());
         auto msg_length = min(length, max_payload_length());
         read_from_buffer(to, base, read_address(base, T::size), msg_length);
@@ -204,7 +204,7 @@ public:
             c_full_.notify_one();
         }
         length -= msg_length;
-        to += msg_length;;
+        to += msg_length;  // NOLINT
         while (length > 0) {
             msg_length = min(length, capacity_);
             {
@@ -221,7 +221,7 @@ public:
                 c_full_.notify_one();
             }
             length -= msg_length;
-            to += msg_length;;
+            to += msg_length;  // NOLINT
         }
     }
 
