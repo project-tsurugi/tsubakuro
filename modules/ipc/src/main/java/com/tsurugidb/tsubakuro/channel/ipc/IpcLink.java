@@ -33,7 +33,7 @@ public final class IpcLink extends Link {
     public static final byte RESPONSE_CODE = 3;
 
     private static native long openNative(String name) throws IOException;
-    private static native void sendNative(long wireHandle, int slot, byte[] header, byte[] payload);
+    private static native void sendNative(long wireHandle, int slot, byte[] message);
     private static native int awaitNative(long wireHandle) throws IOException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
@@ -76,8 +76,12 @@ public final class IpcLink extends Link {
             channelResponse.setMainResponse(new IOException("Link already closed"));
             return;
         }
+        byte[] message = new byte[frameHeader.length + payload.length];
+        System.arraycopy(frameHeader, 0, message, 0, frameHeader.length);
+        System.arraycopy(payload, 0, message, frameHeader.length, payload.length);
+
         synchronized (this) {
-            sendNative(wireHandle, s, frameHeader, payload);
+            sendNative(wireHandle, s, message);
         }
         LOG.trace("send {}", payload);
     }
