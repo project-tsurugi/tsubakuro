@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package datastore.proto.Datastore.response;
+package tateyama.proto.datastore.response;
 
 option java_multiple_files = false;
 option java_package = "com.tsurugidb.datastore.proto";
@@ -21,15 +21,50 @@ message UnknownError {
 message BackupBegin {
     reserved 1 to 10;
     
+    // the simple source.
+    message SimpleSource {
+        // the list of simple files to be copied.
+        repeated string files = 1;
+    }
+
+    // the differential file description.
+    message DifferentialFile {
+        // the source of a file to be copied.
+        string source = 1;
+        // the destination of the file.
+        string destination = 2;
+        // the file is mutable or not.
+        bool mutable = 3;
+        // the file is detached or not.
+        bool detached = 4;
+    }
+
+    // the differential source.
+    message DifferentialSource {
+        // the log begin
+        uint64 log_begin = 1;
+        // the log end
+        uint64 log_end = 2;
+        // the image finish
+        uint64 image_finish = 3;
+        // the list of differential files to be copied.
+        repeated DifferentialFile differential_files = 4;
+    }
+
     // request is successfully completed.
     message Success {
         // the corresponded backup operation ID.
         uint64 id = 11;
-    
-        // the list of files to be copied.
-        repeated string files = 12;
+
+        oneof source {
+            // the simple source.
+            SimpleSource simple_source = 12;
+
+            // the differential source.
+            DifferentialSource differential_source = 13;
+        }
     }
-    
+
     // the response body.
     oneof result {
         // request is successfully completed.
@@ -222,7 +257,7 @@ message RestoreBegin {
     message BrokenData {
         // broken file path.
         string path = 1;
-        string detail = 2;
+        string differential = 2;
     }
 
     // the response body.

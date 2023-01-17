@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.tsubakuro.datastore.Backup;
+import com.tsurugidb.tsubakuro.datastore.BackupType;
+import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
 import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
@@ -38,6 +40,37 @@ class DatastoreClientImplTest {
         });
         try (var backup = client.beginBackup("LABEL").await()) {
             assertEquals(files, backup.getFiles());
+        }
+    }
+
+    @Test
+    void beginDifferentialBackup() throws Exception {
+        var confiturationId = "backup id";
+        var logBegin = 123;
+        var logEnd = 456;
+        var imageFinish = Long.valueOf(789);
+        List<BackupDetail.Entry> files = List.of(
+            new BackupDetailImpl.Entry(Path.of("source_file1"), Path.of("destination_file1"), false, false),
+            new BackupDetailImpl.Entry(Path.of("source_file2"), Path.of("destination_file2"), false, true),
+            new BackupDetailImpl.Entry(Path.of("source_file3"), Path.of("destination_file3"), true, false),
+            new BackupDetailImpl.Entry(Path.of("source_file4"), Path.of("destination_file4"), true, true)
+        );
+        DatastoreClient client = new DatastoreClientImpl(new DatastoreService() {
+            @Override
+            public FutureResponse<BackupDetail> send(DatastoreRequest.DifferentialBackupBegin request) throws IOException {
+                assertEquals("LABEL", request.getLabel());
+                assertEquals(DatastoreRequest.BackupType.STANDARD, request.getType());
+                return FutureResponse.returns(
+                    new BackupDetailImpl(confiturationId, logBegin, logEnd, imageFinish, files)
+                );
+            }
+        });
+        try (var backupDetail = client.beginBackup(BackupType.STANDARD, "LABEL").await()) {
+            assertEquals(confiturationId, backupDetail.getConfigurationId());
+            assertEquals(logBegin, backupDetail.getLogStart());
+            assertEquals(logEnd, backupDetail.getLogFinish());
+            assertEquals(imageFinish.longValue(), backupDetail.getImageFinish().getAsLong());
+            assertEquals(files, backupDetail.nextEntries());
         }
     }
 

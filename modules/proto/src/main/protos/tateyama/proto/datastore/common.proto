@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package datastore.proto.Datastore.common;
+package tateyama.proto.datastore.common;
 
 option java_multiple_files = false;
 option java_package = "com.tsurugidb.datastore.proto";

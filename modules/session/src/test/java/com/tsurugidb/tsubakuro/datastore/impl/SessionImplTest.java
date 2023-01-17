@@ -39,8 +39,9 @@ class SessionImplTest {
                 try (var buffer = new ByteArrayOutputStream()) {
                     var response = DatastoreResponse.BackupBegin.newBuilder()
                         .setSuccess(DatastoreResponse.BackupBegin.Success.newBuilder()
-                        .setId(100)
-                        .addFiles("/tmp/backup-1")
+                            .setId(100)
+                            .setSimpleSource(DatastoreResponse.BackupBegin.SimpleSource.newBuilder()
+                                .addFiles("/tmp/backup-1").build())
                         .build())
                     .build();
                     response.writeDelimitedTo(buffer);
