@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package datastore.proto.Datastore.request;
+package tateyama.proto.datastore.request;
 
 option java_multiple_files = false;
 option java_package = "com.tsurugidb.datastore.proto";
@@ -22,6 +22,8 @@ message Request {
         BackupEnd backup_end = 12;
         // estimates backup operation magnitude.
         BackupEstimate backup_estimate = 14;
+        // starts differntial backup operation.
+        DifferentialBackupBegin differential_backup_begin = 15;
         // retrieves the list of registered Point-in-Time recovery tags.
         TagList tag_list = 17;
         // creates a new Point-in-Time recovery tag.
@@ -39,7 +41,7 @@ message Request {
         // disposes a restore job history.
         RestoreDispose restore_dispose = 24;
     }
-    reserved 15 to 16;
+    reserved 16;
     reserved 25 to 99;
 }
 
@@ -47,6 +49,22 @@ message Request {
 message BackupBegin {
     // the backup label.
     string label = 1;
+}
+
+// the backup type.
+enum BackupType {
+    BACKUP_TYPE_UNSPECIFIED = 0;
+    STANDARD = 1;
+    TRANSACTION = 2;
+}
+
+// starts differential backup operation.
+message DifferentialBackupBegin {
+    // the backup label.
+    string label = 1;
+
+    // the backup type.
+    BackupType type = 2;
 }
 
 // completes backup operation.
@@ -82,6 +100,24 @@ message TagRemove {
     string name = 1;
 }
 
+// file entry for Entries
+message FileSetEntry {
+    // the source of a file
+    string source_path = 1;
+    // the destination of the file.
+    string destination_path = 2;
+    // the file is detached or not.
+    bool detached = 3;
+}
+
+// restores from an array of file_set_entry
+message Entries {
+    // the directory on which source files are.
+    string directory = 1;
+    // an array of file_set_entry
+    repeated FileSetEntry file_set_entry = 2;
+}
+
 // begins to restore datastore.
 message RestoreBegin {
 
@@ -92,6 +128,9 @@ message RestoreBegin {
 
         // restores from point-in-time recovery tag name.
         string tag_name = 2;
+
+        // restores from an array of file_set_entry
+        Entries entries = 5;
     }
 
     // whether or not keeps the backup source.

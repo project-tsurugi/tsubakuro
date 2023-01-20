@@ -25,6 +25,7 @@ import com.tsurugidb.datastore.proto.DatastoreCommon;
 import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.datastore.proto.DatastoreResponse;
 import com.tsurugidb.tsubakuro.datastore.Backup;
+import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 // import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.datastore.DatastoreServiceCode;
@@ -102,7 +103,7 @@ public class DatastoreServiceStub implements DatastoreService {
             case SUCCESS:
                 var backupId = message.getSuccess().getId();
                 var files = new ArrayList<Path>();
-                for (var f : message.getSuccess().getFilesList()) {
+                for (var f : message.getSuccess().getSimpleSource().getFilesList()) {
                     files.add(Path.of(f));
                 }
                 return resources.register(new BackupImpl(DatastoreServiceStub.this, resources, backupId, files));
@@ -130,6 +131,60 @@ public class DatastoreServiceStub implements DatastoreService {
                                  .setBackupBegin(request)
                                  .build()),
             new BackupBeginProcessor().asResponseProcessor());
+    }
+
+    class DifferentialBackupBeginProcessor implements MainResponseProcessor<BackupDetail> {
+        @Override
+        public BackupDetail process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponse.BackupBegin.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                var successMessage = message.getSuccess();
+                var backupId = successMessage.getId();
+                if (successMessage.getSourceCase() == DatastoreResponse.BackupBegin.Success.SourceCase.DIFFERENTIAL_SOURCE) {
+                    var differentialSourceMessage = successMessage.getDifferentialSource();
+                    var files = new ArrayList<BackupDetail.Entry>();
+                    for (var f : differentialSourceMessage.getDifferentialFilesList()) {
+                        files.add(new BackupDetailImpl.Entry(
+                            Path.of(f.getSource()),
+                            Path.of(f.getDestination()),
+                            f.getMutable(),
+                            f.getDetached()
+                        ));
+                    }
+                    return resources.register(new BackupDetailImpl(
+                        Long.valueOf(backupId).toString(),
+                        differentialSourceMessage.getLogBegin(),
+                        differentialSourceMessage.getLogEnd(),
+                        differentialSourceMessage.getImageFinish(),
+                        files));
+                }
+                break;
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<BackupDetail> send(@Nonnull DatastoreRequest.DifferentialBackupBegin request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+            SERVICE_ID,
+            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
+                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+                                 .setDifferentialBackupBegin(request)
+                                 .build()),
+            new DifferentialBackupBeginProcessor().asResponseProcessor());
     }
 
     static class BackupEndProcessor implements MainResponseProcessor<Void> {

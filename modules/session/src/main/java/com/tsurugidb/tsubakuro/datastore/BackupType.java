@@ -1,20 +1,18 @@
 package com.tsurugidb.tsubakuro.datastore;
 
-/**
- * Represents backup operation type.
- */
+import com.tsurugidb.datastore.proto.DatastoreRequest;
+
 public enum BackupType {
+    STANDARD(DatastoreRequest.BackupType.STANDARD),
+    TRANSACTION(DatastoreRequest.BackupType.TRANSACTION);
 
-    /**
-     * Takes copy of all standard resources on the database, including database images.
-     */
-    STANDARD,
+    private final DatastoreRequest.BackupType type;
 
-    /**
-     * Takes copy of transaction log, including log archives and large object entries.
-     * <p>
-     * This may be suitable for incremental backup operations.
-     * </p>
-     */
-    TRANSACTION,
+    BackupType(DatastoreRequest.BackupType type) {
+        this.type = type;
+    }
+
+    public DatastoreRequest.BackupType type() {
+        return type;
+    }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -85,6 +86,8 @@ public class BackupDetailImpl implements BackupDetail {
 
     private final Collection<BackupDetail.Entry> entries;
 
+    private final AtomicBoolean gotton = new AtomicBoolean();
+
     /**
      * Creates a new instance.
      * @param configurationId the configuration ID
@@ -133,7 +136,10 @@ public class BackupDetailImpl implements BackupDetail {
     @Override
     public Collection<? extends BackupDetail.Entry> nextEntries()
             throws IOException, ServerException, InterruptedException {
-        return entries;
+        if (!gotton.getAndSet(true)) {
+            return entries;
+        }
+        return null;
     }
 
     // FIXME impl

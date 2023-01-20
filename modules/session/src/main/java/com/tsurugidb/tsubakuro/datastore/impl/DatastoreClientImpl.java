@@ -12,6 +12,8 @@ import javax.annotation.concurrent.ThreadSafe;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.tsubakuro.datastore.Backup;
+import com.tsurugidb.tsubakuro.datastore.BackupType;
+import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
 import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
@@ -51,6 +53,21 @@ public class DatastoreClientImpl implements DatastoreClient {
         var builder = DatastoreRequest.BackupBegin.newBuilder();
         if (label != null) {
             builder.setLabel(label);
+        }
+        return service.send(builder.build());
+    }
+
+    @Override
+    public FutureResponse<BackupDetail> beginBackup(@Nonnull BackupType type) throws IOException {
+        return beginBackup(type, null);
+    }
+
+    @Override
+    public FutureResponse<BackupDetail> beginBackup(@Nonnull BackupType type, @Nullable String label) throws IOException {
+        var builder = DatastoreRequest.DifferentialBackupBegin.newBuilder();
+        if (label != null) {
+            builder.setLabel(label)
+            .setType(type.type());
         }
         return service.send(builder.build());
     }
