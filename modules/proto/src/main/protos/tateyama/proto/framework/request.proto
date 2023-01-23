@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package framework.proto.Framework.request;
+package tateyama.proto.framework.request;
 
 option java_package = "com.tsurugidb.framework.proto";
 option java_outer_classname = "FrameworkRequest";
