@@ -133,7 +133,7 @@ public class DatastoreServiceStub implements DatastoreService {
             new BackupBeginProcessor().asResponseProcessor());
     }
 
-    class DifferentialBackupBeginProcessor implements MainResponseProcessor<BackupDetail> {
+    class BackupDetailBeginProcessor implements MainResponseProcessor<BackupDetail> {
         @Override
         public BackupDetail process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = DatastoreResponse.BackupBegin.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -142,10 +142,10 @@ public class DatastoreServiceStub implements DatastoreService {
             case SUCCESS:
                 var successMessage = message.getSuccess();
                 var backupId = successMessage.getId();
-                if (successMessage.getSourceCase() == DatastoreResponse.BackupBegin.Success.SourceCase.DIFFERENTIAL_SOURCE) {
-                    var differentialSourceMessage = successMessage.getDifferentialSource();
+                if (successMessage.getSourceCase() == DatastoreResponse.BackupBegin.Success.SourceCase.DETAIL_SOURCE) {
+                    var detailSourceMessage = successMessage.getDetailSource();
                     var files = new ArrayList<BackupDetail.Entry>();
-                    for (var f : differentialSourceMessage.getDifferentialFilesList()) {
+                    for (var f : detailSourceMessage.getDetailFilesList()) {
                         files.add(new BackupDetailImpl.Entry(
                             Path.of(f.getSource()),
                             Path.of(f.getDestination()),
@@ -155,9 +155,10 @@ public class DatastoreServiceStub implements DatastoreService {
                     }
                     return resources.register(new BackupDetailImpl(
                         Long.valueOf(backupId).toString(),
-                        differentialSourceMessage.getLogBegin(),
-                        differentialSourceMessage.getLogEnd(),
-                        differentialSourceMessage.getImageFinish(),
+                        detailSourceMessage.getLogBegin(),
+                        detailSourceMessage.getLogEnd(),
+                        detailSourceMessage.getImageFinishCase() == DatastoreResponse.BackupBegin.DetailSource.ImageFinishCase.IMAGE_FINISH_VALUE
+                            ? detailSourceMessage.getImageFinishValue() : null,
                         files));
                 }
                 break;
@@ -176,15 +177,15 @@ public class DatastoreServiceStub implements DatastoreService {
     }
 
     @Override
-    public FutureResponse<BackupDetail> send(@Nonnull DatastoreRequest.DifferentialBackupBegin request) throws IOException {
+    public FutureResponse<BackupDetail> send(@Nonnull DatastoreRequest.BackupDetailBegin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
             toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
                                  .setMessageVersion(Constants.MESSAGE_VERSION)
-                                 .setDifferentialBackupBegin(request)
+                                 .setBackupDetailBegin(request)
                                  .build()),
-            new DifferentialBackupBeginProcessor().asResponseProcessor());
+            new BackupDetailBeginProcessor().asResponseProcessor());
     }
 
     static class BackupEndProcessor implements MainResponseProcessor<Void> {

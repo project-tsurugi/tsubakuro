@@ -64,7 +64,7 @@ public class DatastoreClientImpl implements DatastoreClient {
 
     @Override
     public FutureResponse<BackupDetail> beginBackup(@Nonnull BackupType type, @Nullable String label) throws IOException {
-        var builder = DatastoreRequest.DifferentialBackupBegin.newBuilder();
+        var builder = DatastoreRequest.BackupDetailBegin.newBuilder();
         if (label != null) {
             builder.setLabel(label)
             .setType(type.type());
