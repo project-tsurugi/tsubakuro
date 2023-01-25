@@ -44,7 +44,7 @@ class DatastoreClientImplTest {
     }
 
     @Test
-    void beginDifferentialBackup() throws Exception {
+    void beginBackupDetail() throws Exception {
         var confiturationId = "backup id";
         var logBegin = 123;
         var logEnd = 456;
@@ -57,7 +57,7 @@ class DatastoreClientImplTest {
         );
         DatastoreClient client = new DatastoreClientImpl(new DatastoreService() {
             @Override
-            public FutureResponse<BackupDetail> send(DatastoreRequest.DifferentialBackupBegin request) throws IOException {
+            public FutureResponse<BackupDetail> send(DatastoreRequest.BackupDetailBegin request) throws IOException {
                 assertEquals("LABEL", request.getLabel());
                 assertEquals(DatastoreRequest.BackupType.STANDARD, request.getType());
                 return FutureResponse.returns(

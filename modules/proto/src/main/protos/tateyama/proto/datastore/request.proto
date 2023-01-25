@@ -22,8 +22,8 @@ message Request {
         BackupEnd backup_end = 12;
         // estimates backup operation magnitude.
         BackupEstimate backup_estimate = 14;
-        // starts differntial backup operation.
-        DifferentialBackupBegin differential_backup_begin = 15;
+        // starts detail backup operation.
+        BackupDetailBegin backup_detail_begin = 15;
         // retrieves the list of registered Point-in-Time recovery tags.
         TagList tag_list = 17;
         // creates a new Point-in-Time recovery tag.
@@ -58,8 +58,8 @@ enum BackupType {
     TRANSACTION = 2;
 }
 
-// starts differential backup operation.
-message DifferentialBackupBegin {
+// starts detail backup operation.
+message BackupDetailBegin {
     // the backup label.
     string label = 1;
 

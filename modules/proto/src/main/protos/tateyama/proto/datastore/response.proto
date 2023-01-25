@@ -27,8 +27,8 @@ message BackupBegin {
         repeated string files = 1;
     }
 
-    // the differential file description.
-    message DifferentialFile {
+    // the detail file description.
+    message DetailFile {
         // the source of a file to be copied.
         string source = 1;
         // the destination of the file.
@@ -39,16 +39,21 @@ message BackupBegin {
         bool detached = 4;
     }
 
-    // the differential source.
-    message DifferentialSource {
+    // the detail source.
+    message DetailSource {
         // the log begin
         uint64 log_begin = 1;
         // the log end
         uint64 log_end = 2;
         // the image finish
-        uint64 image_finish = 3;
-        // the list of differential files to be copied.
-        repeated DifferentialFile differential_files = 4;
+        oneof image_finish {
+            // image finish is not set
+            uint64 image_finish_is_not_set = 3;
+            // image finish value
+            uint64 image_finish_value = 4;
+        }
+        // the list of detail files to be copied.
+        repeated DetailFile detail_files = 5;
     }
 
     // request is successfully completed.
@@ -60,8 +65,8 @@ message BackupBegin {
             // the simple source.
             SimpleSource simple_source = 12;
 
-            // the differential source.
-            DifferentialSource differential_source = 13;
+            // the detail source.
+            DetailSource detail_source = 13;
         }
     }
 
@@ -257,7 +262,7 @@ message RestoreBegin {
     message BrokenData {
         // broken file path.
         string path = 1;
-        string differential = 2;
+        string detail = 2;
     }
 
     // the response body.

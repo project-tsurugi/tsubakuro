@@ -30,7 +30,7 @@ public interface DatastoreService extends ServerResource {
     }
 
     /**
-     * Requests {@code DifferentialBackupBegin} to datastore service.
+     * Requests {@code BackupDetailBegin} to datastore service.
      * @param request the request
      * @return the future response of the request,
      *      which may raise error if the request was failed.
@@ -38,7 +38,7 @@ public interface DatastoreService extends ServerResource {
      *      which helps to create a new backup
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<BackupDetail> send(DatastoreRequest.DifferentialBackupBegin request) throws IOException {
+    default FutureResponse<BackupDetail> send(DatastoreRequest.BackupDetailBegin request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
