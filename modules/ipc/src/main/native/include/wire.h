@@ -478,8 +478,12 @@ public:
          */
         void brand_new() {
             std::size_t length = length_header::size;
-            if (length > room()) { wait_to_write(length); }
-            pushed_.fetch_add(length);
+            if (length > room()) {
+                wait_to_resultset_write(length);
+            }
+            if (!closed_) {
+                pushed_.fetch_add(length);
+            }
         }
 
         /**
@@ -572,12 +576,8 @@ public:
 
     private:
         void write(char* base, const char* from, std::size_t length) {
-            if ((length) > room()) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                wait_for_write_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_full_.wait(lock, [this, length](){ return (room() >= length) || closed_; });
-                wait_for_write_ = false;
+            if (length > room()) {
+                wait_to_resultset_write(length);
             }
             if (!closed_) {
                 write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
@@ -602,6 +602,14 @@ public:
                 c_empty_.notify_one();
             }
             continued_ = false;
+        }
+
+        void wait_to_resultset_write(std::size_t length) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            wait_for_write_ = true;
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            c_full_.wait(lock, [this, length](){ return (room() >= length) || closed_; });
+            wait_for_write_ = false;
         }
 
         void set_closed() noexcept {

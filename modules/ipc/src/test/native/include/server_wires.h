@@ -40,6 +40,9 @@ public:
         void write(const char* from, std::size_t length) {
             current_wire_->write(from, length);
         }
+        void flush() {
+            current_wire_->flush();
+        }
         void set_eor() {
             shm_resultset_wires_->set_eor();
         }

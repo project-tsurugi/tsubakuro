@@ -108,6 +108,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireIm
     }
 
     wires->write(reinterpret_cast<const char*>(src), capacity);
+    wires->flush();
     env->ReleaseByteArrayElements(srcj, src, 0);
 }
 
