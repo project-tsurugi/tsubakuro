@@ -154,6 +154,8 @@ public class DatastoreServiceStub implements DatastoreService {
                         ));
                     }
                     return resources.register(new BackupDetailImpl(
+                        DatastoreServiceStub.this,
+                        resources,
                         Long.valueOf(backupId).toString(),
                         detailSourceMessage.getLogBegin(),
                         detailSourceMessage.getLogEnd(),

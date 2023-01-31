@@ -7,13 +7,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.tsurugidb.datastore.proto.DatastoreRequest;
+import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.Lang;
+import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * An implementation of {@link BackupDetail}.
@@ -76,6 +85,10 @@ public class BackupDetailImpl implements BackupDetail {
         }
     }
 
+    static final Logger LOG = LoggerFactory.getLogger(BackupDetailImpl.class);
+
+    private final DatastoreService service;
+
     private final String configurationId;
 
     private final long logStart;
@@ -87,6 +100,12 @@ public class BackupDetailImpl implements BackupDetail {
     private final Collection<BackupDetail.Entry> entries;
 
     private final AtomicBoolean gotton = new AtomicBoolean();
+
+    private final CloseHandler closeHandler;
+
+    private Timeout closeTimeout = Timeout.DISABLED;
+
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
      * Creates a new instance.
@@ -101,8 +120,32 @@ public class BackupDetailImpl implements BackupDetail {
             long logBegin, long logEnd,
             @Nullable Long imageFinish,
             @Nonnull Collection<? extends BackupDetail.Entry> entries) {
+        this(null, null, configurationId, logBegin, logEnd, imageFinish, entries);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param service the backup service,
+     *      this is required to tell end of backup to the server.
+     *      If this is {@code null}, {@link #close()} will not do nothing
+     * @param closeHandler handles {@link #close()} was invoked
+     * @param configurationId the configuration ID
+     * @param logBegin the start time of available transaction logs in this backup (64-bit unsigned integer)
+     * @param logEnd the maximum time of available transaction logs in this backup (64-bit unsigned integer)
+     * @param imageFinish the maximum time of available database image in this backup (64-bit unsigned integer)
+     * @param entries the next backup target files
+     */
+    public BackupDetailImpl(
+            @Nullable DatastoreService service,
+            @Nullable ServerResource.CloseHandler closeHandler,
+            @Nonnull String configurationId,
+            long logBegin, long logEnd,
+            @Nullable Long imageFinish,
+            @Nonnull Collection<? extends BackupDetail.Entry> entries) {
         Objects.requireNonNull(configurationId);
         Objects.requireNonNull(entries);
+        this.service = service;
+        this.closeHandler = closeHandler;
         this.configurationId = configurationId;
         this.logStart = logBegin;
         this.logFinish = logEnd;
@@ -142,7 +185,57 @@ public class BackupDetailImpl implements BackupDetail {
         return null;
     }
 
-    // FIXME impl
+    /**
+     * Tries to extend the expiration time of the current backup operation.
+     * @param timeout the expiration time
+     * @param unit time unit of the expiration time
+     * @throws IOException if I/O error was occurred while requesting to the service
+     * @throws ServerException if the request was failed
+     * @throws InterruptedException if interrupted while requesting
+     */
+    @Override
+    public void keepAlive(int timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException {
+        if (Objects.isNull(service) || closed.get()) {
+            return;
+        }
+        try (var response = service.updateExpirationTime(timeout, unit)) {
+            // FIXME: don't wait, delay the receive response until next keepAlive() or close()
+            response.get();
+        }
+    }
+
+    @Override
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
+        Objects.requireNonNull(timeout);
+        closeTimeout = timeout;
+    }
+
+    /**
+     * Tells the backup operation was completed to the service.
+     */
+    @Override
+    public void close() throws IOException, ServerException, InterruptedException {
+        if (closed.get()) {
+            return;
+        }
+        closed.set(true);
+        if (Objects.nonNull(closeHandler)) {
+            Lang.suppress(
+                    e -> LOG.warn("error occurred while collecting garbage", e),
+                    () -> closeHandler.onClosed(this));
+        }
+        if (Objects.nonNull(service)) {
+            try {
+                var request = DatastoreRequest.BackupEnd.newBuilder()
+                    .setId(Long.parseLong(configurationId))
+                    .build();
+                var response = service.send(request);
+                closeTimeout.waitFor(response);
+            } catch (NumberFormatException e) {
+                throw new IOException(e);
+            }
+        }
+    }
 
     @Override
     public String toString() {
