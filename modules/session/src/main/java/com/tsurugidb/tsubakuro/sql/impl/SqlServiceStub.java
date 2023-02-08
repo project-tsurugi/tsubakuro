@@ -7,6 +7,7 @@ import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,9 +37,11 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
+
 
 /**
  * An interface to communicate with SQL service.
@@ -70,7 +73,6 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(session);
         this.session = session;
         this.closeTimeout = session.getCloseTimeout();
-        session.put(this);
     }
 
     // just avoid programming error
@@ -668,5 +670,31 @@ public class SqlServiceStub implements SqlService {
         } catch (IOException e) {
             throw new IOException(e);
         }
+    }
+
+    // for diagnostic
+    static class ResourceInfoAction implements Consumer<ServerResource> {
+        String diagnosticInfo = "";
+
+        @Override
+        public void accept(ServerResource r) {
+            if (r instanceof TransactionImpl) {
+                diagnosticInfo += ((TransactionImpl) r).diagnosticInfo();
+            } else if (r instanceof PreparedStatementImpl) {
+                diagnosticInfo += ((PreparedStatementImpl) r).diagnosticInfo();
+            } else if (r instanceof ResultSetImpl) {
+                diagnosticInfo += ((ResultSetImpl) r).diagnosticInfo();
+            }
+        }
+        public String diagnosticInfo() {
+            return diagnosticInfo;
+        }
+    }
+    public String diagnosticInfo() {
+        String diagnosticInfo = "+" + this.toString() + System.getProperty("line.separator");
+
+        var resourceInfoAction = new ResourceInfoAction();
+        resources.forEach(resourceInfoAction);
+        return diagnosticInfo + resourceInfoAction.diagnosticInfo();
     }
 }

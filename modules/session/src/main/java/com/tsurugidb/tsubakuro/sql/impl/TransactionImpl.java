@@ -275,4 +275,9 @@ public class TransactionImpl implements Transaction {
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
     }
+
+    // for diagnostic
+    String diagnosticInfo() {
+        return " +" + this.toString() + System.getProperty("line.separator");
+    }
 }

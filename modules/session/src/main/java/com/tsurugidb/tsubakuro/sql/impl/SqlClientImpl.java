@@ -31,7 +31,9 @@ public class SqlClientImpl implements SqlClient {
      */
     public static SqlClientImpl attach(@Nonnull Session session) {
         Objects.requireNonNull(session);
-        return new SqlClientImpl(new SqlServiceStub(session));
+        var service = new SqlServiceStub(session);
+        session.put(service);
+        return new SqlClientImpl(service);
     }
 
     /**

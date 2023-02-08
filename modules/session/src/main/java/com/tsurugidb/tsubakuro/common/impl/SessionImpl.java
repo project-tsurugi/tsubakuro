@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +33,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.BackgroundFutureRespons
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
 
 /**
  * SessionImpl type.
@@ -233,5 +235,27 @@ public class SessionImpl implements Session {
         } catch (IOException e) {
             throw new IOException(e);
         }
+    }
+
+    // for diagnostic
+    static class ServiceInfoAction implements Consumer<ServerResource> {
+        String diagnosticInfo = "";
+
+        @Override
+        public void accept(ServerResource r) {
+            if (r instanceof SqlServiceStub) {
+                diagnosticInfo += ((SqlServiceStub) r).diagnosticInfo();
+            }
+        }
+        public String diagnosticInfo() {
+            return diagnosticInfo;
+        }
+    }
+    public String diagnosticInfo() {
+        String diagnosticInfo = this.toString() + System.getProperty("line.separator");
+
+        var serviceInfoAction = new ServiceInfoAction();
+        services.forEach(serviceInfoAction);
+        return diagnosticInfo + serviceInfoAction.diagnosticInfo() + wire.diagnosticInfo() + System.getProperty("line.separator");
     }
 }

@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.util;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -63,6 +64,12 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
             } catch (IOException | ServerException e) {
                 LOG.warn("error suppressed during cleanup", e);
             }
+        }
+    }
+
+    public void forEach(java.util.function.Consumer<ServerResource> f) {
+        for (var iter = entries.entrySet().iterator(); iter.hasNext();) {
+            f.accept(iter.next().getKey().resource);
         }
     }
 

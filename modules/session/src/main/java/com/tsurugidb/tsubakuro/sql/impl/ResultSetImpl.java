@@ -406,4 +406,9 @@ public class ResultSetImpl implements ResultSet {
                     () -> closeHandler.onClosed(this));
         }
     }
+
+    // for diagnostic
+    String diagnosticInfo() {
+        return " +" + this.toString() + System.getProperty("line.separator");
+    }
 }

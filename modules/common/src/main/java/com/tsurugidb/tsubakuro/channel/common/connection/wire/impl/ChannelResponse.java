@@ -250,4 +250,9 @@ public class ChannelResponse implements Response {
         FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         return response;
     }
+
+    // for diagnostic
+    public String diagnosticInfo() {
+        return "  +" + this.toString() + System.getProperty("line.separator");
+    }
 }

@@ -122,4 +122,9 @@ public class WireImpl implements Wire {
             throw new IOException(e);
         }
     }
+
+    // for diagnostic
+    public String diagnosticInfo() {
+        return responseBox.diagnosticInfo();
+    }
 }

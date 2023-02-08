@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.common.impl;
 
 import java.util.LinkedHashSet;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
@@ -46,6 +47,12 @@ class ServiceShelf {
                 var resource = iter.next();
                 resource.setCloseTimeout(timeout);
             }
+        }
+    }
+
+    void forEach(java.util.function.Consumer<ServerResource> f) {
+        for (var e : entries) {
+            f.accept(e);
         }
     }
 }

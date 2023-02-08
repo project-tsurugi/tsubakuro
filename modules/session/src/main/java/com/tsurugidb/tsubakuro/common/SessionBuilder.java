@@ -14,6 +14,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
+import com.tsurugidb.tsubakuro.diagnostic.JMXAgent;
+import com.tsurugidb.tsubakuro.diagnostic.common.SessionInfo;
 
 /**
  * Builds a {@link Session} object.
@@ -26,9 +28,12 @@ public final class SessionBuilder {
 
     private Credential connectionCredential = NullCredential.INSTANCE;
 
+    private SessionInfo sessionInfo;
+
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
+        this.sessionInfo = JMXAgent.sessionInfo();
     }
 
     /**
@@ -104,7 +109,9 @@ public final class SessionBuilder {
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
         try (var fWire = connector.connect(connectionCredential)) {
-            return new SessionImpl(fWire.get(timeout, unit));
+            var sessionImpl = new SessionImpl(fWire.get(timeout, unit));
+            sessionInfo.addSession(sessionImpl);
+            return sessionImpl;
         }
     }
 }
