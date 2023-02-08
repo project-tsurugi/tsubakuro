@@ -88,4 +88,9 @@ public class PreparedStatementImpl implements PreparedStatement {
         }
         return handle;
     }
+
+    // for diagnostic
+    String diagnosticInfo() {
+        return " +" + this.toString() + System.getProperty("line.separator");
+    }
 }

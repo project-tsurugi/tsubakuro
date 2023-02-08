@@ -73,4 +73,16 @@ public class ResponseBox {
     public static int responseBoxSize() {
         return SIZE;
     }
+
+    // for diagnostic
+    String diagnosticInfo() {
+        String diagnosticInfo = "+" + this.toString() + System.getProperty("line.separator");
+        for (var e : boxes) {
+            var cr = e.channelResponse();
+            if (Objects.nonNull(cr)) {
+                diagnosticInfo += cr.diagnosticInfo();
+            }
+        }
+        return diagnosticInfo;
+    }
 }

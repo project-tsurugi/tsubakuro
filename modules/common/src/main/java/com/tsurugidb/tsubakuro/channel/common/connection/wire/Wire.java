@@ -101,4 +101,9 @@ public interface Wire extends ServerResource {
      */
     @Override
     void close() throws IOException, InterruptedException;
+
+    // for diagnostic
+    default String diagnosticInfo() {
+        return " diagnosticInfo for the wire is not implementd";
+    }
 }
