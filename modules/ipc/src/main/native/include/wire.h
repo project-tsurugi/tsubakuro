@@ -474,7 +474,8 @@ public:
         unidirectional_simple_wire& operator = (unidirectional_simple_wire&&) = delete;
 
         /**
-         * @brief begin new record which will be flushed on commit
+         * @brief begin new record which will be flushed on commit.
+         *  used by server
          */
         void brand_new() {
             std::size_t length = length_header::size;
@@ -488,7 +489,7 @@ public:
 
         /**
          * @brief push an unit of data into the wire.
-         *  used by server only
+         *  used by server
          */
         void write(const char* from, std::size_t length) {
             if (!continued_) {
@@ -497,6 +498,10 @@ public:
             }
             write(get_bip_address(managed_shm_ptr_), from, length);
         }
+        /**
+         * @brief mark the record boundary and notify the clinet of the record arrival.
+         *  used by server
+         */
         void flush() noexcept {
             if (continued_) {
                 flush(get_bip_address(managed_shm_ptr_));
@@ -504,35 +509,12 @@ public:
         }
 
         /**
-         * @brief provide the current chunk
+         * @brief provide the current chunk.
+         *  used by clinet
          */
-        std::string_view get_chunk(char* base, std::string_view& wrap_around, std::int64_t timeout = 0) {
+        std::string_view get_chunk(char* base, std::string_view& wrap_around) {
             copy_header(base);
             auto length = header_received_.get_length();
-
-            if (!(stored_valid() >= (length + length_header::size))) {
-                if (timeout <= 0) {
-                    boost::interprocess::scoped_lock lock(m_mutex_);
-                    wait_for_read_ = true;
-                    std::atomic_thread_fence(std::memory_order_acq_rel);
-                    c_empty_.wait(lock, [this, length](){ return stored_valid() >= (length + length_header::size); });
-                    wait_for_read_ = false;
-                } else {
-                    boost::interprocess::scoped_lock lock(m_mutex_);
-                    wait_for_read_ = true;
-                    std::atomic_thread_fence(std::memory_order_acq_rel);
-                    if (!c_empty_.timed_wait(lock,
-#ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                             boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
-#else
-                                             boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
-#endif
-                                             [this, length](){ return stored_valid() >= (length + length_header::size); })) {
-                        throw std::runtime_error("record has not been received within the specified time");
-                    }
-                    wait_for_read_ = false;
-                }
-            }
 
             // If end is on a boundary, it is considered to be on the same page.
             if (((poped_.load() + length_header::size) / capacity_) == ((poped_.load() + length_header::size + length - 1) / capacity_)) {
@@ -544,7 +526,8 @@ public:
             return std::string_view(read_address(base, length_header::size), first_length);
         }
         /**
-         * @brief dispose of data that has completed read and is no longer needed
+         * @brief dispose of data that has completed read and is no longer needed.
+         *  used by clinet
          */
         void dispose(char* base) {
             copy_header(base);
@@ -556,9 +539,10 @@ public:
             }
         }
         /**
-         * @brief check this wire has record
+         * @brief check this wire has record.
+         *  used by clinet
          */
-        [[nodiscard]] bool has_record() const { return pushed_valid_.load() > poped_.load(); }
+        [[nodiscard]] bool has_record() const { return stored_valid() > 0; }
 
         void attach_buffer(boost::interprocess::managed_shared_memory::handle_t handle, std::size_t capacity) noexcept {
             buffer_handle_ = handle;
@@ -571,8 +555,12 @@ public:
         bool equal(boost::interprocess::managed_shared_memory::handle_t handle) {
             return handle == buffer_handle_;
         }
-        void reset_handle() noexcept { buffer_handle_ = 0; }
-        [[nodiscard]] boost::interprocess::managed_shared_memory::handle_t get_handle() const { return buffer_handle_; }
+        void reset_handle() noexcept {
+            buffer_handle_ = 0;
+        }
+        [[nodiscard]] boost::interprocess::managed_shared_memory::handle_t get_handle() const {
+            return buffer_handle_;
+        }
 
     private:
         void write(char* base, const char* from, std::size_t length) {
@@ -582,13 +570,6 @@ public:
             if (!closed_) {
                 write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
                 pushed_.fetch_add(length);
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (wait_for_read_) {
-                    boost::interprocess::scoped_lock lock(m_mutex_);
-                    c_empty_.notify_one();
-                } else {
-                    envelope_->notify_record_arrival();
-                }
             }
         }
 
@@ -597,10 +578,7 @@ public:
             write_in_buffer(base, buffer_address(base, pushed_valid_.load()), header.get_buffer(), length_header::size);
             pushed_valid_.store(pushed_.load());
             std::atomic_thread_fence(std::memory_order_acq_rel);
-            if (wait_for_read_) {
-                boost::interprocess::scoped_lock lock(m_mutex_);
-                c_empty_.notify_one();
-            }
+            envelope_->notify_record_arrival();
             continued_ = false;
         }
 
@@ -628,10 +606,10 @@ public:
         [[nodiscard]] std::size_t stored_valid() const { return (pushed_valid_.load() - poped_.load()); }
 
         boost::interprocess::managed_shared_memory* managed_shm_ptr_{};  // used by server only
-        std::atomic_ulong pushed_valid_{0};
-        std::atomic_bool closed_{};  // written by client, read by server
-        bool continued_{};  // used by server only
-        unidirectional_simple_wires* envelope_{};
+        std::atomic_ulong pushed_valid_{0};                              // used by server only
+        std::atomic_bool closed_{};                                      // written by client, read by server
+        bool continued_{};                                               // used by server only
+        unidirectional_simple_wires* envelope_{};                        // used by server only
     };
 
 
@@ -704,6 +682,10 @@ public:
         count_using_--;
     }
 
+    /**
+     * @brief search a wire that has record sent by the server
+     *  used by clinet
+     */
     unidirectional_simple_wire* active_wire(std::int64_t timeout = 0) {
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
@@ -711,46 +693,40 @@ public:
                     return &wire;
                 }
             }
-            if (timeout <= 0) {
+            {
                 boost::interprocess::scoped_lock lock(m_record_);
                 wait_for_record_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 unidirectional_simple_wire* active_wire = nullptr;
-                c_record_.wait(lock,
-                               [this, &active_wire](){
-                                   for (auto&& wire: unidirectional_simple_wires_) {
-                                       if (wire.has_record()) {
-                                           active_wire = &wire;
-                                           return true;
+                if (timeout <= 0) {
+                    c_record_.wait(lock,
+                                   [this, &active_wire](){
+                                       for (auto&& wire: unidirectional_simple_wires_) {
+                                           if (wire.has_record()) {
+                                               active_wire = &wire;
+                                               return true;
+                                           }
                                        }
-                                   }
-                                   return is_eor();
-                               });
-                wait_for_record_ = false;
-                if (active_wire != nullptr) {
-                    return active_wire;
-                }
-            } else {
-                boost::interprocess::scoped_lock lock(m_record_);
-                wait_for_record_ = true;
-                std::atomic_thread_fence(std::memory_order_acq_rel);
-                unidirectional_simple_wire* active_wire = nullptr;
-                if (!c_record_.timed_wait(lock,
+                                       return is_eor();
+                                   });
+                } else {
+                    if (!c_record_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                                boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+                                              boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
 #else
-                                                boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
+                                              boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
 #endif
-                                          [this, &active_wire](){
-                                              for (auto&& wire: unidirectional_simple_wires_) {
-                                                  if (wire.has_record()) {
-                                                      active_wire = &wire;
-                                                      return true;
+                                              [this, &active_wire](){
+                                                  for (auto&& wire: unidirectional_simple_wires_) {
+                                                      if (wire.has_record()) {
+                                                          active_wire = &wire;
+                                                          return true;
+                                                      }
                                                   }
-                                              }
-                                              return is_eor();
-                                          })) {
-                    throw std::runtime_error("record has not been received within the specified time");
+                                                  return is_eor();
+                                              })) {
+                        throw std::runtime_error("record has not been received within the specified time");
+                    }
                 }
                 wait_for_record_ = false;
                 if (active_wire != nullptr) {
@@ -764,6 +740,7 @@ public:
 
     /**
      * @brief notify that the client does not read record any more
+     *  used by clinet
      */
     void set_closed() noexcept {
         for (auto&& wire: unidirectional_simple_wires_) {
@@ -771,10 +748,16 @@ public:
         }
         closed_ = true;
     }
-    [[nodiscard]] bool is_closed() const { return closed_; }
-
+    /**
+     * @brief returns that the client has closed the result set wire
+     *  used by server
+     */
+    [[nodiscard]] bool is_closed() const {
+        return closed_;
+    }
     /**
      * @brief mark the end of the result set by the sql service
+     *  used by server
      */
     void set_eor() noexcept {
         eor_ = true;
@@ -784,7 +767,13 @@ public:
             c_record_.notify_one();
         }
     }
-    [[nodiscard]] bool is_eor() const { return eor_; }
+    /**
+     * @brief returns that the server has marked the end of the result set
+     *  used by client
+     */
+    [[nodiscard]] bool is_eor() const {
+        return eor_;
+    }
 
 private:
     std::size_t search_free_wire() noexcept {
@@ -811,6 +800,7 @@ private:
 
     /**
      * @brief notify the arrival of a record
+     *  used by server
      */
     void notify_record_arrival() noexcept {
         if (wait_for_record_) {
