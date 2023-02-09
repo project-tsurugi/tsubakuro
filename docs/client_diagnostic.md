@@ -48,7 +48,7 @@ tsubakuroがサーバに実行要求を送信するときに作成され、サ�
 * プリペアードステートメントID
 
 #### リザルトセット
-* 属するトランザクション
+* 属する~~トランザクション~~ セッション（tsubakuroではリザルトセットもセッションが管理）
 * リザルトセット名
 
 ### 通信状況
@@ -65,7 +65,7 @@ tsubakuroがサーバに実行要求を送信するときに作成され、サ�
 ## 出力方法（暫定）
 ここでは、tsubakuroから稼働情報を取得して表示できることが確認できた方法を示す。
 なお、稼働情報はJMXのMBeanを経由してテキスト形式で取得可能としているので、
-稼働情報を取得する方法は、ここで示した方法に限定されるものではない。
+稼働情報の取得は、ここで示した方法に限定されるものではない。
 
 ### tsubakuroを使うアプリケーションの起動
 jvm（javaコマンド）の起動オプションに下記を加える。
@@ -75,3 +75,25 @@ jvm（javaコマンド）の起動オプションに下記を加える。
 
 ### 稼働情報の表示
 tsubakuro-examplesのcom.tsurugidb.tsubakuro.examples.diagnostics.JMXClientを実行する。
+
+
+## 実装
+### MBeanと各種プロパティ名等
+tsubakuroの稼働情報はInterface SessionInfoMBean（下記に全体）を実装したSessionInfo（抜粋）からStringとして取得する。
+```
+package com.tsurugidb.tsubakuro.diagnostic.common;
+
+public interface SessionInfoMBean {
+    String getSessionInfo();
+}
+```
+
+```
+package com.tsurugidb.tsubakuro.diagnostic.common;
+
+public class SessionInfo implements SessionInfoMBean {
+    public String getSessionInfo() {
+        ...
+    }
+}
+```

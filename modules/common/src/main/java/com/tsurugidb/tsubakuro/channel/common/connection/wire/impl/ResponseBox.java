@@ -7,6 +7,9 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
  * ResponseBox type.
@@ -32,6 +35,7 @@ public class ResponseBox {
         var slotEntry = queues.pollSlot();
         if (Objects.nonNull(slotEntry)) {
             slotEntry.channelResponse(channelResponse);
+            slotEntry.requestMessage(payload);
             link.send(slotEntry.slot(), header, payload, channelResponse);
         } else {
             queues.addRequest(new RequestEntry(channelResponse, header, payload));
@@ -47,6 +51,8 @@ public class ResponseBox {
         slotEntry.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
         var queuedRequest = queues.pollRequest();
         if (Objects.nonNull(queuedRequest)) {
+            slotEntry.channelResponse(queuedRequest.channelResponse());
+            slotEntry.requestMessage(queuedRequest.payload());
             link.send(slot, queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
         } else {
             queues.addSlot(slotEntry);
@@ -76,11 +82,17 @@ public class ResponseBox {
 
     // for diagnostic
     String diagnosticInfo() {
-        String diagnosticInfo = "+" + this.toString() + System.getProperty("line.separator");
-        for (var e : boxes) {
-            var cr = e.channelResponse();
+        String diagnosticInfo = " +Requests in processing" + System.getProperty("line.separator");
+        for (var et : boxes) {
+            var cr = et.channelResponse();
             if (Objects.nonNull(cr)) {
-                diagnosticInfo += cr.diagnosticInfo();
+                var rqbb = ByteBuffer.wrap(et.requestMessage());
+                try {
+                    FrameworkRequest.Header.parseDelimitedFrom(new ByteBufferInputStream(rqbb));
+                    diagnosticInfo += "  +request in processing: " + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(rqbb)) + cr.diagnosticInfo() + System.getProperty("line.separator");
+                } catch (IOException ex) {
+                    diagnosticInfo += "  +request in processing: " + ex + System.getProperty("line.separator");
+                }
             }
         }
         return diagnosticInfo;

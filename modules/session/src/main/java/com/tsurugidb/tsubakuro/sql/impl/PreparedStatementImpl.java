@@ -91,6 +91,9 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     // for diagnostic
     String diagnosticInfo() {
-        return " +" + this.toString() + System.getProperty("line.separator");
+        if (!closed.get()) {
+            return " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
+        }
+        return " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + " (closed)" + System.getProperty("line.separator");
     }
 }

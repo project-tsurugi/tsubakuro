@@ -55,6 +55,7 @@ class Queues {
                 }
                 var channelResponse = requestEntry.channelResponse();
                 slotEntry.channelResponse(channelResponse);
+                slotEntry.requestMessage(requestEntry.payload());
                 link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
             } 
         } finally {

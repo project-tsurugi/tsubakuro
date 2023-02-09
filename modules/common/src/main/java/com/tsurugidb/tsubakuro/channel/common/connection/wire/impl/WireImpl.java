@@ -127,4 +127,8 @@ public class WireImpl implements Wire {
     public String diagnosticInfo() {
         return responseBox.diagnosticInfo();
     }
+
+    public long sessionID() {
+        return sessionID;
+    }
 }
