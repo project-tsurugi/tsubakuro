@@ -49,9 +49,13 @@ public class ResultSetImpl implements ResultSet {
 
     private final AtomicBoolean tested = new AtomicBoolean();
 
+    private final String resultSetName;
+
     private long timeout = 0;
 
     private TimeUnit unit;
+
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
      * Tests if the response is valid.
@@ -92,16 +96,19 @@ public class ResultSetImpl implements ResultSet {
             @Nonnull ResultSetMetadata metadata,
             @Nonnull RelationCursor cursor,
             @Nonnull Response response,
-            @Nonnull ResponseTester checker) {
+            @Nonnull ResponseTester checker,
+            @Nonnull String resultSetName) {
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(cursor);
         Objects.requireNonNull(response);
         Objects.requireNonNull(checker);
+        Objects.requireNonNull(resultSetName);
         this.closeHandler = closeHandler;
         this.metadata = metadata;
         this.cursor = cursor;
         this.response = response;
         this.tester = checker;
+        this.resultSetName = resultSetName;
     }
 
     @Override
@@ -383,32 +390,37 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (Objects.nonNull(response)) {
-            try (response) {
-                try {
-                    cursor.close();
-                } catch (Exception e) {
-                    // suppresses exception while closing the sub-response
-                    LOG.warn("error occurred while closing result set", e);
+        if (!closed.getAndSet(true)) {
+            if (Objects.nonNull(response)) {
+                try (response) {
+                    try {
+                        cursor.close();
+                    } catch (Exception e) {
+                        // suppresses exception while closing the sub-response
+                        LOG.warn("error occurred while closing result set", e);
+                    }
+
+                    // check main response whether to finish the request normally
+                    if (tested.compareAndSet(false, true)) {
+                        tester.test(response, timeout, unit);
+                    }
+                } catch (TimeoutException e) {
+                    throw new ResponseTimeoutException(e);
                 }
-    
-                // check main response whether to finish the request normally
-                if (tested.compareAndSet(false, true)) {
-                    tester.test(response, timeout, unit);
-                }
-            } catch (TimeoutException e) {
-                throw new ResponseTimeoutException(e);
             }
-        }
-        if (Objects.nonNull(closeHandler)) {
-            Lang.suppress(
-                    e -> LOG.warn("error occurred while collecting garbage", e),
-                    () -> closeHandler.onClosed(this));
+            if (Objects.nonNull(closeHandler)) {
+                Lang.suppress(
+                        e -> LOG.warn("error occurred while collecting garbage", e),
+                        () -> closeHandler.onClosed(this));
+            }
         }
     }
 
     // for diagnostic
     String diagnosticInfo() {
-        return " +" + this.toString() + System.getProperty("line.separator");
+        if (!closed.get()) {
+            return " +ResulSet name = " + resultSetName + System.getProperty("line.separator");
+        }
+        return " +ResulSet name = " + resultSetName + " (closed)" + System.getProperty("line.separator");
     }
 }

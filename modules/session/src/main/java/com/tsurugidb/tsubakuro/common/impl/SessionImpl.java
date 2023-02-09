@@ -34,6 +34,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 
 /**
  * SessionImpl type.
@@ -252,7 +253,11 @@ public class SessionImpl implements Session {
         }
     }
     public String diagnosticInfo() {
-        String diagnosticInfo = this.toString() + System.getProperty("line.separator");
+        String sessionID = "";
+        if (wire instanceof WireImpl) {
+            sessionID = Long.valueOf(((WireImpl) wire).sessionID()).toString();
+        }
+        String diagnosticInfo = "session " + sessionID + System.getProperty("line.separator");
 
         var serviceInfoAction = new ServiceInfoAction();
         services.forEach(serviceInfoAction);

@@ -495,7 +495,11 @@ public class SqlServiceStub implements SqlService {
                 var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
                 var cursor = new ValueInputBackedRelationCursor(new StreamBackedValueInput(dataInput));
-                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this);
+                String resultSetName = "";
+                if (response instanceof ChannelResponse) {
+                    resultSetName = ((ChannelResponse) response).resultSetName();
+                }
+                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName);
                 resultSetImpl.setCloseTimeout(closeTimeout);
                 return resources.register(resultSetImpl);
             }
@@ -678,12 +682,14 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public void accept(ServerResource r) {
-            if (r instanceof TransactionImpl) {
-                diagnosticInfo += ((TransactionImpl) r).diagnosticInfo();
-            } else if (r instanceof PreparedStatementImpl) {
-                diagnosticInfo += ((PreparedStatementImpl) r).diagnosticInfo();
-            } else if (r instanceof ResultSetImpl) {
-                diagnosticInfo += ((ResultSetImpl) r).diagnosticInfo();
+            if (Objects.nonNull(r)) {
+                if (r instanceof TransactionImpl) {
+                    diagnosticInfo += ((TransactionImpl) r).diagnosticInfo();
+                } else if (r instanceof PreparedStatementImpl) {
+                    diagnosticInfo += ((PreparedStatementImpl) r).diagnosticInfo();
+                } else if (r instanceof ResultSetImpl) {
+                    diagnosticInfo += ((ResultSetImpl) r).diagnosticInfo();
+                }
             }
         }
         public String diagnosticInfo() {
@@ -691,10 +697,8 @@ public class SqlServiceStub implements SqlService {
         }
     }
     public String diagnosticInfo() {
-        String diagnosticInfo = "+" + this.toString() + System.getProperty("line.separator");
-
         var resourceInfoAction = new ResourceInfoAction();
         resources.forEach(resourceInfoAction);
-        return diagnosticInfo + resourceInfoAction.diagnosticInfo();
+        return resourceInfoAction.diagnosticInfo();
     }
 }

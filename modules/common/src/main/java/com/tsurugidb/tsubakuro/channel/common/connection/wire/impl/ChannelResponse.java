@@ -37,6 +37,7 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean mainResponseGotton = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition noSet = lock.newCondition();
+    private String resultSetName = "";  // for diagnostic
 
     /**
      * Creates a new instance
@@ -232,7 +233,8 @@ public class ChannelResponse implements Response {
         try {
             var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
             var detailResponse = sqlResponse.getExecuteQuery();
-            resultSetWire.connect(detailResponse.getName());
+            resultSetName = detailResponse.getName();
+            resultSetWire.connect(resultSetName);
 
             metadata.set(detailResponse);
             resultSet.set(resultSetWire);
@@ -252,7 +254,18 @@ public class ChannelResponse implements Response {
     }
 
     // for diagnostic
+    public String resultSetName() {
+        return resultSetName;
+    }
+
     public String diagnosticInfo() {
-        return "  +" + this.toString() + System.getProperty("line.separator");
+        String diagnosticInfo = " response status: ";
+        if (!resultSetName.isEmpty()) {
+            diagnosticInfo += "resultSetWire connected, Name = ";
+            diagnosticInfo += resultSetName;
+        } else {
+            diagnosticInfo += "waiting for some response message";
+        }
+        return diagnosticInfo;
     }
 }
