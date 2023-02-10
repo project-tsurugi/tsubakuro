@@ -124,11 +124,16 @@ public class WireImpl implements Wire {
     }
 
     // for diagnostic
-    public String diagnosticInfo() {
-        return responseBox.diagnosticInfo();
-    }
-
     public long sessionID() {
         return sessionID;
+    }
+    public String diagnosticInfo() {
+        String diagnosticInfo = responseBox.diagnosticInfo();
+        if (!diagnosticInfo.isEmpty()) {
+            String rv = " +Requests in processing" + System.getProperty("line.separator");
+            rv += diagnosticInfo;
+            return rv;
+        }
+        return "";
     }
 }
