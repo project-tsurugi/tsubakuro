@@ -82,7 +82,7 @@ public class ResponseBox {
 
     // for diagnostic
     String diagnosticInfo() {
-        String diagnosticInfo = " +Requests in processing" + System.getProperty("line.separator");
+        String diagnosticInfo = "";
         for (var et : boxes) {
             var cr = et.channelResponse();
             if (Objects.nonNull(cr)) {
