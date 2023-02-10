@@ -7,7 +7,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
@@ -86,12 +85,10 @@ public class ResponseBox {
         for (var et : boxes) {
             var cr = et.channelResponse();
             if (Objects.nonNull(cr)) {
-                var rqbb = ByteBuffer.wrap(et.requestMessage());
                 try {
-                    FrameworkRequest.Header.parseDelimitedFrom(new ByteBufferInputStream(rqbb));
-                    diagnosticInfo += "  +request in processing: " + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(rqbb)) + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    diagnosticInfo += "  +request in processing: " + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
                 } catch (IOException ex) {
-                    diagnosticInfo += "  +request in processing: " + ex + System.getProperty("line.separator");
+                    diagnosticInfo += "  +request in processing: (error) " + ex + System.getProperty("line.separator");
                 }
             }
         }

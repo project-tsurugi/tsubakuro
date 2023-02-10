@@ -279,8 +279,8 @@ public class TransactionImpl implements Transaction {
     // for diagnostic
     String diagnosticInfo() {
         if (!cleanuped.get()) {
-            return " +Transaction " + transaction.getTransactionHandle().getHandle() + System.getProperty("line.separator");
+            return " +Transaction " + transaction.getTransactionId().getId() + System.getProperty("line.separator");
         }
-        return " +Transaction " + transaction.getTransactionHandle().getHandle() + " closed" + System.getProperty("line.separator");
+        return " +Transaction " + transaction.getTransactionId().getId() + " closed" + System.getProperty("line.separator");
     }
 }
