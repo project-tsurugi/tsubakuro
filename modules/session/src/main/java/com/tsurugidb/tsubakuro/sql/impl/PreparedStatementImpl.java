@@ -94,6 +94,6 @@ public class PreparedStatementImpl implements PreparedStatement {
         if (!closed.get()) {
             return " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
         }
-        return " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + " (closed)" + System.getProperty("line.separator");
+        return "";
     }
 }

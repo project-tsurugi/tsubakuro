@@ -421,6 +421,6 @@ public class ResultSetImpl implements ResultSet {
         if (!closed.get()) {
             return " +ResulSet name = " + resultSetName + System.getProperty("line.separator");
         }
-        return " +ResulSet name = " + resultSetName + " (closed)" + System.getProperty("line.separator");
+        return "";
     }
 }
