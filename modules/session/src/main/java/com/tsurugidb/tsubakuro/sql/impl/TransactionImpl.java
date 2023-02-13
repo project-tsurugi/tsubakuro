@@ -279,7 +279,7 @@ public class TransactionImpl implements Transaction {
     // for diagnostic
     String diagnosticInfo() {
         if (!cleanuped.get()) {
-            return " +Transaction " + transaction.getTransactionId().getId() + System.getProperty("line.separator");
+            return " +Transaction (universal ID = " + transaction.getTransactionId().getId() + ", handle = " + transaction.getTransactionHandle().getHandle() + ")" + System.getProperty("line.separator");
         }
         return "";
     }
