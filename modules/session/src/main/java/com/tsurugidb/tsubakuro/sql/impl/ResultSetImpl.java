@@ -18,6 +18,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -56,6 +57,8 @@ public class ResultSetImpl implements ResultSet {
     private TimeUnit unit;
 
     private final AtomicBoolean closed = new AtomicBoolean();
+
+    private final Message request;
 
     /**
      * Tests if the response is valid.
@@ -97,18 +100,21 @@ public class ResultSetImpl implements ResultSet {
             @Nonnull RelationCursor cursor,
             @Nonnull Response response,
             @Nonnull ResponseTester checker,
-            @Nonnull String resultSetName) {
+            @Nonnull String resultSetName,
+            @Nonnull Message request) {
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(cursor);
         Objects.requireNonNull(response);
         Objects.requireNonNull(checker);
         Objects.requireNonNull(resultSetName);
+        Objects.requireNonNull(request);
         this.closeHandler = closeHandler;
         this.metadata = metadata;
         this.cursor = cursor;
         this.response = response;
         this.tester = checker;
         this.resultSetName = resultSetName;
+        this.request = request;
     }
 
     @Override
@@ -419,7 +425,10 @@ public class ResultSetImpl implements ResultSet {
     // for diagnostic
     String diagnosticInfo() {
         if (!closed.get()) {
-            return " +ResulSet name = " + resultSetName + System.getProperty("line.separator");
+            return " +ResulSet name = " + resultSetName + System.getProperty("line.separator")
+                + "   ==== request from here ====" + System.getProperty("line.separator")
+                + request.toString()
+                + "   ==== request to here ====" + System.getProperty("line.separator");
         }
         return "";
     }
