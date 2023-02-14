@@ -430,8 +430,11 @@ public class SqlServiceStub implements SqlService {
     }
 
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
-        QueryProcessor() {
+        Message request;
+
+        QueryProcessor(Message request) {
             super(resources);
+            this.request = request;
         }
 
         @Override
@@ -499,7 +502,7 @@ public class SqlServiceStub implements SqlService {
                 if (response instanceof ChannelResponse) {
                     resultSetName = ((ChannelResponse) response).resultSetName();
                 }
-                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName);
+                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName, request);
                 resultSetImpl.setCloseTimeout(closeTimeout);
                 return resources.register(resultSetImpl);
             }
@@ -521,7 +524,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecuteQuery(request)
                     .build()),
-                    new QueryProcessor());
+                    new QueryProcessor(request));
 // FIXME  use backgroundResponseProcessor
 //                new QueryProcessor(session.getWire()),
 //                true);
@@ -538,7 +541,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecutePreparedQuery(request)
                     .build()),
-                    new QueryProcessor());
+                    new QueryProcessor(request));
 // FIXME  use backgroundResponseProcessor
 //                new QueryProcessor(session.getWire()),
 //                true);
@@ -591,7 +594,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setExecuteDump(request)
                     .build()),
-                    new QueryProcessor());
+                    new QueryProcessor(request));
     }
 
     static class LoadProcessor implements MainResponseProcessor<Void> {
