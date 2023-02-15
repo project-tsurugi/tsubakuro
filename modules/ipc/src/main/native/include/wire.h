@@ -931,7 +931,7 @@ public:
         element& operator = (element const&) = delete;
         element& operator = (element&& e) noexcept { session_id_ = e.session_id_; return *this; }
 
-        void session_id(std::size_t session_id) {
+        void accept(std::size_t session_id) {
             session_id_ = session_id;
             std::atomic_thread_fence(std::memory_order_acq_rel);
             {
@@ -939,7 +939,7 @@ public:
                 c_accepted_.notify_one();
             }
         }
-        [[nodiscard]] std::size_t session_id(std::int64_t timeout = 0) {
+        [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (timeout <= 0) {
                 boost::interprocess::scoped_lock lock(m_accepted_);
@@ -996,9 +996,8 @@ public:
     }
     std::size_t wait(std::size_t id, std::int64_t timeout = 0) {
         auto& e = v_requested_.at(id);
-        auto rv = e.session_id(timeout);
+        auto rv = e.wait(timeout);
         e.reuse();
-        q_free_.push(id);
         return rv;
     }
     bool check(std::size_t id) {
@@ -1009,10 +1008,14 @@ public:
         q_requested_.wait(terminate_);
         return ++session_id_;
     }
-    void accept(std::size_t session_id) {
+    std::size_t accept(std::size_t session_id) {
         std::size_t id = q_requested_.pop();
         auto& request = v_requested_.at(id);
-        request.session_id(session_id);
+        request.accept(session_id);
+        return id;
+    }
+    void disconnect(std::size_t id) {
+        q_free_.push(id);
     }
 
     // for terminate
