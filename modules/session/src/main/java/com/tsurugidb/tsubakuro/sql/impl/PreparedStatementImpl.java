@@ -29,17 +29,27 @@ public class PreparedStatementImpl implements PreparedStatement {
     private long timeout = 0;
     private TimeUnit unit;
     final SqlCommon.PreparedStatement handle;
+    private final SqlRequest.Prepare request;
 
     /**
      * Creates a new instance.
      * @param handle the SqlCommon.PreparedStatement
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
+     * @param request the request origin of the PreparedStatement
      */
-    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SqlService service, ServerResource.CloseHandler closeHandler) {
+    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SqlService service, ServerResource.CloseHandler closeHandler, SqlRequest.Prepare request) {
         this.handle = handle;
         this.service = service;
         this.closeHandler = closeHandler;
+        this.request = request;
+    }
+
+    /**
+     * Creates a new instance without service, closeHandle, request for test purpose.
+     */
+    public PreparedStatementImpl(SqlCommon.PreparedStatement handle) {
+        this(handle, null, null, null);
     }
 
     @Override
@@ -92,7 +102,13 @@ public class PreparedStatementImpl implements PreparedStatement {
     // for diagnostic
     String diagnosticInfo() {
         if (!closed.get()) {
-            return " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
+            String rv = " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
+            if (Objects.nonNull(request)) {
+                rv += "   ==== request from here ====" + System.getProperty("line.separator");
+                rv += request.toString();
+                rv += "   ==== request to here ====" + System.getProperty("line.separator");
+            }
+            return rv;
         }
         return "";
     }
