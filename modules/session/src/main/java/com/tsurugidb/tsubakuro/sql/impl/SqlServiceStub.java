@@ -221,6 +221,11 @@ public class SqlServiceStub implements SqlService {
 
     class StatementPrepareProcessor implements MainResponseProcessor<PreparedStatement> {
         private final AtomicReference<SqlResponse.Prepare> detailResponseCache = new AtomicReference<>();
+        private final SqlRequest.Prepare request;
+
+        StatementPrepareProcessor(SqlRequest.Prepare request) {
+            this.request = request;
+        }
 
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -238,7 +243,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
-            var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources);
+            var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
             return resources.register(preparedStatementImpl);
         }
@@ -254,7 +259,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setPrepare(request)
                     .build()),
-                new StatementPrepareProcessor().asResponseProcessor());
+                new StatementPrepareProcessor(request).asResponseProcessor());
     }
 
     static class StatementDisposeProcessor implements MainResponseProcessor<Void> {
