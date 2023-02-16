@@ -616,12 +616,12 @@ public:
     /**
      * @brief unidirectional_simple_wires constructer
      */
-    unidirectional_simple_wires(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t count)
-        : managed_shm_ptr_(managed_shm_ptr), unidirectional_simple_wires_(count, managed_shm_ptr->get_segment_manager()) {
+    unidirectional_simple_wires(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t count, std::size_t buffer_size)
+        : managed_shm_ptr_(managed_shm_ptr), unidirectional_simple_wires_(count, managed_shm_ptr->get_segment_manager()), buffer_size_(buffer_size) {
         for (auto&& wire: unidirectional_simple_wires_) {
             wire.set_environments(this, managed_shm_ptr);
         }
-        reserved_ = static_cast<char*>(managed_shm_ptr->allocate_aligned(wire_size, Alignment));
+        reserved_ = static_cast<char*>(managed_shm_ptr->allocate_aligned(buffer_size_, Alignment));
         if (!reserved_) {
             throw std::runtime_error("cannot allocate shared memory");
         }
@@ -649,7 +649,7 @@ public:
     unidirectional_simple_wire* acquire() {
         if (count_using_ == 0) {
             count_using_ = next_index_ = 1;
-            unidirectional_simple_wires_.at(0).attach_buffer(managed_shm_ptr_->get_handle_from_address(reserved_), wire_size);
+            unidirectional_simple_wires_.at(0).attach_buffer(managed_shm_ptr_->get_handle_from_address(reserved_), buffer_size_);
             reserved_ = nullptr;
             only_one_buffer_ = true;
             return &unidirectional_simple_wires_.at(0);
@@ -660,13 +660,13 @@ public:
             buffer = reserved_;
             reserved_ = nullptr;
         } else {
-            buffer = static_cast<char*>(managed_shm_ptr_->allocate_aligned(wire_size, Alignment));
+            buffer = static_cast<char*>(managed_shm_ptr_->allocate_aligned(buffer_size_, Alignment));
             if (!buffer) {
                 throw std::runtime_error("cannot allocate shared memory");
             }
         }
         auto index = search_free_wire();
-        unidirectional_simple_wires_.at(index).attach_buffer(managed_shm_ptr_->get_handle_from_address(buffer), wire_size);
+        unidirectional_simple_wires_.at(index).attach_buffer(managed_shm_ptr_->get_handle_from_address(buffer), buffer_size_);
         only_one_buffer_ = false;
         return &unidirectional_simple_wires_.at(index);
     }
@@ -809,12 +809,12 @@ private:
         }
     }
 
-    static constexpr std::size_t wire_size = (1<<16);  // 64K bytes (tentative)  //NOLINT
     static constexpr std::size_t Alignment = 64;
     using allocator = boost::interprocess::allocator<unidirectional_simple_wire, boost::interprocess::managed_shared_memory::segment_manager>;
 
     boost::interprocess::managed_shared_memory* managed_shm_ptr_;  // used by server only
     std::vector<unidirectional_simple_wire, allocator> unidirectional_simple_wires_;
+    std::size_t buffer_size_;
 
     char* reserved_{};
     std::size_t count_using_{};

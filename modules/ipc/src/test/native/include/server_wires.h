@@ -25,7 +25,8 @@ class server_wire_container
     static constexpr std::size_t resultset_wire_size = (1<<16);  // 64K bytes (tentative)
     static constexpr std::size_t request_buffer_size = (1<<10);
     static constexpr std::size_t response_buffer_size = (1<<16);
-    
+    static constexpr std::size_t resultset_buffer_size = (1<<17); //  128K bytes NOLINT
+
 public:
     // resultset_wires_container
     class resultset_wires_container {
@@ -33,7 +34,7 @@ public:
         resultset_wires_container(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view name, std::size_t count)
             : managed_shm_ptr_(managed_shm_ptr), rsw_name_(name) {
             managed_shm_ptr_->destroy<shm_resultset_wires>(rsw_name_.c_str());
-            shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count);
+            shm_resultset_wires_ = managed_shm_ptr_->construct<shm_resultset_wires>(rsw_name_.c_str())(managed_shm_ptr_, count, resultset_buffer_size);
             current_wire_ = shm_resultset_wires_->acquire();
         }
 
