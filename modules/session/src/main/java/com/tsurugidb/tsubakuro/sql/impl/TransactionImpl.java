@@ -36,6 +36,7 @@ public class TransactionImpl implements Transaction {
 
     private final SqlResponse.Begin.Success transaction;
     private final AtomicBoolean cleanuped = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
     private final SqlService service;
@@ -212,10 +213,16 @@ public class TransactionImpl implements Transaction {
         if (cleanuped.getAndSet(true)) {
             throw new IOException("transaction already closed");
         }
-        return service.send(SqlRequest.Commit.newBuilder()
+        var rv = service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
                 .build());
+        try {
+            close();
+        } catch (ServerException | InterruptedException e) {
+            throw new IOException(e);
+        }
+        return rv;
     }
 
     @Override
@@ -251,7 +258,7 @@ public class TransactionImpl implements Transaction {
                 LOG.warn("timeout occurred in the transaction disposal", e);
             }
         }
-        if (Objects.nonNull(closeHandler)) {
+        if (!closed.getAndSet(true) && Objects.nonNull(closeHandler)) {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
@@ -271,9 +278,15 @@ public class TransactionImpl implements Transaction {
     }
 
     private FutureResponse<Void> submitRollback() throws IOException {
-        return service.send(SqlRequest.Rollback.newBuilder()
+        var rv = service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
+        try {
+            close();
+        } catch (ServerException | InterruptedException e) {
+            throw new IOException(e);
+        }
+        return rv;
     }
 
     // for diagnostic
