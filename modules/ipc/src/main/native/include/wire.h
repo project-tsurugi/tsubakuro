@@ -848,8 +848,10 @@ public:
         }
         if (flock(fd, LOCK_EX | LOCK_NB) == 0) {  // NOLINT
             flock(fd, LOCK_UN);
+            close(fd);
             return false;
         }
+        close(fd);
         return true;
     }
 
