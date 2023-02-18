@@ -108,82 +108,90 @@ public final class StreamLink extends Link {
     }
 
     private boolean pull() {
+        LinkMessage message = null;
+        boolean intentionalClose = true;
         try {
-            var message = receive();
-            if (Objects.isNull(message)) {
-                responseBox.close();
-                resultSetBox.close();
-                lock.lock();
-                try {
-                    condition.signal();
-                } finally {
-                    lock.unlock();
-                }
-                return false;
-            }
-
-            byte info = message.getInfo();
-            int slot = message.getSlot();
-            switch (info) {
-
-            case RESPONSE_SESSION_PAYLOAD:
-                LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-                responseBox.push(slot, message.getBytes());
-                return true;
-    
-            case RESPONSE_SESSION_BODYHEAD:
-                LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
-                responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
-                return true;
-
-            case RESPONSE_RESULT_SET_PAYLOAD:
-                byte writer = message.getWriter();
-                LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
-                resultSetBox.push(slot, writer, message.getBytes());
-                return true;
-
-            case RESPONSE_RESULT_SET_HELLO:
-                LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
-                resultSetBox.pushHello(message.getString(), slot);
-                return true;
-
-            case RESPONSE_RESULT_SET_BYE:
-                LOG.trace("receive RESPONSE_RESULT_SET_BYE");
-                try {
-                    send(REQUEST_RESULT_SET_BYE_OK, slot);
-                } catch (IOException e) {
-                    resultSetBox.pushBye(slot, e);
-                    return false;
-                }
-                resultSetBox.pushBye(slot);
-                return true;
-
-            case RESPONSE_SESSION_HELLO_OK:
-            case RESPONSE_SESSION_HELLO_NG:
-                LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-                lock.lock();
-                try {
-                    helloResponse.set(message);
-                    condition.signal();
-                } finally {
-                    lock.unlock();
-                }
-                return true;
-
-            case RESPONSE_SESSION_BYE_OK:
-                LOG.trace("receive RESPONSE_SESSION_BYE_OK");
-                synchronized (outStream) {
-                    socket.close();
-                }
-                return false;
-
-            default:
-                throw new IOException("invalid info in the response");
-
-            }
+            message = receive();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            intentionalClose = false;
         }
+
+        if (Objects.nonNull(message)) {
+            try {
+                byte info = message.getInfo();
+                int slot = message.getSlot();
+                switch (info) {
+    
+                case RESPONSE_SESSION_PAYLOAD:
+                    LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
+                    responseBox.push(slot, message.getBytes());
+                    return true;
+        
+                case RESPONSE_SESSION_BODYHEAD:
+                    LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
+                    responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
+                    return true;
+    
+                case RESPONSE_RESULT_SET_PAYLOAD:
+                    byte writer = message.getWriter();
+                    LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
+                    resultSetBox.push(slot, writer, message.getBytes());
+                    return true;
+    
+                case RESPONSE_RESULT_SET_HELLO:
+                    LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
+                    resultSetBox.pushHello(message.getString(), slot);
+                    return true;
+    
+                case RESPONSE_RESULT_SET_BYE:
+                    LOG.trace("receive RESPONSE_RESULT_SET_BYE");
+                    try {
+                        send(REQUEST_RESULT_SET_BYE_OK, slot);
+                    } catch (IOException e) {
+                        resultSetBox.pushBye(slot, e);
+                        return false;
+                    }
+                    resultSetBox.pushBye(slot);
+                    return true;
+    
+                case RESPONSE_SESSION_HELLO_OK:
+                case RESPONSE_SESSION_HELLO_NG:
+                    LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                    lock.lock();
+                    try {
+                        helloResponse.set(message);
+                        condition.signal();
+                    } finally {
+                        lock.unlock();
+                    }
+                    return true;
+    
+                case RESPONSE_SESSION_BYE_OK:
+                    LOG.trace("receive RESPONSE_SESSION_BYE_OK");
+                    synchronized (outStream) {
+                        socket.close();
+                    }
+                    return false;
+    
+                default:
+                    throw new IOException("invalid info in the response");
+    
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        // link is closed
+        responseBox.doClose(intentionalClose);
+        resultSetBox.close();
+        lock.lock();
+        try {
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+        return false;
     }
 
     public ResultSetBox getResultSetBox() {
@@ -283,7 +291,7 @@ public final class StreamLink extends Link {
             return new LinkMessage(info, bytes, slot, writer);
         } catch (SocketException | EOFException e) {  // imply session close
             socketError.set(true);
-            return null;
+            throw new IOException(e);
         }
     }
 

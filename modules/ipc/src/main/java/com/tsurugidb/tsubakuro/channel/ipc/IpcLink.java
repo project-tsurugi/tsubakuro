@@ -87,39 +87,45 @@ public final class IpcLink extends Link {
     }
 
     private boolean pull() {
+        LinkMessage message = null;
+        boolean intentionalClose = true;
         try {
-            var message = receive();
-
-            if (Objects.isNull(message)) {
-                responseBox.close();
-                return false;
-            }
-            if (message.getInfo() != RESPONSE_NULL) {
-                if (message.getInfo() == RESPONSE_BODYHEAD) {
-                    responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
-                } else {
-                    responseBox.push(message.getSlot(), message.getBytes());
-                }
-                return true;
-            }
-            return false;
+            message = receive();
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            intentionalClose = false;
         }
+
+        if (Objects.nonNull(message)) {
+            try {
+                if (message.getInfo() != RESPONSE_NULL) {
+                    if (message.getInfo() == RESPONSE_BODYHEAD) {
+                        responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
+                    } else {
+                        responseBox.push(message.getSlot(), message.getBytes());
+                    }
+                    return true;
+                }
+                return false;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        // link is closed
+        if (!intentionalClose) {
+            serverDown.set(true);
+        }
+        responseBox.doClose(intentionalClose);
+        return false;
     }
 
-    private LinkMessage receive() {
-        try {
-            int slot = awaitNative(wireHandle);
-            if (slot >= 0) {
-                var info = (byte) getInfoNative(wireHandle);
-                return new LinkMessage(info, receiveNative(wireHandle), slot);
-            }
-            return null;
-        } catch (IOException e) {
-            serverDown.set(true);
-            return null;
+    private LinkMessage receive() throws IOException {
+        int slot = awaitNative(wireHandle);
+        if (slot >= 0) {
+            var info = (byte) getInfoNative(wireHandle);
+            return new LinkMessage(info, receiveNative(wireHandle), slot);
         }
+        return null;
     }
 
     @Override

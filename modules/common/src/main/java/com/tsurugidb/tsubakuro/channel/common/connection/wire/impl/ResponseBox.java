@@ -19,6 +19,7 @@ public class ResponseBox {
     private final Link link;
     private final Queues queues;
     private SlotEntry[] boxes = new SlotEntry[SIZE];
+    private boolean intentionalClose = false;
 
     public ResponseBox(@Nonnull Link link) {
         this.link = link;
@@ -66,11 +67,20 @@ public class ResponseBox {
         boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
     }
 
+    public void doClose(boolean ic) {
+        intentionalClose = ic;
+        close();
+    }
+
     public void close() {
         for (SlotEntry e : boxes) {
             var response = e.channelResponse();
             if (Objects.nonNull(response)) {
-                response.setMainResponse(new IOException("Server crashed"));
+                if (intentionalClose) {
+                    response.setMainResponse(new IOException("The wire was closed before receiving a response to this request"));
+                } else {
+                    response.setMainResponse(new IOException("Server crashed"));
+                }
             }
         }
     }
