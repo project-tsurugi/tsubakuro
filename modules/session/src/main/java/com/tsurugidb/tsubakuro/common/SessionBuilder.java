@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.diagnostic.JMXAgent;
@@ -91,7 +92,7 @@ public final class SessionBuilder {
      */
     public Session create() throws IOException, ServerException, InterruptedException {
         try (var fWire = connector.connect(connectionCredential)) {
-            return  new SessionImpl(fWire.get());
+            return create0(fWire.get());
         }
     }
 
@@ -109,9 +110,27 @@ public final class SessionBuilder {
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
         try (var fWire = connector.connect(connectionCredential)) {
-            var sessionImpl = new SessionImpl(fWire.get(timeout, unit));
-            sessionInfo.addSession(sessionImpl);
-            return sessionImpl;
+            var session = create0(fWire.get(timeout, unit));
+            if (session instanceof SessionImpl) {
+                sessionInfo.addSession((SessionImpl) session);
+            }
+            return session;
+        }
+    }
+
+    private static Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
+        assert wire != null;
+        var session = new SessionImpl();
+        boolean green = false;
+        try {
+            session.connect(wire);
+            green = true;
+            return session;
+        } finally {
+            if (!green) {
+                session.close();
+                wire.close();
+            }
         }
     }
 }
