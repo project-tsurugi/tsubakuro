@@ -35,7 +35,6 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
-import com.tsurugidb.tsubakuro.datastore.impl.DatastoreServiceStub;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 
 /**
@@ -191,11 +190,7 @@ public class SessionImpl implements Session {
         @Override
         public void accept(ServerResource r)  {
             try {
-                if (r instanceof SqlServiceStub) {
-                    ((SqlServiceStub) r).close();
-                } else if (r instanceof DatastoreServiceStub) {
-                    ((DatastoreServiceStub) r).close();
-                }
+                r.close();
             } catch (ServerException | IOException | InterruptedException e) {
                 throw new UncheckedIOException(new IOException(e));
             }

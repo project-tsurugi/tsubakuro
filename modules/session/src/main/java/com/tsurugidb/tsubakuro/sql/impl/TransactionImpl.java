@@ -213,16 +213,10 @@ public class TransactionImpl implements Transaction {
         if (cleanuped.getAndSet(true)) {
             throw new IOException("transaction already closed");
         }
-        var rv = service.send(SqlRequest.Commit.newBuilder()
+        return service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
                 .build());
-        try {
-            close();
-        } catch (ServerException | InterruptedException e) {
-            throw new IOException(e);
-        }
-        return rv;
     }
 
     @Override
@@ -278,20 +272,14 @@ public class TransactionImpl implements Transaction {
     }
 
     private FutureResponse<Void> submitRollback() throws IOException {
-        var rv = service.send(SqlRequest.Rollback.newBuilder()
+        return service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
-        try {
-            close();
-        } catch (ServerException | InterruptedException e) {
-            throw new IOException(e);
-        }
-        return rv;
     }
 
     // for diagnostic
     String diagnosticInfo() {
-        if (!cleanuped.get()) {
+        if (!closed.get()) {
             return " +Transaction (universal ID = " + transaction.getTransactionId().getId() + ", handle = " + transaction.getTransactionHandle().getHandle() + ")" + System.getProperty("line.separator");
         }
         return "";
