@@ -96,7 +96,7 @@ public class ResponseBox {
             var cr = et.channelResponse();
             if (Objects.nonNull(cr)) {
                 try {
-                    diagnosticInfo += "  +request in processing: " + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
                 } catch (IOException ex) {
                     diagnosticInfo += "  +request in processing: (error) " + ex + System.getProperty("line.separator");
                 }

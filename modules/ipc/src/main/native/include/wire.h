@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 tsurugi project.
+ * Copyright 2019-2023 tsurugi project.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -474,29 +474,17 @@ public:
         unidirectional_simple_wire& operator = (unidirectional_simple_wire&&) = delete;
 
         /**
-         * @brief begin new record which will be flushed on commit.
-         *  used by server
-         */
-        void brand_new() {
-            std::size_t length = length_header::size;
-            if (length > room()) {
-                wait_to_resultset_write(length);
-            }
-            if (!closed_) {
-                pushed_.fetch_add(length);
-            }
-        }
-
-        /**
          * @brief push an unit of data into the wire.
          *  used by server
          */
         void write(const char* from, std::size_t length) {
-            if (!continued_) {
-                brand_new();
-                continued_ = true;
+            if (!closed_ && (length > 0)) {
+                if (!continued_) {
+                    brand_new();
+                    continued_ = true;
+                }
+                write(get_bip_address(managed_shm_ptr_), from, length);
             }
-            write(get_bip_address(managed_shm_ptr_), from, length);
         }
         /**
          * @brief mark the record boundary and notify the clinet of the record arrival.
@@ -506,6 +494,29 @@ public:
             if (continued_) {
                 flush(get_bip_address(managed_shm_ptr_));
             }
+        }
+        /**
+         * @brief check whether data of length can be written.
+         *  used by server
+         * @return true if the buffer has the room for data
+         */
+        [[nodiscard]] bool check_room(std::size_t length) noexcept {
+            if (continued_) {
+                return room() >= length;
+            }
+            return room() >= (length + length_header::size);
+        }
+        /**
+         * @brief wait data of length can be written.
+         *  used by server
+         * @return true if the buffer is closed by the client
+         */
+        [[nodiscard]] bool wait_room(std::size_t length) {
+            if (!continued_) {
+                length += length_header::size;
+            }
+            wait_to_resultset_write(length);
+            return closed_;
         }
 
         /**
@@ -563,14 +574,17 @@ public:
         }
 
     private:
-        void write(char* base, const char* from, std::size_t length) {
+        void brand_new() {
+            std::size_t length = length_header::size;
             if (length > room()) {
                 wait_to_resultset_write(length);
             }
-            if (!closed_) {
-                write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
-                pushed_.fetch_add(length);
-            }
+            pushed_.fetch_add(length);
+        }
+
+        void write(char* base, const char* from, std::size_t length) {
+            write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
+            pushed_.fetch_add(length);
         }
 
         void flush(char* base) noexcept {
