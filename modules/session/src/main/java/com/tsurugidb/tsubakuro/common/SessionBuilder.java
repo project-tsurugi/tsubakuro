@@ -14,6 +14,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.diagnostic.JMXAgent;
 import com.tsurugidb.tsubakuro.diagnostic.common.SessionInfo;
@@ -29,7 +30,7 @@ public final class SessionBuilder {
 
     private Credential connectionCredential = NullCredential.INSTANCE;
 
-    private SessionInfo sessionInfo;
+    private final SessionInfo sessionInfo;
 
     private SessionBuilder(Connector connector) {
         assert connector != null;
@@ -111,19 +112,45 @@ public final class SessionBuilder {
         Objects.requireNonNull(unit);
         try (var fWire = connector.connect(connectionCredential)) {
             var session = create0(fWire.get(timeout, unit));
-            if (session instanceof SessionImpl) {
-                sessionInfo.addSession((SessionImpl) session);
-            }
             return session;
         }
     }
 
-    private static Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
+    /**
+     * Establishes a connection to the Tsurugi server asynchronously.
+     * @return a future of the established connection session:
+     *      the returned future may raise errors as same as {@link #create(long, TimeUnit) synchronous method}.
+     * @throws IOException if I/O error was occurred during connection
+     */
+    public FutureResponse<? extends Session> createAsync() throws IOException {
+        var fWire = connector.connect(connectionCredential);
+        return new AbstractFutureResponse<Session>() {
+
+            @Override
+            protected Session getInternal() throws IOException, ServerException, InterruptedException {
+                return create0(fWire.get());
+            }
+
+            @Override
+            protected Session getInternal(long timeout, TimeUnit unit)
+                    throws IOException, ServerException, InterruptedException, TimeoutException {
+                return create0(fWire.get(timeout, unit));
+            }
+
+            @Override
+            public void close() throws IOException, ServerException, InterruptedException {
+                fWire.close();
+            }
+        };
+    }
+
+    private Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
         var session = new SessionImpl();
         boolean green = false;
         try {
             session.connect(wire);
+            sessionInfo.addSession(session);
             green = true;
             return session;
         } finally {
