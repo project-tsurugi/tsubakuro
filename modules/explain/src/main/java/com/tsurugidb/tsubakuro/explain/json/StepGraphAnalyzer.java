@@ -3,6 +3,8 @@ package com.tsurugidb.tsubakuro.explain.json;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -110,9 +112,9 @@ public class StepGraphAnalyzer {
 
         var elements = operators.stream()
                 .map(it -> it.element)
-                .collect(Collectors.toSet());
-        var inputs = new HashMap<String, List<BasicPlanNode>>();
-        var outputs = new HashMap<String, List<BasicPlanNode>>();
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        var inputs = new LinkedHashMap<String, List<BasicPlanNode>>();
+        var outputs = new LinkedHashMap<String, List<BasicPlanNode>>();
         for (var operator : operators) {
             for (var key : operator.inputs) {
                 inputs.computeIfAbsent(key, k -> new ArrayList<>()).add(operator.element);

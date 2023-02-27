@@ -2,7 +2,8 @@ package com.tsurugidb.tsubakuro.explain;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,7 +28,7 @@ public class BasicPlanGraph implements PlanGraph {
     }
 
     private static Set<PlanNode> extract(Collection<? extends PlanNode> nodes) {
-        var saw = new HashSet<PlanNode>(nodes);
+        var saw = new LinkedHashSet<PlanNode>(nodes);
         var work = new ArrayDeque<PlanNode>(nodes);
         while (!work.isEmpty()) {
             var next = work.removeFirst();
@@ -38,7 +39,7 @@ public class BasicPlanGraph implements PlanGraph {
                     work.addFirst(it);
                 });
         }
-        return Set.copyOf(saw);
+        return Collections.unmodifiableSet(saw);
     }
 
     @Override
@@ -50,14 +51,14 @@ public class BasicPlanGraph implements PlanGraph {
     public Set<? extends PlanNode> getSources() {
         return nodes.stream()
                 .filter(it -> it.getUpstreams().isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
     public Set<? extends PlanNode> getDestinations() {
         return nodes.stream()
                 .filter(it -> it.getDownstreams().isEmpty())
-                .collect(Collectors.toUnmodifiableSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Override
