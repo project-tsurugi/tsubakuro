@@ -227,7 +227,7 @@ public class StepGraphAnalyzer {
                     }
                 }
                 for (var entry : step.outputs.entrySet()) {
-                    var opposites = outputs.getOrDefault(entry.getKey(), List.of());
+                    var opposites = inputs.getOrDefault(entry.getKey(), List.of());
                     if (opposites.isEmpty()) {
                         LOG.warn(MessageFormat.format(
                                 "missing downstream exchange in execution plan: {0}",
