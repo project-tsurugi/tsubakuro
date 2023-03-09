@@ -30,7 +30,8 @@ class StepGraphAnalyzerTest {
             throws IOException, PlanGraphException {
         var json = TestUtil.loadJson(String.format("plan.files/%s.json", name));
         var analyzer = new StepGraphAnalyzer(Map.of(), TestUtil.DEFAULT_EDGE_EXTRACTORS, filter);
-        return analyzer.analyze((ArrayNode) json);
+        var graph = analyzer.analyze((ArrayNode) json);
+        return graph;
     }
 
     @Test
@@ -306,5 +307,38 @@ class StepGraphAnalyzerTest {
         var ro = next(r1);
         kind(ro, "emit");
         bottom(ro);
+    }
+
+    @Test
+    void forward_chain() throws Exception {
+        /*
+         * [scan:r0 - offer:r1]:p0 - [forward]:e0 - [take_flat:r2- offer:r3]:p1 - [forward]:e1 - [take_flat:r4 - emit:r5]:p2
+         */
+        var graph = load("forward-chain");
+
+        var r0 = get(graph, "scan");
+        top(r0);
+
+        var r1 = next(r0);
+        kind(r1, "offer");
+
+        var e0 = next(r1);
+        kind(e0, "forward_exchange");
+
+        var r2 = next(e0);
+        kind(r2, "take_flat");
+
+        var r3 = next(r2);
+        kind(r3, "offer");
+
+        var e1 = next(r3);
+        kind(e1, "forward_exchange");
+
+        var r4 = next(e1);
+        kind(r4, "take_flat");
+
+        var r5 = next(r4);
+        kind(r5, "emit");
+        bottom(r5);
     }
 }
