@@ -23,9 +23,16 @@ jobs:
         name: Apt-Install
         run: |
           apt-get update -y
-          apt-get install -y git build-essential cmake libboost-system-dev openjdk-11-jdk
+          apt-get install -y git build-essential cmake libboost-system-dev
         env:
           DEBIAN_FRONTEND: noninteractive
+
+      - id: Setup_Java
+        name: Setup_Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
       - id: Checkout
         name: Checkout
