@@ -142,7 +142,7 @@ message WritePreserve {
 
 // individual read area entry.
 message ReadArea {
-    // the target table name of inclusive read area.
+    // the target table name of read area, used by inclusive_read_areas and exclusive_read_areas.
     string table_name = 1;
 }
 
