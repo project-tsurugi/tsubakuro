@@ -140,6 +140,12 @@ message WritePreserve {
     string table_name = 1;
 }
 
+// individual read area entry.
+message ReadArea {
+    // the target table name of read area, used by inclusive_read_areas and exclusive_read_areas.
+    string table_name = 1;
+}
+
 // options for beginning transactions
 message TransactionOption {
     // the transaction type.
@@ -156,7 +162,13 @@ message TransactionOption {
     // write preservations for long transactions.
     repeated WritePreserve write_preserves = 11;
 
-    reserved 12 to 20;
+    // inclusive read areas for long transactions.
+    repeated ReadArea inclusive_read_areas = 12;
+
+    // exclusive read areas for long transactions.
+    repeated ReadArea exclusive_read_areas = 13;
+
+    reserved 14 to 20;
 }
 
 // the transaction commit status.
