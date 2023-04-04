@@ -157,7 +157,10 @@ message TransactionOption {
     // the transaction label.
     string label = 3;
 
-    reserved 4 to 10;
+    // flag indicating whether the operation will change the table definition or not.
+    bool modifies_definitions = 4;
+
+    reserved 5 to 10;
 
     // write preservations for long transactions.
     repeated WritePreserve write_preserves = 11;
