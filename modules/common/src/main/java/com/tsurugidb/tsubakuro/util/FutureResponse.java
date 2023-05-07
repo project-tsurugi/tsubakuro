@@ -54,7 +54,7 @@ public interface FutureResponse<V> extends ServerResource {
      * @throws ServerException if exception was occurred while processing the request in the server
      * @throws InterruptedException if interrupted from other threads while waiting for response
      * @throws TimeoutException if the wait time out
-     * @see #await()
+     * @see #await(long, TimeUnit)
      */
     V get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException;
 
@@ -91,6 +91,27 @@ try (Resource resource = send(...).await()) {
     default V await() throws IOException, ServerException, InterruptedException {
         try (var self = this) {
             return self.get();
+        }
+    }
+
+    /**
+     * Retrieves the result value, or wait until response has been received.
+     * <p>
+     * Even if this operation was failed, underlying server resource will be disposed.
+     * Or to keep such the server resources, please call {@link #get(long, TimeUnit)} instead.
+     * </p>
+     * @param timeout the maximum time to wait
+     * @param unit the time unit of {@code timeout}
+     * @return the response
+     * @throws IOException if exception was occurred while communicating to the server
+     * @throws ServerException if exception was occurred while processing the request in the server
+     * @throws InterruptedException if interrupted from other threads while waiting for response
+     * @throws TimeoutException if the wait time out
+     * @see {@link #get(long, TimeUnit)}
+     */
+    default V await(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+        try (var self = this) {
+            return self.get(timeout, unit);
         }
     }
 
