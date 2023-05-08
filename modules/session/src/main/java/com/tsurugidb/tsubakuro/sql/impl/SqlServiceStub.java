@@ -553,21 +553,21 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class BatchProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+        private final AtomicReference<SqlResponse.Batch> detailResponseCache = new AtomicReference<>();
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (Objects.isNull(detailResponseCache.get())) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
+                if (!SqlResponse.Response.ResponseCase.BATCH.equals(response.getResponseCase())) {
                     // FIXME log error message
                     throw new IOException("response type is inconsistent with the request type");
                 }
-                detailResponseCache.set(response.getResultOnly());
+                detailResponseCache.set(response.getBatch());
             }
             var detailResponse = detailResponseCache.get();
             LOG.trace("receive (batch): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+            if (SqlResponse.Batch.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
