@@ -16,7 +16,7 @@ final class ConnectorHelper {
     static Connector create(URI endpoint) {
         Objects.requireNonNull(endpoint);
         LOG.trace("creating connector: {}", endpoint); //$NON-NLS-1$
-        for (var factory : ServiceLoader.load(ConnectorFactory.class)) {
+        for (var factory : ServiceLoader.load(ConnectorFactory.class, ConnectorHelper.class.getClassLoader())) {
             var connectorOpt = factory.tryCreate(endpoint);
             if (connectorOpt.isPresent()) {
                 LOG.trace("found ConnectorFactory: {} - {}", factory, endpoint); //$NON-NLS-1$
