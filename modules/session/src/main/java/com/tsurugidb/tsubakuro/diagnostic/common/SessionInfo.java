@@ -10,7 +10,9 @@ public class SessionInfo implements SessionInfoMBean {
     private WeakHashMap<SessionImpl, Void> sessions = new WeakHashMap<SessionImpl, Void>();
 
     public void addSession(SessionImpl s) {
-        sessions.put(s, null);
+        synchronized (sessions) {
+            sessions.put(s, null);
+        }
     }
 
     static class SessionInfoAction implements BiConsumer<SessionImpl, Void> {
@@ -29,8 +31,10 @@ public class SessionInfo implements SessionInfoMBean {
 
     @Override
     public String getSessionInfo() {
-        var sessionInfoAction = new SessionInfoAction();
-        sessions.forEach(sessionInfoAction);
-        return sessionInfoAction.diagnosticInfo();
+        synchronized (sessions) {
+            var sessionInfoAction = new SessionInfoAction();
+            sessions.forEach(sessionInfoAction);
+            return sessionInfoAction.diagnosticInfo();
+        }
     }
 }
