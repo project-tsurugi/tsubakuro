@@ -31,8 +31,10 @@ public class SessionInfo implements SessionInfoMBean {
 
     @Override
     public String getSessionInfo() {
-        var sessionInfoAction = new SessionInfoAction();
-        sessions.forEach(sessionInfoAction);
-        return sessionInfoAction.diagnosticInfo();
+        synchronized (sessions) {
+            var sessionInfoAction = new SessionInfoAction();
+            sessions.forEach(sessionInfoAction);
+            return sessionInfoAction.diagnosticInfo();
+        }
     }
 }
