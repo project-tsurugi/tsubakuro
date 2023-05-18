@@ -4,10 +4,7 @@ name: Eisen-Integration-Test
 # * Use docker service container
 #   * Not install server modules locally
 #   * Connect to the server process using TCP connection
-# * (When build to master) Get client libraries via remote Maven repository
-#   * run gradlew with --refresh-dependencies to download latest artifacts
-#   * Not install client libraries locally
-# * (When build to pull request) Use locally installed client libraries
+# * Use locally installed client libraries
 #   * Install client libraries locally within the workflow
 #   * Enable mavenLocal (and disable remote Maven repository)
 # * Trigger after ci-build.yml(workflow_call), manually(workflow_dispatch)
@@ -15,13 +12,6 @@ name: Eisen-Integration-Test
 on:
   workflow_dispatch:
   workflow_call:
-    secrets:
-      GHA_PAT:
-        required: true
-      GHCR_PAT:
-        required: true
-      SLACK_WEBHOOK_URL:
-        required: true
 
 jobs:
   Test:
@@ -100,7 +90,6 @@ jobs:
         env:
           TG_IT_TSUBAKURO_DIR: ${{ github.workspace }}/${{ env.TG_IT_TSUBAKURO_PATH }}
           TG_IT_RESULT_DIR: ${{ github.workspace }}/${{ env.TG_IT_RESULT_PATH }}
-        if: contains(github.ref, '/pull/')
 
       - id: Integration_Test
         name: Integration_Test
@@ -109,7 +98,7 @@ jobs:
         env:
           TG_IT_EISEN_DIR: ${{ github.workspace }}/${{ env.TG_IT_EISEN_PATH }}
           TG_IT_RESULT_DIR: ${{ github.workspace }}/${{ env.TG_IT_RESULT_PATH }}
-          GRADLE_CLI_OPTS: ${{ (contains(github.ref, '/pull/')) && '-PmavenLocal' || '--refresh-dependencies' }}
+          GRADLE_CLI_OPTS: '-PmavenLocal'
 
       - id: Prepare_Upload
         name: Prepare_Upload
@@ -145,7 +134,6 @@ jobs:
         if: always() && (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
         with:
           kind: 'job-result'
           channel: 'tsurugi-build'

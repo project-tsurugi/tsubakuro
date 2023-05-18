@@ -1,9 +1,8 @@
-name: Tsubakuro-CI
+name: Tsubakuro-CI-Publish
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
+  workflow_call:
 
 jobs:
   Build:
@@ -47,33 +46,14 @@ jobs:
           submodules: recursive
           token: ${{ secrets.GHA_PAT }}
 
-      - id: Assemble
-        name: Assemble
+      - id: Publish
+        name: Publish
+        if: contains(github.ref, '/heads/master')
         run: |
-          ./gradlew -i clean assemble
-
-      - id: Check
-        name: Check
-        run: |
-          ./gradlew -i check --continue
-
-      - id: Upload_Artifact
-        name: Upload_Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: libtsubakuro
-          path: modules/ipc/build/native/libtsubakuro.so
-          retention-days: 1
-
-      - id: Generate_Annotations
-        name: Generate_Annotations
-        uses: ./.github/actions/tsurugi-annotations-action
-        if: always()
-        with:
-          junit_input: '**/build/test-results/**/TEST-*.xml'
-          junit_test_src_dir: 'src/test/java'
-          spotbugs_input: '**/build/reports/spotbugs/main/*.xml'
-          checkstyle_input: '**/build/reports/checkstyle/main.xml'
+          ./gradlew -i clean publish
+        env:
+          GPR_USER: ${{ github.repository_owner }}
+          GPR_KEY: ${{ secrets.GITHUB_TOKEN }}
 
       - id: Notify_Slack
         name: Notify_Slack
@@ -87,21 +67,3 @@ jobs:
           status: ${{ job.status }}
           step_context: ${{ toJson(steps) }}
           username: ${{ github.workflow }}
-
-  Publish:
-    uses: ./.github/workflows/ci-publish.yml
-    if: (contains(github.ref, '/tags/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-
-  Eisen:
-    uses: ./.github/workflows/eisen-integration-test.yml
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-
-  Iceaxe:
-    uses: ./.github/workflows/iceaxe-dbtest.yml
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
