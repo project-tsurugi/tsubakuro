@@ -83,7 +83,7 @@ public final class DateTimeInterval {
             return false;
         }
         DateTimeInterval other = (DateTimeInterval) obj;
-        return day == other.day
+        return year == other.year
                 && month == other.month
                 && day == other.day
                 && nanoseconds == other.nanoseconds;
