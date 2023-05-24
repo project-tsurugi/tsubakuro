@@ -15,6 +15,9 @@
  */
 #pragma once
 
+#include <chrono>
+#include <iostream>
+
 #include "wire.h"
 
 namespace tateyama::common::wire {
@@ -150,6 +153,7 @@ public:
 
     ~session_wire_container() {
         request_wire_.disconnect();
+        print_out();
     }
 
     /**
@@ -174,12 +178,38 @@ public:
         return *status_provider_;
     }
 
+    // for measurement
+    void mark_begin() {
+        if (time_ == std::chrono::steady_clock::time_point()) {
+            time_ = std::chrono::steady_clock::now();
+        } else {
+            std::cerr << "illegal sequece at " << __func__ << std::endl;
+        }
+    }
+    void mark_end() {
+        if (time_ != std::chrono::steady_clock::time_point()) {
+            duration_ += (std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - time_));
+            count_++;
+            time_ = std::chrono::steady_clock::time_point();
+        } else {
+            std::cerr << "illegal sequece at " << __func__ << std::endl;
+        }
+    }
+
 private:
     std::string db_name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
     wire_container request_wire_{};
     response_wire_container response_wire_{};
     status_provider* status_provider_{};
+
+    // for measurement
+    std::chrono::nanoseconds duration_{};
+    std::size_t count_{};
+    std::chrono::time_point<std::chrono::steady_clock> time_{std::chrono::steady_clock::time_point()};
+    void print_out() {
+        std::cout << "response stat: " << count_ << " : " << (duration_.count() + 500) / 1000 << std::endl;
+    }
 };
 
 class connection_container

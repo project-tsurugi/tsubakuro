@@ -60,6 +60,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNati
     auto m_address = env->GetByteArrayElements(message, nullptr);
 
     auto& request_wire = swc->get_request_wire();
+    swc->mark_begin();
     request_wire.write(static_cast<signed char*>(m_address), env->GetArrayLength(message), slot);
     env->ReleaseByteArrayElements(message, m_address, JNI_ABORT);
 }
@@ -78,6 +79,9 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
         try {
             auto header = swc->get_response_wire().await();
             if (header.get_type() != 0) {
+                if (header.get_type() == 1) {  // RESPONSE_PAYLOAD
+                    swc->mark_end();
+                }
                 return header.get_idx();
             }
             return -1;
