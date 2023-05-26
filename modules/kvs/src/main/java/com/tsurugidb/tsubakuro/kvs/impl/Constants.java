@@ -8,7 +8,7 @@ public final class Constants {
     /**
      * The service ID of KVS service.
      */
-    public static final int SERVICE_ID_KVS = 1234; // FIXME
+    public static final int SERVICE_ID_KVS = 10001; // FIXME
 
     /**
      * The scan result channel name.
