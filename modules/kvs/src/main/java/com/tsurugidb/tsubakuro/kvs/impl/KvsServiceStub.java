@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.kvs.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
@@ -26,6 +27,7 @@ import com.tsurugidb.tsubakuro.kvs.PutResult;
 import com.tsurugidb.tsubakuro.kvs.RecordCursor;
 import com.tsurugidb.tsubakuro.kvs.RemoveResult;
 import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 
@@ -65,6 +67,15 @@ public class KvsServiceStub implements KvsService {
         return new BrokenResponseException(MessageFormat.format("{0}.{1} is not set", aClass.getSimpleName(), name));
     }
 
+    private static byte[] toDelimitedByteArray(KvsRequest.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new IOException(e);
+        }
+    }
+
     @Override
     public KvsTransaction.Handle extract(@Nonnull TransactionHandle handle) {
         if (handle instanceof TransactionHandleImpl) {
@@ -76,9 +87,10 @@ public class KvsServiceStub implements KvsService {
     }
 
     class BeginProcessor implements MainResponseProcessor<TransactionHandle> {
+
         @Override
         public TransactionHandle process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Begin.parseFrom(payload);
+            var message = KvsResponse.Begin.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -95,22 +107,18 @@ public class KvsServiceStub implements KvsService {
         }
     }
 
+
     @Override
     public FutureResponse<TransactionHandle> send(@Nonnull KvsRequest.Begin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        var bytes = KvsRequest.Request.newBuilder().setBegin(request).build().toByteArray();
-        System.err.println(bytes.length);
-        for (int i = 0; i < bytes.length; i++) {
-            System.err.printf("%d\t%x\n", i, bytes[i]);
-        }
-        return session.send(SERVICE_ID, bytes,
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setBegin(request).build()),
                 new BeginProcessor().asResponseProcessor());
     }
 
     static class CommitProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Commit.parseFrom(payload);
+            var message = KvsResponse.Commit.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -129,14 +137,14 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Commit request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setCommit(request).build().toByteArray(),
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setCommit(request).build()),
                 new CommitProcessor().asResponseProcessor());
     }
 
     static class RollbackProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Rollback.parseFrom(payload);
+            var message = KvsResponse.Rollback.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -155,7 +163,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Rollback request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setRollback(request).build().toByteArray(),
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRollback(request).build()),
                 new RollbackProcessor().asResponseProcessor());
     }
 
@@ -163,7 +171,7 @@ public class KvsServiceStub implements KvsService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.CloseTransaction.parseFrom(payload);
+            var message = KvsResponse.CloseTransaction.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -182,14 +190,15 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.CloseTransaction request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setCloseTransaction(request).build().toByteArray(),
+        return session.send(SERVICE_ID,
+                toDelimitedByteArray(KvsRequest.Request.newBuilder().setCloseTransaction(request).build()),
                 new CloseTransactionProcessor().asResponseProcessor());
     }
 
     static class GetProcessor implements MainResponseProcessor<GetResult> {
         @Override
         public GetResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Get.parseFrom(payload);
+            var message = KvsResponse.Get.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -209,14 +218,14 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<GetResult> send(@Nonnull KvsRequest.Get request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setGet(request).build().toByteArray(),
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setGet(request).build()),
                 new GetProcessor().asResponseProcessor());
     }
 
     static class PutProcessor implements MainResponseProcessor<PutResult> {
         @Override
         public PutResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Put.parseFrom(payload);
+            var message = KvsResponse.Put.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -235,14 +244,14 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<PutResult> send(@Nonnull KvsRequest.Put request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setPut(request).build().toByteArray(),
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setPut(request).build()),
                 new PutProcessor().asResponseProcessor());
     }
 
     static class RemoveProcessor implements MainResponseProcessor<RemoveResult> {
         @Override
         public RemoveResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Remove.parseFrom(payload);
+            var message = KvsResponse.Remove.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -261,7 +270,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<RemoveResult> send(@Nonnull KvsRequest.Remove request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setRemove(request).build().toByteArray(),
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRemove(request).build()),
                 new RemoveProcessor().asResponseProcessor());
     }
 
