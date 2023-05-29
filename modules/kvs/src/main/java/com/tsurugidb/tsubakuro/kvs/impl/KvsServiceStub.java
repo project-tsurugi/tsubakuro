@@ -98,7 +98,12 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<TransactionHandle> send(@Nonnull KvsRequest.Begin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, KvsRequest.Request.newBuilder().setBegin(request).build().toByteArray(),
+        var bytes = KvsRequest.Request.newBuilder().setBegin(request).build().toByteArray();
+        System.err.println(bytes.length);
+        for (int i = 0; i < bytes.length; i++) {
+            System.err.printf("%d\t%x\n", i, bytes[i]);
+        }
+        return session.send(SERVICE_ID, bytes,
                 new BeginProcessor().asResponseProcessor());
     }
 
