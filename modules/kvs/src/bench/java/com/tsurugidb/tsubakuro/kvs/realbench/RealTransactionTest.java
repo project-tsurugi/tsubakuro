@@ -10,6 +10,9 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.bench.RecordBuilder;
+import com.tsurugidb.tsubakuro.kvs.bench.RecordInfo;
+import com.tsurugidb.tsubakuro.kvs.bench.ValueType;
 
 /**
  * An transaction test with real session.
@@ -30,9 +33,19 @@ public class RealTransactionTest {
         this.endpoint = URI.create(args[0]);
     }
 
-    private void beginCommit() throws Exception {
+    private void test() throws Exception {
+        var builder = new RecordBuilder(new RecordInfo(ValueType.LONG, 1));
+        final String table = "TABLE1";
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
+            int n = kvs.get(tx, table, builder.makeRecordBuffer()).await().asList().size();
+            System.err.println(n);
+            n = kvs.put(tx, table, builder.makeRecordBuffer()).await().size();
+            System.err.println(n);
+            n = kvs.get(tx, table, builder.makeRecordBuffer()).await().size();
+            System.err.println(n);
+            n = kvs.remove(tx, table, builder.makeRecordBuffer()).await().size();
+            System.err.println(n);
             kvs.commit(tx).await();
         }
     }
@@ -47,7 +60,7 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        app.beginCommit();
+        app.test();
     }
 
 }

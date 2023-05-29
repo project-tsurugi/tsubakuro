@@ -1,5 +1,22 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
-enum ValueType {
-    LONG, STRING, DECIMAL
+/**
+ * Type of a dummy record value.
+ *
+ */
+public enum ValueType {
+    /**
+     * long integer
+     */
+    LONG,
+
+    /**
+     * String
+     */
+    STRING,
+
+    /**
+     * BigDecimal
+     */
+    DECIMAL
 }
