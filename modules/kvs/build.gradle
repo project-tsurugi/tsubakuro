@@ -54,13 +54,34 @@ application {
     mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
 }
 
-tasks.register('runTranTest', JavaExec) {
+tasks.register('runShortMockBench', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
+    jvmArgs = ['-Xmx1024M']
+}
+
+tasks.register('runFullMockBench', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
+    jvmArgs = ['-Xmx1024M']
+    args = ['full']
+}
+
+tasks.register('runShortBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
     systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
-    args = ['ipc:tateyama']
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+}
+
+tasks.register('runFullBench', JavaExec) {
+    dependsOn ':tsubakuro-ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+    args = ['full']
 }
 
 test {
