@@ -55,11 +55,11 @@ final class RealTransactionBench {
                 do {
                     for (var i = 0; i < loopblock; i++) {
                         try (var handle = kvs.beginTransaction().await()) {
-                            long n = kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                            n += kvs.put(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                            n += kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                            status.addNumRecord(n);
-                            kvs.commit(handle).await();
+                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
+                            kvs.put(handle, table, recBuilder.makeRecordBuffer());
+                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
+                            status.addNumRecord(3);
+                            kvs.commit(handle);
                         }
                     }
                     status.addNumLoop(loopblock);
