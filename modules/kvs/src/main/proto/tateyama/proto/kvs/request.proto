@@ -176,7 +176,7 @@ message Remove {
         COUNTING = 1;
     
         // Remove table entries without counting the actually removed entries.
-        QUIET = 2;
+        INSTANT = 2;
     }
 }
 
