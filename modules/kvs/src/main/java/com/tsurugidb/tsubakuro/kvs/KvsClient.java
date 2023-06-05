@@ -51,16 +51,34 @@ public interface KvsClient extends ServerResource {
 
     /**
      * Commits the transaction.
+     * <p>
+     * This is equivalent to {@code #commit(TransactionHandle, CommitType) commit(transaction, CommitType.DEFAULT_BEHAVIOR}.
+     * </p>
      * @param transaction the target transaction handle
      * @return a future response of this action:
      *      the response will be returned after the transaction will reach the commit status,
      *      or raise error if the commit operation was failed
      * @throws IllegalArgumentException if the transaction handle is not supported
      * @throws IOException if I/O error was occurred while sending request
+     * @see #commit(TransactionHandle, CommitType)
+     * @see CommitType#DEFAULT_BEHAVIOR
      */
-    FutureResponse<Void> commit(@Nonnull TransactionHandle transaction) throws IOException;
+    default FutureResponse<Void> commit(@Nonnull TransactionHandle transaction) throws IOException {
+        return commit(transaction, CommitType.DEFAULT_BEHAVIOR);
+    }
 
-    // TODO with commit options
+    /**
+     * Commits the transaction.
+     * @param transaction the target transaction handle
+     * @param behavior the operation behavior
+     * @return a future response of this action:
+     *      the response will be returned after the transaction will reach the commit status,
+     *      or raise error if the commit operation was failed
+     * @throws IllegalArgumentException if the transaction handle is not supported
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    FutureResponse<Void> commit(
+            @Nonnull TransactionHandle transaction, @Nonnull CommitType behavior) throws IOException;
 
     /**
      * Requests roll-back transaction.
@@ -93,9 +111,10 @@ public interface KvsClient extends ServerResource {
             @Nonnull String table, @Nonnull RecordBuffer key) throws IOException;
 
     /**
-     * Requests {@code PUT} operation.
+     * Requests {@code PUT} operation, which creates or updates a row on the table.
      * <p>
-     * The {@code PUT} operation will create or update a row on the table.
+     * This is equivalent to {@link #put(TransactionHandle, String, RecordBuffer, PutType)
+     * put(transaction, table, record, PutType.DEFAULT_BEHAVIOR)}.
      * </p>
      * <p>
      * This will take a copy of {@link RecordBuffer}.
@@ -106,6 +125,7 @@ public interface KvsClient extends ServerResource {
      * @return a future response of this action.
      * @throws IllegalArgumentException if the transaction handle is not supported
      * @throws IOException if I/O error was occurred while sending request
+     * @see PutType#DEFAULT_BEHAVIOR
      * @see #put(TransactionHandle, String, RecordBuffer, PutType)
      */
     default FutureResponse<PutResult> put(
@@ -139,6 +159,10 @@ public interface KvsClient extends ServerResource {
     /**
      * Requests {@code REMOVE} operation, which deletes a row on the table.
      * <p>
+     * This is equivalent to {@link #remove(TransactionHandle, String, RecordBuffer, RemoveType)
+     * put(transaction, table, key, RemoveType.DEFAULT_BEHAVIOR)}.
+     * </p>
+     * <p>
      * This does not raise errors even if there is no such the record for the key.
      * You can check it use {@link RemoveResult#size()}.
      * </p>
@@ -151,14 +175,43 @@ public interface KvsClient extends ServerResource {
      * @return a future response of this action.
      * @throws IllegalArgumentException if the transaction handle is not supported
      * @throws IOException if I/O error was occurred while sending request
+     * @see #remove(TransactionHandle, String, RecordBuffer, RemoveType)
+     * @see RemoveType#DEFAULT_BEHAVIOR
+     */
+    default FutureResponse<RemoveResult> remove(
+            @Nonnull TransactionHandle transaction,
+            @Nonnull String table, @Nonnull RecordBuffer key) throws IOException {
+        return remove(transaction, table, key, RemoveType.DEFAULT_BEHAVIOR);
+    }
+
+    /**
+     * Requests {@code REMOVE} operation, which deletes a row on the table.
+     * <p>
+     * This does not raise errors even if there is no such the record for the key.
+     * You can check it use {@link RemoveResult#size()} only if you set {@link RemoveType#COUNTING}.
+     * </p>
+     * <p>
+     * This will take a copy of {@link RecordBuffer}.
+     * </p>
+     * @param transaction the context transaction handle
+     * @param table the target table
+     * @param key the index key of the target table
+     * @param behavior the operation behavior
+     * @return a future response of this action.
+     * @throws IllegalArgumentException if the transaction handle is not supported
+     * @throws IOException if I/O error was occurred while sending request
      */
     FutureResponse<RemoveResult> remove(
             @Nonnull TransactionHandle transaction,
-            @Nonnull String table, @Nonnull RecordBuffer key) throws IOException;
-
+            @Nonnull String table, @Nonnull RecordBuffer key, @Nonnull RemoveType behavior) throws IOException;
 
     /**
      * Requests {@code SCAN} operation, which collects all records contained between two keys on the table.
+     * <p>
+     * This is equivalent to
+     * {@link #scan(TransactionHandle, String, RecordBuffer, ScanBound, RecordBuffer, ScanBound, ScanType)
+     * scan(transaction, table, lowerKey, lowerBound, upperKey, upperBound, ScanType.DEFAULT_BEHAVIOR)}.
+     * </p>
      * <p>
      * You can pass {@code null} to the lower or upper key to perform without scan range on the table.
      * To perform table full-scan, you must pass {@code null} to both keys.
@@ -179,12 +232,47 @@ public interface KvsClient extends ServerResource {
      * @return a future response of the scan cursor
      * @throws IllegalArgumentException if the transaction handle is not supported
      * @throws IOException if I/O error was occurred while sending request
+     * @see #scan(TransactionHandle, String, RecordBuffer, ScanBound, RecordBuffer, ScanBound, ScanType)
+     * @see ScanType#DEFAULT_BEHAVIOR
+     */
+    default FutureResponse<RecordCursor> scan(
+            @Nonnull TransactionHandle transaction,
+            @Nonnull String table,
+            @Nullable RecordBuffer lowerKey, @Nullable ScanBound lowerBound,
+            @Nullable RecordBuffer upperKey, @Nullable ScanBound upperBound) throws IOException {
+        return scan(transaction, table, lowerKey, lowerBound, upperKey, upperBound, ScanType.DEFAULT_BEHAVIOR);
+    }
+
+    /**
+     * Requests {@code SCAN} operation, which collects all records contained between two keys on the table.
+     * <p>
+     * You can pass {@code null} to the lower or upper key to perform without scan range on the table.
+     * To perform table full-scan, you must pass {@code null} to both keys.
+     * </p>
+     * <p>
+     * This operation will return a {@link RecordCursor} to retrieve the scan results.
+     * You must close it cursor after obtains the results.
+     * </p>
+     * <p>
+     * This will take copies of {@link RecordBuffer}.
+     * </p>
+     * @param transaction the context transaction handle
+     * @param table the source table
+     * @param lowerKey the lower index key (or its prefix) of scan range on the target table
+     * @param lowerBound whether includes or excludes the record on the lower key
+     * @param upperKey the upper index key (or its prefix) of scan range on the target table
+     * @param upperBound whether includes or excludes the record on the upper key
+     * @param behavior the operation behavior
+     * @return a future response of the scan cursor
+     * @throws IllegalArgumentException if the transaction handle is not supported
+     * @throws IOException if I/O error was occurred while sending request
      */
     FutureResponse<RecordCursor> scan(
             @Nonnull TransactionHandle transaction,
             @Nonnull String table,
             @Nullable RecordBuffer lowerKey, @Nullable ScanBound lowerBound,
-            @Nullable RecordBuffer upperKey, @Nullable ScanBound upperBound) throws IOException;
+            @Nullable RecordBuffer upperKey, @Nullable ScanBound upperBound,
+            @Nonnull ScanType behavior) throws IOException;
 
     /**
      * Requests the sequence of KVS operations in the given script.

@@ -12,6 +12,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.BatchResult;
 import com.tsurugidb.tsubakuro.kvs.BatchScript;
+import com.tsurugidb.tsubakuro.kvs.CommitType;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.PutResult;
@@ -19,7 +20,9 @@ import com.tsurugidb.tsubakuro.kvs.PutType;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.RecordCursor;
 import com.tsurugidb.tsubakuro.kvs.RemoveResult;
+import com.tsurugidb.tsubakuro.kvs.RemoveType;
 import com.tsurugidb.tsubakuro.kvs.ScanBound;
+import com.tsurugidb.tsubakuro.kvs.ScanType;
 import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
 import com.tsurugidb.tsubakuro.kvs.TransactionOption;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -58,14 +61,33 @@ public class KvsClientImpl implements KvsClient {
         return service.send(builder.build());
     }
 
-    // FIXME: impl commit() with commit status
     @Override
-    public FutureResponse<Void> commit(@Nonnull TransactionHandle transaction) throws IOException {
+    public FutureResponse<Void> commit(
+            @Nonnull TransactionHandle transaction, @Nonnull CommitType behavior) throws IOException {
         Objects.requireNonNull(transaction);
+        Objects.requireNonNull(behavior);
         var handle = service.extract(transaction);
         var builder = KvsRequest.Commit.newBuilder()
-                .setTransactionHandle(handle);
+                .setTransactionHandle(handle)
+                .setType(convert(behavior));
         return service.send(builder.build());
+    }
+
+    private static KvsRequest.Commit.Type convert(CommitType behavior) {
+        assert behavior != null;
+        switch (behavior) {
+        case UNSPECIFIED:
+            return KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED;
+        case ACCEPTED:
+            return KvsRequest.Commit.Type.ACCEPTED;
+        case AVAILABLE:
+            return KvsRequest.Commit.Type.AVAILABLE;
+        case STORED:
+            return KvsRequest.Commit.Type.STORED;
+        case PROPAGATED:
+            return KvsRequest.Commit.Type.PROPAGATED;
+        }
+        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 
     @Override
@@ -127,17 +149,30 @@ public class KvsClientImpl implements KvsClient {
     @Override
     public FutureResponse<RemoveResult> remove(
             @Nonnull TransactionHandle transaction,
-            @Nonnull String table, @Nonnull RecordBuffer key) throws IOException {
+            @Nonnull String table, @Nonnull RecordBuffer key, @Nonnull RemoveType behavior) throws IOException {
         Objects.requireNonNull(transaction);
         Objects.requireNonNull(table);
         Objects.requireNonNull(key);
+        Objects.requireNonNull(behavior);
         var handle = service.extract(transaction);
         var builder = KvsRequest.Remove.newBuilder()
                 .setTransactionHandle(handle)
                 .setIndex(KvsRequest.Index.newBuilder()
                         .setTableName(table))
-                .addKeys(key.toRecord().getEntity());
+                .addKeys(key.toRecord().getEntity())
+                .setType(convert(behavior));
         return service.send(builder.build());
+    }
+
+    private static KvsRequest.Remove.Type convert(RemoveType behavior) {
+        assert behavior != null;
+        switch (behavior) {
+        case COUNTING:
+            return KvsRequest.Remove.Type.COUNTING;
+        case QUIET:
+            return KvsRequest.Remove.Type.QUIET;
+        }
+        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 
     @Override
@@ -145,9 +180,11 @@ public class KvsClientImpl implements KvsClient {
             @Nonnull TransactionHandle transaction,
             @Nonnull String table,
             @Nullable RecordBuffer lowerKey, @Nullable ScanBound lowerBound,
-            @Nullable RecordBuffer upperKey, @Nullable ScanBound upperBound) throws IOException {
+            @Nullable RecordBuffer upperKey, @Nullable ScanBound upperBound,
+            @Nonnull ScanType behavior) throws IOException {
         Objects.requireNonNull(transaction);
         Objects.requireNonNull(table);
+        Objects.requireNonNull(behavior);
         var handle = service.extract(transaction);
         var builder = KvsRequest.Scan.newBuilder()
                 .setTransactionHandle(handle)
@@ -167,6 +204,7 @@ public class KvsClientImpl implements KvsClient {
             builder.setUpperKey(upperKey.toRecord().getEntity());
             builder.setUpperBound(convert(upperBound));
         }
+        builder.setType(convert(behavior));
         builder.setChannelName(Constants.SCAN_CHANNEL_NAME);
         return service.send(builder.build());
     }
@@ -180,6 +218,17 @@ public class KvsClientImpl implements KvsClient {
             return KvsRequest.Scan.Bound.EXCLUSIVE;
         }
         throw new IllegalArgumentException(String.valueOf(bound));
+    }
+
+    private static KvsRequest.Scan.Type convert(ScanType behavior) {
+        assert behavior != null;
+        switch (behavior) {
+        case FORWARD:
+            return KvsRequest.Scan.Type.FORWARD;
+        case BACKWARD:
+            return KvsRequest.Scan.Type.BACKWARD;
+        }
+        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 
     @Override
