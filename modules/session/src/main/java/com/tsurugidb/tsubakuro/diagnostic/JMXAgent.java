@@ -20,27 +20,25 @@ public final class JMXAgent {
 
     private static AtomicBoolean created = new AtomicBoolean();
 
-    private static synchronized void setUp() {
-        if (!created.getAndSet(true)) {
-            try {
-                mbs = ManagementFactory.getPlatformMBeanServer();
-                name = new ObjectName("com.tsurugidb.tsubakuro.diagnostic.common:type=SessionInfo");
-                mbean = new SessionInfo();
-                mbs.registerMBean(mbean, name);
-            } catch (MalformedObjectNameException e) {
-                e.printStackTrace();
-            } catch (NotCompliantMBeanException e) {
-                e.printStackTrace();
-            } catch (MBeanRegistrationException e) {
-                e.printStackTrace();
-            } catch (InstanceAlreadyExistsException e) {
-                e.printStackTrace();
-            }
+    private static void setUp() {
+        try {
+            mbs = ManagementFactory.getPlatformMBeanServer();
+            name = new ObjectName("com.tsurugidb.tsubakuro.diagnostic.common:type=SessionInfo");
+            mbean = new SessionInfo();
+            mbs.registerMBean(mbean, name);
+        } catch (MalformedObjectNameException e) {
+            e.printStackTrace();
+        } catch (NotCompliantMBeanException e) {
+            e.printStackTrace();
+        } catch (MBeanRegistrationException e) {
+            e.printStackTrace();
+        } catch (InstanceAlreadyExistsException e) {
+            e.printStackTrace();
         }
     }
 
-    public static SessionInfo sessionInfo() {
-        if (!created.get()) {
+    public static synchronized SessionInfo sessionInfo() {
+        if (!created.getAndSet(true)) {
             setUp();
         }
         return mbean;
