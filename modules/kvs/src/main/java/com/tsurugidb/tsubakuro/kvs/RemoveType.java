@@ -17,7 +17,7 @@ public enum RemoveType {
      * Using this, {@link RemoveResult#size()} will return {@code 0}.
      * </p>
      */
-    QUIET,
+    INSTANT,
     ;
 
     /**

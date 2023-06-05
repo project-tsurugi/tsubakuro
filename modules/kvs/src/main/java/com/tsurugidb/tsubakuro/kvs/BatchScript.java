@@ -368,8 +368,8 @@ public class BatchScript {
         switch (behavior) {
         case COUNTING:
             return KvsRequest.Remove.Type.COUNTING;
-        case QUIET:
-            return KvsRequest.Remove.Type.QUIET;
+        case INSTANT:
+            return KvsRequest.Remove.Type.INSTANT;
         }
         throw new IllegalArgumentException(String.valueOf(behavior));
     }
