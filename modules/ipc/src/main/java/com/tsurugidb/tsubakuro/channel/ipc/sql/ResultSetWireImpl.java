@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
@@ -17,7 +18,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
-    private long wireHandle = 0;  // for c++
+    private AtomicLong wireHandle = new AtomicLong(0);  // for c++
     private long sessionWireHandle;
     private ByteBufferBackedInput byteBufferBackedInput;
 
@@ -30,11 +31,17 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         protected boolean next() {
-            if (source.capacity() > 0) {
-                disposeUsedDataNative(wireHandle, source.capacity());
+            synchronized (ResultSetWireImpl.this) {
+                var wh = wireHandle.get();
+                if (wh != 0) {
+                    if (source.capacity() > 0) {
+                        disposeUsedDataNative(wh, source.capacity());
+                    }
+                    source = getChunkNative(wh);
+                    return Objects.nonNull(source);
+                }
+                return false;
             }
-            source = getChunkNative(wireHandle);
-            return Objects.nonNull(source);
         }
 
         @Override
@@ -62,8 +69,10 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
-        wireHandle = createNative(sessionWireHandle, name);
-        return this;
+        synchronized (this) {
+            wireHandle.set(createNative(sessionWireHandle, name));
+            return this;
+        }
     }
 
     /**
@@ -71,24 +80,28 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @return ByteBufferInput contains the record data from the SQL server.
      */
     public InputStream getByteBufferBackedInput() {
-        if (Objects.isNull(byteBufferBackedInput)) {
-            var buffer = getChunkNative(wireHandle);
-            if (Objects.nonNull(buffer)) {
-                byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer, this);
-            } else {
-                byteBufferBackedInput = new ByteBufferBackedInputForIpc(ByteBuffer.allocate(0), this);
+        synchronized (this) {
+            if (Objects.isNull(byteBufferBackedInput)) {
+                var buffer = getChunkNative(wireHandle.get());
+                if (Objects.nonNull(buffer)) {
+                    byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer, this);
+                } else {
+                    byteBufferBackedInput = new ByteBufferBackedInputForIpc(ByteBuffer.allocate(0), this);
+                }
             }
+            return byteBufferBackedInput;
         }
-        return byteBufferBackedInput;
     }
 
     /**
      * Close the wire
      */
     public void close() {
-        if (wireHandle != 0) {
-            closeNative(wireHandle);
-            wireHandle = 0;
+        synchronized (this) {
+            var wh = wireHandle.getAndSet(0);
+            if (wh != 0) {
+                closeNative(wh);
+            }
         }
     }
 }
