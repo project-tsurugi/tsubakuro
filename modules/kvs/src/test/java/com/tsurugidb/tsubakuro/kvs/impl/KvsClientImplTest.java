@@ -51,10 +51,25 @@ class KvsClientImplTest {
     }
 
     @Test
+    void commit() throws Exception {
+        KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
+            @Override
+            public FutureResponse<Void> send(KvsRequest.Commit request) throws IOException {
+                assertEquals(KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED, request.getType());
+                assertEquals(123, request.getTransactionHandle().getSystemId());
+                return FutureResponse.returns(null);
+            }
+        });
+        TransactionHandle handle = new TransactionHandleImpl(123);
+        client.commit(handle).await();
+    }
+
+    @Test
     void put() throws Exception {
         KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
             @Override
             public FutureResponse<PutResult> send(KvsRequest.Put request) throws IOException {
+                assertEquals(KvsRequest.Put.Type.OVERWRITE, request.getType());
                 return FutureResponse.returns(new PutResultImpl(1));
             }
         });
@@ -107,6 +122,7 @@ class KvsClientImplTest {
         KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
             @Override
             public FutureResponse<RemoveResult> send(KvsRequest.Remove request) throws IOException {
+                assertEquals(KvsRequest.Remove.Type.COUNTING, request.getType());
                 return FutureResponse.returns(new RemoveResultImpl(1));
             }
         });

@@ -198,16 +198,51 @@ public class BatchScript {
         }
     }
 
-    // FIXME: impl commit() with commit status
+    /**
+     * Commits the transaction at the end of this batch operation.
+     * <p>
+     * This is equivalent to {@link #addCommit(CommitType) addCommit(CommitType#DEFAULT_BEHAVIOR)}.
+     * </p>
+     * <p>
+     * If you invoke this operation twice or more, only the last invocation will be available.
+     * </p>
+     * @see #addCommit(CommitType)
+     * @see CommitType#DEFAULT_BEHAVIOR
+     * @see KvsClient#commit(TransactionHandle)
+     */
+    public void addCommit() {
+        addCommit(CommitType.DEFAULT_BEHAVIOR);
+    }
+
     /**
      * Commits the transaction at the end of this batch operation.
      * <p>
      * If you invoke this operation twice or more, only the last invocation will be available.
      * </p>
-     * @see KvsClient#commit(TransactionHandle)
+     * @param behavior the operation behavior
+     * @see KvsClient#commit(TransactionHandle, CommitType)
      */
-    public void addCommit() {
-        builder.setCommit(KvsRequest.Commit.getDefaultInstance());
+    public void addCommit(@Nonnull CommitType behavior) {
+        Objects.requireNonNull(behavior);
+        builder.setCommit(KvsRequest.Commit.newBuilder()
+                .setType(convert(behavior)));
+    }
+
+    private static KvsRequest.Commit.Type convert(CommitType behavior) {
+        assert behavior != null;
+        switch (behavior) {
+        case UNSPECIFIED:
+            return KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED;
+        case ACCEPTED:
+            return KvsRequest.Commit.Type.ACCEPTED;
+        case AVAILABLE:
+            return KvsRequest.Commit.Type.AVAILABLE;
+        case STORED:
+            return KvsRequest.Commit.Type.STORED;
+        case PROPAGATED:
+            return KvsRequest.Commit.Type.PROPAGATED;
+        }
+        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 
     /**
@@ -288,23 +323,54 @@ public class BatchScript {
     }
 
     /**
-     * Adds {@code PUT} operation to this batch.
+     * Adds {@code REMOVE} operation to this batch.
      * <p>
      * This will take a copy of {@link RecordBuffer}.
      * </p>
      * @param table the destination table name
-     * @param key the record to put
+     * @param key the record key to remove
      * @return a reference to retrieve the result of this operation
      * @see KvsClient#remove(TransactionHandle, String, RecordBuffer)
      * @see BatchResult#get(Ref)
      */
     public Ref<RemoveResult> addRemove(@Nonnull String table, @Nonnull RecordBuffer key) {
+        return addRemove(table, key, RemoveType.DEFAULT_BEHAVIOR);
+    }
+
+    /**
+     * Adds {@code REMOVE} operation to this batch.
+     * <p>
+     * This will take a copy of {@link RecordBuffer}.
+     * </p>
+     * @param table the destination table name
+     * @param key the record key to remove
+     * @param behavior the behavior option
+     * @return a reference to retrieve the result of this operation
+     * @see KvsClient#remove(TransactionHandle, String, RecordBuffer, RemoveType)
+     * @see BatchResult#get(Ref)
+     */
+    public Ref<RemoveResult> addRemove(@Nonnull String table, @Nonnull RecordBuffer key, @Nonnull RemoveType behavior) {
+        Objects.requireNonNull(table);
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(behavior);
         int index = builder.getElementsCount();
         builder.addElements(KvsRequest.Batch.ScriptElement.newBuilder()
                 .setRemove(KvsRequest.Remove.newBuilder()
                         .setIndex(KvsRequest.Index.newBuilder()
                                 .setTableName(table))
-                        .addKeys(key.toRecord().getEntity())));
+                        .addKeys(key.toRecord().getEntity())
+                        .setType(convert(behavior))));
         return new Ref<>(index, RemoveResult.class);
+    }
+
+    private static KvsRequest.Remove.Type convert(RemoveType behavior) {
+        assert behavior != null;
+        switch (behavior) {
+        case COUNTING:
+            return KvsRequest.Remove.Type.COUNTING;
+        case INSTANT:
+            return KvsRequest.Remove.Type.INSTANT;
+        }
+        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 }

@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
+import java.net.URI;
 import java.util.LinkedList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -7,21 +8,30 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import com.tsurugidb.tsubakuro.kvs.impl.KvsClientImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
+import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
+import com.tsurugidb.tsubakuro.common.SessionBuilder;
+import com.tsurugidb.tsubakuro.kvs.KvsClient;
 
 /**
  * Simple transaction benchmark of KvsClient without real connection.
  */
-final class TransactionBench {
+final class RealTransactionBench {
 
     private static final int DEFUALT_RUN_SEC = 30;
+    private final Credential credential = NullCredential.INSTANCE;
 
     private final boolean bFullBench;
+    private final URI endpoint;
     private final long minRunMsec;
 
-    private TransactionBench(String[] args) {
-        this.bFullBench = (args.length > 0 && args[1].equals("full"));
+    private RealTransactionBench(String[] args) {
+        this.bFullBench = args.length >= 1 && args[0].equals("full");
+        boolean bStream = args.length >= 2 && args[1].equals("stream");
+        String point = bStream ? "tcp://localhost:12345" : "ipc:tateyama";
+        this.endpoint = URI.create(point);
         this.minRunMsec = (bFullBench ? DEFUALT_RUN_SEC : 10) * 1000L;
+        System.err.println("bFull=" + bFullBench + ", endpoint=" + endpoint + ", minSec=" + minRunMsec / 1000);
     }
 
     private class SimpleTransaction implements Callable<TxStatus> {
@@ -37,19 +47,20 @@ final class TransactionBench {
             var status = new TxStatus();
             var recBuilder = new RecordBuilder(info);
             var table = "TABLE1";
-            var service = new KvsServiceStubForBench(info);
-            final int loopblock = 10_000;
-            try (var kvs = new KvsClientImpl(service)) {
+            try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
+                var kvs = KvsClient.attach(session)) {
                 Elapse elapse = new Elapse();
+                final int loopblock = 10_000;
                 long msec;
                 do {
                     for (var i = 0; i < loopblock; i++) {
-                        var handle = kvs.beginTransaction().await();
-                        long n = kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                        n += kvs.put(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                        n += kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                        status.addNumRecord(n);
-                        kvs.commit(handle).await();
+                        try (var handle = kvs.beginTransaction().await()) {
+                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
+                            kvs.put(handle, table, recBuilder.makeRecordBuffer());
+                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
+                            status.addNumRecord(3);
+                            kvs.commit(handle);
+                        }
                     }
                     status.addNumLoop(loopblock);
                     msec = elapse.msec();
@@ -58,7 +69,6 @@ final class TransactionBench {
             }
             return status;
         }
-
     }
 
     private void bench(int nclient, RecordInfo info) throws InterruptedException, ExecutionException {
@@ -130,15 +140,15 @@ final class TransactionBench {
 
     /**
      * main.
-     * @param args program arguments. Only one integer value can be specified. It
-     *        will be the default loop running second. Default value will be use if
-     *        not specified.
+     * @param args program arguments.
      */
     public static void main(String[] args) {
         if (args.length > 0 && args[0].contains("help")) {
-            System.err.println("Usage: java TransactionBench {short|full} {mock|ipc|stream}");
+            System.err.println("Usage: java TransactionBench {short|full} {ipc|stream}");
+            System.err.println("   without args means \"TransactionBench short ipc\"");
+            return;
         }
-        TransactionBench app = new TransactionBench(args);
+        RealTransactionBench app = new RealTransactionBench(args);
         try {
             app.bench();
         } catch (Exception e) {

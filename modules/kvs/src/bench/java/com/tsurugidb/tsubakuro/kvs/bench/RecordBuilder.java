@@ -5,16 +5,27 @@ import java.math.BigDecimal;
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 
-class RecordBuilder {
+/**
+ * Dummy record object builder.
+ */
+public class RecordBuilder {
 
     private final RecordInfo info;
     private long v = System.nanoTime();
 
-    RecordBuilder(RecordInfo type) {
-        this.info = type;
+    /**
+     * Creates a new instance.
+     * @param info what kind of record should be made
+     */
+    public RecordBuilder(RecordInfo info) {
+        this.info = info;
     }
 
-    RecordBuffer makeRecordBuffer() {
+    /**
+     * Creates a new dummy record.
+     * @return a dummy record
+     */
+    public RecordBuffer makeRecordBuffer() {
         RecordBuffer buffer = new RecordBuffer();
         buffer.add("key", Long.valueOf(v));
         for (int i = 0; i < info.num(); i++, v++) {
