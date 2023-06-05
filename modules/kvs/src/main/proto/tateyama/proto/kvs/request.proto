@@ -74,6 +74,27 @@ message Commit {
 
     // response will be returned after reaching the commit status.
     transaction.CommitStatus notification_type = 2;
+
+    // operation behavior.
+    Type type = 3;
+
+    // COMMIT operation behavior.
+    enum Type {
+        // the default commit type (rely on the database settings).
+        COMMIT_TYPE_UNSPECIFIED = 0;
+
+        // wait unti the commit operation has accepted.
+        ACCEPTED = 10;
+
+        // wait until the commit data have been visible for others.
+        AVAILABLE = 20;
+
+        // wait until the commit data have been saved on the local disk.
+        STORED = 30;
+
+        // wait until the commit data have been propagated to the all suitable replicas.
+        PROPAGATED = 40;
+    }
 }
 
 // represents a rollback transaction command.
@@ -141,6 +162,22 @@ message Remove {
 
     // the search key.
     repeated data.Record keys = 3;
+
+    // operation behavior.
+    Type type = 4;
+
+    // REMOVE operation behavior.
+    enum Type {
+
+        // = COUNTING (default behavior).
+        REMOVE_TYPE_UNSPECIFIED = 0;
+    
+        // Remove table entries with counting the actually removed entries.
+        COUNTING = 1;
+    
+        // Remove table entries without counting the actually removed entries.
+        QUIET = 2;
+    }
 }
 
 // represents a SCAN records command.
@@ -166,6 +203,9 @@ message Scan {
     // the scan result channel name.
     string channel_name = 7;
 
+    // operation behavior.
+    Type type = 8;
+
     // the scan bound.
     enum Bound {
 
@@ -177,6 +217,19 @@ message Scan {
 
         // does not contain records on the key.
         EXCLUSIVE = 2;
+    }
+
+    // SCAN operation behavior.
+    enum Type {
+
+        // = FORWARD (default behavior).
+        SCAN_TYPE_UNSPECIFIED = 0;
+    
+        // Scans over the table from head to tail.
+        FORWARD = 1;
+    
+        // Scans over the table from tail to head.
+        BACKWARD = 2;
     }
 }
 
