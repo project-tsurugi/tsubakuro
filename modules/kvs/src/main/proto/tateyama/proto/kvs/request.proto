@@ -72,9 +72,6 @@ message Commit {
     // the target transaction handle.
     transaction.Handle transaction_handle = 1;
 
-    // response will be returned after reaching the commit status.
-    transaction.CommitStatus notification_type = 2;
-
     // operation behavior.
     Type type = 3;
 
