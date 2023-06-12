@@ -118,8 +118,8 @@ public class ResultSetWireImpl implements ResultSetWire {
                 var wh = wireHandle.get();
                 if (wh != 0) {
                     ((ByteBufferBackedInputForIpc) byteBufferBackedInput).discardRemainingResultSet();
+                    closeNative(wh);
                 }
-                closeNative(wh);
                 wireHandle.set(0);
             }
         } else {
