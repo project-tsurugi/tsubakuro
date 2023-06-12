@@ -31,7 +31,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         protected boolean next() {
-            synchronized (ResultSetWireImpl.this) {
+            synchronized (this) {
                 var wh = wireHandle.get();
                 if (wh != 0) {
                     if (source.capacity() > 0) {
@@ -46,8 +46,24 @@ public class ResultSetWireImpl implements ResultSetWire {
 
         @Override
         public void close() throws IOException {
-            super.close();
-            resultSetWireImpl.close();
+            synchronized (this) {
+                discardRemainingResultSet();
+                super.close();
+                resultSetWireImpl.close();
+            }
+        }
+
+        private void discardRemainingResultSet() {
+            var wh = wireHandle.get();
+            if (wh == 0) {
+                return;
+            }
+            while (Objects.nonNull(source)) {
+                if (source.capacity() > 0) {
+                    disposeUsedDataNative(wh, source.capacity());
+                }
+                source = getChunkNative(wh);
+            }
         }
     }
 
@@ -97,7 +113,16 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close the wire
      */
     public void close() {
-        synchronized (this) {
+        if (Objects.nonNull(byteBufferBackedInput)) {
+            synchronized (byteBufferBackedInput) {
+                var wh = wireHandle.get();
+                if (wh != 0) {
+                    ((ByteBufferBackedInputForIpc) byteBufferBackedInput).discardRemainingResultSet();
+                }
+                closeNative(wh);
+                wireHandle.set(0);
+            }
+        } else {
             var wh = wireHandle.getAndSet(0);
             if (wh != 0) {
                 closeNative(wh);
