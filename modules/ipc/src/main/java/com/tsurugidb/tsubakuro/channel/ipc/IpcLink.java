@@ -81,7 +81,12 @@ public final class IpcLink extends Link {
         System.arraycopy(payload, 0, message, frameHeader.length, payload.length);
 
         synchronized (this) {
-            sendNative(wireHandle, s, message);
+            if (!closed.get()) {
+                sendNative(wireHandle, s, message);
+            } else {
+                channelResponse.setMainResponse(new IOException("Link already closed"));
+                return;
+            }
         }
         LOG.trace("send {}", payload);
     }
@@ -130,10 +135,12 @@ public final class IpcLink extends Link {
 
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
-        if (wireHandle == 0) {
-            throw new IOException("already closed");
+        synchronized (this) {
+            if (closed.get()) {
+                throw new IOException("Link already closed");
+            }
+            return new ResultSetWireImpl(wireHandle);
         }
-        return new ResultSetWireImpl(wireHandle);
     }
 
     @Override
@@ -146,22 +153,24 @@ public final class IpcLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed.getAndSet(true)) {
-            closeNative(wireHandle);
-            try {
-                if (timeout != 0) {
-                    timeUnit.timedJoin(receiver, timeout);
-                } else {
-                    receiver.join();
+        synchronized (this) {
+            if (!closed.getAndSet(true)) {
+                closeNative(wireHandle);
+                try {
+                    if (timeout != 0) {
+                        timeUnit.timedJoin(receiver, timeout);
+                    } else {
+                        receiver.join();
+                    }
+                    if (receiver.getState() != Thread.State.TERMINATED) {
+                        receiver.interrupt();
+                        throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
+                    }
+                } catch (InterruptedException e) {
+                    throw new IOException(e);
+                } finally {
+                    destroyNative(wireHandle);
                 }
-                if (receiver.getState() != Thread.State.TERMINATED) {
-                    receiver.interrupt();
-                    throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
-                }
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            } finally {
-                destroyNative(wireHandle);
             }
         }
     }

@@ -123,7 +123,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public boolean nextRow() throws IOException, ServerException, InterruptedException {
+    public synchronized boolean nextRow() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             if (cursor.nextRow()) {
@@ -145,23 +145,23 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public boolean nextColumn() throws IOException, ServerException, InterruptedException {
-        checkResponse();
-        try {
-            return cursor.nextColumn();
-        } catch (IOException | ServerException e) {
-            checkResponse(e);
-            throw e;
-        }
+    public synchronized boolean nextColumn() throws IOException, ServerException, InterruptedException {
+            checkResponse();
+            try {
+                return cursor.nextColumn();
+            } catch (IOException | ServerException e) {
+                checkResponse(e);
+                throw e;
+            }
     }
 
     @Override
-    public boolean isNull() {
+    public synchronized boolean isNull() {
         return cursor.isNull();
     }
 
     @Override
-    public boolean fetchBooleanValue() throws IOException, ServerException, InterruptedException {
+    public synchronized boolean fetchBooleanValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchBooleanValue();
@@ -172,7 +172,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public int fetchInt4Value() throws IOException, ServerException, InterruptedException {
+    public synchronized int fetchInt4Value() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchInt4Value();
@@ -183,7 +183,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public long fetchInt8Value() throws IOException, ServerException, InterruptedException {
+    public synchronized long fetchInt8Value() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchInt8Value();
@@ -194,7 +194,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public float fetchFloat4Value() throws IOException, ServerException, InterruptedException {
+    public synchronized float fetchFloat4Value() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchFloat4Value();
@@ -205,7 +205,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public double fetchFloat8Value() throws IOException, ServerException, InterruptedException {
+    public synchronized double fetchFloat8Value() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchFloat8Value();
@@ -216,7 +216,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public BigDecimal fetchDecimalValue() throws IOException, ServerException, InterruptedException {
+    public synchronized BigDecimal fetchDecimalValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchDecimalValue();
@@ -227,7 +227,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public String fetchCharacterValue() throws IOException, ServerException, InterruptedException {
+    public synchronized String fetchCharacterValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchCharacterValue();
@@ -238,7 +238,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public byte[] fetchOctetValue() throws IOException, ServerException, InterruptedException {
+    public synchronized byte[] fetchOctetValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchOctetValue();
@@ -249,7 +249,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public boolean[] fetchBitValue() throws IOException, ServerException, InterruptedException {
+    public synchronized boolean[] fetchBitValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchBitValue();
@@ -260,7 +260,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public LocalDate fetchDateValue() throws IOException, ServerException, InterruptedException {
+    public synchronized LocalDate fetchDateValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchDateValue();
@@ -271,7 +271,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public LocalTime fetchTimeOfDayValue() throws IOException, ServerException, InterruptedException {
+    public synchronized LocalTime fetchTimeOfDayValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchTimeOfDayValue();
@@ -282,7 +282,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public LocalDateTime fetchTimePointValue() throws IOException, ServerException, InterruptedException {
+    public synchronized LocalDateTime fetchTimePointValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchTimePointValue();
@@ -294,7 +294,7 @@ public class ResultSetImpl implements ResultSet {
 
 
     @Override
-    public OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+    public synchronized OffsetTime fetchTimeOfDayWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchTimeOfDayWithTimeZoneValue();
@@ -305,7 +305,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
+    public synchronized OffsetDateTime fetchTimePointWithTimeZoneValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchTimePointWithTimeZoneValue();
@@ -317,7 +317,7 @@ public class ResultSetImpl implements ResultSet {
 
 
     @Override
-    public DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException {
+    public synchronized DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchDateTimeIntervalValue();
@@ -328,7 +328,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public int beginArrayValue() throws IOException, ServerException, InterruptedException {
+    public synchronized int beginArrayValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.beginArrayValue();
@@ -339,12 +339,12 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void endArrayValue() throws IOException, ServerException, InterruptedException {
+    public synchronized void endArrayValue() throws IOException, ServerException, InterruptedException {
         cursor.endArrayValue();
     }
 
     @Override
-    public int beginRowValue() throws IOException, ServerException, InterruptedException {
+    public synchronized int beginRowValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.beginRowValue();
@@ -355,11 +355,14 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void endRowValue() throws IOException, ServerException, InterruptedException {
+    public synchronized void endRowValue() throws IOException, ServerException, InterruptedException {
         cursor.endRowValue();
     }
 
     private void checkResponse() throws IOException, ServerException, InterruptedException {
+        if (closed.get()) {
+            throw new IOException("resultSet already closed");
+        }
         if (response.isMainResponseReady()) {
             tested.set(true);
             tester.test(response);
@@ -386,7 +389,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void setCloseTimeout(@Nullable Timeout t) {
+    public synchronized void setCloseTimeout(@Nullable Timeout t) {
         if (Objects.nonNull(t)) {
             timeout = t.value();
             unit = t.unit();
@@ -395,7 +398,7 @@ public class ResultSetImpl implements ResultSet {
     }
 
     @Override
-    public void close() throws ServerException, IOException, InterruptedException {
+    public synchronized void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
             if (Objects.nonNull(response)) {
                 try (response) {
