@@ -77,7 +77,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     }
 
     @Override
-    public V get() throws InterruptedException, IOException, ServerException {
+    public synchronized V get() throws InterruptedException, IOException, ServerException {
         if (closed.get()) {
             throw new IOException("Future for " + mapper.toString() + " is already closed");
         }
@@ -87,7 +87,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     }
 
     @Override
-    public V get(long timeout, TimeUnit unit)
+    public synchronized V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
         if (closed.get()) {
             throw new IOException("Future for " + mapper.toString() + " is already closed");
@@ -105,7 +105,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
     }
 
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
+    public synchronized void close() throws IOException, ServerException, InterruptedException {
         try {
             if (!gotton.get()) {
                 var obj = get();
