@@ -148,6 +148,57 @@ message Batch {
     }
 }
 
+message TableName {
+    // the database name.
+    string database_name = 1;
+
+    // the schema name.
+    string schema_name = 2;
+
+    // the table name.
+    string table_name = 3;
+}
+
+// execute a list tables.
+message ListTables {
+    reserved 2 to 10;
+  // request is successfully completed.
+
+  message Success {
+    // the database names.
+    repeated TableName table_names = 1;
+  }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // engine error was occurred.
+        Error error = 12;
+    }
+}
+
+// execute a getSearchPath.
+message SearchPath {
+    reserved 2 to 10;
+  // request is successfully completed.
+
+  message Success {
+    // the search path.
+    repeated string search_paths = 1;
+  }
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // engine error was occurred.
+        Error error = 12;
+    }
+}
+
 /* For response message from the SQL service. */
 message Response {
   oneof response {
@@ -158,6 +209,8 @@ message Response {
     Explain explain = 5;
     DescribeTable describe_table = 6;
     Batch batch = 7;
+    ListTables listTables = 8;
+    SearchPath searchPath = 9;
   }
 }
 

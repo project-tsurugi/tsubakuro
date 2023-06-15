@@ -145,6 +145,28 @@ public interface SqlClient extends ServerResource {
     }
 
     /**
+     * Returns the list of available table names in the database, except system tables.
+     * <p>
+     * The table names are each fully qualified (maybe with a schema name).
+     * To retrieve more details for the individual tables, you can use {@link #getTableMetadata(String)}.
+     * </p>
+     * @return a future response of available table names
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<TableList> listTables() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns the current search path.
+     * @return a future response of the current search path
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<SearchPath> getSearchPath() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Disposes the underlying server resources.
      * Note that, this never closes the underlying {@link Session}.
      */
