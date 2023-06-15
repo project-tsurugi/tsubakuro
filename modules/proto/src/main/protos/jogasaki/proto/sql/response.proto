@@ -148,7 +148,7 @@ message Batch {
     }
 }
 
-message TableName {
+message TablePathName {
     // the database name.
     string database_name = 1;
 
@@ -165,8 +165,8 @@ message ListTables {
   // request is successfully completed.
 
   message Success {
-    // the database names.
-    repeated TableName table_names = 1;
+    // the table path names.
+    repeated TablePathName table_path_names = 1;
   }
 
     // the response body.

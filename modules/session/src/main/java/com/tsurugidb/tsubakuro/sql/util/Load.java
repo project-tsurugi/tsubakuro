@@ -88,7 +88,7 @@ public class Load implements ServerResource {
         return submit(transaction, Arrays.asList(files));
     }
 
-            /**
+    /**
      * Submits {@link SqlClient#executeLoad(PreparedStatement, Collection, Collection) load operation}.
      * @param client the sqlClient which the load operation executes in
      * @param files the input dump file paths, which SQL server can read them

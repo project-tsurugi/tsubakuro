@@ -280,7 +280,10 @@ message ExecuteDump {
 
 /* For execute load request. */
 message ExecuteLoad {
-  common.Transaction transaction_handle = 1;
+  // optional transaction handle (empty for non-transactional load).
+  oneof transaction_handle_opt {
+    common.Transaction transaction_handle = 1;
+  }
   common.PreparedStatement prepared_statement_handle = 2;
   repeated Parameter parameters = 3;
   repeated string file = 4;

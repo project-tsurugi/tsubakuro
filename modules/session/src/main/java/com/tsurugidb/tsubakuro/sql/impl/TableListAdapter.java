@@ -29,7 +29,7 @@ public class TableListAdapter implements TableList {
     @Override
     public List<String> getTableNames() {
         var l = new ArrayList<String>();
-        for (var e : proto.getTableNamesList()) {
+        for (var e : proto.getTablePathNamesList()) {
             l.add(e.getTableName());
         }
         return l;
@@ -38,7 +38,7 @@ public class TableListAdapter implements TableList {
     @Override
     public List<String> getSimpleNames(SearchPath searchPath) {
         var l = new ArrayList<String>();
-        for (var e : proto.getTableNamesList()) {
+        for (var e : proto.getTablePathNamesList()) {
             for (var n : searchPath.getSchemaNames()) {
                 if (n.equals(e.getSchemaName())) {
                     l.add(e.getTableName());

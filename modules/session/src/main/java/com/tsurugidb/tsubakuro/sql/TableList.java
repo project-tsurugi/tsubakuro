@@ -6,7 +6,7 @@ import java.util.List;
  * Represents table list.
  */
 public interface TableList {
-    
+
     /**
      * Returns a list of the available table names in the database, except system tables.
      * @return a list of the available table names
