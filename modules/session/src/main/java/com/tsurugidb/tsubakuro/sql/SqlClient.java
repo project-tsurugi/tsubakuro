@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
@@ -141,6 +142,32 @@ public interface SqlClient extends ServerResource {
      */
     default FutureResponse<TableMetadata> getTableMetadata(@Nonnull String tableName) throws IOException {
         Objects.requireNonNull(tableName);
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Executes a load action out side transaction context.
+     * <p>
+     * This operation performs like as following:
+     * <ol>
+     *   <li> extracts each row from the input dump files </li>
+     *   <li> perform the statement for every rows, with substituting place-holders with the row data </li>
+     * </ol>
+     * </p>
+     * @param statement the prepared statement to execute
+     * @param parameters parameter list for place-holders in the prepared statement.
+     *      parameter can refer the column on the input dump file, by specifying
+     *      {@link Parameters#referenceColumn(String, int)} or {@link Parameters#referenceColumn(String, String)}.
+     *      It will substitutes place-holders into values from input dump file on runtime.
+     * @param files the input dump file paths, which SQL server can read them
+     * @return a future response of the result set
+     * @throws IOException if I/O error was occurred while sending request
+     * @see Parameters
+     */
+    default FutureResponse<Void> executeLoad(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
+            @Nonnull Collection<? extends Path> files) throws IOException {
         throw new UnsupportedOperationException();
     }
 
