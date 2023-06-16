@@ -27,6 +27,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.Types;
@@ -118,7 +119,7 @@ class SqlServiceStubTest {
         assertFalse(wire.hasRemaining());
     }
 
-//    @Test  // FIXME
+    @Test
     void sendBeginSuccessAutoclose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
                 RequestHandler.returns(SqlResponse.Begin.newBuilder()
@@ -315,7 +316,7 @@ class SqlServiceStubTest {
         return null;
     }
 
-//    @Test  FIXME
+    @Test
     void sendPrepareSuccessAutoclose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.PREPARE,
                 RequestHandler.returns(SqlResponse.Prepare.newBuilder()
@@ -995,6 +996,122 @@ class SqlServiceStubTest {
                 .addFile("a")
                 .addFile("b")
                 .addFile("c")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    static class SearchPathAdapterForTest implements SearchPath {
+        private final List<String> schemaNames;
+
+        private SearchPathAdapterForTest(List<String> schemaNames) {
+            this.schemaNames = schemaNames;
+        }
+
+        static SearchPathAdapterForTest of(List<String> names) {
+            return new SearchPathAdapterForTest(names);
+        }
+
+        static SearchPathAdapterForTest of(String... names) {
+            return new SearchPathAdapterForTest(Arrays.asList(names));
+        }
+
+        @Override
+        public List<String> getSchemaNames() {
+            return schemaNames;
+        }
+    }
+
+    @Test
+    void sendListTablesSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.LISTTABLES,
+                RequestHandler.returns(SqlResponse.ListTables.newBuilder()
+                        .setSuccess(SqlResponse.ListTables.Success.newBuilder()
+                                .addTablePathNames(SqlResponse.TablePathName.newBuilder()
+                                        .setDatabaseName("database1")
+                                        .setSchemaName("schema1")
+                                        .setTableName("table1"))
+                                .addTablePathNames(SqlResponse.TablePathName.newBuilder()
+                                        .setDatabaseName("database2")
+                                        .setSchemaName("schema2")
+                                        .setTableName("table2")))
+                        .build())));
+
+        var message = SqlRequest.ListTables.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            var tableNames = result.getTableNames();
+            assertEquals(2, tableNames.size());
+            assertEquals("table1", tableNames.get(0));
+            assertEquals("table2", tableNames.get(1));
+            var simepleNames = result.getSimpleNames(SearchPathAdapterForTest.of("schema1"));
+            assertEquals(1, simepleNames.size());
+            assertEquals("table1", simepleNames.get(0));
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendListTablesEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.LISTTABLES,
+                RequestHandler.returns(SqlResponse.ListTables.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.ListTables.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendSearchPathSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
+                RequestHandler.returns(SqlResponse.SearchPath.newBuilder()
+                        .setSuccess(SqlResponse.SearchPath.Success.newBuilder()
+                                .addSearchPaths("schema1")
+                                .addSearchPaths("schema2"))
+                        .build())));
+
+        var message = SqlRequest.GetSearchPath.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            var schemaNames = result.getSchemaNames();
+            assertEquals(2, schemaNames.size());
+            assertEquals("schema1", schemaNames.get(0));
+            assertEquals("schema2", schemaNames.get(1));
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendSearchPathEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
+                RequestHandler.returns(SqlResponse.SearchPath.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.GetSearchPath.newBuilder()
                 .build();
         try (
             var service = new SqlServiceStub(session);
