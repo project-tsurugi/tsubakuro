@@ -280,7 +280,10 @@ message ExecuteDump {
 
 /* For execute load request. */
 message ExecuteLoad {
-  common.Transaction transaction_handle = 1;
+  // optional transaction handle (empty for non-transactional load).
+  oneof transaction_handle_opt {
+    common.Transaction transaction_handle = 1;
+  }
   common.PreparedStatement prepared_statement_handle = 2;
   repeated Parameter parameters = 3;
   repeated string file = 4;
@@ -318,6 +321,16 @@ message DescribeTable {
     string name = 11;
 }
 
+// describe available table names in the database.
+message ListTables {
+    reserved 1 to 10;
+}
+
+// describe the current search path.
+message GetSearchPath {
+    reserved 1 to 10;
+}
+
 /* For request message to the SQL service. */
 message Request {
   common.Session session_handle = 1;
@@ -337,5 +350,7 @@ message Request {
     ExecuteLoad execute_load = 14;
     DescribeTable describe_table = 15;
     Batch batch = 16;
+    ListTables listTables = 17;
+    GetSearchPath getSearchPath = 18;
   }
 }

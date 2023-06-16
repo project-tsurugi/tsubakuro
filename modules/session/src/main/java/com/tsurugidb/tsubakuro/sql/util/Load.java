@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -85,6 +86,38 @@ public class Load implements ServerResource {
         Objects.requireNonNull(transaction);
         Objects.requireNonNull(files);
         return submit(transaction, Arrays.asList(files));
+    }
+
+    /**
+     * Submits {@link SqlClient#executeLoad(PreparedStatement, Collection, Collection) load operation}.
+     * @param client the sqlClient which the load operation executes in
+     * @param files the input dump file paths, which SQL server can read them
+     * @return a future response of the result set
+     * @throws IOException if I/O error was occurred
+     * @see SqlClient#executeLoad(PreparedStatement, Collection, Collection)
+     */
+    public FutureResponse<Void> submit(
+            @Nonnull SqlClient client,
+            @Nonnull Collection<? extends Path> files) throws IOException {
+        Objects.requireNonNull(client);
+        Objects.requireNonNull(files);
+        return client.executeLoad(statement, parameters, files);
+    }
+
+    /**
+     * Submits {@link SqlClient#executeLoad(PreparedStatement, Collection, Collection) load operation}.
+     * @param client the SqlClient which the load operation executes in
+     * @param files the input dump file paths, which SQL server can read them
+     * @return a future response of the result set
+     * @throws IOException if I/O error was occurred
+     * @see #submit(SqlClient, Collection)
+     */
+    public FutureResponse<Void> submit(
+            @Nonnull SqlClient client,
+            @Nonnull Path... files) throws IOException {
+        Objects.requireNonNull(client);
+        Objects.requireNonNull(files);
+        return submit(client, Arrays.asList(files));
     }
 
     @Override

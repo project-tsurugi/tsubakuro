@@ -33,6 +33,8 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
+import com.tsurugidb.tsubakuro.sql.TableList;
+import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -636,6 +638,78 @@ public class SqlServiceStub implements SqlService {
                     .setExecuteLoad(request)
                     .build()),
                 new LoadProcessor().asResponseProcessor());
+    }
+
+    static class ListTablesProcessor implements MainResponseProcessor<TableList> {
+        private final AtomicReference<SqlResponse.ListTables> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.LISTTABLES.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getListTables());
+            }
+            var detailResponse = detailResponseCache.get();
+            LOG.trace("receive (ListTables): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.ListTables.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+            }
+            return new TableListAdapter(detailResponse.getSuccess());
+        }
+    }
+
+    @Override
+    public FutureResponse<TableList> send(
+            @Nonnull SqlRequest.ListTables request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (ListTables): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(SqlRequest.Request.newBuilder()
+                    .setListTables(request)
+                    .build()),
+                new ListTablesProcessor().asResponseProcessor());
+    }
+
+    static class GetSearchPathProcessor implements MainResponseProcessor<SearchPath> {
+        private final AtomicReference<SqlResponse.SearchPath> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (Objects.isNull(detailResponseCache.get())) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.SEARCHPATH.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getSearchPath());
+            }
+            var detailResponse = detailResponseCache.get();
+            LOG.trace("receive (SearchPath): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.SearchPath.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+            }
+            return new SearchPathAdapter(detailResponse.getSuccess());
+        }
+    }
+
+    @Override
+    public FutureResponse<SearchPath> send(
+            @Nonnull SqlRequest.GetSearchPath request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (getSearchPath): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(SqlRequest.Request.newBuilder()
+                    .setGetSearchPath(request)
+                    .build()),
+                new GetSearchPathProcessor().asResponseProcessor());
     }
 
     // for compatibility

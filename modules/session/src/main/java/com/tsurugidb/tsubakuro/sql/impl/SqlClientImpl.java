@@ -1,8 +1,10 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
@@ -14,6 +16,8 @@ import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
+import com.tsurugidb.tsubakuro.sql.TableList;
+import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -86,6 +90,37 @@ public class SqlClientImpl implements SqlClient {
                 .setName(tableName)
                 .build();
         return service.send(resuest);
+    }
+
+    @Override
+    public FutureResponse<Void> executeLoad(
+            @Nonnull PreparedStatement statement,
+            @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
+            @Nonnull Collection<? extends Path> files) throws IOException {
+        Objects.requireNonNull(statement);
+        Objects.requireNonNull(parameters);
+        Objects.requireNonNull(files);
+        var pb = SqlRequest.ExecuteLoad.newBuilder()
+        .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
+        .addAllFile(files.stream()
+        .map(Path::toString)
+        .collect(Collectors.toList()));
+        for (SqlRequest.Parameter e : parameters) {
+            pb.addParameters(e);
+        }
+        return service.send(pb.build());
+    }
+
+    @Override
+    public FutureResponse<TableList> listTables() throws IOException {
+        var pb = SqlRequest.ListTables.newBuilder();
+        return service.send(pb.build());
+    }
+
+    @Override
+    public FutureResponse<SearchPath> getSearchPath() throws IOException {
+        var pb = SqlRequest.GetSearchPath.newBuilder();
+        return service.send(pb.build());
     }
 
     @Override
