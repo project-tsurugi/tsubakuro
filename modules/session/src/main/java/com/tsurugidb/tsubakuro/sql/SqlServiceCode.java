@@ -84,9 +84,9 @@ public enum SqlServiceCode implements DiagnosticCode {
     ERR_ABORTED(-10, SqlStatus.Status.ERR_ABORTED),
 
     /**
-     * ERR_ABORTED_RETRYABLE
+     * ERR_SERIALIZATION_FAILURE
      */
-    ERR_ABORTED_RETRYABLE(-11, SqlStatus.Status.ERR_ABORTED_RETRYABLE),
+    ERR_SERIALIZATION_FAILURE(-11, SqlStatus.Status.ERR_ABORTED_RETRYABLE),
 
     /**
      * ERR_NOT_FOUND
@@ -164,6 +164,13 @@ public enum SqlServiceCode implements DiagnosticCode {
     ERR_DATA_CORRUPTION(-26, SqlStatus.Status.ERR_DATA_CORRUPTION),
 
     ;
+
+    /**
+     * ERR_ABORTED_RETRYABLE for backward compatibility
+     */
+    @Deprecated
+    public static final SqlServiceCode ERR_ABORTED_RETRYABLE = ERR_SERIALIZATION_FAILURE;
+
     private final int codeNumber;
 
     private final SqlStatus.Status mapping;
