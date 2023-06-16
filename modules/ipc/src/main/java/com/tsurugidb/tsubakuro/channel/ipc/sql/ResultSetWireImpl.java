@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
@@ -18,26 +17,25 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
-    private AtomicLong wireHandle = new AtomicLong(0);  // for c++
+
     private long sessionWireHandle;
     private ByteBufferBackedInput byteBufferBackedInput;
 
     class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
-        private final ResultSetWireImpl resultSetWireImpl;
+        private long wireHandle;  // for c++
 
-        ByteBufferBackedInputForIpc(ByteBuffer source, ResultSetWireImpl resultSetWireImpl) {
-            super(source);
-            this.resultSetWireImpl = resultSetWireImpl;
+        ByteBufferBackedInputForIpc(long sessionWireHandle, String name) throws IOException {
+            super(ByteBuffer.allocate(0));
+            this.wireHandle = createNative(sessionWireHandle, name);
         }
 
         protected boolean next() {
             synchronized (this) {
-                var wh = wireHandle.get();
-                if (wh != 0) {
+                if (wireHandle != 0) {
                     if (source.capacity() > 0) {
-                        disposeUsedDataNative(wh, source.capacity());
+                        disposeUsedDataNative(wireHandle, source.capacity());
                     }
-                    source = getChunkNative(wh);
+                    source = getChunkNative(wireHandle);
                     return Objects.nonNull(source);
                 }
                 return false;
@@ -47,22 +45,21 @@ public class ResultSetWireImpl implements ResultSetWire {
         @Override
         public void close() throws IOException {
             synchronized (this) {
-                discardRemainingResultSet();
-                super.close();
-                resultSetWireImpl.close();
+                if (wireHandle != 0) {
+                    discardRemainingResultSet();
+                    super.close();
+                    closeNative(wireHandle);
+                    wireHandle = 0;
+                }
             }
         }
 
         private void discardRemainingResultSet() {
-            var wh = wireHandle.get();
-            if (wh == 0) {
-                return;
-            }
             while (Objects.nonNull(source)) {
                 if (source.capacity() > 0) {
-                    disposeUsedDataNative(wh, source.capacity());
+                    disposeUsedDataNative(wireHandle, source.capacity());
                 }
-                source = getChunkNative(wh);
+                source = getChunkNative(wireHandle);
             }
         }
     }
@@ -85,10 +82,8 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
-        synchronized (this) {
-            wireHandle.set(createNative(sessionWireHandle, name));
-            return this;
-        }
+        byteBufferBackedInput = new ByteBufferBackedInputForIpc(sessionWireHandle, name);
+        return this;
     }
 
     /**
@@ -96,37 +91,12 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @return ByteBufferInput contains the record data from the SQL server.
      */
     public InputStream getByteBufferBackedInput() {
-        synchronized (this) {
-            if (Objects.isNull(byteBufferBackedInput)) {
-                var buffer = getChunkNative(wireHandle.get());
-                if (Objects.nonNull(buffer)) {
-                    byteBufferBackedInput = new ByteBufferBackedInputForIpc(buffer, this);
-                } else {
-                    byteBufferBackedInput = new ByteBufferBackedInputForIpc(ByteBuffer.allocate(0), this);
-                }
-            }
-            return byteBufferBackedInput;
-        }
+        return byteBufferBackedInput;
     }
 
     /**
-     * Close the wire
+     * Close do nothing
      */
     public void close() {
-        if (Objects.nonNull(byteBufferBackedInput)) {
-            synchronized (byteBufferBackedInput) {
-                var wh = wireHandle.get();
-                if (wh != 0) {
-                    ((ByteBufferBackedInputForIpc) byteBufferBackedInput).discardRemainingResultSet();
-                    closeNative(wh);
-                }
-                wireHandle.set(0);
-            }
-        } else {
-            var wh = wireHandle.getAndSet(0);
-            if (wh != 0) {
-                closeNative(wh);
-            }
-        }
     }
 }
