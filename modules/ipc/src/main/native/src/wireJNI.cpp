@@ -277,6 +277,8 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWir
 
     if (rwc != nullptr) {
         session_wire_container* envelope = rwc->get_envelope();
-        envelope->dispose_resultset_wire(rwc);
+        if (envelope != nullptr) {
+            envelope->dispose_resultset_wire(rwc);
+        }
     }
 }

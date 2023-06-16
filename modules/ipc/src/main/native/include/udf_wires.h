@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <mutex>
+
 #include "wire.h"
 
 namespace tateyama::common::wire {
@@ -39,16 +41,18 @@ public:
             }
         }
         std::string_view get_chunk() {
-            if (wrap_around_.data()) {
-                auto rv = wrap_around_;
-                wrap_around_ = std::string_view(nullptr, 0);
-                return rv;
-            }
-            if (current_wire_ == nullptr) {
-                current_wire_ = active_wire();
-            }
-            if (current_wire_ != nullptr) {
-                return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
+            if (!closed_) {
+                if (wrap_around_.data()) {
+                    auto rv = wrap_around_;
+                    wrap_around_ = std::string_view(nullptr, 0);
+                    return rv;
+                }
+                if (current_wire_ == nullptr) {
+                    current_wire_ = active_wire();
+                }
+                if (current_wire_ != nullptr) {
+                    return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
+                }
             }
             return std::string_view(nullptr, 0);
         }
@@ -66,7 +70,13 @@ public:
         bool is_eor() {
             return shm_resultset_wires_->is_eor();
         }
-        void set_closed() { shm_resultset_wires_->set_closed(); }
+        void set_closed() {
+            shm_resultset_wires_->set_closed();
+        }
+        void be_orphaned() {
+            closed_ = true;
+            envelope_ = nullptr;
+        }
         session_wire_container* get_envelope() { return envelope_; }
 
     private:
@@ -81,6 +91,7 @@ public:
         std::string_view wrap_around_{};
         //   for client
         shm_resultset_wire* current_wire_{};
+        bool closed_{};
     };
 
     class wire_container {
@@ -150,6 +161,12 @@ public:
 
     ~session_wire_container() {
         request_wire_.disconnect();
+        {
+            std::lock_guard<std::mutex> lock(mtx_set_);
+            for (auto& e : resultset_wires_set_) {
+                e->be_orphaned();
+            }
+        }
     }
 
     /**
@@ -163,11 +180,20 @@ public:
     wire_container& get_request_wire() { return request_wire_; }
     response_wire_container& get_response_wire() { return response_wire_; }
 
-    resultset_wires_container *create_resultset_wire() {
-        return new resultset_wires_container(this);
+    resultset_wires_container* create_resultset_wire() {
+        auto rv = new resultset_wires_container(this);
+        {
+            std::lock_guard<std::mutex> lock(mtx_set_);
+            resultset_wires_set_.emplace(rv);
+        }
+        return rv;
     }
     void dispose_resultset_wire(resultset_wires_container* container) {
         container->set_closed();
+        {
+            std::lock_guard<std::mutex> lock(mtx_set_);
+            resultset_wires_set_.erase(container);
+        }
         delete container;
     }
     status_provider& get_status_provider() {
@@ -180,6 +206,8 @@ private:
     wire_container request_wire_{};
     response_wire_container response_wire_{};
     status_provider* status_provider_{};
+    std::set<resultset_wires_container*> resultset_wires_set_{};
+    std::mutex mtx_set_{};
 };
 
 class connection_container
