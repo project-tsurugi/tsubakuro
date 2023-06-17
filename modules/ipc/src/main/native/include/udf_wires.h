@@ -75,7 +75,6 @@ public:
         }
         void be_orphaned() {
             closed_ = true;
-            envelope_ = nullptr;
         }
         session_wire_container* get_envelope() { return envelope_; }
 
@@ -161,12 +160,18 @@ public:
 
     ~session_wire_container() {
         request_wire_.disconnect();
-        {
-            std::lock_guard<std::mutex> lock(mtx_set_);
-            for (auto& e : resultset_wires_set_) {
-                e->be_orphaned();
-            }
+    }
+
+    bool is_deletable() {
+        std::lock_guard<std::mutex> lock(mtx_set_);
+        going_to_delete_ = true;
+        if (resultset_wires_set_.empty()) {
+            return true;
         }
+        for (auto& e : resultset_wires_set_) {
+            e->be_orphaned();
+        }
+        return false;
     }
 
     /**
@@ -181,21 +186,23 @@ public:
     response_wire_container& get_response_wire() { return response_wire_; }
 
     resultset_wires_container* create_resultset_wire() {
-        auto rv = new resultset_wires_container(this);
-        {
-            std::lock_guard<std::mutex> lock(mtx_set_);
+        std::lock_guard<std::mutex> lock(mtx_set_);
+        if (!going_to_delete_) {
+            auto rv = new resultset_wires_container(this);
             resultset_wires_set_.emplace(rv);
+            return rv;
         }
-        return rv;
+        throw std::runtime_error("the current session is already closed");
     }
-    void dispose_resultset_wire(resultset_wires_container* container) {
+
+    bool dispose_resultset_wire(resultset_wires_container* container) {
+        std::lock_guard<std::mutex> lock(mtx_set_);
         container->set_closed();
-        {
-            std::lock_guard<std::mutex> lock(mtx_set_);
-            resultset_wires_set_.erase(container);
-        }
+        resultset_wires_set_.erase(container);
         delete container;
+        return resultset_wires_set_.empty() && going_to_delete_;
     }
+
     status_provider& get_status_provider() {
         return *status_provider_;
     }
@@ -208,6 +215,7 @@ private:
     status_provider* status_provider_{};
     std::set<resultset_wires_container*> resultset_wires_set_{};
     std::mutex mtx_set_{};
+    bool going_to_delete_{};
 };
 
 class connection_container
