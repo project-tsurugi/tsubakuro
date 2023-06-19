@@ -86,7 +86,7 @@ public enum SqlServiceCode implements DiagnosticCode {
     /**
      * ERR_SERIALIZATION_FAILURE
      */
-    ERR_SERIALIZATION_FAILURE(-11, SqlStatus.Status.ERR_ABORTED_RETRYABLE),
+    ERR_SERIALIZATION_FAILURE(-11, SqlStatus.Status.ERR_SERIALIZATION_FAILURE),
 
     /**
      * ERR_NOT_FOUND
@@ -163,6 +163,10 @@ public enum SqlServiceCode implements DiagnosticCode {
      */
     ERR_DATA_CORRUPTION(-26, SqlStatus.Status.ERR_DATA_CORRUPTION),
 
+    /**
+     * ERR_UNIQUE_CONSTRAINT_VIOLATION
+     */
+    ERR_UNIQUE_CONSTRAINT_VIOLATION(-27, SqlStatus.Status.ERR_UNIQUE_CONSTRAINT_VIOLATION),
     ;
 
     /**
