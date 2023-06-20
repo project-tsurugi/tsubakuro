@@ -29,11 +29,8 @@ public class SqlServiceException extends ServerException {
 
     private static String buildMessage(SqlServiceCode code, @Nullable String message) {
         Objects.requireNonNull(code);
-        if (message == null) {
+        if (message == null || message.isEmpty()) {
             return String.format("%s: %s", code.getStructuredCode(), code.name());
-        }
-        if (message.isEmpty()) {
-            message = code.name();
         }
         return String.format("%s: %s", code.getStructuredCode(), message); //$NON-NLS-1$
     }
