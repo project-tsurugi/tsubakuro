@@ -18,6 +18,47 @@ message UnknownError {
     string message = 1;
 }
 
+// response message for RPC.
+message Response {
+    // the response message version.
+    uint64 message_version = 1;
+    reserved 2 to 10;
+    reserved 15 to 20;
+    reserved 25 to 30;
+    reserved 32 to 40;
+
+    // the response command.
+    oneof command {
+
+        // begin transaction command.
+        Begin begin = 11;
+
+        // commit transaction command.
+        Commit commit = 12;
+
+        // rollback transaction command.
+        Rollback rollback = 13;
+
+        // rollback transaction command.
+        CloseTransaction close_transaction = 14;
+
+        // GET record command.
+        Get get = 21;
+
+        // PUT record command.
+        Put put = 22;
+
+        // REMOVE record command.
+        Remove remove = 23;
+
+        // SCAN records command.
+        Scan scan = 24;
+
+        // batch command.
+        Batch batch = 31;
+    }
+}
+
 // begin transaction
 message Begin {
     reserved 1 to 10;

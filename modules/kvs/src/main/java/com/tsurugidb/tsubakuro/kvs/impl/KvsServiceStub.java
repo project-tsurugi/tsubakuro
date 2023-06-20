@@ -90,7 +90,7 @@ public class KvsServiceStub implements KvsService {
 
         @Override
         public TransactionHandle process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Begin.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getBegin();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -118,7 +118,7 @@ public class KvsServiceStub implements KvsService {
     static class CommitProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Commit.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCommit();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -144,7 +144,7 @@ public class KvsServiceStub implements KvsService {
     static class RollbackProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Rollback.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getRollback();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -171,7 +171,7 @@ public class KvsServiceStub implements KvsService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.CloseTransaction.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCloseTransaction();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -198,7 +198,7 @@ public class KvsServiceStub implements KvsService {
     static class GetProcessor implements MainResponseProcessor<GetResult> {
         @Override
         public GetResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Get.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getGet();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -225,7 +225,7 @@ public class KvsServiceStub implements KvsService {
     static class PutProcessor implements MainResponseProcessor<PutResult> {
         @Override
         public PutResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Put.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getPut();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -251,7 +251,7 @@ public class KvsServiceStub implements KvsService {
     static class RemoveProcessor implements MainResponseProcessor<RemoveResult> {
         @Override
         public RemoveResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Remove.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getRemove();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
