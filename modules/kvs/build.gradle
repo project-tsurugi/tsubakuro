@@ -75,6 +75,14 @@ tasks.register('runShortBench', JavaExec) {
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
 }
 
+tasks.register('runTestBench', JavaExec) {
+    dependsOn ':tsubakuro-ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+}
+
 tasks.register('runFullBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
