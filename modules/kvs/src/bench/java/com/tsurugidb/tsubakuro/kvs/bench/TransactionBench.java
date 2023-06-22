@@ -20,7 +20,7 @@ final class TransactionBench {
     private final long minRunMsec;
 
     private TransactionBench(String[] args) {
-        this.bFullBench = (args.length > 0 && args[1].equals("full"));
+        this.bFullBench = (args.length > 0 && args[0].equals("full"));
         this.minRunMsec = (bFullBench ? DEFUALT_RUN_SEC : 10) * 1000L;
     }
 
