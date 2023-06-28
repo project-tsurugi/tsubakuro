@@ -286,6 +286,19 @@ public class KvsServiceStub implements KvsService {
         throw new UnsupportedOperationException(String.valueOf(request));
     }
 
+    static class RequestProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            return null;
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> request() throws IOException {
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
+                new RequestProcessor().asResponseProcessor());
+    }
+
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         session.close();

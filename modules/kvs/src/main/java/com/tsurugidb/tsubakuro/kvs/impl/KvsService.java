@@ -138,6 +138,18 @@ public interface KvsService extends ServerResource {
     }
 
     /**
+     * Requests empty message to KVS service.
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     *      If the request was succeeded, future will returns an operation result object
+     * @throws IOException if I/O error was occurred while sending the request
+     * @note this method is designed just only for benchmark or debug.
+     */
+    default FutureResponse<Void> request() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Closes this service.
      * <p>
      * This operation may close underlying resources of this service (e.g. transaction handle).
