@@ -10,6 +10,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordBuilder;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordInfo;
 import com.tsurugidb.tsubakuro.kvs.bench.ValueType;
@@ -35,19 +36,32 @@ public class RealTransactionTest {
         final String table = "TABLE1";
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
-            int n = kvs.put(tx, table, builder.makeRecordBuffer()).await().size();
+            var record = builder.makeRecordBuffer();
+            {
+                var rec = record.toRecord();
+                for (int i = 0; i < rec.size(); i++) {
+                    System.err.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i));
+                }
+            }
+            System.err.println("PUT");
+            int n = kvs.put(tx, table, record).await().size();
             System.err.println(n);
-            n = kvs.remove(tx, table, builder.makeRecordBuffer()).await().size();
-            System.err.println(n);
-            GetResult get = kvs.get(tx, table, builder.makeRecordBuffer()).await();
+            var key = new RecordBuffer();
+            var pk = record.toRecord().getValue(0);
+            key.add(record.toRecord().getName(0), pk);
+            System.err.println("GET " + pk);
+            GetResult get = kvs.get(tx, table, key).await();
             System.err.println(get.size());
             for (var rec : get.asList()) {
                 for (int i = 0; i < rec.size(); i++) {
-                    System.out.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i));
+                    System.err.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i));
                 }
             }
+            System.err.println("REMOVE " + pk);
+            n = kvs.remove(tx, table, key).await().size();
+            System.err.println(n);
+            System.err.println("COMMIT");
             kvs.commit(tx).await();
-            System.err.println("commit");
         }
     }
 

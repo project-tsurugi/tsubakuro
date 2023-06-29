@@ -27,7 +27,7 @@ public class RecordBuilder {
      */
     public RecordBuffer makeRecordBuffer() {
         RecordBuffer buffer = new RecordBuffer();
-        buffer.add("key", Long.valueOf(v));
+        buffer.add("key", Long.valueOf(v++));
         for (int i = 0; i < info.num(); i++, v++) {
             final var name = "value" + i;
             switch (info.type()) {
