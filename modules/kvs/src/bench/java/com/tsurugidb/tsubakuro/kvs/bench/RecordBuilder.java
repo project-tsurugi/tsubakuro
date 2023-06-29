@@ -14,6 +14,26 @@ public class RecordBuilder {
     private long v = System.nanoTime();
 
     /**
+     * first primary key name.
+     */
+    public static final String FIRST_KEY_NAME = "key1";
+
+    /**
+     * value name prefix.
+     */
+    public static final String VALUE_NAME_PREFIX = "value";
+
+    /**
+     * the value of first column index.
+     */
+    public static final int FIRST_COUMN_INDEX = 1;
+
+    /**
+     * the name of first column.
+     */
+    public static final String FIRST_VALUE_NAME = VALUE_NAME_PREFIX + FIRST_COUMN_INDEX;
+
+    /**
      * Creates a new instance.
      * @param info what kind of record should be made
      */
@@ -27,9 +47,9 @@ public class RecordBuilder {
      */
     public RecordBuffer makeRecordBuffer() {
         RecordBuffer buffer = new RecordBuffer();
-        buffer.add("key", Long.valueOf(v++));
-        for (int i = 0; i < info.num(); i++, v++) {
-            final var name = "value" + i;
+        buffer.add(FIRST_KEY_NAME, Long.valueOf(v++));
+        for (int i = FIRST_COUMN_INDEX; i < FIRST_COUMN_INDEX + info.num(); i++, v++) {
+            final var name = VALUE_NAME_PREFIX + i;
             switch (info.type()) {
             case LONG:
                 buffer.add(name, Long.valueOf(v));
