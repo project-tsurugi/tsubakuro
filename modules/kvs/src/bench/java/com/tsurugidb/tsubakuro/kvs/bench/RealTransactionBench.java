@@ -12,6 +12,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 
 /**
  * Simple transaction benchmark of KvsClient without real connection.
@@ -55,9 +56,13 @@ final class RealTransactionBench {
                 do {
                     for (var i = 0; i < loopblock; i++) {
                         try (var handle = kvs.beginTransaction().await()) {
-                            kvs.get(handle, table, recBuilder.makeRecordBuffer()).await();
-                            kvs.put(handle, table, recBuilder.makeRecordBuffer()).await();
-                            kvs.get(handle, table, recBuilder.makeRecordBuffer()).await();
+                            var record = recBuilder.makeRecordBuffer();
+                            var key = new RecordBuffer();
+                            var r = record.toRecord();
+                            key.add(r.getName(0), r.getValue(0));
+                            kvs.put(handle, table, record).await();
+                            kvs.get(handle, table, key).await();
+                            kvs.get(handle, table, key).await();
                             status.addNumRecord(3);
                             kvs.commit(handle).await();
                         }
@@ -120,7 +125,7 @@ final class RealTransactionBench {
     private void shortBench() throws InterruptedException, ExecutionException {
         showCSVheader();
         // NOTE: first clientNums=1 is for warming up (JIT compile etc.).
-        final int[] clientNums = { 1, 1, 2, 4, 8, 16, 32, 64, 100 };
+        final int[] clientNums = { 1, 1 }; //, 2, 4, 8, 16, 32, 64, 100 };
         final int[] nvalues = { 1 };
         for (var clientNum : clientNums) {
             for (var nvalue : nvalues) {
