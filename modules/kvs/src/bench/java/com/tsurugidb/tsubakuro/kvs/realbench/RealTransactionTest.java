@@ -34,7 +34,7 @@ public class RealTransactionTest {
         this.tableName = "TABLE" + System.currentTimeMillis();
     }
 
-    private void init_db() throws Exception {
+    private void initDB() throws Exception {
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var client = SqlClient.attach(session); var tx = client.createTransaction().await()) {
             {
@@ -95,7 +95,7 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        app.init_db();
+        app.initDB();
         app.test();
     }
 
