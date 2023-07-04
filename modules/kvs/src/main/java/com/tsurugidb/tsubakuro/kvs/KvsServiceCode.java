@@ -1,5 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs;
 
+import java.util.HashMap;
+
 import javax.annotation.Nonnegative;
 
 import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
@@ -15,19 +17,113 @@ public enum KvsServiceCode implements DiagnosticCode {
     UNKNOWN(0),
 
     /**
-     * The operation is not implemented yet.
+     * the target element does not exist.
      */
-    NOT_IMPLEMENTED(1),
+    NOT_FOUND(1),
+
+    /**
+     * the target element already exists.
+     */
+    ALREADY_EXISTS(2),
+
+    /**
+     * transaction operation is rollbacked by user.
+     */
+    USER_ROLLBACK(3),
+
+    /**
+     * the operation is waiting for other transaction
+     */
+    WAITING_FOR_OTHER_TRANSACTION(4),
+
+    /**
+     * I/O error.
+     */
+    IO_ERROR(102),
+
+    /**
+     * API arguments are invalid.
+     */
+    INVALID_ARGUMENT(103),
+
+    /**
+     * API state is invalid.
+     */
+    INVALID_STATE(104),
+
+    /**
+     * operation is unsupported.
+     */
+    UNSUPPORTED(105),
+
+    /**
+     * transaction operation met an user-defined error.
+     * @details this code is returned only from transaction_exec() and transaction_commit()
+     */
+    USER_ERROR(106),
+
+    /**
+     * transaction is aborted
+     */
+    ABORTED(107),
+
+    /**
+     * transaction is aborted, but retry might resolve the situation
+     */
+    ABORT_RETRYABLE(108),
+
+    /**
+     * api call timed out
+     */
+    TIME_OUT(109),
+
+    /**
+     * the feature is not yet implemented
+     */
+    NOT_IMPLEMENTED(110),
+
+    /**
+     * @brief the operation is not valid
+     */
+    ILLEGAL_OPERATION(111),
+
+    /**
+     * @brief the operation conflicted on write preserve
+     */
+    CONFLICT_ON_WRITE_PRESERVE(112),
+
+    /**
+     * @brief long tx issued write operation without preservation
+     */
+    WRITE_WITHOUT_WRITE_PRESERVE(114),
+
+    /**
+     * @brief transaction is inactive
+     * @details transaction is inactive since it's already committed or aborted. The request is failed.
+     */
+    INACTIVE_TRANSACTION(115),
+
+    /**
+     * @brief requested operation is blocked by concurrent operation
+     * @details the request cannot be fulfilled due to the operation concurrently executed by other transaction.
+     * After the blocking transaction completes, re-trying the request may lead to different result.
+     */
+    BLOCKED_BY_CONCURRENT_OPERATION(116),
+
+    /**
+     * @brief reached resource limit and request could not be accomplished
+     */
+    RESOURCE_LIMIT_REACHED(117),
+
+    /**
+     * @brief key length passed to the API is invalid
+     */
+    INVALID_KEY_LENGTH(118),
 
     /**
      * The operation result data is too large.
      */
     RESULT_TOO_LARGE(1_001),
-
-    /**
-     * The operation exceeded the resource limit.
-     */
-    RESOURCE_LIMIT_REACHED(1_002),
 
     /**
      * Target resource is not authorized.
@@ -38,21 +134,6 @@ public enum KvsServiceCode implements DiagnosticCode {
      * Transaction is not active.
      */
     TRANSACTION_INACTIVE(10_001),
-
-    /**
-     * Transaction is aborted by the operation.
-     */
-    TRANSACTION_ABORTED(11_001),
-
-    /**
-     * Transaction is aborted by the operation (but may success by retrying the sequence of operations) .
-     */
-    TRANSACTION_ABORTED_RETRYABLE(11_002),
-
-    /**
-     * Transaction is aborted by conflict to other write preservation.
-     */
-    CONFLICT_ON_WRITE_PRESERVE(12_001),
 
     /**
      * Transaction is aborted by writing out of write preservation, or writing in read only transaction.
@@ -114,6 +195,29 @@ public enum KvsServiceCode implements DiagnosticCode {
     @Override
     public String toString() {
         return String.format("%s (%s)", getStructuredCode(), name()); //$NON-NLS-1$
+    }
+
+    private static final HashMap<Integer, KvsServiceCode> MAP = new HashMap<>();
+
+    static {
+        for (var v : KvsServiceCode.values()) {
+            MAP.put(v.getCodeNumber(), v);
+        }
+    }
+
+    /**
+     * get KvsServiceCode object with code
+     * @param code the code of the KvsServiceCode
+     * @return KvsServiceCode with the valid code,
+     *          or KvsServiceCode.UNKNOWN if the code is unknown.
+     */
+    public static KvsServiceCode getInstance(int code) {
+        KvsServiceCode v = MAP.get(code);
+        if (v != null) {
+            return v;
+        } else {
+            return KvsServiceCode.UNKNOWN;
+        }
     }
 
 }

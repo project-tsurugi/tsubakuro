@@ -12,10 +12,10 @@ import "tateyama/proto/kvs/data.proto";
 // empty message
 message Void {}
 
-// unknown error was occurred.
-message UnknownError {
-    // the error message.
-    string message = 1;
+/* For response of error containing a error message. */
+message Error {
+	sint32 code = 1;
+	string detail = 2;
 }
 
 // response message for RPC.
@@ -74,8 +74,8 @@ message Begin {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        // error was occurred.
+        Error error = 12;
     }
 }
 
@@ -88,8 +88,8 @@ message Commit {
         // request is successfully completed.
         Void success = 12;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
+        // error was occurred.
+        Error error = 11;
     }
 }
 
@@ -102,8 +102,8 @@ message Rollback {
         // request is successfully completed.
         Void success = 12;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
+        // error was occurred.
+        Error error = 11;
     }
 }
 
@@ -116,8 +116,8 @@ message CloseTransaction {
         // request is successfully completed.
         Void success = 12;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 11;
+        // error was occurred.
+        Error error = 11;
     }
 }
 
@@ -136,8 +136,8 @@ message Get {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        // error was occurred.
+        Error error = 12;
     }
 }
 
@@ -156,8 +156,8 @@ message Put {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        // error was occurred.
+        Error error = 12;
     }
 }
 
@@ -176,8 +176,8 @@ message Remove {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        // error was occurred.
+        Error error = 12;
     }
 }
 
@@ -214,8 +214,8 @@ message Batch {
         // request is successfully completed.
         Success success = 11;
 
-        // unknown error was occurred.
-        UnknownError unknown_error = 12;
+        // error was occurred.
+        Error error = 12;
     }
 }
 
