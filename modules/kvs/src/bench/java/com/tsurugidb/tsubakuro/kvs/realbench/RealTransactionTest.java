@@ -31,10 +31,11 @@ public class RealTransactionTest {
         String name = (args.length > 0 ? args[0] : "ipc:tsurugi");
         LOG.debug("endpoint: {}", name); //$NON-NLS-1$
         this.endpoint = URI.create(name);
-        this.tableName = "TABLE" + System.currentTimeMillis();
+        // this.tableName = "TABLE" + System.currentTimeMillis();
+        this.tableName = "TABLE1";
     }
 
-    private void initDB() throws Exception {
+    void initDB() throws Exception {
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var client = SqlClient.attach(session); var tx = client.createTransaction().await()) {
             {
@@ -42,17 +43,19 @@ public class RealTransactionTest {
                         RecordBuilder.FIRST_KEY_NAME, RecordBuilder.FIRST_VALUE_NAME);
                 tx.executeStatement(sql).await();
             }
+            /*
             {
                 String sql = String.format("INSERT INTO %s (%s,%s) VALUES(%d, %d)", tableName,
                         RecordBuilder.FIRST_KEY_NAME, RecordBuilder.FIRST_VALUE_NAME, 1, 100);
                 tx.executeStatement(sql).await();
             }
+            */
             tx.commit().await();
             System.out.println("table " + tableName + " created");
         }
     }
 
-    private void test() throws Exception {
+    void test() throws Exception {
         var builder = new RecordBuilder(new RecordInfo(ValueType.LONG, 1));
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
@@ -95,7 +98,7 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        app.initDB();
+        //app.initDB();
         app.test();
     }
 
