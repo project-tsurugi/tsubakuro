@@ -40,6 +40,9 @@ enum Code {
     // out of memory.
     OUT_OF_MEMORY = 22;
 
+    // reached server resource limit.
+    RESOURCE_LIMIT = 23;
+
     // the current session is already closed.
     SESSION_CLOSED = 31;
 

@@ -48,6 +48,11 @@ public enum CoreServiceCode implements DiagnosticCode {
     OUT_OF_MEMORY(1_04, Diagnostics.Code.OUT_OF_MEMORY),
 
     /**
+     * reached server resource limit.
+     */
+    RESOURCE_LIMIT(1_05, Diagnostics.Code.RESOURCE_LIMIT),
+
+    /**
      * authentication was failed.
      */
     AUTHENTICATION_ERROR(2_01, Diagnostics.Code.AUTHENTICATION_ERROR),
