@@ -148,15 +148,20 @@ message Batch {
     }
 }
 
+message Identifier {
+    // the label.
+    string label = 1;
+}
+
 message TablePathName {
     // the database name.
-    string database_name = 1;
+    Identifier database_name = 1;
 
     // the schema name.
-    string schema_name = 2;
+    Identifier schema_name = 2;
 
     // the table name.
-    string table_name = 3;
+    Identifier table_name = 3;
 }
 
 // execute a list tables.
