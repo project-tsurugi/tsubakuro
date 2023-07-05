@@ -12,11 +12,6 @@ import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
 public enum KvsServiceCode implements DiagnosticCode {
 
     /**
-     * Unknown error.
-     */
-    UNKNOWN(0),
-
-    /**
      * the target element does not exist.
      */
     NOT_FOUND(1),
@@ -35,6 +30,11 @@ public enum KvsServiceCode implements DiagnosticCode {
      * the operation is waiting for other transaction
      */
     WAITING_FOR_OTHER_TRANSACTION(4),
+
+    /**
+     * Unknown error.
+     */
+    UNKNOWN(100),
 
     /**
      * I/O error.
