@@ -12,6 +12,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 
 /**
  * Simple transaction benchmark of KvsClient without real connection.
@@ -28,7 +29,7 @@ final class RealTransactionBench {
     private RealTransactionBench(String[] args) {
         this.bFullBench = args.length >= 1 && args[0].equals("full");
         boolean bStream = args.length >= 2 && args[1].equals("stream");
-        String point = bStream ? "tcp://localhost:12345" : "ipc:tateyama";
+        String point = bStream ? "tcp://localhost:12345" : "ipc:tsurugi";
         this.endpoint = URI.create(point);
         this.minRunMsec = (bFullBench ? DEFUALT_RUN_SEC : 10) * 1000L;
         System.err.println("bFull=" + bFullBench + ", endpoint=" + endpoint + ", minSec=" + minRunMsec / 1000);
@@ -55,11 +56,15 @@ final class RealTransactionBench {
                 do {
                     for (var i = 0; i < loopblock; i++) {
                         try (var handle = kvs.beginTransaction().await()) {
-                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
-                            kvs.put(handle, table, recBuilder.makeRecordBuffer());
-                            kvs.get(handle, table, recBuilder.makeRecordBuffer());
+                            var record = recBuilder.makeRecordBuffer();
+                            var key = new RecordBuffer();
+                            var r = record.toRecord();
+                            key.add(r.getName(0), r.getValue(0));
+                            kvs.put(handle, table, record).await();
+                            kvs.get(handle, table, key).await();
+                            kvs.get(handle, table, key).await();
                             status.addNumRecord(3);
-                            kvs.commit(handle);
+                            kvs.commit(handle).await();
                         }
                     }
                     status.addNumLoop(loopblock);
@@ -119,10 +124,9 @@ final class RealTransactionBench {
 
     private void shortBench() throws InterruptedException, ExecutionException {
         showCSVheader();
-        final int[] clientNums = { 1, 2, 4, 8, 16, 32, 64, 100 };
-        // NOTE: first nvalue=1 is for warming up (JIT compile etc.).
-        // use second nvalue=1 performance data for benchmark result.
-        final int[] nvalues = { 1, 1 };
+        // NOTE: first clientNums=1 is for warming up (JIT compile etc.).
+        final int[] clientNums = { 1, 1 }; //, 2, 4, 8, 16, 32, 64, 100 };
+        final int[] nvalues = { 1 };
         for (var clientNum : clientNums) {
             for (var nvalue : nvalues) {
                 bench(clientNum, new RecordInfo(ValueType.LONG, nvalue));

@@ -56,9 +56,9 @@ public class KvsServiceStub implements KvsService {
         this.session = session;
     }
 
-    static KvsServiceException newUnknown(@Nonnull KvsResponse.UnknownError message) {
+    static KvsServiceException newError(@Nonnull KvsResponse.Error message) {
         assert message != null;
-        return new KvsServiceException(KvsServiceCode.UNKNOWN, message.getMessage());
+        return new KvsServiceException(KvsServiceCode.getInstance(message.getCode()), message.getDetail());
     }
 
     static BrokenResponseException newResultNotSet(@Nonnull Class<? extends Message> aClass, @Nonnull String name) {
@@ -97,8 +97,8 @@ public class KvsServiceStub implements KvsService {
                 var tranHandle = message.getSuccess().getTransactionHandle();
                 return resources.register(new TransactionHandleImpl(tranHandle.getSystemId()));
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -124,8 +124,8 @@ public class KvsServiceStub implements KvsService {
             case SUCCESS:
                 return null;
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -150,8 +150,8 @@ public class KvsServiceStub implements KvsService {
             case SUCCESS:
                 return null;
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -177,8 +177,8 @@ public class KvsServiceStub implements KvsService {
             case SUCCESS:
                 return null;
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -205,8 +205,8 @@ public class KvsServiceStub implements KvsService {
                 var records = message.getSuccess().getRecordsList();
                 return new GetResultImpl(records);
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -231,8 +231,8 @@ public class KvsServiceStub implements KvsService {
             case SUCCESS:
                 return new PutResultImpl(message.getSuccess().getWritten());
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -257,8 +257,8 @@ public class KvsServiceStub implements KvsService {
             case SUCCESS:
                 return new RemoveResultImpl(message.getSuccess().getRemoved());
 
-            case UNKNOWN_ERROR:
-                throw newUnknown(message.getUnknownError());
+            case ERROR:
+                throw newError(message.getError());
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -284,6 +284,19 @@ public class KvsServiceStub implements KvsService {
     public FutureResponse<BatchResult> send(@Nonnull KvsRequest.Batch request) throws IOException {
         // TODO
         throw new UnsupportedOperationException(String.valueOf(request));
+    }
+
+    static class RequestProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            return null;
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> request() throws IOException {
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
+                new RequestProcessor().asResponseProcessor());
     }
 
     @Override
