@@ -13,6 +13,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
 
 /**
  * Simple transaction benchmark of KvsClient without real connection.
@@ -24,30 +25,32 @@ final class RealTransactionBench {
 
     private final boolean bFullBench;
     private final URI endpoint;
+    private final boolean useSameTable;
+    private final LinkedList<String> tableNames = new LinkedList<>();
     private final long minRunMsec;
 
     private RealTransactionBench(String[] args) {
-        this.bFullBench = args.length >= 1 && args[0].equals("full");
-        boolean bStream = args.length >= 2 && args[1].equals("stream");
-        String point = bStream ? "tcp://localhost:12345" : "ipc:tsurugi";
-        this.endpoint = URI.create(point);
+        this.bFullBench = args[0].equals("full");
+        this.endpoint = URI.create(args[1]);
+        this.useSameTable = args[2].equals("sameTable");
         this.minRunMsec = (bFullBench ? DEFUALT_RUN_SEC : 10) * 1000L;
-        System.err.println("bFull=" + bFullBench + ", endpoint=" + endpoint + ", minSec=" + minRunMsec / 1000);
+        System.err.println("bFull=" + bFullBench + ", endpoint=" + endpoint + ", minSec=" + minRunMsec / 1000
+                + ", useSameTable=" + useSameTable);
     }
 
     private class SimpleTransaction implements Callable<TxStatus> {
 
-        private final RecordInfo info;
+        private final String tableName;
+        private final RecordBuilder recBuilder;
 
-        SimpleTransaction(RecordInfo info) {
-            this.info = info;
+        SimpleTransaction(String tableName, RecordInfo info, int clientId) {
+            this.tableName = tableName;
+            this.recBuilder = new RecordBuilder(info, clientId);
         }
 
         @Override
         public TxStatus call() throws Exception {
             var status = new TxStatus();
-            var recBuilder = new RecordBuilder(info);
-            var table = "TABLE1";
             try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
                 var kvs = KvsClient.attach(session)) {
                 Elapse elapse = new Elapse();
@@ -60,9 +63,9 @@ final class RealTransactionBench {
                             var key = new RecordBuffer();
                             var r = record.toRecord();
                             key.add(r.getName(0), r.getValue(0));
-                            kvs.put(handle, table, record).await();
-                            kvs.get(handle, table, key).await();
-                            kvs.get(handle, table, key).await();
+                            kvs.put(handle, tableName, record).await();
+                            kvs.get(handle, tableName, key).await();
+                            kvs.get(handle, tableName, key).await();
                             status.addNumRecord(3);
                             kvs.commit(handle).await();
                         }
@@ -76,7 +79,25 @@ final class RealTransactionBench {
         }
     }
 
-    private void bench(int nclient, RecordInfo info) throws InterruptedException, ExecutionException {
+    void initDB(int nclient) throws Exception {
+        try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
+            var client = SqlClient.attach(session)) {
+            int nTable = (useSameTable ? 1 : nclient);
+            for (int i = 0; i < nTable; i++) {
+                String tableName = "TABLE" + i;
+                String sql = String.format("CREATE TABLE %s (%s BIGINT PRIMARY KEY, %s BIGINT)", tableName,
+                        RecordBuilder.FIRST_KEY_NAME, RecordBuilder.FIRST_VALUE_NAME);
+                try (var tx = client.createTransaction().await()) {
+                    tx.executeStatement(sql).await();
+                    tx.commit().await();
+                    tableNames.add(tableName);
+                }
+            }
+        }
+        System.out.println(tableNames.size() + " tables created");
+    }
+
+    void bench(int nclient, RecordInfo info) throws InterruptedException, ExecutionException {
         System.out.printf("%d,%s,%d", nclient, info.type().toString(), info.num());
         System.out.printf(",%d", new RecordBuilder(info).makeRecordBuffer().toRecord().size());
         //
@@ -85,7 +106,8 @@ final class RealTransactionBench {
         TxStatus allStatus = new TxStatus();
         Elapse e = new Elapse();
         for (int i = 0; i < nclient; i++) {
-            clients.add(executor.submit(new SimpleTransaction(info)));
+            String tableName = useSameTable ? tableNames.get(0) : tableNames.get(i);
+            clients.add(executor.submit(new SimpleTransaction(tableName, info, i)));
         }
         for (var future : clients) {
             var status = future.get();
@@ -125,7 +147,7 @@ final class RealTransactionBench {
     private void shortBench() throws InterruptedException, ExecutionException {
         showCSVheader();
         // NOTE: first clientNums=1 is for warming up (JIT compile etc.).
-        final int[] clientNums = { 1, 1 }; //, 2, 4, 8, 16, 32, 64, 100 };
+        final int[] clientNums = { 1, 1, 2, 4, 8, 16, 32, 64, 100 };
         final int[] nvalues = { 1 };
         for (var clientNum : clientNums) {
             for (var nvalue : nvalues) {
@@ -134,7 +156,7 @@ final class RealTransactionBench {
         }
     }
 
-    private void bench() throws Exception {
+    void bench() throws Exception {
         if (bFullBench) {
             fullBench();
         } else {
@@ -147,13 +169,13 @@ final class RealTransactionBench {
      * @param args program arguments.
      */
     public static void main(String[] args) {
-        if (args.length > 0 && args[0].contains("help")) {
-            System.err.println("Usage: java TransactionBench {short|full} {ipc|stream}");
-            System.err.println("   without args means \"TransactionBench short ipc\"");
+        if (args.length < 3 && args[0].contains("help")) {
+            System.err.println("Usage: java TransactionBench {short|full} endpoint {sameTable|eachTable}");
             return;
         }
         RealTransactionBench app = new RealTransactionBench(args);
         try {
+            app.initDB(1);
             app.bench();
         } catch (Exception e) {
             e.printStackTrace();

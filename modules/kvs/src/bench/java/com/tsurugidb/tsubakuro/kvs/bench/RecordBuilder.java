@@ -11,7 +11,13 @@ import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 public class RecordBuilder {
 
     private final RecordInfo info;
-    private long v = System.nanoTime();
+    private long v;
+
+    /**
+     * maximum client id.
+     * this value is used for avoiding conflict of the key value.
+     */
+    public static final int MAX_CLIENT_ID = 1000;
 
     /**
      * first primary key name.
@@ -36,9 +42,19 @@ public class RecordBuilder {
     /**
      * Creates a new instance.
      * @param info what kind of record should be made
+     * @param clientId id of the client (should be 0..MAX_CLIENT_ID-1)
+     */
+    public RecordBuilder(RecordInfo info, int clientId) {
+        this.info = info;
+        this.v = MAX_CLIENT_ID * System.nanoTime() + clientId;
+    }
+
+    /**
+     * Creates a new instance.
+     * @param info what kind of record should be made
      */
     public RecordBuilder(RecordInfo info) {
-        this.info = info;
+        this(info, 0);
     }
 
     /**
@@ -47,8 +63,9 @@ public class RecordBuilder {
      */
     public RecordBuffer makeRecordBuffer() {
         RecordBuffer buffer = new RecordBuffer();
-        buffer.add(FIRST_KEY_NAME, Long.valueOf(v++));
-        for (int i = FIRST_COUMN_INDEX; i < FIRST_COUMN_INDEX + info.num(); i++, v++) {
+        buffer.add(FIRST_KEY_NAME, Long.valueOf(v));
+        for (int i = FIRST_COUMN_INDEX; i < FIRST_COUMN_INDEX + info.num(); i++) {
+            v += MAX_CLIENT_ID;
             final var name = VALUE_NAME_PREFIX + i;
             switch (info.type()) {
             case LONG:

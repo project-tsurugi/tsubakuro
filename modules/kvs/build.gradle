@@ -73,6 +73,7 @@ tasks.register('runShortBench', JavaExec) {
     systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+    args = ['short', 'ipc:tsurugi', 'sameTable']
 }
 
 tasks.register('runTestBench', JavaExec) {
@@ -81,6 +82,7 @@ tasks.register('runTestBench', JavaExec) {
     systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+    args = ['full', 'ipc:tsurugi', 'sameTable']
 }
 
 tasks.register('runFullBench', JavaExec) {
