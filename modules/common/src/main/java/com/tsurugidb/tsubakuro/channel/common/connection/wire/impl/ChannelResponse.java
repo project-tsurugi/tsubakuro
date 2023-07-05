@@ -15,6 +15,8 @@ import java.util.concurrent.locks.Condition;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlResponse;
@@ -249,7 +251,11 @@ public class ChannelResponse implements Response {
 
     private ByteBuffer skipFrameworkHeader(ByteBuffer response) throws IOException {
         response.rewind();
-        FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
+        var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
+        if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
+            var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
+            throw new IOException(new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage()));
+        }
         return response;
     }
 
