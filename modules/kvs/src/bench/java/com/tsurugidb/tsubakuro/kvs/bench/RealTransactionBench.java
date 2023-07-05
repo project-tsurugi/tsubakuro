@@ -175,7 +175,7 @@ final class RealTransactionBench {
         }
         RealTransactionBench app = new RealTransactionBench(args);
         try {
-            app.initDB(1);
+            app.initDB(100);
             app.bench();
         } catch (Exception e) {
             e.printStackTrace();
