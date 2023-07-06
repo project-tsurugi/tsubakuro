@@ -10,6 +10,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.PutType;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordBuilder;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordInfo;
@@ -91,7 +92,17 @@ public class RealTransactionTest {
             var record = builder.makeRecordBuffer();
             dumpRecord(record.toRecord());
             System.err.println("PUT");
-            int n = kvs.put(tx, tableName, record).await().size();
+            /*
+            int n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
+            System.err.println(n);
+            */
+            int n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
             System.err.println(n);
             var key = new RecordBuffer();
             var pk = record.toRecord().getValue(0);
@@ -105,6 +116,8 @@ public class RealTransactionTest {
             System.err.println("REMOVE " + pk);
             n = kvs.remove(tx, tableName, key).await().size();
             System.err.println(n);
+            // n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
+            // System.err.println(n);
             System.err.println("COMMIT");
             kvs.commit(tx).await();
         }
