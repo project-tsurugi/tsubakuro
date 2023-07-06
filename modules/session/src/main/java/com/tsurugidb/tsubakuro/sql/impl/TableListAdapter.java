@@ -30,7 +30,7 @@ public class TableListAdapter implements TableList {
     public List<String> getTableNames() {
         var l = new ArrayList<String>();
         for (var e : proto.getTablePathNamesList()) {
-            l.add(e.getTableName().getLabel());
+            l.add(e.getIdentifiersList().get(0).getLabel());
         }
         return l;
     }
@@ -40,8 +40,8 @@ public class TableListAdapter implements TableList {
         var l = new ArrayList<String>();
         for (var e : proto.getTablePathNamesList()) {
             for (var n : searchPath.getSchemaNames()) {
-                if (n.equals(e.getSchemaName().getLabel())) {
-                    l.add(e.getTableName().getLabel());
+                if (n.equals(e.getIdentifiersList().get(1).getLabel())) {
+                    l.add(e.getIdentifiersList().get(0).getLabel());
                 }
             }
         }

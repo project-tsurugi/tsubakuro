@@ -1033,14 +1033,14 @@ class SqlServiceStubTest {
         wire.next(accepts(SqlRequest.Request.RequestCase.LISTTABLES,
                 RequestHandler.returns(SqlResponse.ListTables.newBuilder()
                         .setSuccess(SqlResponse.ListTables.Success.newBuilder()
-                                .addTablePathNames(SqlResponse.TablePathName.newBuilder()
-                                        .setDatabaseName(SqlResponse.Identifier.newBuilder().setLabel("database1"))
-                                        .setSchemaName(SqlResponse.Identifier.newBuilder().setLabel("schema1"))
-                                        .setTableName(SqlResponse.Identifier.newBuilder().setLabel("table1")))
-                                .addTablePathNames(SqlResponse.TablePathName.newBuilder()
-                                        .setDatabaseName(SqlResponse.Identifier.newBuilder().setLabel("database2"))
-                                        .setSchemaName(SqlResponse.Identifier.newBuilder().setLabel("schema2"))
-                                        .setTableName(SqlResponse.Identifier.newBuilder().setLabel("table2"))))
+                                .addTablePathNames(SqlResponse.Name.newBuilder()
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table1"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database1")))
+                                .addTablePathNames(SqlResponse.Name.newBuilder()
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table2"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema2"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database2"))))
                         .build())));
 
         var message = SqlRequest.ListTables.newBuilder()
@@ -1081,12 +1081,13 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendSearchPathSuccess() throws Exception {
+    void sendSearchPathuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
-                RequestHandler.returns(SqlResponse.SearchPath.newBuilder()
-                        .setSuccess(SqlResponse.SearchPath.Success.newBuilder()
-                                .addSearchPaths("schema1")
-                                .addSearchPaths("schema2"))
+                RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
+                        .setSuccess(SqlResponse.GetSearchPath.Success.newBuilder()
+                                .setSearchPath(SqlResponse.Name.newBuilder()
+                                    .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1"))
+                                    .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema2"))))
                         .build())));
 
         var message = SqlRequest.GetSearchPath.newBuilder()
@@ -1107,7 +1108,7 @@ class SqlServiceStubTest {
     @Test
     void sendSearchPathEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
-                RequestHandler.returns(SqlResponse.SearchPath.newBuilder()
+                RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
                         .setError(newEngineError())
                         .build())));
 

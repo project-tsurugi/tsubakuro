@@ -647,7 +647,7 @@ public class SqlServiceStub implements SqlService {
         public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (Objects.isNull(detailResponseCache.get())) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.LISTTABLES.equals(response.getResponseCase())) {
+                if (!SqlResponse.Response.ResponseCase.LIST_TABLES.equals(response.getResponseCase())) {
                     // FIXME log error message
                     throw new IOException("response type is inconsistent with the request type");
                 }
@@ -677,21 +677,21 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class GetSearchPathProcessor implements MainResponseProcessor<SearchPath> {
-        private final AtomicReference<SqlResponse.SearchPath> detailResponseCache = new AtomicReference<>();
+        private final AtomicReference<SqlResponse.GetSearchPath> detailResponseCache = new AtomicReference<>();
 
         @Override
         public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (Objects.isNull(detailResponseCache.get())) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.SEARCHPATH.equals(response.getResponseCase())) {
+                if (!SqlResponse.Response.ResponseCase.GET_SEARCH_PATH.equals(response.getResponseCase())) {
                     // FIXME log error message
                     throw new IOException("response type is inconsistent with the request type");
                 }
-                detailResponseCache.set(response.getSearchPath());
+                detailResponseCache.set(response.getGetSearchPath());
             }
             var detailResponse = detailResponseCache.get();
             LOG.trace("receive (SearchPath): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.SearchPath.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+            if (SqlResponse.GetSearchPath.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
                 throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
             }
