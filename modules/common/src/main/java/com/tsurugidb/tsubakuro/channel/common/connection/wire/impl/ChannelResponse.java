@@ -59,7 +59,8 @@ public class ChannelResponse implements Response {
             return main.get();
         }
         if (Objects.nonNull(exceptionMain.get())) {
-            throw new IOException(exceptionMain.get());
+            var e = exceptionMain.get();
+            throw new IOException(e.getMessage(), e);
         }
 
         while (true) {
@@ -73,7 +74,8 @@ public class ChannelResponse implements Response {
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
-                    throw new IOException(exceptionMain.get());
+                    var e = exceptionMain.get();
+                    throw new IOException(e.getMessage(), e);
                 }
             } catch (InterruptedException e) {
                 throw new IOException(e);
@@ -89,7 +91,8 @@ public class ChannelResponse implements Response {
             return main.get();
         }
         if (Objects.nonNull(exceptionMain.get())) {
-            throw new IOException(exceptionMain.get());
+            var e = exceptionMain.get();
+            throw new IOException(e.getMessage(), e);
         }
 
         while (true) {
@@ -105,7 +108,8 @@ public class ChannelResponse implements Response {
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
-                    throw new IOException(exceptionMain.get());
+                    var e = exceptionMain.get();
+                    throw new IOException(e.getMessage(), e);
                 }
             } catch (InterruptedException e) {
                 throw new IOException(e);
@@ -149,7 +153,8 @@ public class ChannelResponse implements Response {
             return resultSet.get().getByteBufferBackedInput();
         }
         if (Objects.nonNull(exceptionResultSet.get())) {
-            throw exceptionResultSet.get();
+            var e = exceptionResultSet.get();
+            throw new IOException(e.getMessage(), e);
         }
         return null;
     }
@@ -160,7 +165,8 @@ public class ChannelResponse implements Response {
             return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
         }
         if (Objects.nonNull(exceptionResultSet.get())) {
-            throw exceptionResultSet.get();
+            var e = exceptionResultSet.get();
+            throw new IOException(e.getMessage(), e);
         }
         return null;
     }
