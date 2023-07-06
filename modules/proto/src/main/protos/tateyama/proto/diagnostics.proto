@@ -41,7 +41,7 @@ enum Code {
     OUT_OF_MEMORY = 22;
 
     // reached server resource limit.
-    RESOURCE_LIMIT = 23;
+    RESOURCE_LIMIT_REACHED = 23;
 
     // the current session is already closed.
     SESSION_CLOSED = 31;

@@ -50,7 +50,7 @@ public enum CoreServiceCode implements DiagnosticCode {
     /**
      * reached server resource limit.
      */
-    RESOURCE_LIMIT(1_05, Diagnostics.Code.RESOURCE_LIMIT),
+    RESOURCE_LIMIT_REACHED(1_05, Diagnostics.Code.RESOURCE_LIMIT_REACHED),
 
     /**
      * authentication was failed.
