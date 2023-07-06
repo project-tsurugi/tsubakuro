@@ -69,8 +69,12 @@ abstract class AbstractResultSetProcessor<T extends Message>
             return;
         }
         if (cache.get() == null) {
-            var message = parse(response.waitForMainResponse());
-            cache.compareAndSet(null, message);
+            try {
+                var message = parse(response.waitForMainResponse());
+                cache.compareAndSet(null, message);
+            } catch (IOException | ServerException | InterruptedException e) {
+                throw new IOException(e);
+            }
         }
         doTest(cache.get());
         passed.set(true);
@@ -85,10 +89,14 @@ abstract class AbstractResultSetProcessor<T extends Message>
         }
         if (cache.get() == null) {
             T message;
-            if (timeout > 0) {
-                message = parse(response.waitForMainResponse(timeout, unit));
-            } else {
-                message = parse(response.waitForMainResponse());
+            try {
+                if (timeout > 0) {
+                    message = parse(response.waitForMainResponse(timeout, unit));
+                } else {
+                    message = parse(response.waitForMainResponse());
+                }
+            } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
+                throw new IOException(e);
             }
             cache.compareAndSet(null, message);
         }
