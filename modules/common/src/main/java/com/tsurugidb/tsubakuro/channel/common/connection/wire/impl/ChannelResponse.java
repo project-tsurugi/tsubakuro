@@ -59,7 +59,7 @@ public class ChannelResponse implements Response {
             return main.get();
         }
         if (Objects.nonNull(exceptionMain.get())) {
-            throw exceptionMain.get();
+            throw new IOException(exceptionMain.get());
         }
 
         while (true) {
@@ -73,7 +73,7 @@ public class ChannelResponse implements Response {
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
-                    throw exceptionMain.get();
+                    throw new IOException(exceptionMain.get());
                 }
             } catch (InterruptedException e) {
                 throw new IOException(e);
@@ -89,7 +89,7 @@ public class ChannelResponse implements Response {
             return main.get();
         }
         if (Objects.nonNull(exceptionMain.get())) {
-            throw exceptionMain.get();
+            throw new IOException(exceptionMain.get());
         }
 
         while (true) {
@@ -105,7 +105,7 @@ public class ChannelResponse implements Response {
                     return main.get();
                 }
                 if (Objects.nonNull(exceptionMain.get())) {
-                    throw exceptionMain.get();
+                    throw new IOException(exceptionMain.get());
                 }
             } catch (InterruptedException e) {
                 throw new IOException(e);
