@@ -1,0 +1,315 @@
+diff --git a/.gitignore b/.gitignore
+index aa65bac..2bc67a2 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -23,3 +23,6 @@
+ # ignore standard Mac OS X files/dirs
+ .DS_Store
+ /differentbin/
++
++/bin/
++/build/
+diff --git a/Makefile b/Makefile
+new file mode 100644
+index 0000000..df602bd
+--- /dev/null
++++ b/Makefile
+@@ -0,0 +1,14 @@
++TSUBAKURO_HOME := /work/ohkubo/git/tsubakuro
++YCSB_HOME := /work/ohkubo/git/YCSB
++YCSB_TSURUGIDB_LIB := $(YCSB_HOME)/tsurugidb-binding/lib
++
++update:
++	cp -puv $(TSUBAKURO_HOME)/modules/common/build/libs/tsubakuro-common-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++	cp -puv $(TSUBAKURO_HOME)/modules/ipc/build/libs/tsubakuro-ipc-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++	cp -puv $(TSUBAKURO_HOME)/modules/kvs/build/libs/tsubakuro-kvs-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++	cp -puv $(TSUBAKURO_HOME)/modules/proto/build/libs/tsubakuro-proto-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++	cp -puv $(TSUBAKURO_HOME)/modules/session/build/libs/tsubakuro-session-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++	cp -puv $(TSUBAKURO_HOME)/modules/stream/build/libs/tsubakuro-stream-0.0.1-SNAPSHOT.jar $(YCSB_TSURUGIDB_LIB)
++
++cleanlib:
++	rm -rf $(YCSB_TSURUGIDB_LIB)/tsubakuro-*jar
+diff --git a/bin/bindings.properties b/bin/bindings.properties
+index 5c767c7..322f8b8 100755
+--- a/bin/bindings.properties
++++ b/bin/bindings.properties
+@@ -72,5 +72,6 @@
+ solr7:site.ycsb.db.solr7.SolrClient
+ tarantool:site.ycsb.db.TarantoolClient
+ tablestore:site.ycsb.db.tablestore.TableStoreClient
++tsurugidb:site.ycsb.db.tablestore.TsurugidbClient
+ voltdb:site.ycsb.db.voltdb.VoltClient4
+ zookeeper:site.ycsb.db.zookeeper.ZKClient
+\ No newline at end of file
+diff --git a/tsurugidb-binding/lib/jackson-annotations-2.13.3.jar b/tsurugidb-binding/lib/jackson-annotations-2.13.3.jar
+new file mode 100644
+index 0000000..60a3ddb
+--- /dev/null
++++ b/tsurugidb-binding/lib/jackson-annotations-2.13.3.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/jackson-core-2.13.3.jar b/tsurugidb-binding/lib/jackson-core-2.13.3.jar
+new file mode 100644
+index 0000000..7e2086d
+--- /dev/null
++++ b/tsurugidb-binding/lib/jackson-core-2.13.3.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/jackson-databind-2.13.3.jar b/tsurugidb-binding/lib/jackson-databind-2.13.3.jar
+new file mode 100644
+index 0000000..a27e9d7
+--- /dev/null
++++ b/tsurugidb-binding/lib/jackson-databind-2.13.3.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/java-jwt-3.19.2.jar b/tsurugidb-binding/lib/java-jwt-3.19.2.jar
+new file mode 100644
+index 0000000..8c81e59
+--- /dev/null
++++ b/tsurugidb-binding/lib/java-jwt-3.19.2.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/jsr305-3.0.2.jar b/tsurugidb-binding/lib/jsr305-3.0.2.jar
+new file mode 100644
+index 0000000..59222d9
+--- /dev/null
++++ b/tsurugidb-binding/lib/jsr305-3.0.2.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/protobuf-java-3.17.3.jar b/tsurugidb-binding/lib/protobuf-java-3.17.3.jar
+new file mode 100644
+index 0000000..6453288
+--- /dev/null
++++ b/tsurugidb-binding/lib/protobuf-java-3.17.3.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/slf4j-api-1.7.36.jar b/tsurugidb-binding/lib/slf4j-api-1.7.36.jar
+new file mode 100644
+index 0000000..7d3ce68
+--- /dev/null
++++ b/tsurugidb-binding/lib/slf4j-api-1.7.36.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..be73dc1
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..73d6b1f
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..fe66c0b
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..010ce5b
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..5d56f16
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar
+new file mode 100644
+index 0000000..fcba5fa
+--- /dev/null
++++ b/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar
+Binary files differ
+diff --git a/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
+new file mode 100644
+index 0000000..7d8ab25
+--- /dev/null
++++ b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
+@@ -0,0 +1,164 @@
++package site.ycsb.db.tsurugidb;
++
++import java.net.URI;
++import java.util.HashMap;
++import java.util.Map;
++import java.util.Set;
++import java.util.Vector;
++
++import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
++import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
++import com.tsurugidb.tsubakuro.common.Session;
++import com.tsurugidb.tsubakuro.common.SessionBuilder;
++import com.tsurugidb.tsubakuro.kvs.GetResult;
++import com.tsurugidb.tsubakuro.kvs.KvsClient;
++import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
++import com.tsurugidb.tsubakuro.kvs.PutType;
++import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
++import com.tsurugidb.tsubakuro.kvs.bench.RecordBuilder;
++
++import site.ycsb.ByteIterator;
++import site.ycsb.DB;
++import site.ycsb.DBException;
++import site.ycsb.Status;
++import site.ycsb.StringByteIterator;
++
++/**
++ * Tsurugidb client for YCSB
++ */
++public class TsurugidbClient extends DB {
++
++    private final URI endpoint = URI.create("ipc:tsurugi");
++    private final Credential credential = NullCredential.INSTANCE;
++
++    private static final String KEY_NAME = RecordBuilder.FIRST_KEY_NAME;
++
++    private Session session;
++    private KvsClient client;
++
++    /**
++     * Initialize any state for this DB. Called once per DB instance; there is one
++     * DB instance per client thread.
++     */
++    @Override
++    public void init() throws DBException {
++        try {
++            this.session = SessionBuilder.connect(endpoint).withCredential(credential).create();
++            this.client = KvsClient.attach(session);
++        } catch (Exception e) {
++            throw new DBException(e);
++        }
++    }
++
++    /**
++     * Cleanup any state for this DB. Called once per DB instance; there is one DB
++     * instance per client thread.
++     */
++    @Override
++    public void cleanup() throws DBException {
++        try {
++            if (client != null) {
++                client.close();
++                client = null;
++            }
++            if (session != null) {
++                session.close();
++                session = null;
++            }
++        } catch (Exception e) {
++            throw new DBException(e);
++        }
++    }
++
++    private static RecordBuffer makeRecord(String key, Map<String, ByteIterator> values) {
++        RecordBuffer record = new RecordBuffer();
++        record.add(KEY_NAME, key);
++        for (var e : values.entrySet()) {
++            record.add(e.getKey(), e.getValue().toString());
++        }
++        return record;
++    }
++
++    private static Status convert(Exception e) {
++        if (e instanceof KvsServiceException) {
++            KvsServiceException ex = (KvsServiceException)e;
++            System.err.println(ex.getDiagnosticCode().name() + " " + ex.getMessage());
++            return new Status("ERROR", ex.getDiagnosticCode().name());
++        } else {
++            return new Status("ERROR", e.getMessage());
++        }
++    }
++
++    private Status put(String table, String key, Map<String, ByteIterator> values, PutType opt) {
++        var record = makeRecord(key, values);
++        try (var tx = client.beginTransaction().await()) {
++            client.put(tx, table, record, opt).await();
++            client.commit(tx).await();
++        } catch (Exception e) {
++            return convert(e);
++        }
++        return Status.OK;
++    }
++
++    @Override
++    public Status insert(String table, String key, Map<String, ByteIterator> values) {
++        return put(table, key, values, PutType.OVERWRITE);
++    }
++
++    @Override
++    public Status update(String table, String key, Map<String, ByteIterator> values) {
++        return put(table, key, values, PutType.IF_PRESENT);
++    }
++
++    @Override
++    public Status delete(String table, String key) {
++        RecordBuffer primKey = new RecordBuffer();
++        primKey.add(KEY_NAME, key);
++        try (var tx = client.beginTransaction().await()) {
++            client.remove(tx, table, primKey).await();
++            client.commit(tx).await();
++        } catch (Exception e) {
++            return convert(e);
++        }
++        return Status.OK;
++    }
++
++    @Override
++    public Status read(String table, String key, Set<String> fields, Map<String, ByteIterator> result) {
++        RecordBuffer primKey = new RecordBuffer();
++        primKey.add(KEY_NAME, key);
++        GetResult getResult;
++        try (var tx = client.beginTransaction().await()) {
++            getResult = client.get(tx, table, primKey).await();
++            client.commit(tx).await();
++        } catch (Exception e) {
++            return convert(e);
++        }
++        if (getResult.size() != 1) {
++            return new Status("ERROR", "GetResult has " + getResult.size() + " records, should be 1");
++        }
++        var record = getResult.asRecord();
++        if (fields == null) {
++            for (var i = 0; i < record.size(); i++) {
++                String name = record.getName(i);
++                if (name.equals(KEY_NAME)) {
++                    continue;
++                }
++                result.put(name, new StringByteIterator(record.getValue(i).toString()));
++            }
++        } else {
++            for (var field : fields) {
++                var value = record.getCharacter(field);
++                result.put(field, new StringByteIterator(value));
++            }
++        }
++        return Status.OK;
++    }
++
++    @Override
++    public Status scan(String table, String startkey, int recordcount, Set<String> fields,
++            Vector<HashMap<String, ByteIterator>> result) {
++        return Status.NOT_IMPLEMENTED;
++    }
++
++}
+diff --git a/ycsb-tsurugidb.sh b/ycsb-tsurugidb.sh
+new file mode 100644
+index 0000000..5628c4e
+--- /dev/null
++++ b/ycsb-tsurugidb.sh
+@@ -0,0 +1,18 @@
++#!/bin/sh
++
++YCSB_HOME="/work/ohkubo/git/YCSB"
++TSUBAKURO_HOME="/work/ohkubo/git/tsubakuro"
++
++CLASSPATH=$YCSB_HOME/conf:$YCSB_HOME/core/target/core-0.18.0-SNAPSHOT.jar:$YCSB_HOME/build
++for f in "$YCSB_HOME"/tsurugidb-binding/lib/*.jar ; do
++	if [ -r "$f" ] ; then
++		CLASSPATH="$CLASSPATH:$f"
++	fi
++done
++
++TSUBAKURO_SO=$TSUBAKURO_HOME/modules/ipc/build/native/libtsubakuro.so
++TSURUGI_JNI_OPTS="-Dcom.tsurugidb.tsubakuro.jnilib="$TSUBAKURO_SO" --add-opens=java.base/java.nio=ALL-UNNAMED"
++JVM_OPTS=$TSURUGI_JNI_OPTS" -Xmx1024M"
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.BasicDB $@
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.db.tsurugidb.TsurugidbClient $@
