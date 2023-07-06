@@ -57,27 +57,30 @@ public class RecordBuilder {
         this(info, 0);
     }
 
+    private void add(RecordBuffer buffer, String name) {
+        switch (info.type()) {
+        case LONG:
+            buffer.add(name, Long.valueOf(v));
+            break;
+        case STRING:
+            buffer.add(name, Long.toString(v));
+            break;
+        case DECIMAL:
+            buffer.add(name, BigDecimal.valueOf(v));
+            break;
+        }
+        v += MAX_CLIENT_ID;
+    }
     /**
      * Creates a new dummy record.
      * @return a dummy record
      */
     public RecordBuffer makeRecordBuffer() {
         RecordBuffer buffer = new RecordBuffer();
-        buffer.add(FIRST_KEY_NAME, Long.valueOf(v));
+        add(buffer, FIRST_KEY_NAME);
         for (int i = FIRST_COUMN_INDEX; i < FIRST_COUMN_INDEX + info.num(); i++) {
-            v += MAX_CLIENT_ID;
             final var name = VALUE_NAME_PREFIX + i;
-            switch (info.type()) {
-            case LONG:
-                buffer.add(name, Long.valueOf(v));
-                break;
-            case STRING:
-                buffer.add(name, Long.toString(v));
-                break;
-            case DECIMAL:
-                buffer.add(name, BigDecimal.valueOf(v));
-                break;
-            }
+            add(buffer, name);
         }
         return buffer;
     }
