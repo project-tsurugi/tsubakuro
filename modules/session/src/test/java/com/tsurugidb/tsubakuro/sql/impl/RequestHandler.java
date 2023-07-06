@@ -109,9 +109,9 @@ public interface RequestHandler {
         var sqlResponse = SqlResponse.Response.newBuilder().setListTables(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.SearchPath response) {
+    static RequestHandler returns(SqlResponse.GetSearchPath response) {
         Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setSearchPath(response).build();
+        var sqlResponse = SqlResponse.Response.newBuilder().setGetSearchPath(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
 

@@ -148,26 +148,25 @@ message Batch {
     }
 }
 
-message TablePathName {
-    // the database name.
-    string database_name = 1;
+message Identifier {
+    // the label.
+    string label = 1;
+}
 
-    // the schema name.
-    string schema_name = 2;
-
-    // the table name.
-    string table_name = 3;
+message Name {
+    // the identfiers.
+    repeated Identifier identifiers = 1;
 }
 
 // execute a list tables.
 message ListTables {
     reserved 2 to 10;
-  // request is successfully completed.
 
-  message Success {
-    // the table path names.
-    repeated TablePathName table_path_names = 1;
-  }
+    // request is successfully completed.
+    message Success {
+      // the table path names.
+      repeated Name table_path_names = 1;
+    }
 
     // the response body.
     oneof result {
@@ -180,13 +179,13 @@ message ListTables {
 }
 
 // execute a getSearchPath.
-message SearchPath {
+message GetSearchPath {
     reserved 2 to 10;
   // request is successfully completed.
 
   message Success {
     // the search path.
-    repeated string search_paths = 1;
+    repeated Name search_paths = 1;
   }
 
     // the response body.
@@ -209,8 +208,8 @@ message Response {
     Explain explain = 5;
     DescribeTable describe_table = 6;
     Batch batch = 7;
-    ListTables listTables = 8;
-    SearchPath searchPath = 9;
+    ListTables list_tables = 8;
+    GetSearchPath get_search_path = 9;
   }
 }
 

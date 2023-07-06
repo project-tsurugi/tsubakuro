@@ -15,24 +15,32 @@ import com.tsurugidb.sql.proto.SqlResponse;
  */
 public class SearchPathAdapter implements SearchPath {
 
-    private final SqlResponse.SearchPath.Success proto;
+    private final SqlResponse.GetSearchPath.Success proto;
 
     /**
      * Creates a new instance.
      * @param proto the corresponding protocol buffers message
      */
-    public SearchPathAdapter(@Nonnull SqlResponse.SearchPath.Success proto) {
+    public SearchPathAdapter(@Nonnull SqlResponse.GetSearchPath.Success proto) {
         Objects.requireNonNull(proto);
         this.proto = proto;
     }
 
     @Override
     public List<String> getSchemaNames() {
-        var l = new ArrayList<String>();
+        var rv = new ArrayList<String>();
         for (var e : proto.getSearchPathsList()) {
-            l.add(e);
+            var l = e.getIdentifiersList();
+            if (l.size() > 0) {
+                String name = l.get(0).getLabel();
+                for (int i = 1; i < l.size(); i++) {
+                    name += ".";
+                    name += l.get(i).getLabel();
+                }
+                rv.add(name);
+            }
         }
-        return l;
+        return rv;
     }
 
     @Override
