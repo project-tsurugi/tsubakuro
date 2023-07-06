@@ -1034,13 +1034,13 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ListTables.newBuilder()
                         .setSuccess(SqlResponse.ListTables.Success.newBuilder()
                                 .addTablePathNames(SqlResponse.Name.newBuilder()
-                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table1"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database1"))
                                         .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1"))
-                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database1")))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table1")))
                                 .addTablePathNames(SqlResponse.Name.newBuilder()
-                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table2"))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database2"))
                                         .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema2"))
-                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database2"))))
+                                        .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table2"))))
                         .build())));
 
         var message = SqlRequest.ListTables.newBuilder()
@@ -1052,11 +1052,11 @@ class SqlServiceStubTest {
             var result = future.get();
             var tableNames = result.getTableNames();
             assertEquals(2, tableNames.size());
-            assertEquals("table1", tableNames.get(0));
-            assertEquals("table2", tableNames.get(1));
-            var simepleNames = result.getSimpleNames(SearchPathAdapterForTest.of("schema1"));
+            assertEquals("database1.schema1.table1", tableNames.get(0));
+            assertEquals("database2.schema2.table2", tableNames.get(1));
+            var simepleNames = result.getSimpleNames(SearchPathAdapterForTest.of("database1", "schema1"));
             assertEquals(1, simepleNames.size());
-            assertEquals("table1", simepleNames.get(0));
+            assertEquals("database1.schema1.table1", simepleNames.get(0));
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1085,8 +1085,9 @@ class SqlServiceStubTest {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
                 RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
                         .setSuccess(SqlResponse.GetSearchPath.Success.newBuilder()
-                                .setSearchPath(SqlResponse.Name.newBuilder()
-                                    .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1"))
+                                .addSearchPaths(SqlResponse.Name.newBuilder()
+                                    .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1")))
+                                .addSearchPaths(SqlResponse.Name.newBuilder()
                                     .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema2"))))
                         .build())));
 

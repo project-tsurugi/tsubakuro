@@ -28,24 +28,47 @@ public class TableListAdapter implements TableList {
 
     @Override
     public List<String> getTableNames() {
-        var l = new ArrayList<String>();
-        for (var e : proto.getTablePathNamesList()) {
-            l.add(e.getIdentifiersList().get(0).getLabel());
+        var rv = new ArrayList<String>();
+        for (var n : proto.getTablePathNamesList()) {
+            if (n.getIdentifiersList().size() > 0) {
+                rv.add(getTableName(n));
+            }
         }
-        return l;
+        return rv;
     }
 
     @Override
     public List<String> getSimpleNames(SearchPath searchPath) {
-        var l = new ArrayList<String>();
-        for (var e : proto.getTablePathNamesList()) {
-            for (var n : searchPath.getSchemaNames()) {
-                if (n.equals(e.getIdentifiersList().get(1).getLabel())) {
-                    l.add(e.getIdentifiersList().get(0).getLabel());
+        var rv = new ArrayList<String>();
+        for (var n : proto.getTablePathNamesList()) {
+            if (n.getIdentifiersList().size() > 0) {
+                var sn = searchPath.getSchemaNames();
+                boolean find = true;
+                for (int i = 0; i < sn.size(); i++) {
+                    if (!sn.get(i).equals(n.getIdentifiersList().get(i).getLabel())) {
+                        find = false;
+                        break;
+                    }
+                }
+                if (find) {
+                    rv.add(getTableName(n));
                 }
             }
         }
-        return l;
+        return rv;
+    }
+
+    private String getTableName(SqlResponse.Name n) {
+        var l = n.getIdentifiersList();
+        if (l.size() > 0) {
+            String name = l.get(0).getLabel();
+            for (int i = 1; i < l.size(); i++) {
+                name += ".";
+                name += l.get(i).getLabel();
+            }
+            return name;
+        }
+        return "";  // never happen
     }
 
     @Override

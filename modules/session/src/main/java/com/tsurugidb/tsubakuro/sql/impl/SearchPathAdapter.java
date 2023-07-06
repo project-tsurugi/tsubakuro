@@ -28,11 +28,19 @@ public class SearchPathAdapter implements SearchPath {
 
     @Override
     public List<String> getSchemaNames() {
-        var l = new ArrayList<String>();
-        for (var e : proto.getSearchPath().getIdentifiersList()) {
-            l.add(e.getLabel());
+        var rv = new ArrayList<String>();
+        for (var e : proto.getSearchPathsList()) {
+            var l = e.getIdentifiersList();
+            if (l.size() > 0) {
+                String name = l.get(0).getLabel();
+                for (int i = 1; i < l.size(); i++) {
+                    name += ".";
+                    name += l.get(i).getLabel();
+                }
+                rv.add(name);
+            }
         }
-        return l;
+        return rv;
     }
 
     @Override

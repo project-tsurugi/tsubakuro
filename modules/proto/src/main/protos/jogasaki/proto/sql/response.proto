@@ -185,7 +185,7 @@ message GetSearchPath {
 
   message Success {
     // the search path.
-    Name search_path = 1;
+    repeated Name search_paths = 1;
   }
 
     // the response body.
