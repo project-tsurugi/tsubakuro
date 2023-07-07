@@ -41,6 +41,23 @@ index 5c767c7..322f8b8 100755
  voltdb:site.ycsb.db.voltdb.VoltClient4
  zookeeper:site.ycsb.db.zookeeper.ZKClient
 \ No newline at end of file
+diff --git a/core/src/main/java/site/ycsb/CommandLine.java b/core/src/main/java/site/ycsb/CommandLine.java
+index c215058..015c911 100644
+--- a/core/src/main/java/site/ycsb/CommandLine.java
++++ b/core/src/main/java/site/ycsb/CommandLine.java
+@@ -155,6 +155,12 @@
+ 
+       System.out.println((System.currentTimeMillis() - st) + " ms");
+     }
++    try {
++      db.cleanup();
++    } catch (DBException e) {
++      e.printStackTrace();
++      System.exit(0);
++    }
+   }
+ 
+   private static void parseArguments(String[] args, Properties props, Properties fileprops) {
 diff --git a/tsurugidb-binding/lib/jackson-annotations-2.13.3.jar b/tsurugidb-binding/lib/jackson-annotations-2.13.3.jar
 new file mode 100644
 index 0000000..60a3ddb
@@ -121,10 +138,10 @@ index 0000000..fcba5fa
 Binary files differ
 diff --git a/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
 new file mode 100644
-index 0000000..7d8ab25
+index 0000000..2e215ad
 --- /dev/null
 +++ b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
-@@ -0,0 +1,164 @@
+@@ -0,0 +1,170 @@
 +package site.ycsb.db.tsurugidb;
 +
 +import java.net.URI;
@@ -172,6 +189,7 @@ index 0000000..7d8ab25
 +        try {
 +            this.session = SessionBuilder.connect(endpoint).withCredential(credential).create();
 +            this.client = KvsClient.attach(session);
++            System.err.println("TsurugidbClient ready: " + endpoint.toString());
 +        } catch (Exception e) {
 +            throw new DBException(e);
 +        }
@@ -185,11 +203,9 @@ index 0000000..7d8ab25
 +    public void cleanup() throws DBException {
 +        try {
 +            if (client != null) {
++                // NOTE session is also closes internally
 +                client.close();
 +                client = null;
-+            }
-+            if (session != null) {
-+                session.close();
 +                session = null;
 +            }
 +        } catch (Exception e) {
@@ -212,19 +228,26 @@ index 0000000..7d8ab25
 +            System.err.println(ex.getDiagnosticCode().name() + " " + ex.getMessage());
 +            return new Status("ERROR", ex.getDiagnosticCode().name());
 +        } else {
++            System.err.println(e.getMessage());
 +            return new Status("ERROR", e.getMessage());
 +        }
 +    }
 +
 +    private Status put(String table, String key, Map<String, ByteIterator> values, PutType opt) {
 +        var record = makeRecord(key, values);
++        int size;
 +        try (var tx = client.beginTransaction().await()) {
-+            client.put(tx, table, record, opt).await();
++            size = client.put(tx, table, record, opt).await().size();
 +            client.commit(tx).await();
 +        } catch (Exception e) {
 +            return convert(e);
 +        }
-+        return Status.OK;
++        System.err.println("put:size=" + size + ", opt=" + opt.name());
++        if (size == 1) {
++            return Status.OK;
++        } else {
++            return Status.NOT_FOUND;
++        }
 +    }
 +
 +    @Override
@@ -291,25 +314,40 @@ index 0000000..7d8ab25
 +}
 diff --git a/ycsb-tsurugidb.sh b/ycsb-tsurugidb.sh
 new file mode 100644
-index 0000000..5628c4e
+index 0000000..4e017c2
 --- /dev/null
 +++ b/ycsb-tsurugidb.sh
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,33 @@
 +#!/bin/sh
 +
-+YCSB_HOME="/work/ohkubo/git/YCSB"
-+TSUBAKURO_HOME="/work/ohkubo/git/tsubakuro"
++YCSB_HOME=/work/ohkubo/git/YCSB
++YCSB_DIST=/work/ohkubo/z/ycsb-0.17.0
++TSUBAKURO_HOME=/work/ohkubo/git/tsubakuro
 +
-+CLASSPATH=$YCSB_HOME/conf:$YCSB_HOME/core/target/core-0.18.0-SNAPSHOT.jar:$YCSB_HOME/build
++# CLASSPATH=$YCSB_HOME/build:$YCSB_DIST/conf
++# CLASSPATH=$CLASSPATH:$YCSB_HOME/core/target/core-0.18.0-SNAPSHOT.jar
++
++CLASSPATH=$YCSB_DIST/conf
++for f in "$YCSB_DIST"/lib/*.jar ; do
++	if [ -r "$f" ] ; then
++		CLASSPATH="$CLASSPATH:$f"
++	fi
++done
++
 +for f in "$YCSB_HOME"/tsurugidb-binding/lib/*.jar ; do
 +	if [ -r "$f" ] ; then
 +		CLASSPATH="$CLASSPATH:$f"
 +	fi
 +done
 +
++CLASSPATH=$CLASSPATH:$YCSB_HOME/build
++
 +TSUBAKURO_SO=$TSUBAKURO_HOME/modules/ipc/build/native/libtsubakuro.so
 +TSURUGI_JNI_OPTS="-Dcom.tsurugidb.tsubakuro.jnilib="$TSUBAKURO_SO" --add-opens=java.base/java.nio=ALL-UNNAMED"
 +JVM_OPTS=$TSURUGI_JNI_OPTS" -Xmx1024M"
 +
 +#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.BasicDB $@
-+java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.db.tsurugidb.TsurugidbClient $@
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.db.tsurugidb.TsurugidbClient $@
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.BasicDB -P workloads/workloada
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada
++
