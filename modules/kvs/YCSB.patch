@@ -11,10 +11,10 @@ index aa65bac..2bc67a2 100644
 +/build/
 diff --git a/Makefile b/Makefile
 new file mode 100644
-index 0000000..df602bd
+index 0000000..1ec30d3
 --- /dev/null
 +++ b/Makefile
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,18 @@
 +TSUBAKURO_HOME := /work/ohkubo/git/tsubakuro
 +YCSB_HOME := /work/ohkubo/git/YCSB
 +YCSB_TSURUGIDB_LIB := $(YCSB_HOME)/tsurugidb-binding/lib
@@ -29,6 +29,11 @@ index 0000000..df602bd
 +
 +cleanlib:
 +	rm -rf $(YCSB_TSURUGIDB_LIB)/tsubakuro-*jar
++
++ycsb-tsurugi.zip: update
++	rm -f ycsb-tsurugidb.zip
++	zip -r ycsb-tsurugidb.zip tsurugidb-binding/ workloads/ build/site/ycsb/db/tsurugidb
+\ No newline at end of file
 diff --git a/bin/bindings.properties b/bin/bindings.properties
 index 5c767c7..322f8b8 100755
 --- a/bin/bindings.properties
@@ -94,6 +99,12 @@ index 0000000..6453288
 --- /dev/null
 +++ b/tsurugidb-binding/lib/protobuf-java-3.17.3.jar
 Binary files differ
+diff --git a/tsurugidb-binding/lib/site/ycsb/db/tsurugidb/TsurugidbClient.class b/tsurugidb-binding/lib/site/ycsb/db/tsurugidb/TsurugidbClient.class
+new file mode 100644
+index 0000000..a7142ec
+--- /dev/null
++++ b/tsurugidb-binding/lib/site/ycsb/db/tsurugidb/TsurugidbClient.class
+Binary files differ
 diff --git a/tsurugidb-binding/lib/slf4j-api-1.7.36.jar b/tsurugidb-binding/lib/slf4j-api-1.7.36.jar
 new file mode 100644
 index 0000000..7d3ce68
@@ -102,46 +113,46 @@ index 0000000..7d3ce68
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..be73dc1
+index 0000000..01d5325
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-common-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..73d6b1f
+index 0000000..7ce478b
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-ipc-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..fe66c0b
+index 0000000..923864e
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-kvs-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..010ce5b
+index 0000000..8acd71c
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-proto-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..5d56f16
+index 0000000..3e05dc8
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-session-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar b/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar
 new file mode 100644
-index 0000000..fcba5fa
+index 0000000..ad68bcd
 --- /dev/null
 +++ b/tsurugidb-binding/lib/tsubakuro-stream-0.0.1-SNAPSHOT.jar
 Binary files differ
 diff --git a/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
 new file mode 100644
-index 0000000..2e215ad
+index 0000000..60d03e9
 --- /dev/null
 +++ b/tsurugidb/src/main/java/site/ycsb/db/tsurugidb/TsurugidbClient.java
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,181 @@
 +package site.ycsb.db.tsurugidb;
 +
 +import java.net.URI;
@@ -235,14 +246,25 @@ index 0000000..2e215ad
 +
 +    private Status put(String table, String key, Map<String, ByteIterator> values, PutType opt) {
 +        var record = makeRecord(key, values);
-+        int size;
++        int size = -1;
 +        try (var tx = client.beginTransaction().await()) {
-+            size = client.put(tx, table, record, opt).await().size();
-+            client.commit(tx).await();
++            try {
++                size = client.put(tx, table, record, opt).await().size();
++                client.commit(tx).await();
++            } catch (Exception e) {
++                e.printStackTrace();
++                if (size < 0) {
++                    try {
++                        client.rollback(tx).await();
++                    } catch (Exception e2) {
++                        e2.printStackTrace();
++                    }
++                }
++            }
 +        } catch (Exception e) {
-+            return convert(e);
++            e.printStackTrace();
 +        }
-+        System.err.println("put:size=" + size + ", opt=" + opt.name());
++        // System.err.println("put:size=" + size + ", opt=" + opt.name());
 +        if (size == 1) {
 +            return Status.OK;
 +        } else {
@@ -314,10 +336,10 @@ index 0000000..2e215ad
 +}
 diff --git a/ycsb-tsurugidb.sh b/ycsb-tsurugidb.sh
 new file mode 100644
-index 0000000..4e017c2
+index 0000000..34d2dc5
 --- /dev/null
 +++ b/ycsb-tsurugidb.sh
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,61 @@
 +#!/bin/sh
 +
 +YCSB_HOME=/work/ohkubo/git/YCSB
@@ -349,5 +371,33 @@ index 0000000..4e017c2
 +#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.BasicDB $@
 +#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.CommandLine -db site.ycsb.db.tsurugidb.TsurugidbClient $@
 +#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.BasicDB -P workloads/workloada
-+java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada
++# java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada -p recordcount=100000
 +
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloada
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadb
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadb
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadd
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadd
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloade
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloade
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadf
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadf
++
++
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc -p recordcount=100
++#java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc -p recordcount=100
++
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc -p recordcount=1000
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadc -p recordcount=1000 -p operationcount=1000 
++
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -load -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadd -p recordcount=1000
++java $JVM_OPTS -classpath $CLASSPATH site.ycsb.Client -t -db site.ycsb.db.tsurugidb.TsurugidbClient -P workloads/workloadd -p recordcount=1000 -p operationcount=1000

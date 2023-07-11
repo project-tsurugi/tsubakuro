@@ -10,6 +10,8 @@ plugins {
 
 repositories {
     mavenCentral()
+//    maven { url 'https://repository.mulesoft.org/nexus/content/repositories/public/' }
+//    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -21,6 +23,15 @@ dependencies {
     api 'org.slf4j:slf4j-api:1.7.36'
     api 'com.google.protobuf:protobuf-java:3.8.0'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
+
+//    // https://jitpack.io/p/brianfrankcooper/YCSB
+//    implementation 'com.github.brianfrankcooper:YCSB:0.17.0'
+
+    // https://mvnrepository.com/artifact/com.github.brianfrankcooper.YCSB/core/0.17.0
+//    implementation 'com.github.brianfrankcooper.YCSB:core:0.17.0'
+
+//    compile group: 'site.ycsb', name: 'core', version: '0.17.0'
+//   //Thanks for using https://jar-download.com
 
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.7.1'
 

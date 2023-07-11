@@ -28,7 +28,7 @@ public class RealTransactionTest {
     private final Credential credential = NullCredential.INSTANCE;
     private final String tableName;
 
-    private static final ValueType VALUE_TYPE = ValueType.LONG;
+    private static final ValueType VALUE_TYPE = ValueType.STRING;
     private static final int VALUE_NUM = 1;
 
     private final RecordInfo RECORD_INFO = new RecordInfo(VALUE_TYPE, VALUE_NUM);
@@ -123,6 +123,21 @@ public class RealTransactionTest {
         }
     }
 
+    void testGet() throws Exception {
+        try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
+            var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
+            var key = new RecordBuffer();
+            key.add("key1", Long.valueOf(1));
+            GetResult get = kvs.get(tx, tableName, key).await();
+            System.err.println(get.size());
+            for (var rec : get.asList()) {
+                dumpRecord(rec);
+            }
+            System.err.println("COMMIT");
+            kvs.commit(tx).await();
+        }
+    }
+
     /**
      * Executes a test transaction.
      * <ul>
@@ -133,8 +148,9 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        app.initDB();
+        //app.initDB();
         app.test();
+        //app.testGet();
     }
 
 }
