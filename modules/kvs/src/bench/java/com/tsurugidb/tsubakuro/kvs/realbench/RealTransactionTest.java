@@ -31,7 +31,7 @@ public class RealTransactionTest {
     private static final ValueType VALUE_TYPE = ValueType.STRING;
     private static final int VALUE_NUM = 1;
 
-    private final RecordInfo RECORD_INFO = new RecordInfo(VALUE_TYPE, VALUE_NUM);
+    private static final RecordInfo RECORD_INFO = new RecordInfo(VALUE_TYPE, VALUE_NUM);
 
     RealTransactionTest(String[] args) {
         String name = (args.length > 0 ? args[0] : "ipc:tsurugi");
@@ -40,7 +40,7 @@ public class RealTransactionTest {
         this.tableName = "TABLE1";
     }
 
-    static private String sqlValType() {
+    private static String sqlValType() {
         switch (VALUE_TYPE) {
         case LONG:
             return "BIGINT";
