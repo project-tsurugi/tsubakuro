@@ -24,7 +24,7 @@ public class YCSBlikeBenchmark {
         this.numClients = args[1].split(",");
         this.createDB = args.length > 2 && args[2].equals("createDB");
         if (createDB) {
-            this.rratios = new String[0];
+            this.rratios = new String[] {"100"}; // don't make empty
             this.warmupMsec = 0;
             this.benchMsec = 0;
         } else {
