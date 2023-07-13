@@ -97,9 +97,6 @@ public:
     public:
         wire_container() = default;
         wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
-        message_header peep(bool wait = false) {
-            return wire_->peep(bip_buffer_, wait);
-        }
         void write(const signed char* from, std::size_t length, message_header::index_type index) {
             const char *ptr = reinterpret_cast<const char*>(from);
             wire_->write(bip_buffer_, ptr, message_header(index, length));
