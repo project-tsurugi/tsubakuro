@@ -93,10 +93,10 @@ public:
         bool closed_{};
     };
 
-    class wire_container {
+    class request_wire_container {
     public:
-        wire_container() = default;
-        wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        request_wire_container() = default;
+        request_wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
         void write(const signed char* from, std::size_t length, message_header::index_type index) {
             const char *ptr = reinterpret_cast<const char*>(from);
             wire_->write(bip_buffer_, ptr, message_header(index, length));
@@ -147,7 +147,7 @@ public:
             if (req_wire == nullptr || res_wire == nullptr ||status_provider_ == nullptr ) {
                 throw std::runtime_error("cannot find the session wire");
             }
-            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
+            request_wire_ = request_wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
             response_wire_ = response_wire_container(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
@@ -179,7 +179,7 @@ public:
     session_wire_container& operator = (session_wire_container const&) = delete;
     session_wire_container& operator = (session_wire_container&&) = delete;
 
-    wire_container& get_request_wire() { return request_wire_; }
+    request_wire_container& get_request_wire() { return request_wire_; }
     response_wire_container& get_response_wire() { return response_wire_; }
 
     resultset_wires_container* create_resultset_wire() {
@@ -207,7 +207,7 @@ public:
 private:
     std::string db_name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
-    wire_container request_wire_{};
+    request_wire_container request_wire_{};
     response_wire_container response_wire_{};
     status_provider* status_provider_{};
     std::set<resultset_wires_container*> resultset_wires_set_{};
