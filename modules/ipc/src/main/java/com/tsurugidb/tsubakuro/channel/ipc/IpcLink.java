@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
@@ -16,7 +17,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+// import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 /**
  * IpcLink type.
@@ -25,7 +26,6 @@ public final class IpcLink extends Link {
     private long wireHandle = 0;  // for c++
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
-    private Receiver receiver;
 
     public static final byte RESPONSE_NULL = 0;
     public static final byte RESPONSE_PAYLOAD = 1;
@@ -47,16 +47,6 @@ public final class IpcLink extends Link {
         NativeLibrary.load();
     }
 
-    private class Receiver extends Thread {
-        public void run() {
-            while (true) {
-                if (!pull()) {
-                    break;
-                }
-            }
-        }
-    }
-
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param name the name of shared memory for this IpcLink through which the SQL server is connected
@@ -65,8 +55,6 @@ public final class IpcLink extends Link {
      */
     public IpcLink(@Nonnull String name) throws IOException {
         this.wireHandle = openNative(name);
-        this.receiver = new Receiver();
-        receiver.start();
         LOG.trace("begin Session via shared memory, name = {}", name);
     }
 
@@ -91,7 +79,7 @@ public final class IpcLink extends Link {
         LOG.trace("send {}", payload);
     }
 
-    private boolean pull() {
+    public boolean pull(long timeout, TimeUnit unit) throws TimeoutException {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
@@ -156,21 +144,7 @@ public final class IpcLink extends Link {
         synchronized (this) {
             if (!closed.getAndSet(true)) {
                 closeNative(wireHandle);
-                try {
-                    if (timeout != 0) {
-                        timeUnit.timedJoin(receiver, timeout);
-                    } else {
-                        receiver.join();
-                    }
-                    if (receiver.getState() != Thread.State.TERMINATED) {
-                        receiver.interrupt();
-                        throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
-                    }
-                } catch (InterruptedException e) {
-                    throw new IOException(e);
-                } finally {
-                    destroyNative(wireHandle);
-                }
+                destroyNative(wireHandle);
             }
         }
     }
