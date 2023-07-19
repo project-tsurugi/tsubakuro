@@ -44,14 +44,11 @@ sourceSets {
         }
     }
 }
-application {
-    applicationName = 'TransactionBench'
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
-}
 
 application {
-    applicationName = 'RealTransactionTest'
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
+    applicationName = 'YCSBlikeBench'
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
+	// see modules/kvs/build/distributions/YCSBlikeBench-xxx.zip
 }
 
 tasks.register('runShortMockBench', JavaExec) {
@@ -127,6 +124,15 @@ tasks.register('runYCSBlikeBench', JavaExec) {
     systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
+    args = ['ipc:tsurugi', '1,2,4,8', '50,95', '10', '30']
+}
+
+tasks.register('runYCSBlikeBenchBySql', JavaExec) {
+    dependsOn ':tsubakuro-ipc:assemble'
+    classpath = sourceSets.main.runtimeClasspath
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
+    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M', '-DuseSqlClient=true']
     args = ['ipc:tsurugi', '1,2,4,8', '50,95', '10', '30']
 }
 

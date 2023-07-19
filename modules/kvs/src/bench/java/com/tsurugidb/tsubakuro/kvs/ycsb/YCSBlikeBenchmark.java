@@ -18,13 +18,14 @@ public class YCSBlikeBenchmark {
     private final long warmupMsec;
     private final long benchMsec;
     private final boolean createDB;
+    private final boolean useKvsClient;
 
     YCSBlikeBenchmark(String[] args) {
         this.endpoint = URI.create(args[0]);
         this.numClients = args[1].split(",");
         this.createDB = args.length > 2 && args[2].equals("createDB");
         if (createDB) {
-            this.rratios = new String[] {"100"}; // don't make empty
+            this.rratios = new String[] { "100" }; // don't make empty, the value is ignored
             this.warmupMsec = 0;
             this.benchMsec = 0;
         } else {
@@ -32,13 +33,15 @@ public class YCSBlikeBenchmark {
             this.warmupMsec = 1000 * Long.parseLong(args[3]);
             this.benchMsec = 1000 * Long.parseLong(args[4]);
         }
+        this.useKvsClient = !System.getProperty("useSqlClient", "false").equals("true");
     }
 
-    private static void show_cvsheader() {
+    private void showCvsHeader() {
         System.out.println("# KEY_SIZE, " + Constants.KEY_SIZE);
         System.out.println("# VALUE_SIZE, " + Constants.VALUE_SIZE);
         System.out.println("# OPs/tx, " + Constants.OPS_PER_TX);
         System.out.println("# record/table, " + Constants.NUM_RECORDS);
+        System.out.println("# clientType, " + (useKvsClient ? "KvsClient" : "SqlClient"));
         System.out.println("# num_client, read_ratio, sec, num_tx, tx/sec, usec/tx");
     }
 
@@ -51,13 +54,18 @@ public class YCSBlikeBenchmark {
         System.out.println();
     }
 
+    private Worker newWorker(int clientId, int rratio, long runMsec) throws Exception {
+        return useKvsClient ? new KvsWorker(endpoint, createDB, clientId, rratio, runMsec)
+                : new SqlWorker(endpoint, createDB, clientId, rratio, runMsec);
+    }
+
     private void warmup() throws Exception {
         if (createDB) {
             return;
         }
         final int numClient = 1;
         final int rratio = Integer.parseInt(rratios[0]);
-        Worker worker = new Worker(endpoint, createDB, numClient, rratio, warmupMsec);
+        Worker worker = newWorker(numClient, rratio, warmupMsec);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         long start = System.currentTimeMillis();
         try {
@@ -80,7 +88,8 @@ public class YCSBlikeBenchmark {
         try {
             long start = System.currentTimeMillis();
             for (int i = 0; i < numClient; i++) {
-                clients.add(executor.submit(new Worker(endpoint, createDB, i, rratio, benchMsec)));
+                var worker = newWorker(i, rratio, benchMsec);
+                clients.add(executor.submit(worker));
             }
             for (var future : clients) {
                 sumTx += future.get();
@@ -95,7 +104,7 @@ public class YCSBlikeBenchmark {
     }
 
     private void bench() {
-        show_cvsheader();
+        showCvsHeader();
         for (var n : numClients) {
             for (var r : rratios) {
                 bench(Integer.parseInt(n), Integer.parseInt(r));

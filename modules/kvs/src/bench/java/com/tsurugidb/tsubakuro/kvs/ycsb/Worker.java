@@ -7,22 +7,42 @@ import java.util.concurrent.Callable;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
-import com.tsurugidb.tsubakuro.kvs.KvsClient;
-import com.tsurugidb.tsubakuro.kvs.PutType;
-import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 
 /**
  * worker thread
  */
-public class Worker implements Callable<Long> {
+public abstract class Worker implements Callable<Long> {
 
-    private final URI endpoint;
-    private final boolean createDB;
-    private final String tableName;
-    private final int rratio;
-    private final long runMsec;
-    private final ArrayList<Operation> operations = new ArrayList<>();
+    /**
+     * endpoint such as "ipc:tsubakuro"
+     */
+    protected final URI endpoint;
+
+    /**
+     * whether create database before benchmark
+     */
+    protected final boolean createDB;
+
+    /**
+     * table name used by this worker
+     */
+    protected final String tableName;
+
+    /**
+     * read operation (i.e. GET) ratio: 0..100
+     */
+    protected final int rratio;
+
+    /**
+     * running time of benchmark in milli seconds
+     */
+    protected final long runMsec;
+
+    /**
+     * operation list
+     */
+    protected final ArrayList<Operation> operations = new ArrayList<>();
 
     Worker(URI endpoint, boolean createDB, int clientId, int rratio, long runMsec) throws Exception {
         this.endpoint = endpoint;
@@ -32,7 +52,11 @@ public class Worker implements Callable<Long> {
         this.runMsec = runMsec;
     }
 
-    private void initDB() throws Exception {
+    /**
+     * initialize database before benchmark
+     * @throws Exception if failed
+     */
+    protected void initDB() throws Exception {
         try (var session = SessionBuilder.connect(endpoint).withCredential(NullCredential.INSTANCE).create();
             var client = SqlClient.attach(session);) {
             try (var tx = client.createTransaction().await()) {
@@ -60,7 +84,10 @@ public class Worker implements Callable<Long> {
         }
     }
 
-    private void createOperations() {
+    /**
+     * create operation list including PUT and GET randomly
+     */
+    protected void createOperations() {
         operations.clear();
         for (int i = 0; i < Constants.NUM_RECORDS; i++) {
             boolean isGet = 100 * Math.random() < rratio;
@@ -79,34 +106,13 @@ public class Worker implements Callable<Long> {
             return Long.valueOf(0L);
         }
         createOperations();
-        int optId = 0;
-        long numTx = 0;
-        try (var session = SessionBuilder.connect(endpoint).withCredential(NullCredential.INSTANCE).create();
-            var kvs = KvsClient.attach(session)) {
-            long start = System.currentTimeMillis();
-            do {
-                optId = 0;
-                while (optId < operations.size()) {
-                    try (var tx = kvs.beginTransaction().await()) {
-                        for (int i = 0; i < Constants.OPS_PER_TX; i++, optId++) {
-                            var op = operations.get(optId % operations.size());
-                            RecordBuffer buffer = new RecordBuffer();
-                            buffer.add(Constants.KEY_NAME, Long.valueOf(op.key()));
-                            if (op.isGet()) {
-                                kvs.get(tx, tableName, buffer).await();
-                            } else {
-                                buffer.add(Constants.VALUE_NAME, Long.valueOf(100L * i));
-                                kvs.put(tx, tableName, buffer, PutType.IF_PRESENT).await();
-                            }
-                        }
-                        kvs.commit(tx).await();
-                    }
-                    numTx++;
-                }
-            } while (System.currentTimeMillis() - start < runMsec);
-        }
-        // System.err.println("finish client Thread for " + tableName + ", numTx=" + numTx);
-        return Long.valueOf(numTx);
+        return benchmark();
     }
+
+    /**
+     * @return number of executed transactions
+     * @throws Exception if failed
+     */
+    protected abstract Long benchmark() throws Exception;
 
 }
