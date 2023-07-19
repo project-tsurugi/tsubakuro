@@ -34,7 +34,7 @@ public final class IpcLink extends Link {
 
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] message);
-    private static native int awaitNative(long wireHandle) throws IOException;
+    private static native int awaitNative(long wireHandle, long timeout) throws IOException, TimeoutException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native boolean isAliveNative(long wireHandle);
@@ -83,7 +83,7 @@ public final class IpcLink extends Link {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
-            message = receive();
+            message = receive(timeout == 0 ? 0 : unit.toMillis(timeout));
         } catch (IOException e) {
             intentionalClose = false;
         }
@@ -112,8 +112,8 @@ public final class IpcLink extends Link {
         return false;
     }
 
-    private LinkMessage receive() throws IOException {
-        int slot = awaitNative(wireHandle);
+    private LinkMessage receive(long timeout) throws IOException, TimeoutException {
+        int slot = awaitNative(wireHandle, timeout);
         if (slot >= 0) {
             var info = (byte) getInfoNative(wireHandle);
             return new LinkMessage(info, receiveNative(wireHandle), slot);

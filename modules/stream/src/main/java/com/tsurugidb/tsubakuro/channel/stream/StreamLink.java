@@ -7,6 +7,7 @@ import java.io.EOFException;
 import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -83,7 +84,14 @@ public final class StreamLink extends Link {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
+            socket.setSoTimeout(timeout == 0 ? 0 : (int) unit.toMillis(timeout));
+        } catch (SocketException e) {
+            socketError.set(true);
+        }
+        try {
             message = receive();
+        } catch (SocketTimeoutException e) {
+            throw new TimeoutException(e.getMessage());
         } catch (IOException e) {
             intentionalClose = false;
         }
@@ -220,7 +228,7 @@ public final class StreamLink extends Link {
         return (byte) (i & 0xff);
     }
 
-    public LinkMessage receive() throws IOException {
+    public LinkMessage receive() throws IOException, SocketTimeoutException {
         try {
             byte[] bytes;
             byte writer = 0;
