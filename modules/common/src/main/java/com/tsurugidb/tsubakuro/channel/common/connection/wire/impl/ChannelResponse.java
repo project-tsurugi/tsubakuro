@@ -59,28 +59,17 @@ public class ChannelResponse implements Response {
 
     @Override
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        if (Objects.nonNull(main.get())) {
-            return main.get();
-        }
-        if (Objects.nonNull(exceptionMain.get())) {
-            var e = exceptionMain.get();
-            throw new IOException(e.getMessage(), e);
-        }
-
-        synchronized (link) {
-            while (!isMainResponseReady()) {
-                link.pull(timeout, unit);
-            }
+        while (true) {
+            var n = link.messageNumber();
             if (Objects.nonNull(main.get())) {
-                mainResponseGotton.set(true);
                 return main.get();
             }
             if (Objects.nonNull(exceptionMain.get())) {
                 var e = exceptionMain.get();
                 throw new IOException(e.getMessage(), e);
             }
+            link.pullMessage(n, timeout, unit);
         }
-        throw new IOException("unreachable path in waitForMainResponse()");  // never reach here
     }
 
     @Override
@@ -144,15 +133,12 @@ public class ChannelResponse implements Response {
     }
 
     private void waitForResultSetOrMainResponse(long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
-        if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
-            return;
-        }
-
-        synchronized (link) {
-            while (!(isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get()))) {
-                link.pull(timeout, unit);
+        while (true) {
+            var n = link.messageNumber();
+            if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
+                return;
             }
-            return;
+            link.pullMessage(n, timeout, unit);
         }
     }
 

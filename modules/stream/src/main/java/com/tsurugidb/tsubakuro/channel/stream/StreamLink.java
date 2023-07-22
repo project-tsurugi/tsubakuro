@@ -70,8 +70,8 @@ public final class StreamLink extends Link {
                 if (socketError.get()) {
                     throw new IOException("Server crashed");
                 }
-                if (!pull(timeout, unit)) {
-                    throw new TimeoutException("server has not responded to the request within the specified time");
+                if (!doPull(timeout, unit)) {
+                    throw new IOException("Server crashed");
                 }
             }
             return helloResponse.get();
@@ -80,7 +80,7 @@ public final class StreamLink extends Link {
         }
     }
 
-    public boolean pull(long timeout, TimeUnit unit) throws TimeoutException {
+    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
@@ -91,7 +91,7 @@ public final class StreamLink extends Link {
         try {
             message = receive();
         } catch (SocketTimeoutException e) {
-            throw new TimeoutException(e.getMessage());
+            throw new TimeoutException("response has not been received within the specified time");
         } catch (IOException e) {
             intentionalClose = false;
         }
@@ -286,7 +286,7 @@ public final class StreamLink extends Link {
         if (!closed.getAndSet(true)) {
             send(REQUEST_SESSION_BYE, 0);
             try {
-                pull(timeout, timeUnit);
+                doPull(timeout, timeUnit);
             } catch (TimeoutException e) {
                 throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
             }

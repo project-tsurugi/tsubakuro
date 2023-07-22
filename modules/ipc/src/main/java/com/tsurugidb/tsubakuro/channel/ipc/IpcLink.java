@@ -79,11 +79,12 @@ public final class IpcLink extends Link {
         LOG.trace("send {}", payload);
     }
 
-    public boolean pull(long timeout, TimeUnit unit) throws TimeoutException {
+    @Override
+    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
-            message = receive(timeout == 0 ? 0 : unit.toMillis(timeout));
+            message = receive(timeout == 0 ? 0 : unit.toMicros(timeout));
         } catch (IOException e) {
             intentionalClose = false;
         }

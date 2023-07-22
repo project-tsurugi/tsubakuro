@@ -81,17 +81,17 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
             }
             return -1;
         } catch (std::runtime_error &e) {
-            if (!swc->get_status_provider().is_alive()) {
-                jclass classj = env->FindClass("Ljava/io/IOException;");
-                if (classj == nullptr) { std::abort(); }
-                env->ThrowNew(classj, "Server crashed");
-                env->DeleteLocalRef(classj);
-                return 0;
-            }
             if (timeout > 0) {
                 jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
                 if (classj == nullptr) { std::abort(); }
                 env->ThrowNew(classj, e.what());
+                env->DeleteLocalRef(classj);
+                return 0;
+            }
+            if (!swc->get_status_provider().is_alive()) {
+                jclass classj = env->FindClass("Ljava/io/IOException;");
+                if (classj == nullptr) { std::abort(); }
+                env->ThrowNew(classj, "Server crashed");
                 env->DeleteLocalRef(classj);
                 return 0;
             }

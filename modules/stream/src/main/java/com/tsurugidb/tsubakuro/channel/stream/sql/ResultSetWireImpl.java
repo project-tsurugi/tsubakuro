@@ -111,33 +111,21 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Receive resultSet payload
      */
     private byte[] receive() throws IOException {
-        if (!queues.isEmpty()) {
-            return queues.poll();
-        }
-        if (eor) {
-            return null;
-        }
-        if (Objects.nonNull(exception)) {
-            throw exception;
-        }
-
-        synchronized (streamLink) {
-            while (true) {
-                if (!queues.isEmpty()) {
-                    return queues.poll();
-                }
-                if (eor) {
-                    return null;
-                }
-                if (Objects.nonNull(exception)) {
-                    throw exception;
-                }
-                try {
-                    streamLink.pull(0, null);
-                } catch (TimeoutException e) {
-                    throw new IOException(e);
-                }
-
+        while (true) {
+            var n = streamLink.messageNumber();
+            if (!queues.isEmpty()) {
+                return queues.poll();
+            }
+            if (eor) {
+                return null;
+            }
+            if (Objects.nonNull(exception)) {
+                throw exception;
+            }
+            try {
+                streamLink.pullMessage(n, 0, null);
+            } catch (TimeoutException e) {
+                throw new IOException(e);
             }
         }
     }
