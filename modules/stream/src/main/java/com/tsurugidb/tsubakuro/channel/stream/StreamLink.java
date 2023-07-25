@@ -84,7 +84,7 @@ public final class StreamLink extends Link {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
-            socket.setSoTimeout(timeout == 0 ? 0 : (int) unit.toMillis(timeout));
+            socket.setSoTimeout(timeout > 0 ? (int) unit.toMillis(timeout) : 0);
         } catch (SocketException e) {
             socketError.set(true);
         }
