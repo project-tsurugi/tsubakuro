@@ -8,9 +8,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
@@ -26,7 +23,6 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
  * A simple implementation of {@link Response} which just returns payload data.
  */
 public class ChannelResponse implements Response {
-    private static final int SLEEP_UNIT = 10;  // 10mS per sleep
     public static final String METADATA_CHANNEL_ID = "metadata";
     public static final String RELATION_CHANNEL_ID = "relation";
 
@@ -37,14 +33,14 @@ public class ChannelResponse implements Response {
     private final AtomicReference<IOException> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean mainResponseGotton = new AtomicBoolean();
-    private final Lock lock = new ReentrantLock();
-    private final Condition noSet = lock.newCondition();
+    private final Link link;
     private String resultSetName = "";  // for diagnostic
 
     /**
      * Creates a new instance
      */
-    public ChannelResponse() {
+    public ChannelResponse(Link link) {
+        this.link = link;
     }
 
     @Override
@@ -54,68 +50,25 @@ public class ChannelResponse implements Response {
 
     @Override
     public ByteBuffer waitForMainResponse() throws IOException {
-        if (Objects.nonNull(main.get())) {
-            mainResponseGotton.set(true);
-            return main.get();
-        }
-        if (Objects.nonNull(exceptionMain.get())) {
-            var e = exceptionMain.get();
-            throw new IOException(e.getMessage(), e);
-        }
-
-        while (true) {
-            lock.lock();
-            try {
-                while (!isMainResponseReady()) {
-                    noSet.await();
-                }
-                if (Objects.nonNull(main.get())) {
-                    mainResponseGotton.set(true);
-                    return main.get();
-                }
-                if (Objects.nonNull(exceptionMain.get())) {
-                    var e = exceptionMain.get();
-                    throw new IOException(e.getMessage(), e);
-                }
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            } finally {
-                lock.unlock();
-            }
+        try {
+            return waitForMainResponse(0, null);
+        } catch (TimeoutException e) {  // TimeoutException won't be occuer when timeout is 0.
+            throw new IOException(e);
         }
     }
 
     @Override
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        if (Objects.nonNull(main.get())) {
-            return main.get();
-        }
-        if (Objects.nonNull(exceptionMain.get())) {
-            var e = exceptionMain.get();
-            throw new IOException(e.getMessage(), e);
-        }
-
         while (true) {
-            lock.lock();
-            try {
-                while (!isMainResponseReady()) {
-                    if (!noSet.await(timeout, unit)) {
-                        throw new TimeoutException("response has not arrived within the timeout specified");
-                    }
-                }
-                if (Objects.nonNull(main.get())) {
-                    mainResponseGotton.set(true);
-                    return main.get();
-                }
-                if (Objects.nonNull(exceptionMain.get())) {
-                    var e = exceptionMain.get();
-                    throw new IOException(e.getMessage(), e);
-                }
-            } catch (InterruptedException e) {
-                throw new IOException(e);
-            } finally {
-                lock.unlock();
+            var n = link.messageNumber();
+            if (Objects.nonNull(main.get())) {
+                return main.get();
             }
+            if (Objects.nonNull(exceptionMain.get())) {
+                var e = exceptionMain.get();
+                throw new IOException(e.getMessage(), e);
+            }
+            link.pullMessage(n, timeout, unit);
         }
     }
 
@@ -172,36 +125,20 @@ public class ChannelResponse implements Response {
     }
 
     private void waitForResultSetOrMainResponse() throws IOException, InterruptedException {
-        if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
-            return;
-        }
-
-        lock.lock();
         try {
-            while (!(isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get()))) {
-                noSet.await();
-            }
-            return;
-        } finally {
-            lock.unlock();
+            waitForResultSetOrMainResponse(0, null);
+        } catch (TimeoutException e) {  // TimeoutException won't be occuer when timeout is 0.
+            throw new IOException(e);
         }
     }
 
     private void waitForResultSetOrMainResponse(long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
-        if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
-            return;
-        }
-
-        lock.lock();
-        try {
-            while (!(isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get()))) {
-                if (!noSet.await(timeout, unit)) {
-                    throw new TimeoutException("response has not arrived within the timeout specified");
-                }
+        while (true) {
+            var n = link.messageNumber();
+            if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
+                return;
             }
-            return;
-        } finally {
-            lock.unlock();
+            link.pullMessage(n, timeout, unit);
         }
     }
 
@@ -209,35 +146,23 @@ public class ChannelResponse implements Response {
         return Objects.nonNull(resultSet.get()) || Objects.nonNull(exceptionResultSet.get());
     }
 
-    // get call from receiver thread
+    // get call from a thread that has received the response
     void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
-        lock.lock();
         try {
             main.set(skipFrameworkHeader(response));
-            noSet.signal();
         } catch (IOException e) {
             exceptionMain.set(e);
-            noSet.signal();
-        } finally {
-            lock.unlock();
         }
     }
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
-        lock.lock();
-        try {
-            exceptionMain.set(exception);
-            noSet.signal();
-        } finally {
-            lock.unlock();
-        }
+        exceptionMain.set(exception);
     }
 
     public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire resultSetWire) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(resultSetWire);
-        lock.lock();
         try {
             var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
             var detailResponse = sqlResponse.getExecuteQuery();
@@ -246,12 +171,8 @@ public class ChannelResponse implements Response {
 
             metadata.set(detailResponse);
             resultSet.set(resultSetWire);
-            noSet.signal();
         } catch (IOException e) {
             exceptionResultSet.set(e);
-            noSet.signal();
-        } finally {
-            lock.unlock();
         }
     }
 

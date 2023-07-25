@@ -63,7 +63,6 @@ class SessionWireTest {
             // server side send Response
             server.put(ProtosForTest.PrepareResponseChecker.builder().build());
     
-    
             // client side receive Response, ends up an error
             var response = futureResponse.get();
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
@@ -76,7 +75,7 @@ class SessionWireTest {
         }
     }
 
-    @Disabled("time out is not handled")
+    //    @Disabled("time out is not handled")
     @Test
     void timeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionID);
@@ -95,13 +94,13 @@ class SessionWireTest {
         var start = System.currentTimeMillis();
         // client side receive Response, ends up with timeout error
         Throwable exception = assertThrows(TimeoutException.class, () -> {
-            var message = futureResponse.get(1, TimeUnit.SECONDS);
+            var response = futureResponse.get();
+            var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(1, TimeUnit.SECONDS)));
         });
         // FIXME: check error code instead of message
         assertEquals("response has not been received within the specified time", exception.getMessage());
         var duration = System.currentTimeMillis() - start;
         assertTrue((750 < duration) && (duration < 1250));
-
         client.close();
         server.close();
     }

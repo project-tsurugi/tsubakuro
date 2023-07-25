@@ -31,7 +31,7 @@ public class ResponseBox {
     }
 
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
-        var channelResponse = new ChannelResponse();
+        var channelResponse = new ChannelResponse(link);
         var slotEntry = queues.pollSlot();
         if (Objects.nonNull(slotEntry)) {
             slotEntry.channelResponse(channelResponse);
