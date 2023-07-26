@@ -67,27 +67,21 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNati
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    awaitNative
- * Signature: (JJ)I
+ * Signature: (J)I
  */
 JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNative
-  (JNIEnv *env, jclass, jlong handle, jlong timeout) {
+  (JNIEnv *env, jclass, jlong handle)
+{
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     while (true) {
         try {
-            auto header = swc->get_response_wire().await(timeout);
+            auto header = swc->get_response_wire().await();
             if (header.get_type() != 0) {
                 return header.get_idx();
             }
             return -1;
         } catch (std::runtime_error &e) {
-            if (timeout > 0) {
-                jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
-                if (classj == nullptr) { std::abort(); }
-                env->ThrowNew(classj, e.what());
-                env->DeleteLocalRef(classj);
-                return 0;
-            }
             if (!swc->get_status_provider().is_alive()) {
                 jclass classj = env->FindClass("Ljava/io/IOException;");
                 if (classj == nullptr) { std::abort(); }

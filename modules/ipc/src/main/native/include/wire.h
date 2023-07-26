@@ -395,10 +395,7 @@ public:
     /**
      * @brief wait for response arrival and return its header.
      */
-    response_header await(const char* base, long timeout = 0) {
-        if (timeout == 0) {
-            timeout = watch_interval * 1000 * 1000;
-        }
+    response_header await(const char* base) {
         while (true) {
             if (closed_.load()) {
                 header_received_ = response_header(0, 0, 0);
@@ -411,8 +408,7 @@ public:
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-
-                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(timeout), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(watch_interval * 1000 * 1000), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
