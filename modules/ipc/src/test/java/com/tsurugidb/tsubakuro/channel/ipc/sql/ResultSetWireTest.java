@@ -42,11 +42,6 @@ class ResultSetWireTest {
                     writeCount++;
                 }
                 server.eorRSL(serverResultSetWire);
-                try {
-                    Thread.sleep(500);
-                } catch(InterruptedException e) {
-                    // do nothing
-                }
             } catch(IOException e) {
                 throw new UncheckedIOException(e);
             }

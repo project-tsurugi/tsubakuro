@@ -8,7 +8,9 @@ import java.util.Objects;
 import java.util.LinkedList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
@@ -19,9 +21,12 @@ import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 public class ResultSetWireImpl implements ResultSetWire {
     private final StreamLink streamLink;
     private final ResultSetBox resultSetBox;
+    private final Lock lock = new ReentrantLock();
+    private final Condition availableCondition = lock.newCondition();
     private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
     private ByteBufferBackedInput byteBufferBackedInput;
+    private boolean closed;
     private boolean eor;
     private IOException exception;
 
@@ -62,6 +67,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         this.streamLink = streamLink;
         this.resultSetBox = streamLink.getResultSetBox();
         this.byteBufferBackedInput = null;
+        this.closed = false;
         this.eor = false;
         this.exception = null;
     }
@@ -101,33 +107,36 @@ public class ResultSetWireImpl implements ResultSetWire {
     }
 
     /**
-     * Close the wire
-     */
-    @Override
-    public void close() throws IOException {
-    }
-
-    /**
      * Receive resultSet payload
      */
     private byte[] receive() throws IOException {
         while (true) {
-            var n = streamLink.messageNumber();
-            if (!queues.isEmpty()) {
-                return queues.poll();
-            }
-            if (eor) {
-                return null;
-            }
-            if (Objects.nonNull(exception)) {
-                throw exception;
-            }
+            lock.lock();
             try {
-                streamLink.pullMessage(n, 0, null);
-            } catch (TimeoutException e) {
+                if (!queues.isEmpty()) {
+                    return queues.poll();
+                }
+                if (eor) {
+                    return null;
+                }
+                if (Objects.nonNull(exception)) {
+                    throw exception;
+                }
+                availableCondition.await();
+            } catch (InterruptedException e) {
                 throw new IOException(e);
+            } finally {
+                lock.unlock();
             }
         }
+    }
+
+    /**
+     * Close the wire
+     */
+    @Override
+    public void close() throws IOException {
+        closed = true;
     }
 
     public void add(int writerId, byte[] payload) {
@@ -140,14 +149,38 @@ public class ResultSetWireImpl implements ResultSetWire {
         } else {
             queues.addAll(targetList);
             targetList.clear();
+            {
+                lock.lock();
+                try {
+                    availableCondition.signal();
+                } finally {
+                    lock.unlock();
+                }
+            }
         }
     }
 
     public void endOfRecords() {
         eor = true;
+        if (!closed) {
+            lock.lock();
+            try {
+                availableCondition.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
     public void endOfRecords(IOException e) {
         exception = e;
+        if (!closed) {
+            lock.lock();
+            try {
+                availableCondition.signal();
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 }

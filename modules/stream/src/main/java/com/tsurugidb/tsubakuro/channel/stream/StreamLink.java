@@ -7,12 +7,12 @@ import java.io.EOFException;
 import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,7 +34,9 @@ public final class StreamLink extends Link {
     private DataOutputStream outStream;
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
+    private Receiver receiver;
     private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
@@ -55,11 +57,30 @@ public final class StreamLink extends Link {
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
+    private class Receiver extends Thread {
+        public void run() {
+            while (!receiver.isInterrupted()) {
+                if (!pull()) {
+                    break;
+                }
+            }
+            try {
+                if (!socket.isClosed()) {
+                    socket.close();
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+    }
+
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
+        this.receiver = new Receiver();
         this.helloResponse.set(null);
+        this.receiver.start();
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
@@ -70,29 +91,27 @@ public final class StreamLink extends Link {
                 if (socketError.get()) {
                     throw new IOException("Server crashed");
                 }
-                if (!doPull(timeout, unit)) {
-                    throw new IOException("Server crashed");
+                if (timeout != 0) {
+                    if (!condition.await(timeout, unit)) {
+                        throw new TimeoutException("server has not responded to the request within the specified time");
+                    }
+                } else {
+                    condition.await();
                 }
             }
             return helloResponse.get();
+        } catch (InterruptedException e) {
+            throw new IOException(e);
         } finally {
             lock.unlock();
         }
     }
 
-    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
+    private boolean pull() {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
-            int millis = ((timeout == 0) ? 0 : ((unit.toMillis(timeout) > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) unit.toMillis(timeout)));
-            socket.setSoTimeout(millis);
-        } catch (SocketException e) {
-            socketError.set(true);
-        }
-        try {
             message = receive();
-        } catch (SocketTimeoutException e) {
-            throw new TimeoutException("response has not been received within the specified time");
         } catch (IOException e) {
             intentionalClose = false;
         }
@@ -141,6 +160,7 @@ public final class StreamLink extends Link {
                     lock.lock();
                     try {
                         helloResponse.set(message);
+                        condition.signal();
                     } finally {
                         lock.unlock();
                     }
@@ -163,13 +183,15 @@ public final class StreamLink extends Link {
         }
 
         // link is closed
-        closeBoxes(intentionalClose);
-        return false;
-    }
-
-    private void closeBoxes(boolean intentionalClose) {
         responseBox.doClose(intentionalClose);
         resultSetBox.close();
+        lock.lock();
+        try {
+            condition.signal();
+        } finally {
+            lock.unlock();
+        }
+        return false;
     }
 
     public ResultSetBox getResultSetBox() {
@@ -233,7 +255,7 @@ public final class StreamLink extends Link {
         return (byte) (i & 0xff);
     }
 
-    public LinkMessage receive() throws IOException, SocketTimeoutException {
+    public LinkMessage receive() throws IOException {
         try {
             byte[] bytes;
             byte writer = 0;
@@ -290,14 +312,19 @@ public final class StreamLink extends Link {
     public void close() throws IOException, ServerException {
         if (!closed.getAndSet(true)) {
             send(REQUEST_SESSION_BYE, 0);
-            try {
-                doPull(timeout, timeUnit);
-            } catch (TimeoutException e) {
-                socket.close();
-                socketError.set(true);
-                closeBoxes(false);
+        }
+        try {
+            if (timeout != 0) {
+                timeUnit.timedJoin(receiver, timeout);
+            } else {
+                receiver.join();
+            }
+            if (receiver.getState() != Thread.State.TERMINATED) {
+                receiver.interrupt();
                 throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
             }
+        } catch (InterruptedException e) {
+            throw new IOException(e);
         }
     }
 }
