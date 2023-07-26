@@ -163,13 +163,9 @@ public final class StreamLink extends Link {
         }
 
         // link is closed
-        closeBoxes(intentionalClose);
-        return false;
-    }
-
-    private void closeBoxes(boolean intentionalClose) {
         responseBox.doClose(intentionalClose);
         resultSetBox.close();
+        return false;
     }
 
     public ResultSetBox getResultSetBox() {
@@ -293,9 +289,6 @@ public final class StreamLink extends Link {
             try {
                 doPull(timeout, timeUnit);
             } catch (TimeoutException e) {
-                socket.close();
-                socketError.set(true);
-                closeBoxes(false);
                 throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
             }
         }
