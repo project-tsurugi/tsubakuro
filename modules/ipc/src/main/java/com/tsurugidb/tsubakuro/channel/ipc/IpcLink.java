@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
@@ -90,19 +89,19 @@ public final class IpcLink extends Link {
         }
 
         if (Objects.nonNull(message)) {
-            try {
-                if (message.getInfo() != RESPONSE_NULL) {
-                    if (message.getInfo() == RESPONSE_BODYHEAD) {
+            if (message.getInfo() != RESPONSE_NULL) {
+                if (message.getInfo() == RESPONSE_BODYHEAD) {
+                    try {
                         responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
-                    } else {
-                        responseBox.push(message.getSlot(), message.getBytes());
+                    } catch (IOException e) {
+                        responseBox.push(message.getSlot(), e);
                     }
-                    return true;
+                } else {
+                    responseBox.push(message.getSlot(), message.getBytes());
                 }
-                return false;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                return true;
             }
+            return false;
         }
 
         // link is closed

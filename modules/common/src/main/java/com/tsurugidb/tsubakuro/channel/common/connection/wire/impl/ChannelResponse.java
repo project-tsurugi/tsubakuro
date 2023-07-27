@@ -32,7 +32,6 @@ public class ChannelResponse implements Response {
     private final AtomicReference<IOException> exceptionMain = new AtomicReference<>();
     private final AtomicReference<IOException> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final AtomicBoolean mainResponseGotton = new AtomicBoolean();
     private final Link link;
     private String resultSetName = "";  // for diagnostic
 
@@ -135,7 +134,7 @@ public class ChannelResponse implements Response {
     private void waitForResultSetOrMainResponse(long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
         while (true) {
             var n = link.messageNumber();
-            if (isResultSetReady() || (isMainResponseReady() && !mainResponseGotton.get())) {
+            if (isResultSetReady() || (isMainResponseReady())) {
                 return;
             }
             link.pullMessage(n, timeout, unit);

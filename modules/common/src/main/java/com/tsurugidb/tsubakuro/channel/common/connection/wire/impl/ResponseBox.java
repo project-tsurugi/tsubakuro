@@ -63,6 +63,10 @@ public class ResponseBox {
         }
     }
 
+    public void push(int slot, IOException e) {
+        boxes[slot].channelResponse().setMainResponse(e);
+    }
+
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
         boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
     }
