@@ -295,6 +295,9 @@ message Commit {
 
     // response will be returned after reaching the commit status.
     CommitStatus notification_type = 2;
+
+    // dispose the target transaction handle only if notifies a successfully commit to the client.
+    bool auto_dispose = 3;
 }
 
 /* For rollback request. */
@@ -331,6 +334,18 @@ message GetSearchPath {
     reserved 1 to 10;
 }
 
+// retrieves error information of the transaction.
+message GetErrorInfo {
+    // the target transaction handle.
+  common.Transaction transaction_handle = 1;
+}
+
+// occurred when the client side transaction handle is disposed.
+message DisposeTransaction {
+    // the target transaction handle.
+  common.Transaction transaction_handle = 1;
+}
+
 /* For request message to the SQL service. */
 message Request {
   common.Session session_handle = 1;
@@ -352,5 +367,7 @@ message Request {
     Batch batch = 16;
     ListTables listTables = 17;
     GetSearchPath getSearchPath = 18;
+    GetErrorInfo get_error_info = 19;
+    DisposeTransaction dispose_transaction = 20;
   }
 }
