@@ -136,51 +136,51 @@ message DescribeTable {
 
 // execute a statement with 2-D parameter table.
 message Batch {
-    reserved 1 to 10;
+  reserved 1 to 10;
 
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Success success = 11;
+  // the response body.
+  oneof result {
+    // request is successfully completed.
+    Success success = 11;
 
-        // engine error was occurred.
-        Error error = 12;
-    }
+    // engine error was occurred.
+    Error error = 12;
+  }
 }
 
 message Identifier {
-    // the label.
-    string label = 1;
+  // the label.
+  string label = 1;
 }
 
 message Name {
-    // the identfiers.
-    repeated Identifier identifiers = 1;
+  // the identfiers.
+  repeated Identifier identifiers = 1;
 }
 
 // execute a list tables.
 message ListTables {
-    reserved 2 to 10;
+  reserved 2 to 10;
 
+  // request is successfully completed.
+  message Success {
+    // the table path names.
+    repeated Name table_path_names = 1;
+  }
+
+  // the response body.
+  oneof result {
     // request is successfully completed.
-    message Success {
-      // the table path names.
-      repeated Name table_path_names = 1;
-    }
+    Success success = 11;
 
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Success success = 11;
-
-        // engine error was occurred.
-        Error error = 12;
-    }
+    // engine error was occurred.
+    Error error = 12;
+  }
 }
 
 // execute a getSearchPath.
 message GetSearchPath {
-    reserved 2 to 10;
+  reserved 2 to 10;
   // request is successfully completed.
 
   message Success {
@@ -188,14 +188,35 @@ message GetSearchPath {
     repeated Name search_paths = 1;
   }
 
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Success success = 11;
+  // the response body.
+  oneof result {
+    // request is successfully completed.
+    Success success = 11;
 
-        // engine error was occurred.
-        Error error = 12;
-    }
+    // engine error was occurred.
+    Error error = 12;
+  }
+}
+
+// empty message.
+message Void {}
+
+// retrieves error information of the transaction.
+message GetErrorInfo {
+  // the response body.
+  oneof result {
+    // operation was successfully completed and error information was found.
+    Error success = 1;
+
+    // operation was successfully completed but error information was absent.
+    Void error_not_found = 2;
+
+    // the target transaction is absent (may already disposed).
+    Void transaction_not_found = 3;
+
+    // engine error occurred while the retrieving existing error information.
+    Error error = 4;
+  }
 }
 
 /* For response message from the SQL service. */
@@ -210,6 +231,7 @@ message Response {
     Batch batch = 7;
     ListTables list_tables = 8;
     GetSearchPath get_search_path = 9;
+    GetErrorInfo get_error_info = 10;
   }
 }
 
