@@ -4,15 +4,14 @@ import java.io.DataOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.EOFException;
-import java.io.UncheckedIOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,12 +33,11 @@ public final class StreamLink extends Link {
     private DataOutputStream outStream;
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
-    private Receiver receiver;
     private final Lock lock = new ReentrantLock();
-    private final Condition condition = lock.newCondition();
     private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
+    private final AtomicBoolean socketClosed = new AtomicBoolean();
 
     private static final byte REQUEST_SESSION_HELLO = 1;
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
@@ -57,30 +55,11 @@ public final class StreamLink extends Link {
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
-    private class Receiver extends Thread {
-        public void run() {
-            while (!receiver.isInterrupted()) {
-                if (!pull()) {
-                    break;
-                }
-            }
-            try {
-                if (!socket.isClosed()) {
-                    socket.close();
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-    }
-
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
-        this.receiver = new Receiver();
         this.helloResponse.set(null);
-        this.receiver.start();
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
     }
 
@@ -88,110 +67,126 @@ public final class StreamLink extends Link {
         lock.lock();
         try {
             while (Objects.isNull(helloResponse.get())) {
-                if (socketError.get()) {
+                try {
+                    doPull(timeout, unit, true);
+                } catch (IOException e) {
                     throw new IOException("Server crashed");
-                }
-                if (timeout != 0) {
-                    if (!condition.await(timeout, unit)) {
-                        throw new TimeoutException("server has not responded to the request within the specified time");
-                    }
-                } else {
-                    condition.await();
                 }
             }
             return helloResponse.get();
-        } catch (InterruptedException e) {
-            throw new IOException(e);
         } finally {
             lock.unlock();
         }
     }
 
-    private boolean pull() {
+    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
+        try {
+            return doPull(timeout, unit, false);
+        } catch (IOException e) {  // IOException is never thrown when throwException is false
+            System.err.println("catch exception that never thrown");
+            System.err.println(e);
+        }
+        return false;
+    }
+
+    private boolean doPull(long timeout, TimeUnit unit, boolean throwException) throws TimeoutException, IOException {
         LinkMessage message = null;
-        boolean intentionalClose = true;
+        try {
+            int millis = ((timeout == 0) ? 0 : ((unit.toMillis(timeout) > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) unit.toMillis(timeout)));
+            socket.setSoTimeout(millis);
+        } catch (SocketException e) {
+            if (throwException) {
+                throw e;
+            } else {
+                socketError.set(true);
+                closeBoxes(false);
+                return false;
+            }
+        }
         try {
             message = receive();
+        } catch (SocketTimeoutException e) {
+            throw new TimeoutException("response has not been received within the specified time");
+        } catch (EOFException e) {   // imply session close
+            closeBoxes(true);
+            return false;
         } catch (IOException e) {
-            intentionalClose = false;
-        }
-
-        if (Objects.nonNull(message)) {
-            try {
-                byte info = message.getInfo();
-                int slot = message.getSlot();
-                switch (info) {
-    
-                case RESPONSE_SESSION_PAYLOAD:
-                    LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-                    responseBox.push(slot, message.getBytes());
-                    return true;
-        
-                case RESPONSE_SESSION_BODYHEAD:
-                    LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
-                    responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
-                    return true;
-    
-                case RESPONSE_RESULT_SET_PAYLOAD:
-                    byte writer = message.getWriter();
-                    LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
-                    resultSetBox.push(slot, writer, message.getBytes());
-                    return true;
-    
-                case RESPONSE_RESULT_SET_HELLO:
-                    LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
-                    resultSetBox.pushHello(message.getString(), slot);
-                    return true;
-    
-                case RESPONSE_RESULT_SET_BYE:
-                    LOG.trace("receive RESPONSE_RESULT_SET_BYE");
-                    try {
-                        send(REQUEST_RESULT_SET_BYE_OK, slot);
-                    } catch (IOException e) {
-                        resultSetBox.pushBye(slot, e);
-                        return false;
-                    }
-                    resultSetBox.pushBye(slot);
-                    return true;
-    
-                case RESPONSE_SESSION_HELLO_OK:
-                case RESPONSE_SESSION_HELLO_NG:
-                    LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-                    lock.lock();
-                    try {
-                        helloResponse.set(message);
-                        condition.signal();
-                    } finally {
-                        lock.unlock();
-                    }
-                    return true;
-    
-                case RESPONSE_SESSION_BYE_OK:
-                    LOG.trace("receive RESPONSE_SESSION_BYE_OK");
-                    synchronized (outStream) {
-                        socket.close();
-                    }
-                    return false;
-    
-                default:
-                    throw new IOException("invalid info in the response");
-    
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            if (throwException) {
+                throw e;
+            } else {
+                socketError.set(true);
+                closeBoxes(false);
+                return false;
             }
         }
 
-        // link is closed
+        if (Objects.nonNull(message)) {
+            byte info = message.getInfo();
+            int slot = message.getSlot();
+            switch (info) {
+
+            case RESPONSE_SESSION_PAYLOAD:
+                LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
+                responseBox.push(slot, message.getBytes());
+                return true;
+
+            case RESPONSE_SESSION_BODYHEAD:
+                LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
+                responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
+                return true;
+
+            case RESPONSE_RESULT_SET_PAYLOAD:
+                byte writer = message.getWriter();
+                LOG.trace("receive RESULT_SET_PAYLOAD, slot = {}, writer = {}", slot, writer);
+                resultSetBox.push(slot, writer, message.getBytes());
+                return true;
+
+            case RESPONSE_RESULT_SET_HELLO:
+                LOG.trace("receive RESPONSE_RESULT_SET_HELLO");
+                resultSetBox.pushHello(message.getString(), slot);
+                return true;
+
+            case RESPONSE_RESULT_SET_BYE:
+                LOG.trace("receive RESPONSE_RESULT_SET_BYE");
+                try {
+                    send(REQUEST_RESULT_SET_BYE_OK, slot);
+                } catch (IOException e) {
+                    resultSetBox.pushBye(slot, e);
+                    return false;
+                }
+                resultSetBox.pushBye(slot);
+                return true;
+    
+            case RESPONSE_SESSION_HELLO_OK:
+            case RESPONSE_SESSION_HELLO_NG:
+                LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
+                lock.lock();
+                try {
+                    helloResponse.set(message);
+                } finally {
+                    lock.unlock();
+                }
+                return true;
+
+            case RESPONSE_SESSION_BYE_OK:
+                LOG.trace("receive RESPONSE_SESSION_BYE_OK");
+                closeBoxes(true);
+                return false;
+
+            default:
+                throw new IOException("invalid info in the response");
+
+            }
+        }
+
+        return false;
+    }
+
+    private void closeBoxes(boolean intentionalClose) throws IOException {
         responseBox.doClose(intentionalClose);
         resultSetBox.close();
-        lock.lock();
-        try {
-            condition.signal();
-        } finally {
-            lock.unlock();
-        }
-        return false;
+        socketClosed.set(true);
+        socket.close();
     }
 
     public ResultSetBox getResultSetBox() {
@@ -255,7 +250,7 @@ public final class StreamLink extends Link {
         return (byte) (i & 0xff);
     }
 
-    public LinkMessage receive() throws IOException {
+    public LinkMessage receive() throws IOException, SocketTimeoutException {
         try {
             byte[] bytes;
             byte writer = 0;
@@ -289,9 +284,9 @@ public final class StreamLink extends Link {
                 bytes = null;
             }
             return new LinkMessage(info, bytes, slot, writer);
-        } catch (SocketException | EOFException e) {  // imply session close
+        } catch (SocketException e) {
             socketError.set(true);
-            throw new IOException(e);
+            throw e;
         }
     }
 
@@ -310,21 +305,21 @@ public final class StreamLink extends Link {
 
     @Override
     public void close() throws IOException, ServerException {
-        if (!closed.getAndSet(true)) {
-            send(REQUEST_SESSION_BYE, 0);
-        }
-        try {
-            if (timeout != 0) {
-                timeUnit.timedJoin(receiver, timeout);
-            } else {
-                receiver.join();
+        if (!closed.getAndSet(true) && !socketError.get()) {
+            try (var c1 = socket; var c2 = inStream; var c3 = outStream) {
+                send(REQUEST_SESSION_BYE, 0);
+                while (!socketClosed.get()) {
+                    doPull(timeout, timeUnit);
+                }
+            } catch (TimeoutException e) {
+                socketError.set(true);
+                closeBoxes(false);
+                throw new ResponseTimeoutException("close timeout in StreamLink", e);
+            } catch (Exception e) {
+                socketError.set(true);
+                closeBoxes(false);
+                throw e;
             }
-            if (receiver.getState() != Thread.State.TERMINATED) {
-                receiver.interrupt();
-                throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
-            }
-        } catch (InterruptedException e) {
-            throw new IOException(e);
         }
     }
 }
