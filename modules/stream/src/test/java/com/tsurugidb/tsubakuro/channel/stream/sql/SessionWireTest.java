@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
@@ -79,7 +78,6 @@ class SessionWireTest {
         }
     }
 
-    @Disabled("time out is not handled")
     @Test
     void timeout() {
         try {
@@ -99,7 +97,8 @@ class SessionWireTest {
             var start = System.currentTimeMillis();
             // client side receive Response, ends up with timeout error
             Throwable exception = assertThrows(TimeoutException.class, () -> {
-                var message = futureResponse.get(1, TimeUnit.SECONDS);
+                    var response = futureResponse.get();
+                    var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(1, TimeUnit.SECONDS)));
             });
             assertEquals("response has not been received within the specified time", exception.getMessage());
             var duration = System.currentTimeMillis() - start;

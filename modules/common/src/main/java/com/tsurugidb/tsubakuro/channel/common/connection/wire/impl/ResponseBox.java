@@ -31,7 +31,7 @@ public class ResponseBox {
     }
 
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
-        var channelResponse = new ChannelResponse();
+        var channelResponse = new ChannelResponse(link);
         var slotEntry = queues.pollSlot();
         if (Objects.nonNull(slotEntry)) {
             slotEntry.channelResponse(channelResponse);
@@ -61,6 +61,10 @@ public class ResponseBox {
             }
             queues.pairAnnihilation();
         }
+    }
+
+    public void push(int slot, IOException e) {
+        boxes[slot].channelResponse().setMainResponse(e);
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {

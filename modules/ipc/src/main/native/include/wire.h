@@ -336,7 +336,7 @@ protected:
             header_received_ = T(static_cast<char*>(buf));
         }
     }
-    
+
     boost::interprocess::managed_shared_memory::handle_t buffer_handle_{};  //NOLINT
     std::size_t capacity_;  //NOLINT
 
@@ -356,6 +356,14 @@ private:
     std::unique_ptr<std::string> copy_of_payload_{};  // in case of ring buffer wrap around
 };
 
+static constexpr std::int64_t MAX_TIMEOUT = 10L * 365L * 24L * 3600L * 1000L * 1000L;
+
+inline static std::int64_t u_cap(std::int64_t timeout) {
+    return (timeout > MAX_TIMEOUT) ? MAX_TIMEOUT : timeout;
+}
+inline static std::int64_t n_cap(std::int64_t timeout) {
+    return (timeout > (MAX_TIMEOUT * 1000)) ? (MAX_TIMEOUT * 1000) : timeout;
+}
 
 // for request
 class unidirectional_message_wire : public simple_wire<message_header> {
@@ -395,7 +403,11 @@ public:
     /**
      * @brief wait for response arrival and return its header.
      */
-    response_header await(const char* base) {
+    response_header await(const char* base, std::int64_t timeout = 0) {
+        if (timeout == 0) {
+            timeout = watch_interval * 1000 * 1000;
+        }
+
         while (true) {
             if (closed_.load()) {
                 header_received_ = response_header(0, 0, 0);
@@ -408,7 +420,8 @@ public:
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(watch_interval * 1000 * 1000), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
+
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(timeout)), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
@@ -726,9 +739,9 @@ public:
                 } else {
                     if (!c_record_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                              boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+                                              boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
 #else
-                                              boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
+                                              boost::get_system_time() + boost::posix_time::microseconds(u_cap(((timeout-500)/1000)+1)),
 #endif
                                               [this, &active_wire](){
                                                   for (auto&& wire: unidirectional_simple_wires_) {
@@ -964,9 +977,9 @@ public:
                 boost::interprocess::scoped_lock lock(m_accepted_);
                 if (!c_accepted_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                        boost::get_system_time() + boost::posix_time::nanoseconds(timeout),
+                                        boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
 #else
-                                        boost::get_system_time() + boost::posix_time::microseconds(((timeout-500)/1000)+1),
+                                        boost::get_system_time() + boost::posix_time::microseconds(u_cap(((timeout-500)/1000)+1)),
 #endif
                                         [this](){ return (session_id_ != 0); })) {
                     throw std::runtime_error("connection response has not been accepted within the specified time");

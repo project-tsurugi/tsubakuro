@@ -1,9 +1,9 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
@@ -16,7 +16,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 /**
  * IpcLink type.
@@ -25,7 +24,6 @@ public final class IpcLink extends Link {
     private long wireHandle = 0;  // for c++
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
-    private Receiver receiver;
 
     public static final byte RESPONSE_NULL = 0;
     public static final byte RESPONSE_PAYLOAD = 1;
@@ -34,7 +32,7 @@ public final class IpcLink extends Link {
 
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] message);
-    private static native int awaitNative(long wireHandle) throws IOException;
+    private static native int awaitNative(long wireHandle, long timeout) throws IOException, TimeoutException;
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native boolean isAliveNative(long wireHandle);
@@ -47,16 +45,6 @@ public final class IpcLink extends Link {
         NativeLibrary.load();
     }
 
-    private class Receiver extends Thread {
-        public void run() {
-            while (true) {
-                if (!pull()) {
-                    break;
-                }
-            }
-        }
-    }
-
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param name the name of shared memory for this IpcLink through which the SQL server is connected
@@ -65,8 +53,6 @@ public final class IpcLink extends Link {
      */
     public IpcLink(@Nonnull String name) throws IOException {
         this.wireHandle = openNative(name);
-        this.receiver = new Receiver();
-        receiver.start();
         LOG.trace("begin Session via shared memory, name = {}", name);
     }
 
@@ -91,29 +77,30 @@ public final class IpcLink extends Link {
         LOG.trace("send {}", payload);
     }
 
-    private boolean pull() {
+    @Override
+    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
-            message = receive();
+            message = receive(timeout == 0 ? 0 : unit.toMicros(timeout));
         } catch (IOException e) {
             intentionalClose = false;
         }
 
         if (Objects.nonNull(message)) {
-            try {
-                if (message.getInfo() != RESPONSE_NULL) {
-                    if (message.getInfo() == RESPONSE_BODYHEAD) {
+            if (message.getInfo() != RESPONSE_NULL) {
+                if (message.getInfo() == RESPONSE_BODYHEAD) {
+                    try {
                         responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
-                    } else {
-                        responseBox.push(message.getSlot(), message.getBytes());
+                    } catch (IOException e) {
+                        responseBox.push(message.getSlot(), e);
                     }
-                    return true;
+                } else {
+                    responseBox.push(message.getSlot(), message.getBytes());
                 }
-                return false;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                return true;
             }
+            return false;
         }
 
         // link is closed
@@ -124,8 +111,8 @@ public final class IpcLink extends Link {
         return false;
     }
 
-    private LinkMessage receive() throws IOException {
-        int slot = awaitNative(wireHandle);
+    private LinkMessage receive(long timeout) throws IOException, TimeoutException {
+        int slot = awaitNative(wireHandle, timeout);
         if (slot >= 0) {
             var info = (byte) getInfoNative(wireHandle);
             return new LinkMessage(info, receiveNative(wireHandle), slot);
@@ -156,21 +143,7 @@ public final class IpcLink extends Link {
         synchronized (this) {
             if (!closed.getAndSet(true)) {
                 closeNative(wireHandle);
-                try {
-                    if (timeout != 0) {
-                        timeUnit.timedJoin(receiver, timeout);
-                    } else {
-                        receiver.join();
-                    }
-                    if (receiver.getState() != Thread.State.TERMINATED) {
-                        receiver.interrupt();
-                        throw new ResponseTimeoutException(new TimeoutException("close timeout in StreamLink"));
-                    }
-                } catch (InterruptedException e) {
-                    throw new IOException(e);
-                } finally {
-                    destroyNative(wireHandle);
-                }
+                destroyNative(wireHandle);
             }
         }
     }

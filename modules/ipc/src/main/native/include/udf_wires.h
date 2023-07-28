@@ -114,8 +114,8 @@ public:
     public:
         response_wire_container() = default;
         response_wire_container(unidirectional_response_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
-        response_header await() {
-            return wire_->await(bip_buffer_);
+        response_header await(long timeout) {
+            return wire_->await(bip_buffer_, timeout);
         }
         response_header::length_type get_length() const {
             return wire_->get_length();
