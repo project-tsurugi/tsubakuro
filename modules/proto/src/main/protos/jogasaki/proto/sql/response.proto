@@ -219,6 +219,18 @@ message GetErrorInfo {
   }
 }
 
+// execute a DisposeTransaction.
+message DisposeTransaction {
+  // the response body.
+  oneof result {
+    // operation was successfully completed and error information was found.
+    Void success = 1;
+
+    // engine error occurred while the retrieving existing error information.
+    Error error = 2;
+  }
+}
+
 /* For response message from the SQL service. */
 message Response {
   oneof response {
@@ -232,6 +244,7 @@ message Response {
     ListTables list_tables = 8;
     GetSearchPath get_search_path = 9;
     GetErrorInfo get_error_info = 10;
+    DisposeTransaction dispose_transaction = 11;
   }
 }
 

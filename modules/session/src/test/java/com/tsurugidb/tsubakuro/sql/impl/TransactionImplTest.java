@@ -36,6 +36,10 @@ class TransactionImplTest {
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     return FutureResponse.returns(null);
                 }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
             }, resource -> {
                 closeCount.incrementAndGet();
             })
@@ -58,6 +62,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, resource -> {
@@ -89,6 +97,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     return FutureResponse.returns(null);
                 }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
             }, null);
         ) {
             client.executeStatement("SELECT 100").await();
@@ -113,6 +125,10 @@ class TransactionImplTest {
                 }
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, null);
@@ -146,6 +162,10 @@ class TransactionImplTest {
                 }
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, null);
@@ -186,6 +206,10 @@ class TransactionImplTest {
                 }
                 @Override
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, null);
@@ -271,6 +295,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     return FutureResponse.returns(null);
                 }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
             }, null);
             var rs = client.executeDump(prepared(200), List.of(), Path.of("/path/to/dump")).await();
         ) {
@@ -308,6 +336,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     return FutureResponse.returns(null);
                 }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
             }, null);
         ) {
             client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build()),
@@ -330,6 +362,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, resource -> {
@@ -355,6 +391,10 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
                     rollbackCount.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
             }, resource -> {
