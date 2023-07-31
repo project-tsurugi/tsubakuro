@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.Nonnull;
@@ -49,6 +50,7 @@ public class SessionImpl implements Session {
     public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
 
     private final ServiceShelf services = new ServiceShelf();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -202,21 +204,23 @@ public class SessionImpl implements Session {
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (Objects.nonNull(executor)) {
-            executor.shutdownNow();
-        }
-        // take care of the serviceStubs
-        try {
-            services.forEach(new CloseAction());
-        } catch (UncheckedIOException e) {
-            throw e.getCause();
-        }
-        // take care of the wire
-        if (Objects.nonNull(wire)) {
-            if (Objects.nonNull(closeTimeout)) {
-                wire.setCloseTimeout(closeTimeout);
+        if (!closed.getAndSet(true)) {
+            if (Objects.nonNull(executor)) {
+                executor.shutdownNow();
             }
-            wire.close();
+            // take care of the serviceStubs
+            try {
+                services.forEach(new CloseAction());
+            } catch (UncheckedIOException e) {
+                throw e.getCause();
+            }
+            // take care of the wire
+            if (Objects.nonNull(wire)) {
+                if (Objects.nonNull(closeTimeout)) {
+                    wire.setCloseTimeout(closeTimeout);
+                }
+                wire.close();
+            }
         }
     }
 
@@ -272,14 +276,17 @@ public class SessionImpl implements Session {
         }
     }
     public String diagnosticInfo() {
-        String sessionID = "";
-        if (wire instanceof WireImpl) {
-            sessionID = Long.valueOf(((WireImpl) wire).sessionID()).toString();
-        }
-        String diagnosticInfo = "session " + sessionID + System.getProperty("line.separator");
+        if (!closed.get()) {
+            String sessionID = "";
+            if (wire instanceof WireImpl) {
+                sessionID = Long.valueOf(((WireImpl) wire).sessionID()).toString();
+            }
+            String diagnosticInfo = "session " + sessionID + System.getProperty("line.separator");
 
-        var serviceInfoAction = new ServiceInfoAction();
-        services.forEach(serviceInfoAction);
-        return diagnosticInfo + serviceInfoAction.diagnosticInfo() + wire.diagnosticInfo() + System.getProperty("line.separator");
+            var serviceInfoAction = new ServiceInfoAction();
+            services.forEach(serviceInfoAction);
+            return diagnosticInfo + serviceInfoAction.diagnosticInfo() + wire.diagnosticInfo() + System.getProperty("line.separator");
+        }
+        return "";
     }
 }
