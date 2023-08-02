@@ -15,7 +15,7 @@ See *Dockerfile* section.
 ### Dockerfile
 
 ```dockerfile
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt update -y && apt install -y git build-essential cmake libboost-system-dev openjdk-11-jdk
 ```
