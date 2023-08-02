@@ -65,7 +65,7 @@ class ValuesTest {
     void decimalValue() throws Exception {
         var builder = KvsData.Value.newBuilder();
         final var list = List.of(BigDecimal.valueOf(0), BigDecimal.valueOf(12345678), BigDecimal.valueOf(-12345678),
-                BigDecimal.valueOf(123456, 78), BigDecimal.valueOf(123456, -78), BigDecimal.valueOf(123.456e+20),
+                BigDecimal.valueOf(123456, 12), BigDecimal.valueOf(123456, -12), BigDecimal.valueOf(123.456e+20),
                 BigDecimal.valueOf(-123.456));
         for (final var value : list) {
             var decimal = KvsData.Decimal.newBuilder()

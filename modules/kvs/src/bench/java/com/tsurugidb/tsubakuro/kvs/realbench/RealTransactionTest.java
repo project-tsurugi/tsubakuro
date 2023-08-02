@@ -28,7 +28,7 @@ public class RealTransactionTest {
     private final Credential credential = NullCredential.INSTANCE;
     private final String tableName;
 
-    private static final ValueType VALUE_TYPE = ValueType.STRING;
+    private static final ValueType VALUE_TYPE = ValueType.LONG;
     private static final int VALUE_NUM = 1;
 
     private static final RecordInfo RECORD_INFO = new RecordInfo(VALUE_TYPE, VALUE_NUM);
@@ -80,8 +80,12 @@ public class RealTransactionTest {
 
     private static void dumpRecord(com.tsurugidb.tsubakuro.kvs.Record rec) {
         for (int i = 0; i < rec.size(); i++) {
-            System.err.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i).getClass().getSimpleName() + "\t"
+            System.err.print(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i).getClass().getSimpleName() + "\t"
                     + rec.getValue(i));
+            if (VALUE_TYPE == ValueType.LONG) {
+                System.err.printf("\t%016x", rec.getValue(i));
+            }
+            System.err.println();
         }
     }
 
