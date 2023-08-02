@@ -444,33 +444,6 @@ public final class ProtosForTest {
         }
     }
     
-    public static class ExplainChecker {
-        public static SqlRequest.Explain.Builder builder() {
-            return
-                SqlRequest.Explain.newBuilder()
-                .setPreparedStatementHandle(PreparedStatementChecker.builder())
-                .addParameters(ParameterSetChecker.builder())
-                .addParameters(ParameterSetChecker2.builder());
-        }
-        static boolean check(SqlRequest.Explain dst) {
-            var p1 = dst.getParametersList().get(0);
-            var p2 = dst.getParametersList().get(1);
-            
-            return
-                PreparedStatementChecker.check(dst.getPreparedStatementHandle())
-                && ParameterSetChecker.check(p1)
-                && ParameterSetChecker2.check(p2);
-        }
-        
-        void test() {
-            try {
-                assertTrue(check(SqlRequest.Explain.parseFrom(builder().build().toByteArray())));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
     static long sessionID = 123;
     
     /**
@@ -726,35 +699,6 @@ public final class ProtosForTest {
         }
     }
     
-    public static class ExplainRequestChecker {
-        static SqlRequest.Request.Builder builder(long id) {
-            return
-                SqlRequest.Request.newBuilder()
-                .setSessionHandle(SqlCommon.Session.newBuilder().setHandle(id))
-                .setExplain(ExplainChecker.builder());
-        }
-        public static SqlRequest.Request.Builder builder() {  // SessionHandle won't be set
-            return
-                SqlRequest.Request.newBuilder()
-                .setExplain(ExplainChecker.builder());
-        }
-        public static boolean check(SqlRequest.Request dst, long id) {
-            return
-                (dst.getSessionHandle().getHandle() == id)
-                && SqlRequest.Request.RequestCase.EXPLAIN.equals(dst.getRequestCase())
-                && ExplainChecker.check(dst.getExplain());
-        }
-        
-        void test() {
-            try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
-    
     /**
      * Check of Response parts
      */
@@ -888,27 +832,6 @@ public final class ProtosForTest {
         }
     }
     
-    public static class ResMessageExplainChecker {
-        static final String EXPLAIN = "ThisIsAnExecutionPlanString";
-        public static SqlResponse.Explain.Builder builder() {
-            return
-                SqlResponse.Explain.newBuilder()
-                .setOutput(EXPLAIN);
-        }
-        public static boolean check(SqlResponse.Explain dst) {
-            return
-                dst.getOutput().equals(EXPLAIN);
-        }
-        
-        void test() {
-            try {
-                assertTrue(check(SqlResponse.Explain.parseFrom(builder().build().toByteArray())));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
     /**
      * Check of Response level message
      * can be used by external packages
@@ -996,28 +919,6 @@ public final class ProtosForTest {
             }
         }
     }
-    
-    public static class ExplainResponseChecker {
-        public static SqlResponse.Response.Builder builder() {
-            return
-                SqlResponse.Response.newBuilder()
-                .setExplain(ResMessageExplainChecker.builder());
-        }
-        public static boolean check(SqlResponse.Response dst) {
-            return
-                SqlResponse.Response.ResponseCase.EXPLAIN.equals(dst.getResponseCase())
-                && ResMessageExplainChecker.check(dst.getExplain());
-        }
-        
-        void test() {
-            try {
-                assertTrue(check(SqlResponse.Response.parseFrom(builder().build().toByteArray())));
-            } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-                fail("cought com.google.protobuf.InvalidProtocolBufferException");
-            }
-        }
-    }
-    
     
     /**
      * Check of Schema meta data

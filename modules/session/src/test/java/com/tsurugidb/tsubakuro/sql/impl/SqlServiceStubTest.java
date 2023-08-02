@@ -410,69 +410,49 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendExplainSuccess() throws Exception {
+    void sendDescribeStatementSuccess() throws Exception {
         var columns = List.of(
                 Types.column("a", Types.of(BigDecimal.class)),
                 Types.column("b", Types.of(String.class)),
                 Types.column("c", Types.of(double.class)));
-        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
-                        .setSuccess(SqlResponse.Explain.Success.newBuilder()
-                                .setFormatId("T")
-                                .setFormatVersion(123)
-                                .setContents("TESTING")
-                                .addAllColumns(columns))
+        wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_STATEMENT,
+                RequestHandler.returns(SqlResponse.DescribeStatement.newBuilder()
+                        .setSuccess(SqlResponse.DescribeStatement.Success.newBuilder()
+                                .addAllColumns(columns)
+                                .setPlan("TESTING"))
                         .build())));
 
-        var message = SqlRequest.Explain.newBuilder()
-                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
+        var message = SqlRequest.DescribeStatement.newBuilder()
+                .setExecutableStatement(
+                    SqlRequest.ExecutableStatement.newBuilder()
+                        .setId(SqlCommon.PreparedStatement.getDefaultInstance().getHandle())
+                    .build())
                 .build();
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message);
         ) {
             var result = future.get();
-            assertEquals("T", result.getFormatId());
-            assertEquals(123, result.getFormatVersion());
-            assertEquals("TESTING", result.getContents());
             assertEquals(columns, result.getColumns());
+            assertEquals("TESTING", result.getPlanText());
         }
         assertFalse(wire.hasRemaining());
     }
 
     @Test
-    void sendExplainOutput() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
-                        .setOutput("TESTING")
-                        .build())));
-
-        var message = SqlRequest.Explain.newBuilder()
-                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-            assertEquals(SqlServiceStub.FORMAT_ID_LEGACY_EXPLAIN, result.getFormatId());
-            assertEquals(SqlServiceStub.FORMAT_VERSION_LEGACY_EXPLAIN, result.getFormatVersion());
-            assertEquals("TESTING", result.getContents());
-            assertEquals(List.of(), result.getColumns());
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendExplainError() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+    void sendDescribeStatementError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_STATEMENT,
+                RequestHandler.returns(SqlResponse.DescribeStatement.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
-        var message = SqlRequest.Explain.newBuilder()
-                .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
-                .build();
+        var message = SqlRequest.DescribeStatement.newBuilder()
+                .setExecutableStatement(
+                        SqlRequest.ExecutableStatement.newBuilder()
+                                .setId(SqlCommon.PreparedStatement.getDefaultInstance().getHandle())
+                                .build())
+                        .build();
+
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message);

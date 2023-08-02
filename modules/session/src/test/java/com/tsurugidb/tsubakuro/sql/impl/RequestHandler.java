@@ -89,9 +89,9 @@ public interface RequestHandler {
         var sqlResponse = SqlResponse.Response.newBuilder().setPrepare(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Explain response) {
+    static RequestHandler returns(SqlResponse.DescribeStatement response) {
         Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setExplain(response).build();
+        var sqlResponse = SqlResponse.Response.newBuilder().setDescribeStatement(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
     static RequestHandler returns(SqlResponse.DescribeTable response) {

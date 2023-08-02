@@ -73,35 +73,27 @@ message ExecuteQuery {
   ResultSetMetadata record_meta = 2;
 }
 
-/* For response to Explain. */
-message Explain {
+// describe about a statement.
+message DescribeStatement {
+  reserved 1 to 10;
 
   // request is successfully completed.
-  message Success {
+    message Success {
+        // the resulting column information, only if it is a query.
+        repeated common.Column columns = 1;
 
-    // the content format ID.
-    string format_id = 1;
+        // the JSON style explain text.
+        string plan = 2;
+    }
 
-    // the content format version.
-    uint64 format_version = 2;
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
 
-    // the explain result contents.
-    string contents = 3;
-
-    // the result set column information, or empty if it does not provided.
-    repeated common.Column columns = 4;
-  }
-
-  // the response body.
-  oneof result {
-    // request is successfully completed.
-    Success success = 11;
-
-    // deprecated: The result output string of the explain.
-    string output = 1;
-
-    Error error = 2;
-  }
+        // error was occurred.
+        Error error = 12;
+    }
 }
 
 // describe about a table.
@@ -226,12 +218,14 @@ message Response {
     Begin begin = 2;
     Prepare prepare = 3;
     ExecuteQuery execute_query = 4;
-    Explain explain = 5;
+    // explain is no longer used
+    // Explain explain = 5;
     DescribeTable describe_table = 6;
     Batch batch = 7;
     ListTables list_tables = 8;
     GetSearchPath get_search_path = 9;
     GetErrorInfo get_error_info = 10;
+    DescribeStatement describe_statement = 11;
   }
 }
 

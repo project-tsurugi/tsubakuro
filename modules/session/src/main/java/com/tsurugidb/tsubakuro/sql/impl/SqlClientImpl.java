@@ -73,12 +73,24 @@ public class SqlClientImpl implements SqlClient {
     }
 
     @Override
+    public FutureResponse<StatementMetadata> explain(@Nonnull String source) throws IOException {
+        Objects.requireNonNull(source);
+        var resuest = SqlRequest.DescribeStatement.newBuilder()
+                .setSourceText(source)
+                .build();
+        return service.send(resuest);
+    }
+
+    @Override
     public FutureResponse<StatementMetadata> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
-        var resuest = SqlRequest.Explain.newBuilder()
-                .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle())
-                .addAllParameters(parameters)
+        var resuest = SqlRequest.DescribeStatement.newBuilder()
+                .setExecutableStatement(
+                    SqlRequest.ExecutableStatement.newBuilder()
+                        .setId(((PreparedStatementImpl) statement).getHandle().getHandle())
+                        .addAllParameters(parameters)
+                    .build())
                 .build();
         return service.send(resuest);
     }

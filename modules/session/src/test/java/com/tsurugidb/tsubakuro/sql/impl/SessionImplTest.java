@@ -82,9 +82,6 @@ class SessionImplTest {
                 case ROLLBACK:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
-                case EXPLAIN:
-                    nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
-                    break;
                 case DESCRIBE_TABLE:
                     nextResponse =  SqlResponse.Response.newBuilder()
                     .setDescribeTable(SqlResponse.DescribeTable.newBuilder()
