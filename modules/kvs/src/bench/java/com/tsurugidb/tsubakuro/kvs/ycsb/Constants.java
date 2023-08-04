@@ -11,6 +11,11 @@ public final class Constants {
     public static final String TABLE_NAME = "YCSBbench";
 
     /**
+     * whether every sessions use the same table or not
+     */
+    public static final boolean USE_SAME_TABLE = true;
+
+    /**
      * the name of the primary key column
      */
     public static final String KEY_NAME = "pk";

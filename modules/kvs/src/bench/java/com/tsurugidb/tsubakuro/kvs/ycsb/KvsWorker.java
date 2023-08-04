@@ -13,8 +13,8 @@ import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
  */
 public class KvsWorker extends Worker {
 
-    KvsWorker(URI endpoint, boolean createDB, int clientId, int rratio, long runMsec) throws Exception {
-        super(endpoint, createDB, clientId, rratio, runMsec);
+    KvsWorker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        super(endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     @Override

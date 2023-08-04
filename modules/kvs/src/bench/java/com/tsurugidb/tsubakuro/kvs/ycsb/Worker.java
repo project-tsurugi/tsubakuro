@@ -30,6 +30,16 @@ public abstract class Worker implements Callable<Long> {
     protected final String tableName;
 
     /**
+     * number of clients
+     */
+    protected final int numClient;
+
+    /**
+     * id of client
+     */
+    protected final int clientId;
+
+    /**
      * read operation (i.e. GET) ratio: 0..100
      */
     protected final int rratio;
@@ -42,12 +52,19 @@ public abstract class Worker implements Callable<Long> {
     /**
      * operation list
      */
-    protected final ArrayList<Operation> operations = new ArrayList<>();
+    protected final ArrayList<Operation> operations = new ArrayList<>(Constants.NUM_RECORDS);
 
-    Worker(URI endpoint, boolean createDB, int clientId, int rratio, long runMsec) throws Exception {
+    Worker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
         this.endpoint = endpoint;
-        this.createDB = createDB;
-        this.tableName = Constants.TABLE_NAME + clientId;
+        if (Constants.USE_SAME_TABLE) {
+            this.createDB = clientId == 0 ? createDB : false;
+            this.tableName = Constants.TABLE_NAME;
+        } else {
+            this.createDB = createDB;
+            this.tableName = Constants.TABLE_NAME + clientId;
+        }
+        this.numClient = numClient;
+        this.clientId = clientId;
         this.rratio = rratio;
         this.runMsec = runMsec;
     }
@@ -91,7 +108,8 @@ public abstract class Worker implements Callable<Long> {
         operations.clear();
         for (int i = 0; i < Constants.NUM_RECORDS; i++) {
             boolean isGet = 100 * Math.random() < rratio;
-            operations.add(new Operation(isGet, i));
+            long key = (i * numClient + clientId) % Constants.NUM_RECORDS;
+            operations.add(new Operation(isGet, key));
         }
         Collections.shuffle(operations);
     }

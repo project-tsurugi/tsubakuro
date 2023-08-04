@@ -42,6 +42,7 @@ public class YCSBlikeBenchmark {
         System.out.println("# OPs/tx, " + Constants.OPS_PER_TX);
         System.out.println("# record/table, " + Constants.NUM_RECORDS);
         System.out.println("# clientType, " + (useKvsClient ? "KvsClient" : "SqlClient"));
+        System.out.println("# useSameTable, " + Constants.USE_SAME_TABLE);
         System.out.println("# num_client, read_ratio, sec, num_tx, tx/sec, usec/tx");
     }
 
@@ -54,9 +55,9 @@ public class YCSBlikeBenchmark {
         System.out.println();
     }
 
-    private Worker newWorker(int clientId, int rratio, long runMsec) throws Exception {
-        return useKvsClient ? new KvsWorker(endpoint, createDB, clientId, rratio, runMsec)
-                : new SqlWorker(endpoint, createDB, clientId, rratio, runMsec);
+    private Worker newWorker(int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        return useKvsClient ? new KvsWorker(endpoint, createDB, numClient, clientId, rratio, runMsec)
+                : new SqlWorker(endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     private void warmup() throws Exception {
@@ -65,7 +66,7 @@ public class YCSBlikeBenchmark {
         }
         final int numClient = 1;
         final int rratio = Integer.parseInt(rratios[0]);
-        Worker worker = newWorker(numClient, rratio, warmupMsec);
+        Worker worker = newWorker(numClient, 0, rratio, warmupMsec);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         long start = System.currentTimeMillis();
         try {
@@ -88,7 +89,7 @@ public class YCSBlikeBenchmark {
         try {
             long start = System.currentTimeMillis();
             for (int i = 0; i < numClient; i++) {
-                var worker = newWorker(i, rratio, benchMsec);
+                var worker = newWorker(numClient, i, rratio, benchMsec);
                 clients.add(executor.submit(worker));
             }
             for (var future : clients) {

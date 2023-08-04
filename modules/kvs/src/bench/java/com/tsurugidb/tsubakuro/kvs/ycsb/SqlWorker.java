@@ -11,8 +11,8 @@ import com.tsurugidb.tsubakuro.sql.SqlClient;
  */
 public class SqlWorker extends Worker {
 
-    SqlWorker(URI endpoint, boolean createDB, int clientId, int rratio, long runMsec) throws Exception {
-        super(endpoint, createDB, clientId, rratio, runMsec);
+    SqlWorker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        super(endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     @Override
