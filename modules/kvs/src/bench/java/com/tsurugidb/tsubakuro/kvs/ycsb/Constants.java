@@ -53,7 +53,7 @@ public final class Constants {
     /**
      * number of records in the table
      */
-    public static final int NUM_RECORDS = 100_000;
+    public static final int NUM_RECORDS = 1000;
 
     private Constants() {
         throw new AssertionError();

@@ -55,9 +55,9 @@ public class YCSBlikeBenchmark {
         System.out.println();
     }
 
-    private Worker newWorker(int numClient, int clientId, int rratio, long runMsec) throws Exception {
-        return useKvsClient ? new KvsWorker(endpoint, createDB, numClient, clientId, rratio, runMsec)
-                : new SqlWorker(endpoint, createDB, numClient, clientId, rratio, runMsec);
+    private Worker newWorker(RunManager mgr, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        return useKvsClient ? new KvsWorker(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec)
+                : new SqlWorker(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     private void warmup() throws Exception {
@@ -66,13 +66,17 @@ public class YCSBlikeBenchmark {
         }
         final int numClient = 1;
         final int rratio = Integer.parseInt(rratios[0]);
-        Worker worker = newWorker(numClient, 0, rratio, warmupMsec);
+        var mgr = new RunManager(numClient);
+        Worker worker = newWorker(mgr, numClient, 0, rratio, warmupMsec);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
-        long start = System.currentTimeMillis();
         try {
             var future = executor.submit(worker);
-            var numTx = future.get();
+            mgr.waitUntilAllWorkresReady();
+            long start = System.currentTimeMillis();
+            Thread.sleep(benchMsec);
+            mgr.setQuit();
             long end = System.currentTimeMillis();
+            var numTx = future.get();
             result(numClient, rratio, end - start, numTx);
         } catch (Exception e) {
             e.printStackTrace();
@@ -86,17 +90,27 @@ public class YCSBlikeBenchmark {
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         // System.err.println(numClient + " threads start");
         long sumTx = 0;
+        var mgr = new RunManager(numClient);
         try {
-            long start = System.currentTimeMillis();
             for (int i = 0; i < numClient; i++) {
-                var worker = newWorker(numClient, i, rratio, benchMsec);
+                var worker = newWorker(mgr, numClient, i, rratio, benchMsec);
                 clients.add(executor.submit(worker));
+            }
+            long elapse;
+            if (!createDB) {
+                mgr.waitUntilAllWorkresReady();
+                long start = System.currentTimeMillis();
+                Thread.sleep(benchMsec);
+                long end = System.currentTimeMillis();
+                mgr.setQuit();
+                elapse = end - start;
+            } else {
+                elapse = 1000;
             }
             for (var future : clients) {
                 sumTx += future.get();
             }
-            long end = System.currentTimeMillis();
-            result(numClient, rratio, end - start, sumTx);
+            result(numClient, rratio, elapse, sumTx);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -15,6 +15,11 @@ import com.tsurugidb.tsubakuro.sql.SqlClient;
 public abstract class Worker implements Callable<Long> {
 
     /**
+     * manager for all clients to start/quit
+     */
+    protected final RunManager mgr;
+
+    /**
      * endpoint such as "ipc:tsubakuro"
      */
     protected final URI endpoint;
@@ -54,7 +59,8 @@ public abstract class Worker implements Callable<Long> {
      */
     protected final ArrayList<Operation> operations = new ArrayList<>(Constants.NUM_RECORDS);
 
-    Worker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+    Worker(RunManager mgr, URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        this.mgr = mgr;
         this.endpoint = endpoint;
         if (Constants.USE_SAME_TABLE) {
             this.createDB = clientId == 0 ? createDB : false;
@@ -74,6 +80,7 @@ public abstract class Worker implements Callable<Long> {
      * @throws Exception if failed
      */
     protected void initDB() throws Exception {
+        mgr.addReadyWorker();
         try (var session = SessionBuilder.connect(endpoint).withCredential(NullCredential.INSTANCE).create();
             var client = SqlClient.attach(session);) {
             try (var tx = client.createTransaction().await()) {
@@ -119,6 +126,7 @@ public abstract class Worker implements Callable<Long> {
         // System.err.println("start client Thread for " + tableName);
         if (createDB) {
             initDB();
+            return Long.valueOf(0L);
         }
         if (runMsec <= 0) {
             return Long.valueOf(0L);

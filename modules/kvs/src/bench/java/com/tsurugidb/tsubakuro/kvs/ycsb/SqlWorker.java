@@ -11,8 +11,8 @@ import com.tsurugidb.tsubakuro.sql.SqlClient;
  */
 public class SqlWorker extends Worker {
 
-    SqlWorker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
-        super(endpoint, createDB, numClient, clientId, rratio, runMsec);
+    SqlWorker(RunManager mgr, URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        super(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     @Override
@@ -21,8 +21,11 @@ public class SqlWorker extends Worker {
         long numTx = 0;
         try (var session = SessionBuilder.connect(endpoint).withCredential(NullCredential.INSTANCE).create();
             var client = SqlClient.attach(session)) {
-            long start = System.currentTimeMillis();
-            do {
+            mgr.addReadyWorker();
+            while (!mgr.isAllWorkersReady()) {
+                // finite loop
+            }
+            while (!mgr.isQuit()) {
                 optId = 0;
                 while (optId < operations.size()) {
                     try (var tx = client.createTransaction().await()) {
@@ -48,7 +51,7 @@ public class SqlWorker extends Worker {
                     }
                     numTx++;
                 }
-            } while (System.currentTimeMillis() - start < runMsec);
+            }
         }
         return Long.valueOf(numTx);
     }

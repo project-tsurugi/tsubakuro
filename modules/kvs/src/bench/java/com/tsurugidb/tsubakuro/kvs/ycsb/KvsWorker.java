@@ -13,8 +13,8 @@ import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
  */
 public class KvsWorker extends Worker {
 
-    KvsWorker(URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
-        super(endpoint, createDB, numClient, clientId, rratio, runMsec);
+    KvsWorker(RunManager mgr, URI endpoint, boolean createDB, int numClient, int clientId, int rratio, long runMsec) throws Exception {
+        super(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec);
     }
 
     @Override
@@ -23,8 +23,11 @@ public class KvsWorker extends Worker {
         long numTx = 0;
         try (var session = SessionBuilder.connect(endpoint).withCredential(NullCredential.INSTANCE).create();
             var kvs = KvsClient.attach(session)) {
-            long start = System.currentTimeMillis();
-            do {
+            mgr.addReadyWorker();
+            while (!mgr.isAllWorkersReady()) {
+                // finite loop
+            }
+            while (!mgr.isQuit()) {
                 optId = 0;
                 while (optId < operations.size()) {
                     try (var tx = kvs.beginTransaction().await()) {
@@ -43,9 +46,8 @@ public class KvsWorker extends Worker {
                     }
                     numTx++;
                 }
-            } while (System.currentTimeMillis() - start < runMsec);
+            }
         }
-        // System.err.println("finish client Thread for " + tableName + ", numTx=" + numTx);
         return Long.valueOf(numTx);
     }
 
