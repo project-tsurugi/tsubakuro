@@ -115,18 +115,6 @@ class SqlServiceStubTest {
                     .setSuccess(newVoid())
                     .build())));
             });
-
-            // add handler for DisposeTransaction
-            wire.next((id, request) -> {
-                var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
-                assertTrue(req.hasDisposeTransaction());
-                var disposeTransaction = req.getDisposeTransaction();
-                assertEquals(100, disposeTransaction.getTransactionHandle().getHandle());
-                return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.DisposeTransaction.newBuilder()
-                    .setSuccess(SqlResponse.Void.newBuilder().build())
-                    .build())));
-            });
-
         }
         assertFalse(wire.hasRemaining());
     }
@@ -160,19 +148,8 @@ class SqlServiceStubTest {
                 var rollback = req.getRollback();
                 assertEquals(100, rollback.getTransactionHandle().getHandle());
                 return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.ResultOnly.newBuilder()
-                    .setSuccess(newVoid())
-                    .build())));
-            });
-
-            // add handler for DisposeTransaction
-            wire.next((id, request) -> {
-                var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
-                assertTrue(req.hasDisposeTransaction());
-                var disposeTransaction = req.getDisposeTransaction();
-                assertEquals(100, disposeTransaction.getTransactionHandle().getHandle());
-                return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.DisposeTransaction.newBuilder()
-                    .setSuccess(SqlResponse.Void.newBuilder().build())
-                    .build())));
+                .setSuccess(newVoid())
+                .build())));
             });
         }
         assertFalse(wire.hasRemaining());
@@ -328,19 +305,6 @@ class SqlServiceStubTest {
 
     private static byte[] toDelimitedByteArray(SqlResponse.ResultOnly response) {
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-
-        try (var buffer = new ByteArrayOutputStream()) {
-            sqlResponse.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        } catch (IOException e) {
-            System.err.println(e);
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private static byte[] toDelimitedByteArray(SqlResponse.DisposeTransaction response) {
-        var sqlResponse = SqlResponse.Response.newBuilder().setDisposeTransaction(response).build();
 
         try (var buffer = new ByteArrayOutputStream()) {
             sqlResponse.writeDelimitedTo(buffer);
@@ -1117,7 +1081,7 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendSearchPathSuccess() throws Exception {
+    void sendSearchPathuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
                 RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
                         .setSuccess(SqlResponse.GetSearchPath.Success.newBuilder()
@@ -1150,120 +1114,6 @@ class SqlServiceStubTest {
                         .build())));
 
         var message = SqlRequest.GetSearchPath.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendGetErrorInfoSuccess() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setSuccess(SqlResponse.Error.newBuilder()
-                            .setStatus(SqlStatus.Status.ERR_UNKNOWN))
-                        .build())));
-
-        var message = SqlRequest.GetErrorInfo.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-            assertEquals(result.getDiagnosticCode().getCodeNumber(), SqlServiceCode.ERR_UNKNOWN.getCodeNumber());
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendGetErrorInfoErrorNotFound() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setErrorNotFound(SqlResponse.Void.newBuilder())
-                        .build())));
-
-        var message = SqlRequest.GetErrorInfo.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-            assertEquals(result, null);
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendGetErrorInfoTransactionNotFound() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setTransactionNotFound(SqlResponse.Void.newBuilder())
-                        .build())));
-
-        var message = SqlRequest.GetErrorInfo.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-            assertEquals(result, null);
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendGetErrorInfoEngineError() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setError(newEngineError())
-                        .build())));
-
-        var message = SqlRequest.GetErrorInfo.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendDisposeTransactionSuccess() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
-                RequestHandler.returns(SqlResponse.DisposeTransaction.newBuilder()
-                        .setSuccess(SqlResponse.Void.newBuilder())
-                        .build())));
-
-        var message = SqlRequest.DisposeTransaction.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
-    void sendDisposeTransactionEngineError() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
-                RequestHandler.returns(SqlResponse.DisposeTransaction.newBuilder()
-                        .setError(newEngineError())
-                        .build())));
-
-        var message = SqlRequest.DisposeTransaction.newBuilder()
                 .build();
         try (
             var service = new SqlServiceStub(session);

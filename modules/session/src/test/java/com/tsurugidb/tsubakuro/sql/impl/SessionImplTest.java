@@ -96,12 +96,6 @@ class SessionImplTest {
                         )
                     ).build();
                     break;
-                    case DISPOSE_TRANSACTION:
-                    nextResponse = SqlResponse.Response.newBuilder()
-                        .setDisposeTransaction(SqlResponse.DisposeTransaction.newBuilder()
-                                       .setSuccess(SqlResponse.Void.newBuilder()))
-                        .build();
-                        break;
                 default:
                     System.out.println("falls default case%n" + request);
                     return null;  // dummy as it is test for session
