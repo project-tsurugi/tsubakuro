@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlService;
-import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.Transaction;
@@ -217,7 +216,6 @@ public class TransactionImpl implements Transaction {
         return service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
-                .setAutoDispose(false)
                 .build());
     }
 
@@ -236,46 +234,28 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
-        if (cleanuped.get()) {
-            throw new IOException("transaction already closed");
-        }
-        return service.send(SqlRequest.GetErrorInfo.newBuilder()
-                .setTransactionHandle(transaction.getTransactionHandle())
-                .build());
-    }
-
-    @Override
     public String getTransactionId() {
         return transaction.getTransactionId().getId();
     }
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!closed.getAndSet(true)) {
-            try {
-                if (!cleanuped.getAndSet(true)) {
-                    // FIXME need to consider rollback is suitable here
-                    try (var rollback = submitRollback()) {
-                        if (timeout == 0) {
-                            rollback.get();
-                        } else {
-                            rollback.get(timeout, unit);
-                        }
-                    } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction disposal", e);
-                    }
+        if (!cleanuped.getAndSet(true)) {
+            // FIXME need to consider rollback is suitable here
+            try (var rollback = submitRollback()) {
+                if (timeout == 0) {
+                    rollback.get();
+                } else {
+                    rollback.get(timeout, unit);
                 }
-                if (Objects.nonNull(closeHandler)) {
-                    Lang.suppress(
-                            e -> LOG.warn("error occurred while collecting garbage", e),
-                            () -> closeHandler.onClosed(this));
-                }
-            } finally {
-                service.send(SqlRequest.DisposeTransaction.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .build()).get();
+            } catch (TimeoutException e) {
+                LOG.warn("timeout occurred in the transaction disposal", e);
             }
+        }
+        if (!closed.getAndSet(true) && Objects.nonNull(closeHandler)) {
+            Lang.suppress(
+                    e -> LOG.warn("error occurred while collecting garbage", e),
+                    () -> closeHandler.onClosed(this));
         }
     }
 

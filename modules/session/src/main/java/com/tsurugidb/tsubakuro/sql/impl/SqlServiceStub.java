@@ -584,9 +584,10 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (batch): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(SqlRequest.Request.newBuilder()
+                SqlRequest.Request.newBuilder()
                     .setBatch(request)
-                    .build()),
+                    .build()
+                    .toByteArray(),
                 new BatchProcessor().asResponseProcessor());
     }
 
@@ -709,86 +710,6 @@ public class SqlServiceStub implements SqlService {
                     .setGetSearchPath(request)
                     .build()),
                 new GetSearchPathProcessor().asResponseProcessor());
-    }
-
-    static class GetErrorInfoProcessor implements MainResponseProcessor<SqlServiceException> {
-        private final AtomicReference<SqlResponse.GetErrorInfo> detailResponseCache = new AtomicReference<>();
-
-        @Override
-        public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.GET_ERROR_INFO.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getGetErrorInfo());
-            }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (GetErrorInfo): {}", detailResponse); //$NON-NLS-1$
-            switch (detailResponse.getResultCase()) {
-                case SUCCESS:
-                    var response = detailResponse.getSuccess();
-                    return new SqlServiceException(SqlServiceCode.valueOf(response.getStatus()), response.getDetail());
-                case ERROR_NOT_FOUND:
-                    return null;
-                case TRANSACTION_NOT_FOUND:
-                    return null;
-                case ERROR:
-                    var errorResponse = detailResponse.getError();
-                    throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
-            }
-            throw new IOException("unhandled response in GetErrorInfo");  // never reached
-        }
-    }
-
-    @Override
-    public FutureResponse<SqlServiceException> send(
-            @Nonnull SqlRequest.GetErrorInfo request) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (GetErrorInfo): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                toDelimitedByteArray(SqlRequest.Request.newBuilder()
-                    .setGetErrorInfo(request)
-                    .build()),
-                new GetErrorInfoProcessor().asResponseProcessor());
-    }
-
-    static class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.DisposeTransaction> detailResponseCache = new AtomicReference<>();
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.DISPOSE_TRANSACTION.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getDisposeTransaction());
-            }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (DisposeTransaction): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.DisposeTransaction.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
-            }
-            return null;
-        }
-    }
-
-    @Override
-    public FutureResponse<Void> send(
-            @Nonnull SqlRequest.DisposeTransaction request) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (DisposeTransaction): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                toDelimitedByteArray(SqlRequest.Request.newBuilder()
-                    .setDisposeTransaction(request)
-                    .build()),
-                new DisposeTransactionProcessor().asResponseProcessor());
     }
 
     // for compatibility

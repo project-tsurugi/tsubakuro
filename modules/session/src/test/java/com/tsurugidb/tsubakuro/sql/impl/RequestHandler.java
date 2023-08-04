@@ -114,16 +114,6 @@ public interface RequestHandler {
         var sqlResponse = SqlResponse.Response.newBuilder().setGetSearchPath(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.GetErrorInfo response) {
-        Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setGetErrorInfo(response).build();
-        return returns(toDelimitedByteArray(sqlResponse));
-    }
-    static RequestHandler returns(SqlResponse.DisposeTransaction response) {
-        Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setDisposeTransaction(response).build();
-        return returns(toDelimitedByteArray(sqlResponse));
-    }
 
     // for result set transfer (normal case)
     static RequestHandler returns(SqlResponse.ResultOnly response, byte[] metadata, Relation relation) {
