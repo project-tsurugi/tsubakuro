@@ -181,6 +181,28 @@ public interface SqlService extends ServerResource {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Requests {@code GetErrorInfo} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<SqlServiceException> send(@Nonnull SqlRequest.GetErrorInfo request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code DisposeTransaction} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<Void> send(@Nonnull SqlRequest.DisposeTransaction request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     default void close() throws ServerException, IOException, InterruptedException {
         // do nothing

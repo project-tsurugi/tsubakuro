@@ -336,13 +336,13 @@ message GetSearchPath {
 
 // retrieves error information of the transaction.
 message GetErrorInfo {
-    // the target transaction handle.
+  // the target transaction handle.
   common.Transaction transaction_handle = 1;
 }
 
 // occurred when the client side transaction handle is disposed.
 message DisposeTransaction {
-    // the target transaction handle.
+  // the target transaction handle.
   common.Transaction transaction_handle = 1;
 }
 
