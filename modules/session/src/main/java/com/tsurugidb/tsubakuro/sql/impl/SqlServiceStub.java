@@ -756,25 +756,33 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.DisposeTransaction> detailResponseCache = new AtomicReference<>();
+        private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.DISPOSE_TRANSACTION.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getDisposeTransaction());
+            if (Objects.isNull(responseCache.get())) {
+                responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
             }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (DisposeTransaction): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.DisposeTransaction.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+            var response = responseCache.get();
+            switch (response.getResponseCase()) {
+                case DISPOSE_TRANSACTION:
+                    var detailResponse = response.getDisposeTransaction();
+                    LOG.trace("receive (DisposeTransaction): {}", detailResponse); //$NON-NLS-1$
+                    if (SqlResponse.DisposeTransaction.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                        var errorResponse = detailResponse.getError();
+                        throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                    }
+                    return null;
+                case RESULT_ONLY:
+                    var resultOnlyResponse = response.getResultOnly();
+                    LOG.trace("receive (ResultOnly): {}", resultOnlyResponse); //$NON-NLS-1$
+                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(resultOnlyResponse.getResultCase())) {
+                        var errorResponse = resultOnlyResponse.getError();
+                        throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                    }
+                    return null;
             }
-            return null;
+            throw new IOException("response type is inconsistent with the request type");
         }
     }
 
