@@ -25,7 +25,6 @@ public class RunManager {
      */
     public void addReadyWorker() {
         numReady.incrementAndGet();
-        System.err.println("numReady=" + numReady.get() + ", numClient=" + numClient);
     }
 
     /**
@@ -35,7 +34,6 @@ public class RunManager {
         while (numReady.get() < numClient) {
             ;
         }
-        System.err.println("set bStart = true");
         bStart.set(true);
     }
 
@@ -51,7 +49,6 @@ public class RunManager {
      * set internal state to quit all workers
      */
     public void setQuit() {
-        System.err.println("set bQuit = true");
         bQuit.set(true);
     }
 
