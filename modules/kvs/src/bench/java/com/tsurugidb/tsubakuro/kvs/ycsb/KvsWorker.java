@@ -27,26 +27,30 @@ public class KvsWorker extends Worker {
             while (!mgr.isAllWorkersReady()) {
                 // finite loop
             }
-            optId = 0;
-            while (!mgr.isQuit() && optId < operations.size()) {
-                try (var tx = kvs.beginTransaction().await()) {
-                    for (int i = 0; i < Constants.OPS_PER_TX; i++, optId++) {
-                        var op = operations.get(optId % operations.size());
-                        RecordBuffer buffer = new RecordBuffer();
-                        buffer.add(Constants.KEY_NAME, Long.valueOf(op.key()));
-                        if (op.isGet()) {
-                            kvs.get(tx, tableName, buffer).await();
-                        } else {
-                            buffer.add(Constants.VALUE_NAME, Long.valueOf(100L * i));
-                            kvs.put(tx, tableName, buffer, PutType.IF_PRESENT).await();
-                        }
+            while (true) {
+                optId = 0;
+                while (optId < operations.size()) {
+                    if (mgr.isQuit()) {
+                        return Long.valueOf(numTx);
                     }
-                    kvs.commit(tx).await();
+                    try (var tx = kvs.beginTransaction().await()) {
+                        for (int i = 0; i < Constants.OPS_PER_TX; i++, optId++) {
+                            var op = operations.get(optId % operations.size());
+                            RecordBuffer buffer = new RecordBuffer();
+                            buffer.add(Constants.KEY_NAME, Long.valueOf(op.key()));
+                            if (op.isGet()) {
+                                kvs.get(tx, tableName, buffer).await();
+                            } else {
+                                buffer.add(Constants.VALUE_NAME, Long.valueOf(100L * i));
+                                kvs.put(tx, tableName, buffer, PutType.IF_PRESENT).await();
+                            }
+                        }
+                        kvs.commit(tx).await();
+                    }
+                    numTx++;
                 }
-                numTx++;
             }
         }
-        return Long.valueOf(numTx);
     }
 
 }
