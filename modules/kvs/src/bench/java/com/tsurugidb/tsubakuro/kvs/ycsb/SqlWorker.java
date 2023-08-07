@@ -25,32 +25,30 @@ public class SqlWorker extends Worker {
             while (!mgr.isAllWorkersReady()) {
                 // finite loop
             }
-            while (!mgr.isQuit()) {
-                optId = 0;
-                while (optId < operations.size()) {
-                    try (var tx = client.createTransaction().await()) {
-                        for (int i = 0; i < Constants.OPS_PER_TX; i++, optId++) {
-                            var op = operations.get(optId % operations.size());
-                            if (op.isGet()) {
-                                String sql = String.format("SELECT * FROM %s WHERE %s=%d", tableName,
-                                        Constants.KEY_NAME, op.key());
-                                try (var rs = tx.executeQuery(sql).await()) {
-                                    while (rs.nextRow()) {
-                                        while (rs.nextColumn()) {
-                                            rs.fetchInt8Value();
-                                        }
+            optId = 0;
+            while (!mgr.isQuit() && optId < operations.size()) {
+                try (var tx = client.createTransaction().await()) {
+                    for (int i = 0; i < Constants.OPS_PER_TX; i++, optId++) {
+                        var op = operations.get(optId % operations.size());
+                        if (op.isGet()) {
+                            String sql = String.format("SELECT * FROM %s WHERE %s=%d", tableName,
+                                    Constants.KEY_NAME, op.key());
+                            try (var rs = tx.executeQuery(sql).await()) {
+                                while (rs.nextRow()) {
+                                    while (rs.nextColumn()) {
+                                        rs.fetchInt8Value();
                                     }
                                 }
-                            } else {
-                                String sql = String.format("UPDATE %s SET %s=%d WHERE %s=%d", tableName,
-                                        Constants.VALUE_NAME, Long.valueOf(100L * i), Constants.KEY_NAME, op.key());
-                                tx.executeStatement(sql).await();
                             }
+                        } else {
+                            String sql = String.format("UPDATE %s SET %s=%d WHERE %s=%d", tableName,
+                                    Constants.VALUE_NAME, Long.valueOf(100L * i), Constants.KEY_NAME, op.key());
+                            tx.executeStatement(sql).await();
                         }
-                        tx.commit().await();
                     }
-                    numTx++;
+                    tx.commit().await();
                 }
+                numTx++;
             }
         }
         return Long.valueOf(numTx);
