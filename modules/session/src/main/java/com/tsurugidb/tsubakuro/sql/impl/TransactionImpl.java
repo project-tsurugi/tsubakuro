@@ -16,6 +16,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
@@ -263,18 +264,28 @@ public class TransactionImpl implements Transaction {
                             rollback.get(timeout, unit);
                         }
                     } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction disposal", e);
+                        LOG.warn("timeout occurred in the transaction rollback", e);
+                        throw new ResponseTimeoutException(e.getMessage(), e);
                     }
                 }
+            } finally {
                 if (Objects.nonNull(closeHandler)) {
                     Lang.suppress(
                             e -> LOG.warn("error occurred while collecting garbage", e),
                             () -> closeHandler.onClosed(this));
                 }
-            } finally {
-                service.send(SqlRequest.DisposeTransaction.newBuilder()
+                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
                         .setTransactionHandle(transaction.getTransactionHandle())
-                        .build()).get();
+                        .build())) {
+                    if (timeout == 0) {
+                        futureResponse.get();
+                    } else {
+                        futureResponse.get(timeout, unit);
+                    }
+                } catch (TimeoutException e) {
+                    LOG.warn("timeout occurred in the transaction disposal", e);
+                    throw new ResponseTimeoutException(e.getMessage(), e);
+                }
             }
         }
     }
