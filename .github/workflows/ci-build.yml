@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: libtsubakuro
-          path: modules/ipc/build/native/libtsubakuro.so
+          path: modules/ipc/build/native/lib/libtsubakuro.so
           retention-days: 1
 
       - id: Generate_Annotations

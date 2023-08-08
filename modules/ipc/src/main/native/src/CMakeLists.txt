@@ -25,6 +25,6 @@ install(
     EXPORT
         ${export_name}
     LIBRARY
-        DESTINATION native
+        DESTINATION lib
         COMPONENT Runtime
 )

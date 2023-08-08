@@ -37,4 +37,4 @@ Please type `\help` to show available commands.
 Available options:
 
 * `-Dorg.slf4j.simpleLogger.defaultLogLevel=debug` - enables debug logs
-* `-Dcom.tsurugidb.tsubakuro.jnilib=/path/to/libtsubakuro.so` - enables IPC connector (in build tree, JNI library is available at `../ipc/build/native/libtsubakuro.so`)
+* `-Dcom.tsurugidb.tsubakuro.jnilib=/path/to/libtsubakuro.so` - enables IPC connector (in build tree, JNI library is available at `../ipc/build/native/lib/libtsubakuro.so`)

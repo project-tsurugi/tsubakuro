@@ -19,6 +19,3 @@
 cmake-build-*
 .idea
 *.tokens
-
-# create by javac -h include
-/include/com_tsurugidb_tsubakuro_*.h
