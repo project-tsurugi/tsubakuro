@@ -70,7 +70,7 @@ tasks.register('runFullMockBench', JavaExec) {
 tasks.register('runShortBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
 }
@@ -78,7 +78,7 @@ tasks.register('runShortBench', JavaExec) {
 tasks.register('runTestBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
 }
@@ -86,7 +86,7 @@ tasks.register('runTestBench', JavaExec) {
 tasks.register('runFullBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['full']
@@ -95,7 +95,7 @@ tasks.register('runFullBench', JavaExec) {
 tasks.register('runSingleEmptyMessageBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.EmptyMessageBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '1', '10', '30']
@@ -104,7 +104,7 @@ tasks.register('runSingleEmptyMessageBench', JavaExec) {
 tasks.register('runMultiEmptyMessageBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.EmptyMessageBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '1,2,4,8,16,32,64,100', '10', '30']
