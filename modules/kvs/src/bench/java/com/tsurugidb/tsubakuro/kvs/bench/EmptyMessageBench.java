@@ -78,7 +78,7 @@ final class EmptyMessageBench {
         //
         double sec = loopMsec / 1000.0;
         long numMsg = 2 * nloopSum; // one loop handles request and response messages
-        System.out.printf("%d,%d,%.1f,%.1f,%.1f", numClient, numMsg, sec, numMsg / sec, sec / numMsg * 1e+6);
+        System.out.printf("%d,%d,%.1f,%.1f,%.3f", numClient, numMsg, sec, numMsg / sec, sec / numMsg * 1e+6);
         System.out.println();
     }
 
