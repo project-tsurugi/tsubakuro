@@ -1,4 +1,4 @@
-package com.tsurugidb.tsubakuro.kvs.ycsb;
+package com.tsurugidb.tsubakuro.kvs.util;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,21 +16,25 @@ public class RunManager {
 
     private final AtomicBoolean bQuit = new AtomicBoolean(false);
 
-    RunManager(int numClient) {
+    /**
+     * Creates a new instance. (for a main thread)
+     * @param numClient number of all workers
+     */
+    public RunManager(int numClient) {
         this.numClient = numClient;
     }
 
     /**
-     * register one new client is ready to start
+     * register one new worker is ready to start (for a worker thread)
      */
     public void addReadyWorker() {
         numReady.incrementAndGet();
     }
 
     /**
-     * wait until all workers are ready to start
+     * set start after waiting all workers are ready (for a main thread)
      */
-    public void waitUntilAllWorkresReady() {
+    public void setWorkerStartTime() {
         while (numReady.get() < numClient) {
             ;
         }
@@ -38,23 +42,24 @@ public class RunManager {
     }
 
     /**
-     * retrieves all workers are ready to start or not
-     * @return whether all workers are ready to start or not
+     * wait until all workers are ready to start (for a worker thread)
      */
-    public boolean isAllWorkersReady() {
-        return bStart.get();
+    public void waitUntilWorkerStartTime() {
+        while (!bStart.get()) {
+            ;
+        }
     }
 
     /**
-     * set internal state to quit all workers
+     * set internal state to quit all workers (for a main thread)
      */
     public void setQuit() {
         bQuit.set(true);
     }
 
     /**
-     * retrieves all workers should be quit
-     * @return whether all workers should be quit
+     * retrieves a worker should be quit (for a worker thread)
+     * @return whether a worker should be quit
      */
     public boolean isQuit() {
         return bQuit.get();

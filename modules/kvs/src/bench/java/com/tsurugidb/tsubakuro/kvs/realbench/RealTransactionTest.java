@@ -152,7 +152,7 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        //app.initDB();
+        // app.initDB();
         app.test();
         //app.testGet();
     }

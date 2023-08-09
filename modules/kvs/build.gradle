@@ -106,7 +106,7 @@ tasks.register('runMultiEmptyMessageBench', JavaExec) {
     systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.EmptyMessageBench'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi', '1,2,4,8,16,32,64,100', '10', '30']
+    args = ['ipc:tsurugi', '1,2,4,8', '10', '30']
 }
 
 tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {

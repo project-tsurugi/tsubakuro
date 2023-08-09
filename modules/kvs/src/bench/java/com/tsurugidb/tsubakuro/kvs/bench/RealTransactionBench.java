@@ -13,6 +13,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
+import com.tsurugidb.tsubakuro.kvs.util.RunManager;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 
 /**
@@ -41,40 +42,39 @@ final class RealTransactionBench {
     private class SimpleTransaction implements Callable<TxStatus> {
 
         private final String tableName;
+        private final RunManager mgr;
         private final RecordBuilder recBuilder;
 
-        SimpleTransaction(String tableName, RecordInfo info, int clientId) {
+        SimpleTransaction(String tableName, RunManager mgr, RecordInfo info, int clientId) {
             this.tableName = tableName;
+            this.mgr = mgr;
             this.recBuilder = new RecordBuilder(info, clientId);
         }
 
         @Override
         public TxStatus call() throws Exception {
             var status = new TxStatus();
+            long numTx = 0;
             try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
                 var kvs = KvsClient.attach(session)) {
-                Elapse elapse = new Elapse();
-                final int loopblock = 10_000;
-                long msec;
-                do {
-                    for (var i = 0; i < loopblock; i++) {
-                        try (var handle = kvs.beginTransaction().await()) {
-                            var record = recBuilder.makeRecordBuffer();
-                            var key = new RecordBuffer();
-                            var r = record.toRecord();
-                            key.add(r.getName(0), r.getValue(0));
-                            kvs.put(handle, tableName, record).await();
-                            kvs.get(handle, tableName, key).await();
-                            kvs.get(handle, tableName, key).await();
-                            status.addNumRecord(3);
-                            kvs.commit(handle).await();
-                        }
+                mgr.addReadyWorker();
+                mgr.waitUntilWorkerStartTime();
+                while (!mgr.isQuit()) {
+                    try (var handle = kvs.beginTransaction().await()) {
+                        var record = recBuilder.makeRecordBuffer();
+                        var key = new RecordBuffer();
+                        var r = record.toRecord();
+                        key.add(r.getName(0), r.getValue(0));
+                        kvs.put(handle, tableName, record).await();
+                        kvs.get(handle, tableName, key).await();
+                        kvs.get(handle, tableName, key).await();
+                        status.addNumRecord(3);
+                        kvs.commit(handle).await();
+                        numTx++;
                     }
-                    status.addNumLoop(loopblock);
-                    msec = elapse.msec();
-                } while (msec < minRunMsec);
-                status.setElapseMsec(msec);
+                }
             }
+            status.addNumLoop(numTx);
             return status;
         }
     }
@@ -104,21 +104,22 @@ final class RealTransactionBench {
         ExecutorService executor = Executors.newFixedThreadPool(nclient);
         var clients = new LinkedList<Future<TxStatus>>();
         TxStatus allStatus = new TxStatus();
-        Elapse e = new Elapse();
+        RunManager mgr = new RunManager(nclient);
         for (int i = 0; i < nclient; i++) {
             String tableName = useSameTable ? tableNames.get(0) : tableNames.get(i);
-            clients.add(executor.submit(new SimpleTransaction(tableName, info, i)));
+            clients.add(executor.submit(new SimpleTransaction(tableName, mgr, info, i)));
         }
+        mgr.setWorkerStartTime();
+        Thread.sleep(minRunMsec);
+        mgr.setQuit();
         for (var future : clients) {
             var status = future.get();
             allStatus.addNumLoop(status.getNumLoop());
             allStatus.addNumRecord(status.getNumRecord());
-            allStatus.addElapseMsec(status.getElapseMsec());
         }
         executor.shutdown();
         //
-        long allMsec = e.msec();
-        double sec = allMsec / 1000.0;
+        double sec = minRunMsec / 1000.0;
         long allNloop = allStatus.getNumLoop();
         long allNrec = allStatus.getNumRecord();
         System.out.printf(",%d,%d,%.1f,%.1f,%.2f", allNloop, allNrec, sec, allNloop / sec, 1e+6 * sec / allNloop);

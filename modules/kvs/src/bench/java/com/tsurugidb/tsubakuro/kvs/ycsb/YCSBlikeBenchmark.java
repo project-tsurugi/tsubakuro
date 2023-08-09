@@ -6,6 +6,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.tsurugidb.tsubakuro.kvs.util.RunManager;
+
 /**
  * simple benchmark program like YCSB-A etc. see shirakami/bench/ycsb/ycsb.cpp
  */
@@ -25,7 +27,7 @@ public class YCSBlikeBenchmark {
         this.numClients = args[1].split(",");
         this.createDB = args.length > 2 && args[2].equals("createDB");
         if (createDB) {
-            this.rratios = new String[] { "100" }; // don't make empty, the value is ignored
+            this.rratios = new String[]{};
             this.warmupMsec = 0;
             this.benchMsec = 0;
         } else {
@@ -34,6 +36,24 @@ public class YCSBlikeBenchmark {
             this.benchMsec = 1000 * Long.parseLong(args[4]);
         }
         this.useKvsClient = !System.getProperty("useSqlClient", "false").equals("true");
+    }
+
+    private void createTables() throws Exception {
+        int numTable = Constants.USE_SAME_TABLE ? 1 : Integer.parseInt(numClients[0]);
+        ExecutorService executor = Executors.newFixedThreadPool(numTable);
+        LinkedList<Future<Void>> futures = new LinkedList<>();
+        try {
+            for (int i = 0; i < numTable; i++) {
+                futures.add(executor.submit(new CreateTableWorker(endpoint, i)));
+            }
+            for (var future : futures) {
+                future.get();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            executor.shutdown();
+        }
     }
 
     private void showCvsHeader() {
@@ -46,34 +66,28 @@ public class YCSBlikeBenchmark {
         System.out.println("# num_client, read_ratio, sec, num_tx, tx/sec, usec/tx");
     }
 
-    private void result(int numClient, int rratio, long elapseMsec, long numTx) {
-        if (createDB) {
-            return;
-        }
+    private static void result(int numClient, int rratio, long elapseMsec, long numTx) {
         double sec = elapseMsec / 1000.0;
         System.out.printf("%d,%d,%.1f,%d,%.1f,%.2f", numClient, rratio, sec, numTx, numTx / sec, 1e+6 * sec / numTx);
         System.out.println();
     }
 
-    private Worker newWorker(RunManager mgr, int numClient, int clientId, int rratio, long runMsec) throws Exception {
-        return useKvsClient ? new KvsWorker(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec)
-                : new SqlWorker(mgr, endpoint, createDB, numClient, clientId, rratio, runMsec);
+    private Worker newWorker(RunManager mgr, int numClient, int clientId, int rratio) throws Exception {
+        return useKvsClient ? new KvsWorker(mgr, endpoint, numClient, clientId, rratio)
+                : new SqlWorker(mgr, endpoint, numClient, clientId, rratio);
     }
 
     private void warmup() throws Exception {
-        if (createDB) {
-            return;
-        }
         final int numClient = 1;
         final int rratio = Integer.parseInt(rratios[0]);
         var mgr = new RunManager(numClient);
-        Worker worker = newWorker(mgr, numClient, 0, rratio, warmupMsec);
+        Worker worker = newWorker(mgr, numClient, 0, rratio);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         try {
             var future = executor.submit(worker);
-            mgr.waitUntilAllWorkresReady();
+            mgr.setWorkerStartTime();
             long start = System.currentTimeMillis();
-            Thread.sleep(benchMsec);
+            Thread.sleep(warmupMsec);
             mgr.setQuit();
             long end = System.currentTimeMillis();
             var numTx = future.get();
@@ -93,24 +107,18 @@ public class YCSBlikeBenchmark {
         var mgr = new RunManager(numClient);
         try {
             for (int i = 0; i < numClient; i++) {
-                var worker = newWorker(mgr, numClient, i, rratio, benchMsec);
+                var worker = newWorker(mgr, numClient, i, rratio);
                 clients.add(executor.submit(worker));
             }
-            long elapse;
             if (!createDB) {
-                mgr.waitUntilAllWorkresReady();
-                long start = System.currentTimeMillis();
+                mgr.setWorkerStartTime();
                 Thread.sleep(benchMsec);
-                long end = System.currentTimeMillis();
                 mgr.setQuit();
-                elapse = end - start;
-            } else {
-                elapse = 1000;
             }
             for (var future : clients) {
                 sumTx += future.get();
             }
-            result(numClient, rratio, elapse, sumTx);
+            result(numClient, rratio, benchMsec, sumTx);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -141,8 +149,12 @@ public class YCSBlikeBenchmark {
             return;
         }
         YCSBlikeBenchmark app = new YCSBlikeBenchmark(args);
-        app.warmup();
-        app.bench();
+        if (app.createDB) {
+            app.createTables();
+        } else {
+            app.warmup();
+            app.bench();
+        }
     }
 
 }
