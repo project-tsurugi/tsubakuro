@@ -34,9 +34,10 @@ public class RunManager {
     /**
      * set start after waiting all workers are ready (for a main thread)
      */
+    @SuppressWarnings("EmptyBlock")
     public void setWorkerStartTime() {
         while (numReady.get() < numClient) {
-            ;
+            // finite loop
         }
         bStart.set(true);
     }
@@ -44,9 +45,10 @@ public class RunManager {
     /**
      * wait until all workers are ready to start (for a worker thread)
      */
+    @SuppressWarnings("EmptyBlock")
     public void waitUntilWorkerStartTime() {
         while (!bStart.get()) {
-            ;
+            // finite loop
         }
     }
 
