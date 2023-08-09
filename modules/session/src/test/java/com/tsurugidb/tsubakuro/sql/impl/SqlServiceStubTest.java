@@ -1201,25 +1201,6 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendGetErrorInfoTransactionNotFound() throws Exception {
-        wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setTransactionNotFound(SqlResponse.Void.newBuilder())
-                        .build())));
-
-        var message = SqlRequest.GetErrorInfo.newBuilder()
-                .build();
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message);
-        ) {
-            var result = future.get();
-            assertEquals(result, null);
-        }
-        assertFalse(wire.hasRemaining());
-    }
-
-    @Test
     void sendGetErrorInfoEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
                 RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
