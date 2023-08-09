@@ -55,6 +55,7 @@ tasks.register('runShortMockBench', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
     jvmArgs = ['-Xmx1024M']
+    args = ['1,2,4,8', '10', '30', '100000']
 }
 
 tasks.register('runFullMockBench', JavaExec) {
