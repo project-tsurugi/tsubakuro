@@ -211,11 +211,8 @@ message GetErrorInfo {
     // operation was successfully completed but error information was absent.
     Void error_not_found = 2;
 
-    // the target transaction is absent (may already disposed).
-    Void transaction_not_found = 3;
-
     // engine error occurred while the retrieving existing error information.
-    Error error = 4;
+    Error error = 3;
   }
 }
 

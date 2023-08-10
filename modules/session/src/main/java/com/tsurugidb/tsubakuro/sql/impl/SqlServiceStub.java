@@ -732,8 +732,6 @@ public class SqlServiceStub implements SqlService {
                     return new SqlServiceException(SqlServiceCode.valueOf(response.getStatus()), response.getDetail());
                 case ERROR_NOT_FOUND:
                     return null;
-                case TRANSACTION_NOT_FOUND:
-                    return null;
                 case ERROR:
                     var errorResponse = detailResponse.getError();
                     throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
