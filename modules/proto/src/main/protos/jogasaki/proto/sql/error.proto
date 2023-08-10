@@ -14,170 +14,170 @@ enum Code {
     // code not specified
     CODE_UNSPECIFIED = 0;
 
-    // SqlServiceException
-    SQL00000 = 1;
+    // SQL-00000
+    SQL_SERVICE_EXCEPTION = 1;
 
-    // SqlExecutionException
-    SQL01000 = 2;
+    // SQL-01000
+    SQL_EXECUTION_EXCEPTION = 2;
 
-    // ConstraintViolationException
-    SQL01001 = 3;
+    // SQL-01001
+    CONSTRAINT_VIOLATION_EXCEPTION = 3;
 
-    // UniqueConstraintViolationException
-    SQL01002 = 4;
+    // SQL-01002
+    UNIQUE_CONSTRAINT_VIOLATION_EXCEPTION = 4;
 
-    // NotNullConstraintViolationException
-    SQL01003 = 5;
+    // SQL-01003
+    NOT_NULL_CONSTRAINT_VIOLATION_EXCEPTION = 5;
 
-    // ReferentialIntegrityConstraintViolationException
-    SQL01004 = 6;
+    // SQL-01004
+    REFERENTIAL_INTEGRITY_CONSTRAINT_VIOLATION_EXCEPTION = 6;
 
-    // CheckConstraintViolationException
-    SQL01005 = 7;
+    // SQL-01005
+    CHECK_CONSTRAINT_VIOLATION_EXCEPTION = 7;
 
-    // EvaluationException
-    SQL01010 = 8;
+    // SQL-01010
+    EVALUATION_EXCEPTION = 8;
 
-    // ValueEvaluationException
-    SQL01011 = 9;
+    // SQL-01011
+    VALUE_EVALUATION_EXCEPTION = 9;
 
-    // ScalarSubqueryEvaluationException
-    SQL01012 = 10;
+    // SQL-01012
+    SCALAR_SUBQUERY_EVALUATION_EXCEPTION = 10;
 
-    // TargetNotFoundException
-    SQL01014 = 11;
+    // SQL-01014
+    TARGET_NOT_FOUND_EXCEPTION = 11;
 
-    // TargetAlreadyExistsException
-    SQL01016 = 12;
+    // SQL-01016
+    TARGET_ALREADY_EXISTS_EXCEPTION = 12;
 
-    // InconsistentStatementException
-    SQL01018 = 13;
+    // SQL-01018
+    INCONSISTENT_STATEMENT_EXCEPTION = 13;
 
-    // RestrictedOperationException
-    SQL01020 = 14;
+    // SQL-01020
+    RESTRICTED_OPERATION_EXCEPTION = 14;
 
-    // DependenciesViolationException
-    SQL01021 = 15;
+    // SQL-01021
+    DEPENDENCIES_VIOLATION_EXCEPTION = 15;
 
-    // WriteOperationByRtxException
-    SQL01022 = 16;
+    // SQL-01022
+    WRITE_OPERATION_BY_RTX_EXCEPTION = 16;
 
-    // LtxWriteOperationWithoutWritePreserveException
-    SQL01023 = 17;
+    // SQL-01023
+    LTX_WRITE_OPERATION_WITHOUT_WRITE_PRESERVE_EXCEPTION = 17;
 
-    // ReadOperationOnRestrictedReadAreaException
-    SQL01024 = 18;
+    // SQL-01024
+    READ_OPERATION_ON_RESTRICTED_READ_AREA_EXCEPTION = 18;
 
-    // InactiveTransactionException
-    SQL01025 = 19;
+    // SQL-01025
+    INACTIVE_TRANSACTION_EXCEPTION = 19;
 
-    // ParameterException
-    SQL01027 = 20;
+    // SQL-01027
+    PARAMETER_EXCEPTION = 20;
 
-    // UnresolvedPlaceholderException
-    SQL01028 = 21;
+    // SQL-01028
+    UNRESOLVED_PLACEHOLDER_EXCEPTION = 21;
 
-    // LoadFileIOException
-    SQL01030 = 22;
+    // SQL-01030
+    LOAD_FILE_IOEXCEPTION = 22;
 
-    // LoadFileNotFoundException
-    SQL01031 = 23;
+    // SQL-01031
+    LOAD_FILE_NOT_FOUND_EXCEPTION = 23;
 
-    // LoadFileFormatException
-    SQL01032 = 24;
+    // SQL-01032
+    LOAD_FILE_FORMAT_EXCEPTION = 24;
 
-    // DumpFileIOException
-    SQL01033 = 25;
+    // SQL-01033
+    DUMP_FILE_IOEXCEPTION = 25;
 
-    // DumpDirectoryInaccessibleException
-    SQL01034 = 26;
+    // SQL-01034
+    DUMP_DIRECTORY_INACCESSIBLE_EXCEPTION = 26;
 
-    // SqlLimitReachedException
-    SQL01036 = 27;
+    // SQL-01036
+    SQL_LIMIT_REACHED_EXCEPTION = 27;
 
-    // TransactionExceededLimitException
-    SQL01037 = 28;
+    // SQL-01037
+    TRANSACTION_EXCEEDED_LIMIT_EXCEPTION = 28;
 
-    // SqlRequestTimedOutException
-    SQL01039 = 29;
+    // SQL-01039
+    SQL_REQUEST_TIMED_OUT_EXCEPTION = 29;
 
-    // DataCorruptionException
-    SQL01041 = 30;
+    // SQL-01041
+    DATA_CORRUPTION_EXCEPTION = 30;
 
-    // SecondaryIndexCorruptionException
-    SQL01042 = 31;
+    // SQL-01042
+    SECONDARY_INDEX_CORRUPTION_EXCEPTION = 31;
 
-    // RequestFailureException
-    SQL01044 = 32;
+    // SQL-01044
+    REQUEST_FAILURE_EXCEPTION = 32;
 
-    // TransactionNotFoundException
-    SQL01045 = 33;
+    // SQL-01045
+    TRANSACTION_NOT_FOUND_EXCEPTION = 33;
 
-    // StatementNotFoundException
-    SQL01046 = 34;
+    // SQL-01046
+    STATEMENT_NOT_FOUND_EXCEPTION = 34;
 
-    // InternalException
-    SQL01048 = 35;
+    // SQL-01048
+    INTERNAL_EXCEPTION = 35;
 
-    // UnsupportedRuntimeFeatureException
-    SQL01050 = 36;
+    // SQL-01050
+    UNSUPPORTED_RUNTIME_FEATURE_EXCEPTION = 36;
 
-    // BlockedByHighPriorityTransactionException
-    SQL01052 = 37;
+    // SQL-01052
+    BLOCKED_BY_HIGH_PRIORITY_TRANSACTION_EXCEPTION = 37;
 
     reserved 38 to 100;
 
-    // CompileException
-    SQL02000 = 101;
+    // SQL-02000
+    COMPILE_EXCEPTION = 101;
 
-    // SyntaxException
-    SQL02001 = 102;
+    // SQL-02001
+    SYNTAX_EXCEPTION = 102;
 
-    // AnalyzeException
-    SQL02002 = 103;
+    // SQL-02002
+    ANALYZE_EXCEPTION = 103;
 
-    // TypeAnalyzeException
-    SQL02003 = 104;
+    // SQL-02003
+    TYPE_ANALYZE_EXCEPTION = 104;
 
-    // SymbolAnalyzeException
-    SQL02004 = 105;
+    // SQL-02004
+    SYMBOL_ANALYZE_EXCEPTION = 105;
 
-    // ValueAnalyzeException
-    SQL02005 = 106;
+    // SQL-02005
+    VALUE_ANALYZE_EXCEPTION = 106;
 
-    // UnsupportedCompilerFeatureException
-    SQL02010 = 107;
+    // SQL-02010
+    UNSUPPORTED_COMPILER_FEATURE_EXCEPTION = 107;
 
     reserved 108 to 200;
 
-    // CcException
-    SQL03000 = 201;
+    // SQL-03000
+    CC_EXCEPTION = 201;
 
-    // OccException
-    SQL03001 = 202;
+    // SQL-03001
+    OCC_EXCEPTION = 202;
 
-    // OccReadException
-    SQL03010 = 203;
+    // SQL-03010
+    OCC_READ_EXCEPTION = 203;
 
-    // ConflictOnWritePreserveException
-    SQL03015 = 204;
+    // SQL-03015
+    CONFLICT_ON_WRITE_PRESERVE_EXCEPTION = 204;
 
-    // OccWriteException
-    SQL03011 = 205;
+    // SQL-03011
+    OCC_WRITE_EXCEPTION = 205;
 
-    // LtxException
-    SQL03003 = 206;
+    // SQL-03003
+    LTX_EXCEPTION = 206;
 
-    // LtxReadException
-    SQL03013 = 207;
+    // SQL-03013
+    LTX_READ_EXCEPTION = 207;
 
-    // LtxWriteException
-    SQL03014 = 208;
+    // SQL-03014
+    LTX_WRITE_EXCEPTION = 208;
 
-    // RtxException
-    SQL03005 = 209;
+    // SQL-03005
+    RTX_EXCEPTION = 209;
 
-    // BlockedByConcurrentOperationException
-    SQL03007 = 210;
+    // SQL-03007
+    BLOCKED_BY_CONCURRENT_OPERATION_EXCEPTION = 210;
 
 }
