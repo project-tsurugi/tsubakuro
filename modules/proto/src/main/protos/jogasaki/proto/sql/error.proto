@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package jogasaki.proto.sql.error;
+
+option java_package = "com.tsurugidb.sql.proto";
+option java_outer_classname = "SqlError";
+
+/*
+ * Definition of error information for Response.
+ */
+
+// the error code for sql execution
+enum Code {
+    // code not specified
+    CODE_UNSPECIFIED = 0;
+
+    // SqlServiceException
+    SQL00000 = 1;
+
+    // SqlExecutionException
+    SQL01000 = 2;
+
+    // ConstraintViolationException
+    SQL01001 = 3;
+
+    // UniqueConstraintViolationException
+    SQL01002 = 4;
+
+    // NotNullConstraintViolationException
+    SQL01003 = 5;
+
+    // ReferentialIntegrityConstraintViolationException
+    SQL01004 = 6;
+
+    // CheckConstraintViolationException
+    SQL01005 = 7;
+
+    // EvaluationException
+    SQL01010 = 8;
+
+    // ValueEvaluationException
+    SQL01011 = 9;
+
+    // ScalarSubqueryEvaluationException
+    SQL01012 = 10;
+
+    // TargetNotFoundException
+    SQL01014 = 11;
+
+    // TargetAlreadyExistsException
+    SQL01016 = 12;
+
+    // InconsistentStatementException
+    SQL01018 = 13;
+
+    // RestrictedOperationException
+    SQL01020 = 14;
+
+    // DependenciesViolationException
+    SQL01021 = 15;
+
+    // WriteOperationByRtxException
+    SQL01022 = 16;
+
+    // LtxWriteOperationWithoutWritePreserveException
+    SQL01023 = 17;
+
+    // ReadOperationOnRestrictedReadAreaException
+    SQL01024 = 18;
+
+    // InactiveTransactionException
+    SQL01025 = 19;
+
+    // ParameterException
+    SQL01027 = 20;
+
+    // UnresolvedPlaceholderException
+    SQL01028 = 21;
+
+    // LoadFileIOException
+    SQL01030 = 22;
+
+    // LoadFileNotFoundException
+    SQL01031 = 23;
+
+    // LoadFileFormatException
+    SQL01032 = 24;
+
+    // DumpFileIOException
+    SQL01033 = 25;
+
+    // DumpDirectoryInaccessibleException
+    SQL01034 = 26;
+
+    // SqlLimitReachedException
+    SQL01036 = 27;
+
+    // TransactionExceededLimitException
+    SQL01037 = 28;
+
+    // SqlRequestTimedOutException
+    SQL01039 = 29;
+
+    // DataCorruptionException
+    SQL01041 = 30;
+
+    // SecondaryIndexCorruptionException
+    SQL01042 = 31;
+
+    // RequestFailureException
+    SQL01044 = 32;
+
+    // TransactionNotFoundException
+    SQL01045 = 33;
+
+    // StatementNotFoundException
+    SQL01046 = 34;
+
+    // InternalException
+    SQL01048 = 35;
+
+    // UnsupportedRuntimeFeatureException
+    SQL01050 = 36;
+
+    // BlockedByHighPriorityTransactionException
+    SQL01052 = 37;
+
+    reserved 38 to 100;
+
+    // CompileException
+    SQL02000 = 101;
+
+    // SyntaxException
+    SQL02001 = 102;
+
+    // AnalyzeException
+    SQL02002 = 103;
+
+    // TypeAnalyzeException
+    SQL02003 = 104;
+
+    // SymbolAnalyzeException
+    SQL02004 = 105;
+
+    // ValueAnalyzeException
+    SQL02005 = 106;
+
+    // UnsupportedCompilerFeatureException
+    SQL02010 = 107;
+
+    reserved 108 to 200;
+
+    // CcException
+    SQL03000 = 201;
+
+    // OccException
+    SQL03001 = 202;
+
+    // OccReadException
+    SQL03010 = 203;
+
+    // ConflictOnWritePreserveException
+    SQL03015 = 204;
+
+    // OccWriteException
+    SQL03011 = 205;
+
+    // LtxException
+    SQL03003 = 206;
+
+    // LtxReadException
+    SQL03013 = 207;
+
+    // LtxWriteException
+    SQL03014 = 208;
+
+    // RtxException
+    SQL03005 = 209;
+
+    // BlockedByConcurrentOperationException
+    SQL03007 = 210;
+
+}
