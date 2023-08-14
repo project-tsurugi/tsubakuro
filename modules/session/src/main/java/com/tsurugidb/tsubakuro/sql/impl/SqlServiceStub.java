@@ -7,9 +7,9 @@ import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
@@ -19,30 +19,30 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.StatementMetadata;
-import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
-import com.tsurugidb.tsubakuro.sql.SearchPath;
+import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
-import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Owner;
-import com.tsurugidb.tsubakuro.util.Timeout;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 
 /**
@@ -838,8 +838,6 @@ public class SqlServiceStub implements SqlService {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 

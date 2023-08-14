@@ -1,42 +1,42 @@
 package com.tsurugidb.tsubakuro.common.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
+import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
-import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
-import com.tsurugidb.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
-import com.tsurugidb.tsubakuro.exception.CoreServiceException;
-import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 
 /**
  * SessionImpl type.
@@ -193,7 +193,9 @@ public class SessionImpl implements Session {
         public void accept(ServerResource r)  {
             try {
                 r.close();
-            } catch (ServerException | IOException | InterruptedException e) {
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } catch (ServerException | InterruptedException e) {
                 throw new UncheckedIOException(new IOException(e));
             }
         }
@@ -256,8 +258,6 @@ public class SessionImpl implements Session {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 

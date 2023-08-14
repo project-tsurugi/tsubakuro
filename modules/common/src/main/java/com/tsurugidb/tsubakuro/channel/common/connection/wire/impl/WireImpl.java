@@ -10,14 +10,14 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.framework.proto.FrameworkRequest;
 
 /**
  * WireImpl type.
@@ -118,8 +118,6 @@ public class WireImpl implements Wire {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 
@@ -127,6 +125,7 @@ public class WireImpl implements Wire {
     public long sessionID() {
         return sessionID;
     }
+    @Override
     public String diagnosticInfo() {
         String diagnosticInfo = responseBox.diagnosticInfo();
         if (!diagnosticInfo.isEmpty()) {

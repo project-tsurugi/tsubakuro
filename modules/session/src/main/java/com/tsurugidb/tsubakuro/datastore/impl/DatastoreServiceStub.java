@@ -1,7 +1,7 @@
 package com.tsurugidb.tsubakuro.datastore.impl;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.text.MessageFormat;
@@ -19,11 +19,12 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
+import com.google.protobuf.Message;
 import com.tsurugidb.datastore.proto.DatastoreCommon;
 import com.tsurugidb.datastore.proto.DatastoreRequest;
 import com.tsurugidb.datastore.proto.DatastoreResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
+import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.datastore.Backup;
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 // import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
@@ -33,10 +34,9 @@ import com.tsurugidb.tsubakuro.datastore.DatastoreServiceException;
 import com.tsurugidb.tsubakuro.datastore.Tag;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
-import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.google.protobuf.Message;
 
 /**
  * An implementation of {@link DatastoreService} communicate to the datastore service.
@@ -400,8 +400,6 @@ public class DatastoreServiceStub implements DatastoreService {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 }

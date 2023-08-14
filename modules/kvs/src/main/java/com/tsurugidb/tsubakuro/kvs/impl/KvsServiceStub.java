@@ -71,8 +71,6 @@ public class KvsServiceStub implements KvsService {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 
