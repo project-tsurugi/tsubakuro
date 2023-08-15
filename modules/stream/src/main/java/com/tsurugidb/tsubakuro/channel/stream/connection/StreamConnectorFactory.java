@@ -34,7 +34,7 @@ public class StreamConnectorFactory implements ConnectorFactory {
         }
 
         var host = endpoint.getHost();
-        if (Objects.isNull(host)) {
+        if (host == null) {
             LOG.trace("URI is not suitable for {} connector: '{}' (invalid host)", SCHEME, endpoint); //$NON-NLS-1$
             return Optional.empty();
         }

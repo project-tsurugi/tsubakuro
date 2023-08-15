@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -9,13 +8,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlService;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlService;
+import com.tsurugidb.tsubakuro.util.Lang;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
  * PreparedStatementImpl type.
@@ -70,7 +69,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!closed.getAndSet(true) && Objects.nonNull(service)) {
+        if (!closed.getAndSet(true) && service != null) {
             try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
                 if (timeout == 0) {
                     futureResponse.get();
@@ -81,7 +80,7 @@ public class PreparedStatementImpl implements PreparedStatement {
                 LOG.warn("closing resource is timeout", e);
             }
         }
-        if (Objects.nonNull(closeHandler)) {
+        if (closeHandler != null) {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
@@ -103,7 +102,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     String diagnosticInfo() {
         if (!closed.get()) {
             String rv = " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
-            if (Objects.nonNull(request)) {
+            if (request != null) {
                 rv += "   ==== request from here ====" + System.getProperty("line.separator");
                 rv += request.toString();
                 rv += "   ==== request to here ====" + System.getProperty("line.separator");

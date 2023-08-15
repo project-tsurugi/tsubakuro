@@ -1,17 +1,16 @@
 package com.tsurugidb.tsubakuro.examples.measurement;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 
 public class Update extends Thread {
     CyclicBarrier barrier;
@@ -62,7 +61,7 @@ public class Update extends Thread {
             long prev = 0;
             long now = 0;
             while (!stop.get()) {
-                if (Objects.isNull(transaction)) {
+                if (transaction == null) {
                     transaction = sqlClient.createTransaction().await();
                 }
                 setParams();
@@ -74,9 +73,9 @@ public class Update extends Thread {
 
                 // UPDATE STOCK SET s_quantity = :s_quantity WHERE s_i_id = :s_i_id AND s_w_id = :s_w_id
                 var future8 = transaction.executeStatement(prepared8,
-                    Parameters.of("s_quantity", (long) sQuantity),
-                    Parameters.of("s_i_id", (long) olIid),
-                    Parameters.of("s_w_id", (long) olSupplyWid));
+                    Parameters.of("s_quantity", sQuantity),
+                    Parameters.of("s_i_id", olIid),
+                    Parameters.of("s_w_id", olSupplyWid));
 
                 try {
                     future8.get();

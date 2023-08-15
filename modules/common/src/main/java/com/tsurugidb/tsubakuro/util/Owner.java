@@ -66,7 +66,7 @@ public class Owner<T extends ServerResource> implements ServerResource {
     public void setCloseTimeout(@Nonnull Timeout timeout) {
         Objects.requireNonNull(timeout);
         var resource = ownership.get();
-        if (Objects.nonNull(resource)) {
+        if (resource != null) {
             resource.setCloseTimeout(timeout);
         }
     }
@@ -93,7 +93,7 @@ public class Owner<T extends ServerResource> implements ServerResource {
      */
     public static void close(@Nullable ServerResource resource)
             throws IOException, ServerException, InterruptedException {
-        if (Objects.nonNull(resource)) {
+        if (resource != null) {
             resource.close();
         }
     }

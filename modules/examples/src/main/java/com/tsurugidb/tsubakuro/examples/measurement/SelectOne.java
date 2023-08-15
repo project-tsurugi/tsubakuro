@@ -1,17 +1,16 @@
 package com.tsurugidb.tsubakuro.examples.measurement;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 
 public class SelectOne extends Thread {
     CyclicBarrier barrier;
@@ -55,7 +54,7 @@ public class SelectOne extends Thread {
             long prev = 0;
             long now = 0;
             while (!stop.get()) {
-                if (Objects.isNull(transaction)) {
+                if (transaction == null) {
                     transaction = sqlClient.createTransaction().await();
                 }
                 setParams();
@@ -67,8 +66,8 @@ public class SelectOne extends Thread {
 
                 // SELECT d_next_o_id, d_tax FROM DISTRICT WHERE d_w_id = :d_w_id AND d_id = :d_id
                 var future2 = transaction.executeQuery(prepared2,
-                    Parameters.of("d_w_id", (long) paramsWid),
-                    Parameters.of("d_id", (long) paramsDid));
+                    Parameters.of("d_w_id", paramsWid),
+                    Parameters.of("d_id", paramsDid));
                 try (var resultSet2 = future2.get()) {
                     now = System.nanoTime();
                     profile.head += (now - prev);

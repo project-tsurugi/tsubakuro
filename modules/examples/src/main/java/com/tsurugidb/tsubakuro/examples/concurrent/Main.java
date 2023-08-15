@@ -3,7 +3,6 @@ package com.tsurugidb.tsubakuro.examples.concurrent;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.Objects;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -75,7 +74,7 @@ public final class Main {
                 SqlClient sqlClient = SqlClient.attach(session);) {
 
                     var client = new Insert(sqlClient, concurrency, orderId());
-                    if (!Objects.isNull(client)) {
+                    if (client != null) {
                         client.start();
                         client.join();
                     }

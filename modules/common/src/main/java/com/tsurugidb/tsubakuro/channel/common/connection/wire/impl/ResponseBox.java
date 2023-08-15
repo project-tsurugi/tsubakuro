@@ -2,12 +2,11 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
@@ -33,7 +32,7 @@ public class ResponseBox {
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
         var channelResponse = new ChannelResponse(link);
         var slotEntry = queues.pollSlot();
-        if (Objects.nonNull(slotEntry)) {
+        if (slotEntry != null) {
             slotEntry.channelResponse(channelResponse);
             slotEntry.requestMessage(payload);
             link.send(slotEntry.slot(), header, payload, channelResponse);
@@ -50,7 +49,7 @@ public class ResponseBox {
         var slotEntry = boxes[slot];
         slotEntry.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
         var queuedRequest = queues.pollRequest();
-        if (Objects.nonNull(queuedRequest)) {
+        if (queuedRequest != null) {
             slotEntry.channelResponse(queuedRequest.channelResponse());
             slotEntry.requestMessage(queuedRequest.payload());
             link.send(slot, queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
@@ -79,7 +78,7 @@ public class ResponseBox {
     public void close() {
         for (SlotEntry e : boxes) {
             var response = e.channelResponse();
-            if (Objects.nonNull(response)) {
+            if (response != null) {
                 if (intentionalClose) {
                     response.setMainResponse(new IOException("The wire was closed before receiving a response to this request"));
                 } else {
@@ -98,7 +97,7 @@ public class ResponseBox {
         String diagnosticInfo = "";
         for (var et : boxes) {
             var cr = et.channelResponse();
-            if (Objects.nonNull(cr)) {
+            if (cr != null) {
                 try {
                     diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
                 } catch (IOException ex) {

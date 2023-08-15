@@ -2,19 +2,19 @@ package com.tsurugidb.tsubakuro.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 
 /**
  * Represents a connection to Tsurugi server.
@@ -142,7 +142,7 @@ public interface Session extends ServerResource {
      */
     default boolean isAlive() {
         var wire = getWire();
-        if (Objects.isNull(wire)) {
+        if (wire == null) {
             return false;
         }
         return wire.isAlive();

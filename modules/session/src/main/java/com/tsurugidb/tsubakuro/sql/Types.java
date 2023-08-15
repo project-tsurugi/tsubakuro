@@ -3,10 +3,10 @@ package com.tsurugidb.tsubakuro.sql;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +16,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.protobuf.ByteString;
-import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlCommon.TypeInfo;
+import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
 
 /**
  * Utilities to build {@link com.tsurugidb.sql.proto.SqlCommon.TypeInfo}.
@@ -331,7 +331,7 @@ public final class Types {
     public static SqlCommon.Column column(@Nullable String name, @Nonnull SqlCommon.AtomType type) {
         Objects.requireNonNull(type);
         var builder = SqlCommon.Column.newBuilder();
-        if (Objects.nonNull(name)) {
+        if (name != null) {
             builder.setName(name);
         }
         builder.setAtomType(type);
@@ -357,7 +357,7 @@ public final class Types {
     public static SqlCommon.Column column(@Nullable String name, @Nonnull SqlCommon.TypeInfo type) {
         Objects.requireNonNull(type);
         var builder = SqlCommon.Column.newBuilder();
-        if (Objects.nonNull(name)) {
+        if (name != null) {
             builder.setName(name);
         }
         switch (type.getTypeInfoCase()) {

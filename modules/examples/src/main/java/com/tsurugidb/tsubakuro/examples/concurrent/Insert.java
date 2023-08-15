@@ -3,14 +3,13 @@ package com.tsurugidb.tsubakuro.examples.concurrent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 public class Insert extends Thread {
@@ -43,7 +42,7 @@ public class Insert extends Thread {
         List<FutureResponse<Void>> futures = new ArrayList<>();
 
         try {
-            if (Objects.isNull(transaction)) {
+            if (transaction == null) {
                 transaction = sqlClient.createTransaction().await();
             }
 
@@ -53,9 +52,9 @@ public class Insert extends Thread {
                 // INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
                 try {
                     futures.add(transaction.executeStatement(prepared5,
-                    Parameters.of("no_o_id", (long) oid++),
-                    Parameters.of("no_d_id", (long) paramsDid),
-                    Parameters.of("no_w_id", (long) paramsWid)));
+                    Parameters.of("no_o_id", oid++),
+                    Parameters.of("no_d_id", paramsDid),
+                    Parameters.of("no_w_id", paramsWid)));
                 } catch (IOException e) {
                     System.out.println(e);
                     System.out.println("The " + (i + 1) + "th and subsequent Inserts will be cancelled");

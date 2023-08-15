@@ -207,7 +207,7 @@ public class SessionImpl implements Session {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            if (Objects.nonNull(executor)) {
+            if (executor != null) {
                 executor.shutdownNow();
             }
             // take care of the serviceStubs
@@ -217,8 +217,8 @@ public class SessionImpl implements Session {
                 throw e.getCause();
             }
             // take care of the wire
-            if (Objects.nonNull(wire)) {
-                if (Objects.nonNull(closeTimeout)) {
+            if (wire != null) {
+                if (closeTimeout != null) {
                     wire.setCloseTimeout(closeTimeout);
                 }
                 wire.close();

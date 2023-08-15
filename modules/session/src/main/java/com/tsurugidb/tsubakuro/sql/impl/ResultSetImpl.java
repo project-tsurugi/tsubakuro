@@ -3,10 +3,10 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
@@ -390,7 +390,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public synchronized void setCloseTimeout(@Nullable Timeout t) {
-        if (Objects.nonNull(t)) {
+        if (t != null) {
             timeout = t.value();
             unit = t.unit();
             cursor.setCloseTimeout(t);
@@ -400,24 +400,22 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public synchronized void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            if (Objects.nonNull(response)) {
-                try (response) {
-                    try {
-                        cursor.close();
-                    } catch (Exception e) {
-                        // suppresses exception while closing the sub-response
-                        LOG.warn("error occurred while closing result set", e);
-                    }
-
-                    // check main response whether to finish the request normally
-                    if (tested.compareAndSet(false, true)) {
-                        tester.test(response, timeout, unit);
-                    }
-                } catch (TimeoutException e) {
-                    throw new ResponseTimeoutException(e);
+            try (response) {
+                try {
+                    cursor.close();
+                } catch (Exception e) {
+                    // suppresses exception while closing the sub-response
+                    LOG.warn("error occurred while closing result set", e);
                 }
+
+                // check main response whether to finish the request normally
+                if (tested.compareAndSet(false, true)) {
+                    tester.test(response, timeout, unit);
+                }
+            } catch (TimeoutException e) {
+                throw new ResponseTimeoutException(e);
             }
-            if (Objects.nonNull(closeHandler)) {
+            if (closeHandler != null) {
                 Lang.suppress(
                         e -> LOG.warn("error occurred while collecting garbage", e),
                         () -> closeHandler.onClosed(this));

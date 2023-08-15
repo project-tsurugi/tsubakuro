@@ -3,7 +3,6 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -71,14 +70,14 @@ public class ResultSetBox {
     }
 
     public void push(int slot, int writerId, byte[] payload) throws IOException {  // for RESPONSE_RESULT_SET_PAYLOAD
-        if (Objects.isNull(boxes[slot])) {
+        if (boxes[slot] == null) {
             waitRegistration(slot);
         }
         boxes[slot].add(writerId, payload);
     }
 
     public void pushBye(int slot) throws IOException {  // for RESPONSE_RESULT_SET_BYE
-        if (Objects.isNull(boxes[slot])) {
+        if (boxes[slot] == null) {
             waitRegistration(slot);
         }
         var box = boxes[slot];
@@ -87,7 +86,7 @@ public class ResultSetBox {
     }
 
     public void pushBye(int slot, IOException e) throws IOException {  // for RESPONSE_RESULT_SET_BYE
-        if (Objects.isNull(boxes[slot])) {
+        if (boxes[slot] == null) {
             waitRegistration(slot);
         }
         var box = boxes[slot];
@@ -100,7 +99,7 @@ public class ResultSetBox {
             Lock l =  slotLock[slot];
             l.lock();
             try {
-                if (Objects.nonNull(boxes[slot])) {
+                if (boxes[slot] != null) {
                     return;
                 }
                 slotCondition[slot].await();
@@ -114,7 +113,7 @@ public class ResultSetBox {
 
     public void close() {
         for (ResultSetWireImpl e : boxes) {
-            if (Objects.nonNull(e)) {
+            if (e != null) {
                 e.endOfRecords(new IOException("Server crashed"));
             }
         }

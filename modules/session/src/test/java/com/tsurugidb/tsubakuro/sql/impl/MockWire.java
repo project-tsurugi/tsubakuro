@@ -1,24 +1,19 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
-import com.tsurugidb.tsubakuro.util.Owner;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.ResultSetWireMock;
-import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.Owner;
 
 /**
  * Mock implementation of {@link Wire}.
@@ -93,7 +88,7 @@ public class MockWire implements Wire {
 
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
-        if (Objects.nonNull(resultSetData)) {
+        if (resultSetData != null) {
             return new ResultSetWireMock(resultSetData);
         }
         return null;

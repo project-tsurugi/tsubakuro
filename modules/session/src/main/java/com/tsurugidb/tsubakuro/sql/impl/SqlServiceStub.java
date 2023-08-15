@@ -116,7 +116,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.BEGIN.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -154,7 +154,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -190,7 +190,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -231,7 +231,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.PREPARE.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -269,7 +269,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -305,7 +305,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.EXPLAIN.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -356,7 +356,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public TableMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.DESCRIBE_TABLE.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -392,7 +392,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -476,12 +476,12 @@ public class SqlServiceStub implements SqlService {
                     Timeout timeoutHere = null;
                     if (timeout.value() > 0) {
                         timeoutHere = timeout;
-                    } else if (Objects.nonNull(closeTimeout)) {
+                    } else if (closeTimeout != null) {
                         if (closeTimeout.value() > 0) {
                             timeoutHere = closeTimeout;
                         }
                     }
-                    if (Objects.nonNull(timeoutHere)) {
+                    if (timeoutHere != null) {
                         try {
                             metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID, timeoutHere.value(), timeoutHere.unit());
                         } catch (TimeoutException e) {
@@ -490,7 +490,7 @@ public class SqlServiceStub implements SqlService {
                     } else {
                         metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
                     }
-                    if (Objects.nonNull(metadataInput)) {
+                    if (metadataInput != null) {
                         try {
                             metadata = new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.parseFrom(metadataInput));
                         } finally {
@@ -559,7 +559,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.BATCH.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -608,7 +608,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -644,7 +644,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.LIST_TABLES.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -680,7 +680,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.GET_SEARCH_PATH.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -716,7 +716,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.GET_ERROR_INFO.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -758,7 +758,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(responseCache.get())) {
+            if (responseCache.get() == null) {
                 responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
             }
             var response = responseCache.get();
@@ -803,7 +803,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (Objects.isNull(detailResponseCache.get())) {
+            if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
                     // FIXME log error message
@@ -847,7 +847,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public void accept(ServerResource r) {
-            if (Objects.nonNull(r)) {
+            if (r != null) {
                 if (r instanceof TransactionImpl) {
                     diagnosticInfo += ((TransactionImpl) r).diagnosticInfo();
                 } else if (r instanceof PreparedStatementImpl) {

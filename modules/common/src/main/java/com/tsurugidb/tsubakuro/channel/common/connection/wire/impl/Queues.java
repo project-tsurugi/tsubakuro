@@ -1,6 +1,5 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
-import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,11 +44,11 @@ class Queues {
         try {
             while (true) {
                 var slotEntry = slotQueue.poll();
-                if (Objects.isNull(slotEntry)) {
+                if (slotEntry == null) {
                     return;
                 }
                 var requestEntry = requestQueue.poll();
-                if (Objects.isNull(requestEntry)) {
+                if (requestEntry == null) {
                     slotQueue.add(slotEntry);
                     return;
                 }
@@ -57,7 +56,7 @@ class Queues {
                 slotEntry.channelResponse(channelResponse);
                 slotEntry.requestMessage(requestEntry.payload());
                 link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
-            } 
+            }
         } finally {
             lock.unlock();
         }

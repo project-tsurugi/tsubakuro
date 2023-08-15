@@ -1,17 +1,16 @@
 package com.tsurugidb.tsubakuro.examples.measurement;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 
 public class Insert extends Thread {
     CyclicBarrier barrier;
@@ -58,7 +57,7 @@ public class Insert extends Thread {
             long prev = 0;
             long now = 0;
             while (!stop.get()) {
-                if (Objects.isNull(transaction)) {
+                if (transaction == null) {
                     transaction = sqlClient.createTransaction().await();
                 }
                 setParams();
@@ -70,9 +69,9 @@ public class Insert extends Thread {
 
                 // INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)VALUES (:no_o_id, :no_d_id, :no_w_id
                 var future5 = transaction.executeStatement(prepared5,
-                    Parameters.of("no_o_id", (long) oid++),
-                    Parameters.of("no_d_id", (long) paramsDid),
-                    Parameters.of("no_w_id", (long) paramsWid));
+                    Parameters.of("no_o_id", oid++),
+                    Parameters.of("no_d_id", paramsDid),
+                    Parameters.of("no_w_id", paramsWid));
                 try {
                     future5.await();
                 } catch (ServerException e) {

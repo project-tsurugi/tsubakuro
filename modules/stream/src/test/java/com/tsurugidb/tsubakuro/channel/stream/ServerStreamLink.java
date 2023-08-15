@@ -1,10 +1,9 @@
 package com.tsurugidb.tsubakuro.channel.stream;
 
-import java.io.DataOutputStream;
 import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.DataOutputStream;
 import java.io.EOFException;
-import java.util.Objects;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 
@@ -43,7 +42,7 @@ public class ServerStreamLink {
 
     public void sendResponse(int s, byte[] payload) throws IOException {
         byte[] header = new byte[7];
-        int length = (int) payload.length;
+        int length = payload.length;
         //    System.out.println("sendResponse " + length + " bytes, slot = " + s);
 
         header[0] = StreamLink.RESPONSE_SESSION_PAYLOAD;  // info
@@ -87,7 +86,7 @@ public class ServerStreamLink {
 
     public void sendRecord(int s, int w, byte[] payload) throws IOException {
     byte[] header = new byte[8];
-        int length = (int) payload.length;
+        int length = payload.length;
     //    System.out.println("sendRecord " + length + " bytes, slot = " + s + ", writer = " + w);
 
     header[0] = StreamLink.RESPONSE_RESULT_SET_PAYLOAD;  // info
@@ -116,7 +115,7 @@ public class ServerStreamLink {
     public boolean isSnedOk() {
     return sendOk;
     }
-    
+
     public boolean receive() throws IOException {
         try {
             byte writer = 0;
@@ -148,7 +147,7 @@ public class ServerStreamLink {
                 bytes = null;
             }
         } catch (EOFException e) {  // imply session close
-            if (Objects.nonNull(socket)) {
+            if (socket != null) {
                 socket.close();
                 socket = null;
             }
@@ -171,7 +170,7 @@ public class ServerStreamLink {
     }
 
     public void close() throws IOException {
-    if (Objects.nonNull(socket)) {
+    if (socket != null) {
         socket.close();
         socket = null;
     }

@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
-import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
@@ -37,7 +36,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         protected boolean next() {
             try {
                 var buffer = receive();
-                if (Objects.isNull(buffer)) {
+                if (buffer == null) {
                     return false;
                 }
                 source = ByteBuffer.wrap(buffer);
@@ -85,10 +84,10 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public InputStream getByteBufferBackedInput() {
-        if (Objects.isNull(byteBufferBackedInput)) {
+        if (byteBufferBackedInput == null) {
             try {
                 var buffer = receive();
-                if (Objects.nonNull(buffer)) {
+                if (buffer != null) {
                     byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
                 } else {
                     byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
@@ -119,7 +118,7 @@ public class ResultSetWireImpl implements ResultSetWire {
             if (eor) {
                 return null;
             }
-            if (Objects.nonNull(exception)) {
+            if (exception != null) {
                 throw exception;
             }
             try {
@@ -135,7 +134,7 @@ public class ResultSetWireImpl implements ResultSetWire {
             lists.put(writerId, new LinkedList<byte[]>());
         }
         var targetList = lists.get(writerId);
-        if (Objects.nonNull(payload)) {
+        if (payload != null) {
             targetList.add(payload);
         } else {
             queues.addAll(targetList);

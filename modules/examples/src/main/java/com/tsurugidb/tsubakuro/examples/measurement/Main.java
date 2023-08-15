@@ -1,12 +1,11 @@
 package com.tsurugidb.tsubakuro.examples.measurement;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -18,9 +17,9 @@ import org.apache.commons.cli.ParseException;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 
 public final class Main {
     private static String url = "ipc:tateyama";
@@ -128,7 +127,7 @@ public final class Main {
                     System.out.println("illegal type");
                     return;
             }
-            if (!Objects.isNull(client)) {
+            if (client != null) {
                 client.start();
                 barrier.await();
                 System.out.println("benchmark started, warehouse = " + warehouses);
