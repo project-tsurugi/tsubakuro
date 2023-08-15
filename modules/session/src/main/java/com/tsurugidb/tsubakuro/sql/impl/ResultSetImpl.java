@@ -400,22 +400,20 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public synchronized void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            if (response != null) {
-                try (response) {
-                    try {
-                        cursor.close();
-                    } catch (Exception e) {
-                        // suppresses exception while closing the sub-response
-                        LOG.warn("error occurred while closing result set", e);
-                    }
-
-                    // check main response whether to finish the request normally
-                    if (tested.compareAndSet(false, true)) {
-                        tester.test(response, timeout, unit);
-                    }
-                } catch (TimeoutException e) {
-                    throw new ResponseTimeoutException(e);
+            try (response) {
+                try {
+                    cursor.close();
+                } catch (Exception e) {
+                    // suppresses exception while closing the sub-response
+                    LOG.warn("error occurred while closing result set", e);
                 }
+
+                // check main response whether to finish the request normally
+                if (tested.compareAndSet(false, true)) {
+                    tester.test(response, timeout, unit);
+                }
+            } catch (TimeoutException e) {
+                throw new ResponseTimeoutException(e);
             }
             if (closeHandler != null) {
                 Lang.suppress(
