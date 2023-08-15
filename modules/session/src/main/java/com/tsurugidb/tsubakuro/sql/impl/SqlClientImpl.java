@@ -12,12 +12,12 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.StatementMetadata;
-import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
-import com.tsurugidb.tsubakuro.sql.SearchPath;
+import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -126,7 +126,7 @@ public class SqlClientImpl implements SqlClient {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         // FIXME close underlying resources (e.g. ongoing transactions)
-        if (Objects.nonNull(service)) {
+        if (service != null) {
             service.close();
         }
     }

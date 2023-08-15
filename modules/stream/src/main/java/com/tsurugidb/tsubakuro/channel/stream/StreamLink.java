@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,7 +65,7 @@ public final class StreamLink extends Link {
     public LinkMessage helloResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         lock.lock();
         try {
-            while (Objects.isNull(helloResponse.get())) {
+            while (helloResponse.get() == null) {
                 try {
                     doPull(timeout, unit, true);
                 } catch (IOException e) {
@@ -121,7 +120,7 @@ public final class StreamLink extends Link {
             }
         }
 
-        if (Objects.nonNull(message)) {
+        if (message != null) {
             byte info = message.getInfo();
             int slot = message.getSlot();
             switch (info) {

@@ -35,7 +35,7 @@ public class IpcConnectorFactory implements ConnectorFactory {
         }
 
         var body = endpoint.getSchemeSpecificPart();
-        if (Objects.isNull(body) || body.isEmpty()) {
+        if (body == null || body.isEmpty()) {
             LOG.trace("URI is not suitable for {} connector: '{}' (invalid channel name)", SCHEME, endpoint); //$NON-NLS-1$
             return Optional.empty();
         }

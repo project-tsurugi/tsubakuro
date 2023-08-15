@@ -2,7 +2,6 @@ package com.tsurugidb.tsubakuro.util;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
@@ -30,7 +29,7 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
      * @return the input resource
      */
     public <T extends ServerResource> T register(@Nullable T resource) {
-        if (Objects.nonNull(resource)) {
+        if (resource != null) {
             entries.put(new IdentityProvider(resource), Boolean.TRUE); // dummy value
         }
         return resource;
@@ -42,7 +41,7 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
      */
     @Override
     public void onClosed(ServerResource resource) {
-        if (Objects.nonNull(resource)) {
+        if (resource != null) {
             entries.remove(new IdentityProvider(resource));
         }
     }

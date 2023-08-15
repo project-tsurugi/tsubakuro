@@ -17,8 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.datastore.proto.DatastoreRequest;
-import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
+import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -195,7 +195,7 @@ public class BackupDetailImpl implements BackupDetail {
      */
     @Override
     public void keepAlive(int timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException {
-        if (Objects.isNull(service) || closed.get()) {
+        if (service == null || closed.get()) {
             return;
         }
         try (var response = service.updateExpirationTime(timeout, unit)) {
@@ -219,12 +219,12 @@ public class BackupDetailImpl implements BackupDetail {
             return;
         }
         closed.set(true);
-        if (Objects.nonNull(closeHandler)) {
+        if (closeHandler != null) {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
-        if (Objects.nonNull(service)) {
+        if (service != null) {
             try {
                 var request = DatastoreRequest.BackupEnd.newBuilder()
                     .setId(Long.parseLong(configurationId))

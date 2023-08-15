@@ -1,20 +1,19 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
 
 /**
@@ -87,7 +86,7 @@ public final class IpcLink extends Link {
             intentionalClose = false;
         }
 
-        if (Objects.nonNull(message)) {
+        if (message != null) {
             if (message.getInfo() != RESPONSE_NULL) {
                 if (message.getInfo() == RESPONSE_BODYHEAD) {
                     try {

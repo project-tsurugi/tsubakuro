@@ -8,10 +8,10 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.tsurugidb.tsubakuro.sql.SqlServiceException;
-import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
+import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
+import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
@@ -57,7 +57,7 @@ public class SimpleResponse implements Response {
 
     @Override
     public ByteBuffer waitForMainResponse() {
-        if (Objects.nonNull(main)) {
+        if (main != null) {
             return main;
         }
         return null;
@@ -71,12 +71,12 @@ public class SimpleResponse implements Response {
     @Override
     public InputStream openSubResponse(String id) throws IOException,SqlServiceException, InterruptedException {
         if (id.equals(ChannelResponse.METADATA_CHANNEL_ID)) {
-            if (Objects.nonNull(metadata)) {
+            if (metadata != null) {
                 return new ByteBufferInputStream(metadata);
             }
             throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "metadata is not received");
         } else if (id.equals(ChannelResponse.RELATION_CHANNEL_ID)) {
-            if (Objects.nonNull(relation)) {
+            if (relation != null) {
                 return new ByteBufferInputStream(relation);
             }
             throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "relation data is not set up");

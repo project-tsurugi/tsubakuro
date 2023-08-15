@@ -100,7 +100,7 @@ public class BackupImpl implements Backup {
      */
     @Override
     public void keepAlive(int timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException {
-        if (Objects.isNull(service) || closed.get()) {
+        if (service == null || closed.get()) {
             return;
         }
         try (var response = service.updateExpirationTime(timeout, unit)) {
@@ -124,12 +124,12 @@ public class BackupImpl implements Backup {
             return;
         }
         closed.set(true);
-        if (Objects.nonNull(closeHandler)) {
+        if (closeHandler != null) {
             Lang.suppress(
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
-        if (Objects.nonNull(service)) {
+        if (service != null) {
             var request = DatastoreRequest.BackupEnd.newBuilder()
                     .setId(backupId)
                     .build();

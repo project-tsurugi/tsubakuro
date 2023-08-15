@@ -1,17 +1,16 @@
 package com.tsurugidb.tsubakuro.examples.measurement;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
 
 public class SelectLimitOne extends Thread {
     CyclicBarrier barrier;
@@ -58,7 +57,7 @@ public class SelectLimitOne extends Thread {
             long prev = 0;
             long now = 0;
             while (!stop.get()) {
-                if (Objects.isNull(transaction)) {
+                if (transaction == null) {
                     transaction = sqlClient.createTransaction().await();
                 }
                 setParams();
@@ -70,8 +69,8 @@ public class SelectLimitOne extends Thread {
 
                 // "SELECT no_o_id FROM NEW_ORDER WHERE no_d_id = :no_d_id AND no_w_id = :no_w_id ORDER BY no_o_id"
                 var future1 = transaction.executeQuery(prepared1,
-                    Parameters.of("no_d_id", (long) paramsDid),
-                    Parameters.of("no_w_id", (long) paramsWid));
+                    Parameters.of("no_d_id", paramsDid),
+                    Parameters.of("no_w_id", paramsWid));
                 try (var resultSet1 = future1.get()) {
                     now = System.nanoTime();
                     profile.head += (now - prev);

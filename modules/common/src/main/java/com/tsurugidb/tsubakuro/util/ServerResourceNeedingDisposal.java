@@ -1,6 +1,5 @@
 package com.tsurugidb.tsubakuro.util;
 
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -11,7 +10,7 @@ import javax.annotation.Nullable;
 public interface ServerResourceNeedingDisposal extends ServerResource {
     @Override
     default void setCloseTimeout(@Nullable Timeout t) {
-        if (Objects.nonNull(t)) {
+        if (t != null) {
             setCloseTimeout(t.value(), t.unit());
         }
     }

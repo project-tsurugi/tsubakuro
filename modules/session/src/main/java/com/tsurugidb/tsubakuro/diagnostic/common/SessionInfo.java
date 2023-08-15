@@ -1,6 +1,5 @@
 package com.tsurugidb.tsubakuro.diagnostic.common;
 
-import java.util.Objects;
 import java.util.WeakHashMap;
 import java.util.function.BiConsumer;
 
@@ -20,7 +19,7 @@ public class SessionInfo implements SessionInfoMBean {
 
         @Override
         public void accept(SessionImpl s, Void v) {
-            if (Objects.nonNull(s)) {
+            if (s != null) {
                 diagnosticInfo += s.diagnosticInfo();
             }
         }

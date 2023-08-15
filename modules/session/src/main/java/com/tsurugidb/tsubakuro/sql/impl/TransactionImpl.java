@@ -16,18 +16,18 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlService;
-import com.tsurugidb.tsubakuro.sql.SqlServiceException;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.ResultSet;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
-import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
+import com.tsurugidb.tsubakuro.sql.SqlService;
+import com.tsurugidb.tsubakuro.sql.SqlServiceException;
+import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.Lang;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
  * Transaction type.
@@ -269,7 +269,7 @@ public class TransactionImpl implements Transaction {
                     }
                 }
             } finally {
-                if (Objects.nonNull(closeHandler)) {
+                if (closeHandler != null) {
                     Lang.suppress(
                             e -> LOG.warn("error occurred while collecting garbage", e),
                             () -> closeHandler.onClosed(this));

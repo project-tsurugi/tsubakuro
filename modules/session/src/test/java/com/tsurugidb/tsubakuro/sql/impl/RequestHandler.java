@@ -1,16 +1,16 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 // import java.util.Arrays;
 // import java.util.Map;
 import java.util.Objects;
 
+import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
-import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
  * Handles request for wires and returns its response.
@@ -54,7 +54,7 @@ public interface RequestHandler {
     static RequestHandler returns(byte[] response, byte[] metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
-        if (Objects.nonNull(metadata)) {
+        if (metadata != null) {
             return returns(ByteBuffer.wrap(response), ByteBuffer.wrap(metadata), relation);
         }
         return returns(ByteBuffer.wrap(response), null, relation);
@@ -149,7 +149,7 @@ public interface RequestHandler {
     static RequestHandler raises(ServerException exception) {
         Objects.requireNonNull(exception);
         return (id, request) -> {
-            throw exception; 
+            throw exception;
         };
     }
 

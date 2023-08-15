@@ -3,7 +3,6 @@ package com.tsurugidb.tsubakuro.channel.ipc.sql;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
@@ -29,6 +28,7 @@ public class ResultSetWireImpl implements ResultSetWire {
             this.wireHandle = createNative(sessionWireHandle, name);
         }
 
+        @Override
         protected boolean next() {
             synchronized (this) {
                 if (wireHandle != 0) {
@@ -36,7 +36,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                         disposeUsedDataNative(wireHandle, source.capacity());
                     }
                     source = getChunkNative(wireHandle);
-                    return Objects.nonNull(source);
+                    return source != null;
                 }
                 return false;
             }
@@ -55,7 +55,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         private void discardRemainingResultSet() {
-            while (Objects.nonNull(source)) {
+            while (source != null) {
                 if (source.capacity() > 0) {
                     disposeUsedDataNative(wireHandle, source.capacity());
                 }
@@ -78,6 +78,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
      */
+    @Override
     public ResultSetWire connect(String name) throws IOException {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
@@ -90,6 +91,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Provides the Input to retrieve the received data.
      * @return ByteBufferInput contains the record data from the SQL server.
      */
+    @Override
     public InputStream getByteBufferBackedInput() {
         return byteBufferBackedInput;
     }
@@ -97,6 +99,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Close do nothing
      */
+    @Override
     public void close() {
     }
 }

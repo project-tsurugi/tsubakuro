@@ -11,12 +11,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.framework.proto.FrameworkResponse;
-import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
@@ -44,7 +44,7 @@ public class ChannelResponse implements Response {
 
     @Override
     public boolean isMainResponseReady() {
-        return Objects.nonNull(main.get()) || Objects.nonNull(exceptionMain.get());
+        return (main.get() != null) || (exceptionMain.get() != null);
     }
 
     @Override
@@ -60,10 +60,10 @@ public class ChannelResponse implements Response {
     public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         while (true) {
             var n = link.messageNumber();
-            if (Objects.nonNull(main.get())) {
+            if (main.get() != null) {
                 return main.get();
             }
-            if (Objects.nonNull(exceptionMain.get())) {
+            if (exceptionMain.get() != null) {
                 var e = exceptionMain.get();
                 throw new IOException(e.getMessage(), e);
             }
@@ -101,10 +101,10 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream relationChannel() throws IOException, InterruptedException {
-        if (Objects.nonNull(resultSet.get())) {
+        if (resultSet.get() != null) {
             return resultSet.get().getByteBufferBackedInput();
         }
-        if (Objects.nonNull(exceptionResultSet.get())) {
+        if (exceptionResultSet.get() != null) {
             var e = exceptionResultSet.get();
             throw new IOException(e.getMessage(), e);
         }
@@ -112,11 +112,11 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream metadataChannel() throws IOException, InterruptedException {
-        if (Objects.nonNull(metadata.get())) {
+        if (metadata.get() != null) {
             var recordMeta = metadata.get().getRecordMeta();
             return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
         }
-        if (Objects.nonNull(exceptionResultSet.get())) {
+        if (exceptionResultSet.get() != null) {
             var e = exceptionResultSet.get();
             throw new IOException(e.getMessage(), e);
         }
@@ -142,7 +142,7 @@ public class ChannelResponse implements Response {
     }
 
     private boolean isResultSetReady() {
-        return Objects.nonNull(resultSet.get()) || Objects.nonNull(exceptionResultSet.get());
+        return (resultSet.get() != null) || (exceptionResultSet.get() != null);
     }
 
     // get call from a thread that has received the response

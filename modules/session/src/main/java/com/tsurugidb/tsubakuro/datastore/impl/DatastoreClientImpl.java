@@ -9,12 +9,12 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.datastore.proto.DatastoreRequest;
+import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.datastore.Backup;
-import com.tsurugidb.tsubakuro.datastore.BackupType;
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
+import com.tsurugidb.tsubakuro.datastore.BackupType;
 import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.datastore.Tag;
@@ -97,7 +97,7 @@ public class DatastoreClientImpl implements DatastoreClient {
         Objects.requireNonNull(name);
         var builder = DatastoreRequest.TagAdd.newBuilder()
                 .setName(name);
-        if (!Objects.isNull(comment)) {
+        if (comment != null) {
             builder.setComment(comment);
         }
         return service.send(builder.build());

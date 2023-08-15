@@ -2,10 +2,9 @@ package com.tsurugidb.tsubakuro.sql.impl.testing;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
-import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 public class ResultSetWireMock implements ResultSetWire {
     private ByteBufferInputStream byteBufferInput;
@@ -22,7 +21,7 @@ public class ResultSetWireMock implements ResultSetWire {
 
     @Override
     public ByteBufferInputStream getByteBufferBackedInput() {
-        if (Objects.isNull(byteBufferInput)) {
+        if (byteBufferInput == null) {
             byteBufferInput = new ByteBufferInputStream(buf);
         }
         return byteBufferInput;
