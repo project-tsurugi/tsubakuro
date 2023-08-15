@@ -1,32 +1,32 @@
 package com.tsurugidb.tsubakuro.channel.stream;
 
-import java.io.DataOutputStream;
 import java.io.DataInputStream;
-import java.io.IOException;
+import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 
 public final class StreamLink extends Link {
     private Socket socket;
@@ -79,6 +79,7 @@ public final class StreamLink extends Link {
         }
     }
 
+    @Override
     public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
         try {
             return doPull(timeout, unit, false);
@@ -156,7 +157,7 @@ public final class StreamLink extends Link {
                 }
                 resultSetBox.pushBye(slot);
                 return true;
-    
+
             case RESPONSE_SESSION_HELLO_OK:
             case RESPONSE_SESSION_HELLO_NG:
                 LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
@@ -216,7 +217,7 @@ public final class StreamLink extends Link {
     @Override
     public void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {  // SESSION_PAYLOAD
         byte[] header = new byte[7];
-        int length = (int) (frameHeader.length + payload.length);
+        int length = frameHeader.length + payload.length;
 
         header[0] = REQUEST_SESSION_PAYLOAD;
         header[1] = strip(s);       // slot

@@ -1,9 +1,9 @@
 package com.tsurugidb.tsubakuro.channel.stream.sql;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.ServerSocket;
 // import java.text.MessageFormat;
 // import java.util.Objects;
@@ -12,11 +12,11 @@ import java.util.ArrayDeque;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.stream.ServerStreamLink;
-import com.tsurugidb.sql.proto.SqlRequest;
-import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.channel.stream.ServerStreamLink;
 
 /**
  * ServerWireImpl type.
@@ -183,8 +183,6 @@ public class ServerWireImpl implements Closeable {
             response.writeDelimitedTo(buffer);
             var bytes = buffer.toByteArray();
             serverStreamLink.sendResponse(0, bytes);
-        } catch (IOException e) {
-            throw new IOException(e);
         }
     }
 
