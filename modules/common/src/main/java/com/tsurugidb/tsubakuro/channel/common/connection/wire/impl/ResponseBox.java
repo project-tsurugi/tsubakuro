@@ -2,6 +2,10 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 import javax.annotation.Nonnull;
 
@@ -14,60 +18,88 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
  */
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
+    private static final int INVALID_SLOT = -1;
+
+    private static class Abox {
+        private final ChannelResponse channelResponse;
+        private final Lock lock = new ReentrantLock();
+        private final Condition availableCondition = lock.newCondition();
+        private byte[] requestMessage;  // for diagnostic
+
+        Abox(@Nonnull ChannelResponse channelResponse, byte[] payload) {
+            this.channelResponse = channelResponse;
+            this.requestMessage = payload; // for diagnostic
+        }
+
+        ChannelResponse channelResponse() {
+            return channelResponse;
+        }
+
+        // for diagnostic
+        byte[] requestMessage() {
+            return requestMessage;
+        }
+    }
 
     private final Link link;
-    private final Queues queues;
-    private SlotEntry[] boxes = new SlotEntry[SIZE];
+    private AtomicReferenceArray<Abox> boxes = new AtomicReferenceArray<>(SIZE);
     private boolean intentionalClose = false;
 
     public ResponseBox(@Nonnull Link link) {
         this.link = link;
-        this.queues = new Queues(link);
-        for (byte i = 0; i < SIZE; i++) {
-            boxes[i] = new SlotEntry(i);
-            queues.addSlot(boxes[i]);
-        }
     }
 
-    public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
+    public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
         var channelResponse = new ChannelResponse(link);
-        var slotEntry = queues.pollSlot();
-        if (slotEntry != null) {
-            slotEntry.channelResponse(channelResponse);
-            slotEntry.requestMessage(payload);
-            link.send(slotEntry.slot(), header, payload, channelResponse);
-        } else {
-            queues.addRequest(new RequestEntry(channelResponse, header, payload));
-            if (!queues.isSlotEmpty()) {
-                queues.pairAnnihilation();
+        var box = new Abox(channelResponse, payload);
+        int slot = INVALID_SLOT;
+        for (byte i = 0; i < SIZE; i++) {
+            if (boxes.get(i) == null) {
+                if (boxes.compareAndSet(i, null, box)) {
+                    slot = i;
+                    break;
+                }
             }
         }
+        if (slot == INVALID_SLOT) {
+            throw new IOException("no available response box");
+        }
+        link.send(slot, header, payload, channelResponse);
         return channelResponse;
     }
 
     public void push(int slot, byte[] payload) {
-        var slotEntry = boxes[slot];
-        slotEntry.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
-        var queuedRequest = queues.pollRequest();
-        if (queuedRequest != null) {
-            slotEntry.channelResponse(queuedRequest.channelResponse());
-            slotEntry.requestMessage(queuedRequest.payload());
-            link.send(slot, queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
-        } else {
-            queues.addSlot(slotEntry);
-            if (queues.isRequestEmpty()) {
-                return;
-            }
-            queues.pairAnnihilation();
+        Lock l =  boxes.get(slot).lock;
+        l.lock();
+        try {
+            var box = boxes.get(slot);
+            box.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
+            boxes.set(slot, null);
+        } finally {
+            l.unlock();
         }
     }
 
     public void push(int slot, IOException e) {
-        boxes[slot].channelResponse().setMainResponse(e);
+        Lock l =  boxes.get(slot).lock;
+        l.lock();
+        try {
+            var box = boxes.get(slot);
+            box.channelResponse().setMainResponse(e);
+        } finally {
+            l.unlock();
+        }
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
-        boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
+        Lock l =  boxes.get(slot).lock;
+        l.lock();
+        try {
+            var box = boxes.get(slot);
+            box.channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
+        } finally {
+            l.unlock();
+        }
     }
 
     public void doClose(boolean ic) {
@@ -76,13 +108,16 @@ public class ResponseBox {
     }
 
     public void close() {
-        for (SlotEntry e : boxes) {
-            var response = e.channelResponse();
-            if (response != null) {
-                if (intentionalClose) {
-                    response.setMainResponse(new IOException("The wire was closed before receiving a response to this request"));
-                } else {
-                    response.setMainResponse(new IOException("Server crashed"));
+        for (byte i = 0; i < SIZE; i++) {
+            var box = boxes.get(i);
+            if (box != null) {
+                var response = box.channelResponse();
+                if (response != null) {
+                    if (intentionalClose) {
+                        response.setMainResponse(new IOException("The wire was closed before receiving a response to this request"));
+                    } else {
+                        response.setMainResponse(new IOException("Server crashed"));
+                    }
                 }
             }
         }
@@ -95,11 +130,12 @@ public class ResponseBox {
     // for diagnostic
     String diagnosticInfo() {
         String diagnosticInfo = "";
-        for (var et : boxes) {
-            var cr = et.channelResponse();
+        for (byte i = 0; i < SIZE; i++) {
+            var box = boxes.get(i);
+            var cr = box.channelResponse();
             if (cr != null) {
                 try {
-                    diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(box.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
                 } catch (IOException ex) {
                     diagnosticInfo += "  +request in processing: (error) " + ex + System.getProperty("line.separator");
                 }
