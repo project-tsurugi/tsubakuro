@@ -69,10 +69,14 @@ public abstract class Worker implements Callable<Long> {
      */
     protected void createOperations() {
         operations.clear();
+        long key = clientId;
         for (int i = 0; i < Constants.NUM_RECORDS; i++) {
             boolean isGet = 100 * Math.random() < rratio;
-            long key = (i * numClient + clientId) % Constants.NUM_RECORDS;
             operations.add(new Operation(isGet, key));
+            key += numClient;
+            if (key >= Constants.NUM_RECORDS) {
+                key = clientId;
+            }
         }
         Collections.shuffle(operations);
     }
