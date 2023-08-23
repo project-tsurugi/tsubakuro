@@ -238,7 +238,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
-        if (cleanuped.get()) {
+        if (closed.get()) {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.GetErrorInfo.newBuilder()
