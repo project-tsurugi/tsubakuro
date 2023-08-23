@@ -11,19 +11,3 @@ dependencies {
 
     implementation project(':tsubakuro-common')
 }
-
-publishing {
-    publications {
-        mavenNative(MavenPublication) {
-            artifactId = "${rootProject.name}-jni"
-            artifact "${buildDir}/native/lib/libtsubakuro.so"
-        }
-    }
-}
-
-tasks.withType(AbstractPublishToMaven) { task ->
-    if (task.name == 'publishMavenNativePublicationToMavenLocal' ||
-        task.name == 'publishMavenNativePublicationToGitHubPackagesRepository') {
-        task.dependsOn nativeLib
-    }
-}
