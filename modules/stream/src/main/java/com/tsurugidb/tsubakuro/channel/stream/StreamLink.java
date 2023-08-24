@@ -83,8 +83,8 @@ public final class StreamLink extends Link {
         try {
             return doPull(timeout, unit, false);
         } catch (IOException e) {  // IOException is never thrown when throwException is false
-            System.err.println("catch exception that never thrown");
-            System.err.println(e);
+            LOG.error("catch exception that never thrown");
+            LOG.error(e.getMessage());
         }
         return false;
     }
@@ -173,8 +173,13 @@ public final class StreamLink extends Link {
             return false;
 
         default:
-            throw new IOException("invalid info in the response");
-
+            if (throwException) {
+                throw new IOException("invalid info in the response");
+            } else {
+                socketError.set(true);
+                closeBoxes(false);
+                return false;
+            }
         }
     }
 
