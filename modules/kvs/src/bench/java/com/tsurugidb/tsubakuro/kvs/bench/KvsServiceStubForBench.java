@@ -19,6 +19,8 @@ import com.tsurugidb.tsubakuro.kvs.impl.KvsService;
 import com.tsurugidb.tsubakuro.kvs.impl.TransactionHandleImpl;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 class KvsServiceStubForBench implements KvsService {
 
     private long systemId = System.currentTimeMillis();
@@ -31,7 +33,7 @@ class KvsServiceStubForBench implements KvsService {
         this.waitLoop = waitLoop;
     }
 
-    @SuppressWarnings("EmptyBlock")
+    @SuppressFBWarnings(value = {"UC_USELESS_VOID_METHOD"}, justification = "just for benchmark use, not for production use")
     private void replyWait() {
         for (long i = 0; i < waitLoop; i++) {
             // loop to wait
