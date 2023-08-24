@@ -34,6 +34,7 @@ class KvsServiceStubForBench implements KvsService {
     }
 
     @SuppressFBWarnings(value = {"UC_USELESS_VOID_METHOD"}, justification = "just for benchmark use, not for production use")
+    @SuppressWarnings("EmptyBlock")
     private void replyWait() {
         for (long i = 0; i < waitLoop; i++) {
             // loop to wait
