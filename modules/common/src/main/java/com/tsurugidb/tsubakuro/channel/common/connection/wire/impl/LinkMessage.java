@@ -27,7 +27,9 @@ public class LinkMessage {
     }
     public String getString() {  // used only by FutureWireImpl
         try {
-            return new String(bytes, "UTF-8");
+            if (bytes != null) {
+                return new String(bytes, "UTF-8");
+            }
         } catch (UnsupportedEncodingException e) {
             // As long as only alphabetic and numeric characters are received,
             // this exception will never occur.

@@ -185,7 +185,7 @@ public final class StreamLink extends Link {
 
     private void closeBoxes(boolean intentionalClose) throws IOException {
         responseBox.doClose(intentionalClose);
-        resultSetBox.close();
+        resultSetBox.doClose(intentionalClose);
         socketClosed.set(true);
         socket.close();
     }
@@ -252,42 +252,44 @@ public final class StreamLink extends Link {
     }
 
     public LinkMessage receive() throws IOException, SocketTimeoutException {
-        try {
-            byte[] bytes;
-            byte writer = 0;
-            byte info = 0;
+        synchronized (inStream) {
+            try {
+                byte[] bytes;
+                byte writer = 0;
+                byte info = 0;
 
-            // info受信
-            info = inStream.readByte();
+                // info受信
+                info = inStream.readByte();
 
-            // slot受信
-            int slot = 0;
-            for (int i = 0; i < 2; i++) {
-                int inData = inStream.readByte() & 0xff;
-                slot |= inData << (i * 8);
-            }
+                // slot受信
+                int slot = 0;
+                for (int i = 0; i < 2; i++) {
+                    int inData = inStream.readByte() & 0xff;
+                    slot |= inData << (i * 8);
+                }
 
-            if (info ==  RESPONSE_RESULT_SET_PAYLOAD) {
-                writer = inStream.readByte();
-            }
+                if (info ==  RESPONSE_RESULT_SET_PAYLOAD) {
+                    writer = inStream.readByte();
+                }
 
-            // length受信
-            int length = 0;
-            for (int i = 0; i < 4; i++) {
-                int inData = inStream.readByte() & 0xff;
-                length |= inData << (i * 8);
+                // length受信
+                int length = 0;
+                for (int i = 0; i < 4; i++) {
+                    int inData = inStream.readByte() & 0xff;
+                    length |= inData << (i * 8);
+                }
+                if (length > 0) {
+                    // payload受信
+                    bytes = new byte[length];
+                    inStream.readFully(bytes, 0, length);
+                } else {
+                    bytes = null;
+                }
+                return new LinkMessage(info, bytes, slot, writer);
+            } catch (SocketException e) {
+                socketError.set(true);
+                throw e;
             }
-            if (length > 0) {
-                // payload受信
-                bytes = new byte[length];
-                inStream.readFully(bytes, 0, length);
-            } else {
-                bytes = null;
-            }
-            return new LinkMessage(info, bytes, slot, writer);
-        } catch (SocketException e) {
-            socketError.set(true);
-            throw e;
         }
     }
 

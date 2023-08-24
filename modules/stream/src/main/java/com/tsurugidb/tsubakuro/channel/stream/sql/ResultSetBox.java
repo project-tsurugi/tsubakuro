@@ -21,6 +21,7 @@ public class ResultSetBox {
     private Condition availableCondition = lock.newCondition();
     private Lock[] slotLock = new ReentrantLock[SIZE];
     private Condition[] slotCondition = new Condition[SIZE];
+    private boolean intentionalClose = false;
 
     public ResultSetBox() {
         for (int i = 0; i < SIZE; i++) {
@@ -111,10 +112,19 @@ public class ResultSetBox {
         }
     }
 
+    public void doClose(boolean ic) {
+        intentionalClose = ic;
+        close();
+    }
+
     public void close() {
         for (ResultSetWireImpl e : boxes) {
             if (e != null) {
-                e.endOfRecords(new IOException("Server crashed"));
+                if (intentionalClose) {
+                    e.endOfRecords(new IOException("The wire was closed before closing this resultSet"));
+                } else {
+                    e.endOfRecords(new IOException("Server crashed"));
+                }
             }
         }
     }
