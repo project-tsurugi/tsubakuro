@@ -111,17 +111,12 @@ public final class IpcLink extends Link {
     }
 
     private LinkMessage receive(long timeout) throws IOException, TimeoutException {
-        synchronized (this) {
-            if (closed.get()) {
-                throw new IOException("Link already closed");
-            }
-            int slot = awaitNative(wireHandle, timeout);
-            if (slot >= 0) {
-                var info = (byte) getInfoNative(wireHandle);
-                return new LinkMessage(info, receiveNative(wireHandle), slot);
-            }
-            return null;
+        int slot = awaitNative(wireHandle, timeout);
+        if (slot >= 0) {
+            var info = (byte) getInfoNative(wireHandle);
+            return new LinkMessage(info, receiveNative(wireHandle), slot);
         }
+        return null;
     }
 
     @Override
