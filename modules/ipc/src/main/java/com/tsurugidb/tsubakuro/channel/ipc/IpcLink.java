@@ -139,9 +139,9 @@ public final class IpcLink extends Link {
 
     @Override
     public void close() throws IOException {
-        if (!closed.getAndSet(true)) {
-            closeNative(wireHandle);
-            synchronized (this) {
+        synchronized (this) {
+            if (!closed.getAndSet(true)) {
+                closeNative(wireHandle);
                 destroyNative(wireHandle);
             }
         }
