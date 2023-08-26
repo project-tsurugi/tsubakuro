@@ -4,7 +4,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+    
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
@@ -23,7 +24,8 @@ public final class IpcLink extends Link {
     private long wireHandle = 0;  // for c++
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
-
+    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+    
     public static final byte RESPONSE_NULL = 0;
     public static final byte RESPONSE_PAYLOAD = 1;
     public static final byte RESPONSE_BODYHEAD = 2;
@@ -65,13 +67,18 @@ public final class IpcLink extends Link {
         System.arraycopy(frameHeader, 0, message, 0, frameHeader.length);
         System.arraycopy(payload, 0, message, frameHeader.length, payload.length);
 
-        synchronized (this) {
+        rwl.readLock().lock();
+        try {
             if (!closed.get()) {
-                sendNative(wireHandle, s, message);
+                synchronized (this) {
+                    sendNative(wireHandle, s, message);
+                }
             } else {
                 channelResponse.setMainResponse(new IOException("Link already closed"));
                 return;
             }
+        } finally {
+            rwl.readLock().unlock();
         }
         LOG.trace("send {}", payload);
     }
@@ -121,11 +128,14 @@ public final class IpcLink extends Link {
 
     @Override
     public ResultSetWire createResultSetWire() throws IOException {
-        synchronized (this) {
+        rwl.readLock().lock();
+        try {
             if (closed.get()) {
                 throw new IOException("Link already closed");
             }
             return new ResultSetWireImpl(wireHandle);
+        } finally {
+            rwl.readLock().unlock();
         }
     }
 
@@ -139,11 +149,14 @@ public final class IpcLink extends Link {
 
     @Override
     public void close() throws IOException {
-        synchronized (this) {
+        rwl.writeLock().lock();
+        try {
             if (!closed.getAndSet(true)) {
                 closeNative(wireHandle);
                 destroyNative(wireHandle);
             }
+        } finally {
+            rwl.writeLock().unlock();
         }
     }
 }
