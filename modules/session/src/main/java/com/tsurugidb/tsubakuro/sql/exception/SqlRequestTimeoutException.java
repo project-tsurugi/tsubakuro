@@ -6,9 +6,9 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * SqlRequestTimeOutException which occurs if Tsurugi OLTP server core is something wrong.
+ * SqlRequestTimeoutException which occurs if Tsurugi OLTP server core is something wrong.
  */
-public class SqlRequestTimeOutException extends SqlExecutionException {
+public class SqlRequestTimeoutException extends SqlExecutionException {
 
     /**
      * Creates a new instance.
@@ -16,7 +16,7 @@ public class SqlRequestTimeOutException extends SqlExecutionException {
      * @param message the error message
      * @param cause the original cause
      */
-    public SqlRequestTimeOutException(@Nonnull SqlServiceCode code, @Nullable String message, @Nullable Throwable cause) {
+    public SqlRequestTimeoutException(@Nonnull SqlServiceCode code, @Nullable String message, @Nullable Throwable cause) {
         super(code, message, cause);
     }
 
@@ -24,7 +24,7 @@ public class SqlRequestTimeOutException extends SqlExecutionException {
      * Creates a new instance.
      * @param code the diagnostic code
      */
-    public SqlRequestTimeOutException(@Nonnull SqlServiceCode code) {
+    public SqlRequestTimeoutException(@Nonnull SqlServiceCode code) {
         this(code, null, null);
     }
 
@@ -33,7 +33,7 @@ public class SqlRequestTimeOutException extends SqlExecutionException {
      * @param code the diagnostic code
      * @param message the error message
      */
-    public SqlRequestTimeOutException(@Nonnull SqlServiceCode code, @Nullable String message) {
+    public SqlRequestTimeoutException(@Nonnull SqlServiceCode code, @Nullable String message) {
         this(code, message, null);
     }
 
@@ -42,7 +42,7 @@ public class SqlRequestTimeOutException extends SqlExecutionException {
      * @param code the diagnostic code
      * @param cause the original cause
      */
-    public SqlRequestTimeOutException(@Nonnull SqlServiceCode code, @Nullable Throwable cause) {
+    public SqlRequestTimeoutException(@Nonnull SqlServiceCode code, @Nullable Throwable cause) {
         this(code, null, cause);
     }
 }

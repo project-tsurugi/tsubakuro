@@ -98,7 +98,7 @@ public class SqlServiceException extends ServerException {
         case DUMP_DIRECTORY_INACCESSIBLE_EXCEPTION: return new DumpDirectoryInaccessibleException(code, message, cause);
         case SQL_LIMIT_REACHED_EXCEPTION: return new SqlLimitReachedException(code, message, cause);
         case TRANSACTION_EXCEEDED_LIMIT_EXCEPTION: return new TransactionExceededLimitException(code, message, cause);
-        case SQL_REQUEST_TIMEOUT_EXCEPTION: return new SqlRequestTimeOutException(code, message, cause);
+        case SQL_REQUEST_TIMEOUT_EXCEPTION: return new SqlRequestTimeoutException(code, message, cause);
         case DATA_CORRUPTION_EXCEPTION: return new DataCorruptionException(code, message, cause);
         case SECONDARY_INDEX_CORRUPTION_EXCEPTION: return new SecondaryIndexCorruptionException(code, message, cause);
         case REQUEST_FAILURE_EXCEPTION: return new RequestFailureException(code, message, cause);
