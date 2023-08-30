@@ -125,7 +125,7 @@ public class SqlServiceException extends ServerException {
         case RTX_EXCEPTION: return new RtxException(code, message, cause);
         case BLOCKED_BY_CONCURRENT_OPERATION_EXCEPTION: return new BlockedByConcurrentOperationException(code, message, cause);
         }
-        return null;
+        return new SqlServiceException(code, "code given is undefined: " + message, cause);
     }
 
     /**
