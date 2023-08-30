@@ -74,12 +74,12 @@ public class SimpleResponse implements Response {
             if (metadata != null) {
                 return new ByteBufferInputStream(metadata);
             }
-            throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "metadata is not received");
+            throw new SqlServiceException(SqlServiceCode.SQL_SERVICE_EXCEPTION, "metadata is not received");
         } else if (id.equals(ChannelResponse.RELATION_CHANNEL_ID)) {
             if (relation != null) {
                 return new ByteBufferInputStream(relation);
             }
-            throw new SqlServiceException(SqlServiceCode.ERR_UNKNOWN, "relation data is not set up");
+            throw new SqlServiceException(SqlServiceCode.SQL_SERVICE_EXCEPTION, "relation data is not set up");
         }
         throw new IOException("illegal SubResponse id");
     }
