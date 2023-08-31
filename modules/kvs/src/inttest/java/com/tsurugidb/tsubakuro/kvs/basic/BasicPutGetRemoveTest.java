@@ -220,7 +220,7 @@ public class BasicPutGetRemoveTest extends TestBase {
     }
 
     @Test
-    public void remoteTypes() throws Exception {
+    public void removeTypes() throws Exception {
         final long key1 = 2L;
         final long key2 = 3L;
         final long value = 100L;
