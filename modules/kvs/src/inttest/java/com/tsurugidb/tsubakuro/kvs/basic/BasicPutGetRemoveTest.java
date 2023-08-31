@@ -265,6 +265,7 @@ public class BasicPutGetRemoveTest extends TestBase {
             }
             // insert again
             try (var tx = kvs.beginTransaction().await()) {
+                buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 buffer.add(VALUE_NAME, value);
                 var put = kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
