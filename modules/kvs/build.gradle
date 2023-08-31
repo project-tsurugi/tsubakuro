@@ -43,6 +43,29 @@ sourceSets {
             srcDir "src/bench/java"
         }
     }
+    kvsIntegrationTest {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir "src/inttest/java"
+        }
+        resources.srcDir file('src/inttest/resources')
+    }
+}
+
+configurations {
+    kvsIntegrationTestImplementation.extendsFrom testImplementation
+    kvsIntegrationTestRuntime.extendsFrom testRuntime
+}
+
+task kvsIntegrationTest(type: Test) {
+    systemProperty 'tsurugi.kvstest.endpoint', 'ipc:tsurugi'
+    dependsOn ':tsubakuro-ipc:assemble'
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.kvsIntegrationTest.output.classesDirs
+    classpath = sourceSets.kvsIntegrationTest.runtimeClasspath
+    outputs.upToDateWhen { false }
 }
 
 application {
