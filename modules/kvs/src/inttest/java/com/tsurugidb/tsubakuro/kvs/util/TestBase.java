@@ -26,20 +26,30 @@ public class TestBase {
         return SessionBuilder.connect(ENDPOINT).withCredential(NullCredential.INSTANCE).create();
     }
 
+    private void dropTable(SqlClient client, String tableName) throws Exception {
+        try {
+            try (var tx = client.createTransaction().await()) {
+                String sql = String.format("DROP TABLE %s", tableName);
+                tx.executeStatement(sql).await();
+                tx.commit().await();
+            }
+        } catch (Exception e) {
+            var msg = e.getMessage();
+            if (!msg.contains("table_not_found") && !msg.contains("not found")) {
+                throw e;
+            }
+        }
+    }
+
+    public void dropTable(String tableName) throws Exception {
+        try (var session = getNewSession(); var client = SqlClient.attach(session)) {
+            dropTable(client, tableName);
+        }
+    }
+
     public void createTable(String tableName, String schema) throws Exception {
         try (var session = getNewSession(); var client = SqlClient.attach(session)) {
-            try {
-                try (var tx = client.createTransaction().await()) {
-                    String sql = String.format("DROP TABLE %s", tableName);
-                    tx.executeStatement(sql).await();
-                    tx.commit().await();
-                }
-            } catch (Exception e) {
-                var msg = e.getMessage();
-                if (!msg.contains("table_not_found") && !msg.contains("not found")) {
-                    throw e;
-                }
-            }
+            dropTable(client, tableName);
             try (var tx = client.createTransaction().await()) {
                 String sql = String.format("CREATE TABLE %s (%s)", tableName, schema);
                 tx.executeStatement(sql).await();

@@ -39,7 +39,7 @@ public class PutTest extends TestBase {
                 buffer.add(VALUE_NAME, value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_TYPE_MISMATCH);
+                assertEquals(KvsServiceCode.COLUMN_TYPE_MISMATCH, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -48,7 +48,7 @@ public class PutTest extends TestBase {
                 buffer.add(VALUE_NAME, (int)value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_TYPE_MISMATCH);
+                assertEquals(KvsServiceCode.COLUMN_TYPE_MISMATCH, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -57,7 +57,7 @@ public class PutTest extends TestBase {
                 buffer.add(VALUE_NAME, (int)value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_TYPE_MISMATCH);
+                assertEquals(KvsServiceCode.COLUMN_TYPE_MISMATCH, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -66,24 +66,25 @@ public class PutTest extends TestBase {
                 buffer.add(VALUE_NAME, value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_TYPE_MISMATCH);
+                assertEquals(KvsServiceCode.COLUMN_TYPE_MISMATCH, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
-            // COLUMN_NOT_FOUND
+            // MISMATCH_KEY
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(VALUE_NAME, value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_NOT_FOUND);
+                assertEquals(KvsServiceCode.MISMATCH_KEY, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
+            // INCOMPLETE_COLUMNS
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.COLUMN_NOT_FOUND);
+                assertEquals(KvsServiceCode.INCOMPLETE_COLUMNS, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
             // INVALID_ARGUMENT
@@ -92,7 +93,7 @@ public class PutTest extends TestBase {
                 // empty record
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.INVALID_ARGUMENT);
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -102,7 +103,7 @@ public class PutTest extends TestBase {
                 buffer.add("v2", value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(ex.getDiagnosticCode(), KvsServiceCode.INVALID_ARGUMENT);
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
         }

@@ -152,7 +152,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(VALUE_NAME, value3);
                 var put = kvs.put(tx, TABLE_NAME, buffer, PutType.IF_ABSENT).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             // {(key1, value2), (key3, value3)}
             try (var tx = kvs.beginTransaction().await()) {
@@ -160,10 +160,10 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key3);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key3, value3);
             }
-            assertEquals(PutType.DEFAULT_BEHAVIOR, PutType.OVERWRITE);
+            assertEquals(PutType.OVERWRITE, PutType.DEFAULT_BEHAVIOR);
             // {(key1, value2), (key3, value3)}; without PutType means OVERWRITE
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
@@ -171,7 +171,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(VALUE_NAME, value3);
                 var put = kvs.put(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             // {(key1, value3), (key3, value3)}
             try (var tx = kvs.beginTransaction().await()) {
@@ -179,7 +179,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key1, value3);
             }
             // {(key1, value2), (key3, value3)}; without PutType means OVERWRITE
@@ -189,7 +189,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(VALUE_NAME, value2);
                 var put = kvs.put(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             // {(key1, value3), (key3, value3), (key2, value2)}
             try (var tx = kvs.beginTransaction().await()) {
@@ -197,7 +197,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key2);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key2, value2);
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -205,7 +205,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key1, value3);
             }
             try (var tx = kvs.beginTransaction().await()) {
@@ -213,7 +213,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key3);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key3, value3);
             }
         }
@@ -231,7 +231,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(VALUE_NAME, value);
                 var put = kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             // {(key1, 100)}; remove non-exist key
             try (var tx = kvs.beginTransaction().await()) {
@@ -239,14 +239,14 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key2);
                 var rem = kvs.remove(tx, TABLE_NAME, buffer, RemoveType.COUNTING).await();
                 kvs.commit(tx).await();
-                assertEquals(rem.size(), 0); // means no record removed
+                assertEquals(0, rem.size()); // means no record removed
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1); // (key1, value) exists
+                assertEquals(1, get.size()); // (key1, value) exists
             }
             // {(key1, 100)}; remove exists key
             try (var tx = kvs.beginTransaction().await()) {
@@ -254,14 +254,14 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key1);
                 var rem = kvs.remove(tx, TABLE_NAME, buffer, RemoveType.COUNTING).await();
                 kvs.commit(tx).await();
-                assertEquals(rem.size(), 1); // means 1 record removed
+                assertEquals(1, rem.size()); // means 1 record removed
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 0); // (key1, value) doesn't exist
+                assertEquals(0, get.size()); // (key1, value) doesn't exist
             }
             // insert again
             try (var tx = kvs.beginTransaction().await()) {
@@ -270,7 +270,7 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(VALUE_NAME, value);
                 var put = kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             // {(key1, 100)}; remove non-exist key
             try (var tx = kvs.beginTransaction().await()) {
@@ -278,14 +278,14 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key2);
                 var rem = kvs.remove(tx, TABLE_NAME, buffer, RemoveType.INSTANT).await();
                 kvs.commit(tx).await();
-                assertEquals(rem.size(), 1); // means 1 remove operation called
+                assertEquals(1, rem.size()); // means 1 remove operation called
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1); // (key1, value) exists
+                assertEquals(1, get.size()); // (key1, value) exists
             }
             // {(key1, 100)}; remove exists key
             try (var tx = kvs.beginTransaction().await()) {
@@ -293,14 +293,14 @@ public class BasicPutGetRemoveTest extends TestBase {
                 buffer.add(KEY_NAME, key1);
                 var rem = kvs.remove(tx, TABLE_NAME, buffer, RemoveType.INSTANT).await();
                 kvs.commit(tx).await();
-                assertEquals(rem.size(), 1); // means 1 remove operation called
+                assertEquals(1, rem.size()); // means 1 remove operation called
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 0); // (key1, value) doesn't exist
+                assertEquals(0, get.size()); // (key1, value) doesn't exist
             }
         }
     }

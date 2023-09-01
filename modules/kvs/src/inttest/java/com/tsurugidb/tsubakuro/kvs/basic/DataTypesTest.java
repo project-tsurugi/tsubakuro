@@ -20,19 +20,13 @@ public class DataTypesTest extends TestBase {
     private static final String KEY_NAME = "k1";
     private static final String VALUE_NAME = "v1";
 
-    private void createTable(String typeName) throws Exception {
-        // see jogasaki/docs/value_limit.md
-        String schema = String.format("%s %s PRIMARY KEY, %s %s", KEY_NAME, typeName, VALUE_NAME, typeName);
-        createTable(TABLE_NAME, schema);
-    }
-
     private void checkRecord(Record record, Object key1, Object value1) throws Exception {
         final int idxKey = 0; // TODO maybe change
         final int idxValue = 1;
-        assertEquals(record.getName(idxKey), KEY_NAME);
-        assertEquals(record.getName(idxValue), VALUE_NAME);
-        assertEquals(record.getValue(idxKey), key1);
-        assertEquals(record.getValue(idxValue), value1);
+        assertEquals(KEY_NAME, record.getName(idxKey));
+        assertEquals(VALUE_NAME, record.getName(idxValue));
+        assertEquals(key1, record.getValue(idxKey));
+        assertEquals(value1, record.getValue(idxValue));
     }
 
     private void checkPutGet(Object key1, Object value1) throws Exception {
@@ -43,22 +37,25 @@ public class DataTypesTest extends TestBase {
                 buffer.add(VALUE_NAME, value1);
                 var put = kvs.put(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key1, value1);
             }
         }
     }
 
     private void checkDataType(String typeName, Object key1, Object value1) throws Exception {
-        createTable(typeName);
+        // see jogasaki/docs/value_limit.md
+        String schema = String.format("%s %s PRIMARY KEY, %s %s", KEY_NAME, typeName, VALUE_NAME, typeName);
+        createTable(TABLE_NAME, schema);
         checkPutGet(key1, value1);
+        dropTable(TABLE_NAME);
     }
 
     @Test
@@ -111,6 +108,7 @@ public class DataTypesTest extends TestBase {
         String schema = String.format("%s %s PRIMARY KEY, %s %s", KEY_NAME, type, VALUE_NAME, type);
         createTable(TABLE_NAME, schema);
         checkPutGet(key1, value1);
+        dropTable(TABLE_NAME);
     }
 
     @Test

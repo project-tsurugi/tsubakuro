@@ -35,17 +35,17 @@ public class RollbackTest extends TestBase {
                 buffer.add(VALUE_NAME, value1);
                 var put = kvs.put(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 var record = get.asRecord();
-                assertEquals(record.getLong(KEY_NAME), key1);
-                assertEquals(record.getLong(VALUE_NAME), value1);
+                assertEquals(key1, record.getLong(KEY_NAME));
+                assertEquals(value1, record.getLong(VALUE_NAME));
             }
             // update and abort
             try (var tx = kvs.beginTransaction().await()) {
@@ -54,36 +54,35 @@ public class RollbackTest extends TestBase {
                 buffer.add(VALUE_NAME, value2);
                 var put = kvs.put(tx, TABLE_NAME, buffer).await();
                 kvs.rollback(tx).await();
-                assertEquals(put.size(), 1);
+                assertEquals(1, put.size());
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 var record = get.asRecord();
-                assertEquals(record.getLong(KEY_NAME), key1);
-                assertEquals(record.getLong(VALUE_NAME), value1); // not value2
+                assertEquals(key1, record.getLong(KEY_NAME));
+                assertEquals(value1, record.getLong(VALUE_NAME)); // not value2
             }
             // remove and abort
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
-                buffer.add(VALUE_NAME, value2);
                 var remove = kvs.remove(tx, TABLE_NAME, buffer).await();
                 kvs.rollback(tx).await();
-                assertEquals(remove.size(), 1);
+                assertEquals(1, remove.size());
             }
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
                 var get = kvs.get(tx, TABLE_NAME, buffer).await();
                 kvs.commit(tx).await();
-                assertEquals(get.size(), 1);
+                assertEquals(1, get.size());
                 var record = get.asRecord();
-                assertEquals(record.getLong(KEY_NAME), key1); // found key1, not removed
-                assertEquals(record.getLong(VALUE_NAME), value1); // not value2
+                assertEquals(key1, record.getLong(KEY_NAME)); // found key1, not removed
+                assertEquals(value1, record.getLong(VALUE_NAME)); // not value2
             }
         }
     }
