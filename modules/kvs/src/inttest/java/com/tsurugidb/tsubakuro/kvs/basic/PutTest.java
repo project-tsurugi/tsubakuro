@@ -96,6 +96,7 @@ public class PutTest extends TestBase {
                 assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
+            // COLUMN_NOT_FOUND
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
@@ -103,7 +104,7 @@ public class PutTest extends TestBase {
                 buffer.add("v2", value1);
                 KvsServiceException ex = assertThrows(KvsServiceException.class,
                         () -> kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await());
-                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                assertEquals(KvsServiceCode.COLUMN_NOT_FOUND, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
         }

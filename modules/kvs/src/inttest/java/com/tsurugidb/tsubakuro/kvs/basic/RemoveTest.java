@@ -71,6 +71,15 @@ public class RemoveTest extends TestBase {
                 assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
                 kvs.rollback(tx).await();
             }
+            try (var tx = kvs.beginTransaction().await()) {
+                key.clear();
+                key.add(KEY_NAME, key1);
+                key.add(KEY_NAME, key1);
+                KvsServiceException ex = assertThrows(KvsServiceException.class,
+                        () -> kvs.remove(tx, TABLE_NAME, key).await());
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                kvs.rollback(tx).await();
+            }
         }
     }
 }
