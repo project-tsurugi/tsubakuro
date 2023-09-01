@@ -155,9 +155,7 @@ public:
         }
     }
 
-    ~session_wire_container() {
-        request_wire_.disconnect();
-    }
+    ~session_wire_container() = default;
 
     bool is_deletable() {
         std::lock_guard<std::mutex> lock(mtx_set_);

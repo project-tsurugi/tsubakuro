@@ -161,6 +161,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_closeNat
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     if (swc != nullptr) {
+        swc->get_request_wire().disconnect();
         swc->get_response_wire().close();
     }
 }
