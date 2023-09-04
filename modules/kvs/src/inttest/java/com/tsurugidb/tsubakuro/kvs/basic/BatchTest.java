@@ -15,9 +15,9 @@ public class BatchTest extends TestBase {
         BatchScript script = new BatchScript();
         try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
             try (var tx = kvs.beginTransaction().await()) {
-                assertThrows(UnsupportedOperationException.class,
-                        () -> kvs.batch(tx, script).await());
+                assertThrows(UnsupportedOperationException.class, () -> kvs.batch(tx, script).await());
                 kvs.rollback(tx).await();
             }
         }
-    }}
+    }
+}
