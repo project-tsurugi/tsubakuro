@@ -193,7 +193,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -250,7 +250,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -289,7 +289,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -401,7 +401,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -440,7 +440,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -564,7 +564,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -603,7 +603,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -993,7 +993,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await().close());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1038,7 +1038,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1111,7 +1111,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1156,7 +1156,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1176,7 +1176,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var result = future.get();
-            assertEquals(result.getDiagnosticCode().getCodeNumber(), SqlServiceCode.ERR_UNKNOWN.getCodeNumber());
+            assertEquals(result.getDiagnosticCode().getCodeNumber(), SqlServiceCode.SQL_SERVICE_EXCEPTION.getCodeNumber());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1214,7 +1214,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1251,7 +1251,7 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
-            assertEquals(SqlServiceCode.ERR_UNKNOWN, error.getDiagnosticCode());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
         }
         assertFalse(wire.hasRemaining());
     }

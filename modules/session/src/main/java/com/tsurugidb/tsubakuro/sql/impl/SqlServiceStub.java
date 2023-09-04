@@ -128,7 +128,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (Begin): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Begin.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources);
             transactionImpl.setCloseTimeout(closeTimeout);
@@ -166,7 +166,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (commit): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -202,7 +202,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (rollback): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -243,7 +243,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (prepare): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Prepare.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
@@ -281,7 +281,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (dispose prepared statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -329,7 +329,7 @@ public class SqlServiceStub implements SqlService {
 
             case ERROR:
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
 
             case RESULT_NOT_SET:
                 break; // not recognized
@@ -368,7 +368,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (describe table): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.DescribeTable.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return new TableMetadataAdapter(detailResponse.getSuccess());
         }
@@ -404,7 +404,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (execute (prepared) statement): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -457,7 +457,7 @@ public class SqlServiceStub implements SqlService {
                 var detailResponse = message.getResultOnly();
                 if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                     var errorResponse = detailResponse.getError();
-                    throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
                 return;
             }
@@ -571,7 +571,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (batch): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.Batch.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -620,7 +620,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (execute load): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
@@ -656,7 +656,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (ListTables): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ListTables.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return new TableListAdapter(detailResponse.getSuccess());
         }
@@ -692,7 +692,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (SearchPath): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.GetSearchPath.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return new SearchPathAdapter(detailResponse.getSuccess());
         }
@@ -729,12 +729,12 @@ public class SqlServiceStub implements SqlService {
             switch (detailResponse.getResultCase()) {
                 case SUCCESS:
                     var response = detailResponse.getSuccess();
-                    return new SqlServiceException(SqlServiceCode.valueOf(response.getStatus()), response.getDetail());
+                    return SqlServiceException.of(SqlServiceCode.valueOf(response.getCode()), response.getDetail());
                 case ERROR_NOT_FOUND:
                     return null;
                 case ERROR:
                     var errorResponse = detailResponse.getError();
-                    throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             throw new IOException("unhandled response in GetErrorInfo");  // never reached
         }
@@ -768,7 +768,7 @@ public class SqlServiceStub implements SqlService {
                     LOG.trace("receive (DisposeTransaction): {}", detailResponse); //$NON-NLS-1$
                     if (SqlResponse.DisposeTransaction.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                         var errorResponse = detailResponse.getError();
-                        throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
                     return null;
                 case RESULT_ONLY:
@@ -776,7 +776,7 @@ public class SqlServiceStub implements SqlService {
                     LOG.trace("receive (ResultOnly): {}", resultOnlyResponse); //$NON-NLS-1$
                     if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(resultOnlyResponse.getResultCase())) {
                         var errorResponse = resultOnlyResponse.getError();
-                        throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
                     return null;
             }
@@ -815,7 +815,7 @@ public class SqlServiceStub implements SqlService {
             LOG.trace("receive (disconnect): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                 var errorResponse = detailResponse.getError();
-                throw new SqlServiceException(SqlServiceCode.valueOf(errorResponse.getStatus()), errorResponse.getDetail());
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             return null;
         }
