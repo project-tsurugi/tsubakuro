@@ -210,6 +210,7 @@ public final class StreamLink extends Link {
                 throw new IOException("socket is already closed");
             }
             outStream.write(header, 0, header.length);
+            outStream.flush();
         }
         LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : "RESULT_SET_BYE_OK"), s); //$NON-NLS-1$
     }
@@ -239,6 +240,7 @@ public final class StreamLink extends Link {
                     outStream.write(frameHeader, 0, frameHeader.length);
                     outStream.write(payload, 0, payload.length);
                 }
+                outStream.flush();
             } catch (IOException e) {
                 channelResponse.setMainResponse(e);
                 return;
