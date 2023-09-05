@@ -12,6 +12,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.impl.KvsServiceStub;
+import com.tsurugidb.tsubakuro.kvs.util.RunManager;
 
 /**
  * Empty message send/receive benchmark
@@ -37,10 +38,10 @@ final class EmptyMessageBench {
 
     private class EmptyMessageLoop implements Callable<Long> {
 
-        private final long loopMsec;
+        private final RunManager mgr;
 
-        EmptyMessageLoop(long loopMsec) {
-            this.loopMsec = loopMsec;
+        EmptyMessageLoop(RunManager mgr) {
+            this.mgr = mgr;
         }
 
         @Override
@@ -48,38 +49,36 @@ final class EmptyMessageBench {
             long nloop = 0;
             try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
                 var service = new KvsServiceStub(session)) {
-                final long loopblock = 10_000L;
-                long msec;
-                Elapse elapse = new Elapse();
-                do {
-                    for (var i = 0; i < loopblock; i++) {
-                        service.request().await();
-                    }
-                    msec = elapse.msec();
-                    nloop += loopblock;
-                } while (msec < loopMsec);
+                mgr.addReadyWorker();
+                mgr.waitUntilWorkerStartTime();
+                while (!mgr.isQuit()) {
+                    service.request().await();
+                    nloop++;
+                }
             }
             return nloop;
         }
     }
 
     private void bench(int numClient, long loopMsec) throws InterruptedException, ExecutionException {
+        RunManager mgr = new RunManager(numClient);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         var clients = new LinkedList<Future<Long>>();
-        Elapse e = new Elapse();
         for (int i = 0; i < numClient; i++) {
-            clients.add(executor.submit(new EmptyMessageLoop(loopMsec)));
+            clients.add(executor.submit(new EmptyMessageLoop(mgr)));
         }
+        mgr.setWorkerStartTime();
+        Thread.sleep(loopMsec);
+        mgr.setQuit();
         long nloopSum = 0;
         for (var future : clients) {
             nloopSum += future.get();
         }
         executor.shutdown();
         //
-        long allMsec = e.msec();
-        double sec = allMsec / 1000.0;
+        double sec = loopMsec / 1000.0;
         long numMsg = 2 * nloopSum; // one loop handles request and response messages
-        System.out.printf("%d,%d,%.1f,%.1f,%.1f", numClient, numMsg, sec, numMsg / sec, sec / numMsg * 1e+6);
+        System.out.printf("%d,%d,%.1f,%.1f,%.3f", numClient, numMsg, sec, numMsg / sec, sec / numMsg * 1e+6);
         System.out.println();
     }
 

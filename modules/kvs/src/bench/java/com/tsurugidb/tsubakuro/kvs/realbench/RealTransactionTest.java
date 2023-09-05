@@ -10,6 +10,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.PutType;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordBuilder;
 import com.tsurugidb.tsubakuro.kvs.bench.RecordInfo;
@@ -27,47 +28,85 @@ public class RealTransactionTest {
     private final Credential credential = NullCredential.INSTANCE;
     private final String tableName;
 
+    private static final ValueType VALUE_TYPE = ValueType.LONG;
+    private static final int VALUE_NUM = 1;
+
+    private static final RecordInfo RECORD_INFO = new RecordInfo(VALUE_TYPE, VALUE_NUM);
+
     RealTransactionTest(String[] args) {
         String name = (args.length > 0 ? args[0] : "ipc:tsurugi");
         LOG.debug("endpoint: {}", name); //$NON-NLS-1$
         this.endpoint = URI.create(name);
-        // this.tableName = "TABLE" + System.currentTimeMillis();
         this.tableName = "TABLE1";
+    }
+
+    private static String sqlValType() {
+        switch (VALUE_TYPE) {
+        case LONG:
+            return "BIGINT";
+        case STRING:
+            return "STRING";
+        default:
+            throw new IllegalArgumentException("NOT SUPPORTED YET: " + VALUE_TYPE.name());
+        }
+    }
+
+    String createTableSql() {
+        String type = sqlValType();
+        StringBuilder sb = new StringBuilder();
+        String sql = String.format("CREATE TABLE %s (%s %s PRIMARY KEY", tableName, RecordBuilder.FIRST_KEY_NAME, type);
+        sb.append(sql);
+        for (int i = RecordBuilder.FIRST_COUMN_INDEX; i < RecordBuilder.FIRST_COUMN_INDEX + VALUE_NUM; i++) {
+            sb.append(", ");
+            String colName = RecordBuilder.VALUE_NAME_PREFIX + i;
+            sb.append(colName);
+            sb.append(" ");
+            sb.append(type);
+        }
+        sb.append(")");
+        return sb.toString();
     }
 
     void initDB() throws Exception {
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var client = SqlClient.attach(session); var tx = client.createTransaction().await()) {
-            {
-                String sql = String.format("CREATE TABLE %s (%s BIGINT PRIMARY KEY, %s BIGINT)", tableName,
-                        RecordBuilder.FIRST_KEY_NAME, RecordBuilder.FIRST_VALUE_NAME);
-                tx.executeStatement(sql).await();
-            }
-            /*
-            {
-                String sql = String.format("INSERT INTO %s (%s,%s) VALUES(%d, %d)", tableName,
-                        RecordBuilder.FIRST_KEY_NAME, RecordBuilder.FIRST_VALUE_NAME, 1, 100);
-                tx.executeStatement(sql).await();
-            }
-            */
+            String sql = createTableSql();
+            System.out.println(sql);
+            tx.executeStatement(sql).await();
             tx.commit().await();
             System.out.println("table " + tableName + " created");
         }
     }
 
+    private static void dumpRecord(com.tsurugidb.tsubakuro.kvs.Record rec) {
+        for (int i = 0; i < rec.size(); i++) {
+            System.err.print(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i).getClass().getSimpleName() + "\t"
+                    + rec.getValue(i));
+            if (VALUE_TYPE == ValueType.LONG) {
+                System.err.printf("\t%016x", rec.getValue(i));
+            }
+            System.err.println();
+        }
+    }
+
     void test() throws Exception {
-        var builder = new RecordBuilder(new RecordInfo(ValueType.LONG, 1));
+        var builder = new RecordBuilder(RECORD_INFO);
         try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
             var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
             var record = builder.makeRecordBuffer();
-            {
-                var rec = record.toRecord();
-                for (int i = 0; i < rec.size(); i++) {
-                    System.err.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i));
-                }
-            }
+            dumpRecord(record.toRecord());
             System.err.println("PUT");
-            int n = kvs.put(tx, tableName, record).await().size();
+            /*
+            int n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
+            System.err.println(n);
+            n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
+            System.err.println(n);
+            */
+            int n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
             System.err.println(n);
             var key = new RecordBuffer();
             var pk = record.toRecord().getValue(0);
@@ -76,13 +115,28 @@ public class RealTransactionTest {
             GetResult get = kvs.get(tx, tableName, key).await();
             System.err.println(get.size());
             for (var rec : get.asList()) {
-                for (int i = 0; i < rec.size(); i++) {
-                    System.err.println(i + "\t" + rec.getName(i) + "\t" + rec.getValue(i));
-                }
+                dumpRecord(rec);
             }
             System.err.println("REMOVE " + pk);
             n = kvs.remove(tx, tableName, key).await().size();
             System.err.println(n);
+            // n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
+            // System.err.println(n);
+            System.err.println("COMMIT");
+            kvs.commit(tx).await();
+        }
+    }
+
+    void testGet() throws Exception {
+        try (var session = SessionBuilder.connect(endpoint).withCredential(credential).create();
+            var kvs = KvsClient.attach(session); var tx = kvs.beginTransaction().await()) {
+            var key = new RecordBuffer();
+            key.add("key1", Long.valueOf(1));
+            GetResult get = kvs.get(tx, tableName, key).await();
+            System.err.println(get.size());
+            for (var rec : get.asList()) {
+                dumpRecord(rec);
+            }
             System.err.println("COMMIT");
             kvs.commit(tx).await();
         }
@@ -98,8 +152,9 @@ public class RealTransactionTest {
      */
     public static void main(String[] args) throws Exception {
         RealTransactionTest app = new RealTransactionTest(args);
-        //app.initDB();
+        // app.initDB();
         app.test();
+        //app.testGet();
     }
 
 }

@@ -19,14 +19,28 @@ import com.tsurugidb.tsubakuro.kvs.impl.KvsService;
 import com.tsurugidb.tsubakuro.kvs.impl.TransactionHandleImpl;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 class KvsServiceStubForBench implements KvsService {
 
     private long systemId = System.currentTimeMillis();
 
     private final RecordBuilder recBuilder;
+    private final long waitLoop;
 
-    KvsServiceStubForBench(RecordInfo info) {
+    KvsServiceStubForBench(RecordInfo info, long waitLoop) {
         this.recBuilder = new RecordBuilder(info);
+        this.waitLoop = waitLoop;
+    }
+
+    @SuppressFBWarnings(value = {"UC_USELESS_VOID_METHOD"}, justification = "just for benchmark use, not for production use")
+    @SuppressWarnings("EmptyBlock")
+    private void replyWait() {
+        for (long i = 0; i < waitLoop; i++) {
+            // loop to wait
+            // NOTE: Thead.sleep(millisec, nanosec) calls Thread.sleep(millisec)
+            // ignore UC_USELESS_VOID_METHOD of spotbugs
+        }
     }
 
     @Override
@@ -41,16 +55,19 @@ class KvsServiceStubForBench implements KvsService {
 
     @Override
     public FutureResponse<TransactionHandle> send(@Nonnull KvsRequest.Begin request) throws IOException {
+        replyWait();
         return FutureResponse.returns(new TransactionHandleImpl(systemId++));
     }
 
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Commit request) throws IOException {
+        replyWait();
         return FutureResponse.returns(null);
     }
 
     @Override
     public FutureResponse<GetResult> send(@Nonnull KvsRequest.Get request) throws IOException {
+        replyWait();
         var records = new LinkedList<KvsData.Record>();
         for (int i = 0; i < request.getKeysCount(); i++) {
             records.add(recBuilder.makeKvsDataRecord());
@@ -61,12 +78,14 @@ class KvsServiceStubForBench implements KvsService {
 
     @Override
     public FutureResponse<PutResult> send(@Nonnull KvsRequest.Put request) throws IOException {
+        replyWait();
         var result = new PutResultImpl(request.getRecordsCount());
         return FutureResponse.returns(result);
     }
 
     @Override
     public FutureResponse<RemoveResult> send(@Nonnull KvsRequest.Remove request) throws IOException {
+        replyWait();
         var result = new RemoveResultImpl(request.getKeysCount());
         return FutureResponse.returns(result);
     }

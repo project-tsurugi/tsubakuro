@@ -8,27 +8,41 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import com.tsurugidb.tsubakuro.kvs.impl.KvsClientImpl;
+import com.tsurugidb.tsubakuro.kvs.util.RunManager;
+import com.tsurugidb.tsubakuro.kvs.ycsb.Constants;
 
 /**
  * Simple transaction benchmark of KvsClient without real connection.
  */
 final class TransactionBench {
 
-    private static final int DEFUALT_RUN_SEC = 30;
+    private final LinkedList<Integer> numClients = new LinkedList<>();
+    private final long warmupMsec;
+    private final long runningMsec;
+    private final long waitLoop;
 
-    private final boolean bFullBench;
-    private final long minRunMsec;
+    private static final ValueType DEFAULT_VALUE_TYPE = ValueType.LONG;
+    private static final int DEFAULT_VALUE_NUM = 1;
+    private static final RecordInfo DEFAULT_RECORD_INFO = new RecordInfo(DEFAULT_VALUE_TYPE, DEFAULT_VALUE_NUM);
 
     private TransactionBench(String[] args) {
-        this.bFullBench = (args.length > 0 && args[0].equals("full"));
-        this.minRunMsec = (bFullBench ? DEFUALT_RUN_SEC : 10) * 1000L;
+        for (var s : args[0].split(",")) {
+            this.numClients.add(Integer.parseInt(s));
+        }
+        this.warmupMsec = Long.parseLong(args[1]) * 1000L;
+        this.runningMsec = Long.parseLong(args[2]) * 1000L;
+        this.waitLoop = Long.parseLong(args[3]);
+        System.out.println("numClients=" + args[0] + ", warmupSec=" + (warmupMsec / 1000) + ", runningSec="
+                + (runningMsec / 1000) + ", waitLoop=" + waitLoop);
     }
 
     private class SimpleTransaction implements Callable<TxStatus> {
 
+        private final RunManager mgr;
         private final RecordInfo info;
 
-        SimpleTransaction(RecordInfo info) {
+        SimpleTransaction(RunManager mgr, RecordInfo info) {
+            this.mgr = mgr;
             this.info = info;
         }
 
@@ -37,94 +51,72 @@ final class TransactionBench {
             var status = new TxStatus();
             var recBuilder = new RecordBuilder(info);
             var table = "TABLE1";
-            var service = new KvsServiceStubForBench(info);
-            final int loopblock = 10_000;
+            var service = new KvsServiceStubForBench(info, waitLoop);
+            long numTx = 0;
             try (var kvs = new KvsClientImpl(service)) {
-                Elapse elapse = new Elapse();
-                long msec;
-                do {
-                    for (var i = 0; i < loopblock; i++) {
-                        var handle = kvs.beginTransaction().await();
-                        long n = kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
+                mgr.addReadyWorker();
+                mgr.waitUntilWorkerStartTime();
+                while (!mgr.isQuit()) {
+                    var handle = kvs.beginTransaction().await();
+                    long n = 0;
+                    for (int i = 0; i < Constants.OPS_PER_TX; i += 2) {
+                        n = kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
                         n += kvs.put(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                        n += kvs.get(handle, table, recBuilder.makeRecordBuffer()).await().size();
-                        status.addNumRecord(n);
-                        kvs.commit(handle).await();
                     }
-                    status.addNumLoop(loopblock);
-                    msec = elapse.msec();
-                } while (msec < minRunMsec);
-                status.setElapseMsec(msec);
+                    status.addNumRecord(n);
+                    kvs.commit(handle).await();
+                    numTx++;
+                }
             }
+            status.addNumLoop(numTx);
             return status;
         }
 
     }
 
-    private void bench(int nclient, RecordInfo info) throws InterruptedException, ExecutionException {
+    private void bench(int nclient, long runMsec, RecordInfo info) throws InterruptedException, ExecutionException {
         System.out.printf("%d,%s,%d", nclient, info.type().toString(), info.num());
         System.out.printf(",%d", new RecordBuilder(info).makeRecordBuffer().toRecord().size());
         //
+        RunManager mgr = new RunManager(nclient);
         ExecutorService executor = Executors.newFixedThreadPool(nclient);
         var clients = new LinkedList<Future<TxStatus>>();
         TxStatus allStatus = new TxStatus();
-        Elapse e = new Elapse();
         for (int i = 0; i < nclient; i++) {
-            clients.add(executor.submit(new SimpleTransaction(info)));
+            clients.add(executor.submit(new SimpleTransaction(mgr, info)));
         }
+        mgr.setWorkerStartTime();
+        Thread.sleep(runMsec);
+        mgr.setQuit();
         for (var future : clients) {
             var status = future.get();
             allStatus.addNumLoop(status.getNumLoop());
             allStatus.addNumRecord(status.getNumRecord());
-            allStatus.addElapseMsec(status.getElapseMsec());
         }
         executor.shutdown();
         //
-        long allMsec = e.msec();
-        double sec = allMsec / 1000.0;
+        double sec = runMsec / 1000.0;
         long allNloop = allStatus.getNumLoop();
         long allNrec = allStatus.getNumRecord();
-        System.out.printf(",%d,%d,%.1f,%.1f,%.2f", allNloop, allNrec, sec, allNloop / sec, 1e+6 * sec / allNloop);
+        double usecTx = 1e+6 * sec / allNloop;
+        System.out.printf(",%d,%d,%.1f,%.1f,%.3f,%.3f", allNloop, allNrec, sec, allNloop / sec, usecTx,
+                usecTx / Constants.OPS_PER_TX);
         System.out.println();
     }
 
     private static void showCSVheader() {
-        System.out.println("# nclient, valType, nvalue/rec, ncolumn/rec, numTx, numRec, elapseSec, tx/sec, usec/tx");
+        System.out.println(
+                "# nclient, valType, nvalue/rec, ncolumn/rec, numTx, numRec, elapseSec, tx/sec, usec/tx, usec/op");
     }
 
-    private void fullBench() throws InterruptedException, ExecutionException {
-        showCSVheader();
-        final int[] clientNums = { 1, 2, 4, 8, 16, 32, 64, 100 };
-        // NOTE: first nvalue=1 is for warming up (JIT compile etc.).
-        // use second nvalue=1 performance data for benchmark result.
-        final int[] nvalues = { 1, 1, 10, 100 };
-        for (var clientNum : clientNums) {
-            for (var type : ValueType.values()) {
-                for (var nvalue : nvalues) {
-                    bench(clientNum, new RecordInfo(type, nvalue));
-                }
-            }
-        }
-    }
-
-    private void shortBench() throws InterruptedException, ExecutionException {
-        showCSVheader();
-        final int[] clientNums = { 1, 2, 4, 8, 16, 32, 64, 100 };
-        // NOTE: first nvalue=1 is for warming up (JIT compile etc.).
-        // use second nvalue=1 performance data for benchmark result.
-        final int[] nvalues = { 1, 1 };
-        for (var clientNum : clientNums) {
-            for (var nvalue : nvalues) {
-                bench(clientNum, new RecordInfo(ValueType.LONG, nvalue));
-            }
-        }
+    private void warmup() throws Exception {
+        bench(1, warmupMsec, DEFAULT_RECORD_INFO);
     }
 
     private void bench() throws Exception {
-        if (bFullBench) {
-            fullBench();
-        } else {
-            shortBench();
+        showCSVheader();
+        for (var clientNum : numClients) {
+            bench(clientNum, runningMsec, DEFAULT_RECORD_INFO);
         }
     }
 
@@ -135,11 +127,14 @@ final class TransactionBench {
      *        not specified.
      */
     public static void main(String[] args) {
-        if (args.length > 0 && args[0].contains("help")) {
-            System.err.println("Usage: java TransactionBench {short|full} {mock|ipc|stream}");
+        if (args.length < 4) {
+            System.err.println("Usage: java TransactionBench num_client(s) warmup_sec running_sec reply_wait_msec");
+            System.err.println("\tex: java TransactionBench 1 10 60 30");
+            System.err.println("\tex: java TransactionBench 1,2,4,8 10 30 20");
         }
         TransactionBench app = new TransactionBench(args);
         try {
+            app.warmup();
             app.bench();
         } catch (Exception e) {
             e.printStackTrace();
