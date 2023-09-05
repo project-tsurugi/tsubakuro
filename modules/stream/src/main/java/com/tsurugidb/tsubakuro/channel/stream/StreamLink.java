@@ -1,7 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.stream;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
+import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
@@ -29,7 +29,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 
 public final class StreamLink extends Link {
     private Socket socket;
-    private DataOutputStream outStream;
+    private BufferedOutputStream outStream;
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
     private final Lock lock = new ReentrantLock();
@@ -56,7 +56,8 @@ public final class StreamLink extends Link {
 
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
-        this.outStream = new DataOutputStream(socket.getOutputStream());
+        this.socket.setTcpNoDelay(true);
+        this.outStream = new BufferedOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
         this.helloResponse.set(null);
         send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
