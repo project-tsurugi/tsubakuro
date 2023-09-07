@@ -177,6 +177,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_destroyN
 
     if (swc != nullptr) {
         if (swc->is_deletable()) {
+            swc->get_request_wire().disconnect();
             delete swc;
         }
     }
@@ -284,10 +285,11 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWir
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
     if (rwc != nullptr) {
-        session_wire_container* envelope = rwc->get_envelope();
-        if (envelope != nullptr) {
-            if (envelope->dispose_resultset_wire(rwc)) {
-                delete envelope;
+        session_wire_container* swc = rwc->get_envelope();
+        if (swc != nullptr) {
+            if (swc->dispose_resultset_wire(rwc)) {
+                swc->get_request_wire().disconnect();
+                delete swc;
             } 
         }
     }

@@ -67,6 +67,8 @@ public class SqlServiceStub implements SqlService {
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
+    private boolean resourcesClosed = false;
+
     /**
      * Creates a new instance.
      * @param session the current session
@@ -132,7 +134,13 @@ public class SqlServiceStub implements SqlService {
             }
             var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources);
             transactionImpl.setCloseTimeout(closeTimeout);
-            return resources.register(transactionImpl);
+            synchronized (resources) {
+                if (resourcesClosed) {
+                    transactionImpl.close();
+                    throw new IOException("session already closed");
+                }
+                return resources.register(transactionImpl);
+            }
         }
     }
 
@@ -247,7 +255,13 @@ public class SqlServiceStub implements SqlService {
             }
             var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
-            return resources.register(preparedStatementImpl);
+            synchronized (resources) {
+                if (resourcesClosed) {
+                    preparedStatementImpl.close();
+                    throw new IOException("session already closed");
+                }
+                return resources.register(preparedStatementImpl);
+            }
         }
     }
 
@@ -511,7 +525,13 @@ public class SqlServiceStub implements SqlService {
                 }
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName, request);
                 resultSetImpl.setCloseTimeout(closeTimeout);
-                return resources.register(resultSetImpl);
+                synchronized (resources) {
+                    if (resourcesClosed) {
+                        resultSetImpl.close();
+                        throw new IOException("session already closed");
+                    }
+                    return resources.register(resultSetImpl);
+                }
             }
         }
 
@@ -830,7 +850,10 @@ public class SqlServiceStub implements SqlService {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
-        resources.close();
+        synchronized (resources) {
+            resources.close();
+            resourcesClosed = true;
+        }
         session.remove(this);
     }
 
