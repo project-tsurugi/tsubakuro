@@ -25,9 +25,6 @@ class RecordTest {
         assertThrows(IndexOutOfBoundsException.class, () -> {
             record.getValue(0);
         });
-        assertThrows(IllegalArgumentException.class, () -> {
-            record.getValue(KEY1);
-        });
     }
 
     @Test
@@ -38,9 +35,53 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
-        assertThrows(IllegalArgumentException.class, () -> {
-            record.getInt(KEY1);
+        assertEquals(value, record.getValue(KEY1));
+        assertEquals(true, record.isNull(KEY1));
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            record.getValue(1);
         });
+        assertThrows(IllegalArgumentException.class, () -> {
+            record.isNull(KEY2);
+        });
+        String[] keys = {KEY1, KEY2};
+        for (var key : keys) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getBoolean(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getInt(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getLong(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getFloat(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getDouble(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getCharacter(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getDecimal(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getDate(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getTimeOfDay(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getTimePoint(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getTimeOfDayWithTimeZone(key);
+            });
+            assertThrows(IllegalArgumentException.class, () -> {
+                record.getTimePointWithTimeZone(key);
+            });
+        }
     }
 
     @Test
@@ -51,6 +92,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getBoolean(KEY1));
         assertThrows(IndexOutOfBoundsException.class, () -> {
             record.getValue(1);
@@ -71,7 +113,11 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getInt(KEY1));
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            record.getValue(1);
+        });
         assertThrows(IllegalArgumentException.class, () -> {
             record.getLong(KEY1);
         });
@@ -85,7 +131,11 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getLong(KEY1));
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            record.getValue(1);
+        });
         assertThrows(IllegalArgumentException.class, () -> {
             record.getInt(KEY1);
         });
@@ -93,13 +143,17 @@ class RecordTest {
 
     @Test
     void floatRecord() throws Exception {
-        final float value = 1234.4f;
+        final float value = 1234.56f;
         var recBuffer = new RecordBuffer();
         recBuffer.add(KEY1, value);
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getFloat(KEY1));
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            record.getValue(1);
+        });
         assertThrows(IllegalArgumentException.class, () -> {
             record.getDouble(KEY1);
         });
@@ -107,12 +161,13 @@ class RecordTest {
 
     @Test
     void doubleRecord() throws Exception {
-        final double value = 1234.4;
+        final double value = 1234.5678;
         var recBuffer = new RecordBuffer();
         recBuffer.add(KEY1, value);
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getDouble(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getFloat(KEY1);
@@ -127,6 +182,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getDecimal(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getLong(KEY1);
@@ -141,6 +197,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getCharacter(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getInt(KEY1);
@@ -165,6 +222,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         checkOctet(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         checkOctet(value, record.getOctet(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getCharacter(KEY1);
@@ -179,6 +237,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getDate(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getTimeOfDay(KEY1);
@@ -187,12 +246,13 @@ class RecordTest {
 
     @Test
     void timeOfDayRecord() throws Exception {
-        final LocalTime value = LocalTime.of(12, 34, 56);
+        final LocalTime value = LocalTime.of(12, 34, 56, 123456789);
         var recBuffer = new RecordBuffer();
         recBuffer.add(KEY1, value);
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getTimeOfDay(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getDate(KEY1);
@@ -201,12 +261,13 @@ class RecordTest {
 
     @Test
     void timePointRecord() throws Exception {
-        final LocalDateTime value = LocalDateTime.of(2023, 5, 22, 12, 34, 56);
+        final LocalDateTime value = LocalDateTime.of(2023, 5, 22, 12, 34, 56, 123456789);
         var recBuffer = new RecordBuffer();
         recBuffer.add(KEY1, value);
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getTimePoint(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getDate(KEY1);
@@ -222,6 +283,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getTimeOfDayWithTimeZone(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getTimeOfDay(KEY1);
@@ -237,6 +299,7 @@ class RecordTest {
         var record = recBuffer.toRecord();
         assertEquals(1, record.size());
         assertEquals(value, record.getValue(0));
+        assertEquals(false, record.isNull(KEY1));
         assertEquals(value, record.getTimePointWithTimeZone(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getTimeOfDayWithTimeZone(KEY1);
