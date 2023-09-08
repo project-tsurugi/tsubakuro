@@ -96,6 +96,13 @@ public class DataTypesTest extends TestBase {
     }
 
     @Test
+    public void zeroDecimalTest() throws Exception {
+        final BigDecimal key1 = new BigDecimal("0");
+        final BigDecimal value1 = new BigDecimal("0");
+        checkDataType("decimal", Values.of(key1), Values.of(value1));
+    }
+
+    @Test
     public void decimalTest() throws Exception {
         final BigDecimal key1 = new BigDecimal("1234");
         final BigDecimal value1 = new BigDecimal("5678");
