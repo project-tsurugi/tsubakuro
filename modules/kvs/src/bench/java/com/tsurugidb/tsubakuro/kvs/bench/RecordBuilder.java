@@ -71,6 +71,7 @@ public class RecordBuilder {
         }
         v += MAX_CLIENT_ID;
     }
+
     /**
      * Creates a new dummy record.
      * @return a dummy record
@@ -87,5 +88,19 @@ public class RecordBuilder {
 
     KvsData.Record makeKvsDataRecord() {
         return makeRecordBuffer().toRecord().getEntity();
+    }
+
+    /**
+     * Creates a new primary key record from a record with values.
+     * @param record a record with primary key and values created by makeRecordBuffer()
+     * @return a primary key record
+     */
+    public static RecordBuffer makeKeyRecord(RecordBuffer record) {
+        var entity = record.toRecord().getEntity();
+        var keyName = entity.getNames(0);
+        var keyValue = entity.getValues(0);
+        var key = new RecordBuffer();
+        key.add(keyName, keyValue);
+        return key;
     }
 }

@@ -12,7 +12,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
-import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.util.RunManager;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 
@@ -62,9 +61,7 @@ final class RealTransactionBench {
                 while (!mgr.isQuit()) {
                     try (var handle = kvs.beginTransaction().await()) {
                         var record = recBuilder.makeRecordBuffer();
-                        var key = new RecordBuffer();
-                        var r = record.toRecord();
-                        key.add(r.getName(0), r.getValue(0));
+                        var key = RecordBuilder.makeKeyRecord(record);
                         kvs.put(handle, tableName, record).await();
                         kvs.get(handle, tableName, key).await();
                         kvs.get(handle, tableName, key).await();

@@ -31,6 +31,19 @@ class RecordTest {
     }
 
     @Test
+    void nullValueRecord() throws Exception {
+        final Object value = null;
+        var recBuffer = new RecordBuffer();
+        recBuffer.addNull(KEY1);
+        var record = recBuffer.toRecord();
+        assertEquals(1, record.size());
+        assertEquals(value, record.getValue(0));
+        assertThrows(IllegalArgumentException.class, () -> {
+            record.getInt(KEY1);
+        });
+    }
+
+    @Test
     void booleanRecord() throws Exception {
         final Boolean value = Boolean.TRUE;
         var recBuffer = new RecordBuffer();
@@ -131,19 +144,6 @@ class RecordTest {
         assertEquals(value, record.getCharacter(KEY1));
         assertThrows(IllegalArgumentException.class, () -> {
             record.getInt(KEY1);
-        });
-    }
-
-    @Test
-    void nullStringRecord() throws Exception {
-        final String value = null;
-        var recBuffer = new RecordBuffer();
-        recBuffer.add(KEY1, value);
-        var record = recBuffer.toRecord();
-        assertEquals(1, record.size());
-        assertEquals(value, record.getValue(0));
-        assertThrows(IllegalArgumentException.class, () -> {
-            assertEquals(value, record.getCharacter(KEY1));
         });
     }
 
