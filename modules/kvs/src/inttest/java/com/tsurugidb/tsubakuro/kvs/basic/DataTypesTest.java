@@ -16,7 +16,7 @@ import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.Values;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class DataTypesTest extends TestBase {
+class DataTypesTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + DataTypesTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
@@ -31,7 +31,7 @@ public class DataTypesTest extends TestBase {
         assertEquals(value1, record.getEntity().getValues(idxValue));
     }
 
-    private void checkPutGet(KvsData.Value key1, KvsData.Value value1) throws Exception {
+    private static void checkPutGet(KvsData.Value key1, KvsData.Value value1) throws Exception {
         RecordBuffer buffer = new RecordBuffer();
         try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
             try (var tx = kvs.beginTransaction().await()) {

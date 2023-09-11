@@ -12,7 +12,7 @@ import com.tsurugidb.tsubakuro.kvs.Record;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class PutMultiValuesTest extends TestBase {
+class PutMultiValuesTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + PutMultiValuesTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
@@ -25,7 +25,7 @@ public class PutMultiValuesTest extends TestBase {
         createTable(TABLE_NAME, schema);
     }
 
-    private void checkRecord(Record record, long key1, long value1, long value2) throws Exception {
+    private static void checkRecord(Record record, long key1, long value1, long value2) throws Exception {
         final int idxKey = 0; // TODO maybe change
         final int idxValue1 = 1;
         final int idxValue2 = 2;

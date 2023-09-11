@@ -8,7 +8,7 @@ import com.tsurugidb.tsubakuro.kvs.BatchScript;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class BatchTest extends TestBase {
+class BatchTest extends TestBase {
 
     @Test
     public void notSupportedYet() throws Exception {

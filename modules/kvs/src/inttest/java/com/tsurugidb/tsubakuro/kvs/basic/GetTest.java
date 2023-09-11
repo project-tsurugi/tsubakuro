@@ -11,7 +11,7 @@ import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class GetTest extends TestBase {
+class GetTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + GetTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
@@ -25,7 +25,6 @@ public class GetTest extends TestBase {
     @Test
     public void invalidRequests() throws Exception {
         final long key1 = 1L;
-        final long value1 = 100L;
         RecordBuffer key = new RecordBuffer();
         try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
             // COLUMN_TYPE_MISMATCH

@@ -2,16 +2,13 @@ package com.tsurugidb.tsubakuro.kvs.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.LinkedList;
-
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
-import com.tsurugidb.tsubakuro.kvs.TransactionOption;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class RollbackTest extends TestBase {
+class RollbackTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + RollbackTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";

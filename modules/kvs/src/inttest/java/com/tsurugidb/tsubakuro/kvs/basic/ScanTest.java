@@ -10,7 +10,7 @@ import com.tsurugidb.tsubakuro.kvs.ScanBound;
 import com.tsurugidb.tsubakuro.kvs.ScanType;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class ScanTest extends TestBase {
+class ScanTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + ScanTest.class.getSimpleName();
 

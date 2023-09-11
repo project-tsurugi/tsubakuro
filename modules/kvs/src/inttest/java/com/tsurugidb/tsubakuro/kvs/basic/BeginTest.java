@@ -125,5 +125,4 @@ class BeginTest extends TestBase {
         }
     }
 
-    // TODO write preserves etc.
 }

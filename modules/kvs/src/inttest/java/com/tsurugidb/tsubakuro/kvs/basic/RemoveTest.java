@@ -11,7 +11,7 @@ import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class RemoveTest extends TestBase {
+class RemoveTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + RemoveTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
