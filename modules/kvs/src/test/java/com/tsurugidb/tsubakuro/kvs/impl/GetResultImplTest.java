@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 
-public class GetResultImplTest {
+class GetResultImplTest {
 
     @Test
     void emptyRecord() throws Exception {
