@@ -1,7 +1,8 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
 import java.net.URI;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -20,14 +21,16 @@ import com.tsurugidb.tsubakuro.kvs.util.RunManager;
 final class EmptyMessageBench {
 
     private final URI endpoint;
-    private final LinkedList<Integer> numClients = new LinkedList<>();
+    private final List<Integer> numClients;
     private final long warmupMsec;
     private final long runningMsec;
     private final Credential credential = NullCredential.INSTANCE;
 
     private EmptyMessageBench(String[] args) {
         this.endpoint = URI.create(args[0]);
-        for (var s : args[1].split(",")) {
+        var nums = args[1].split(",");
+        this.numClients = new ArrayList<Integer>(nums.length);
+        for (var s : nums) {
             this.numClients.add(Integer.parseInt(s));
         }
         this.warmupMsec = Long.parseLong(args[2]) * 1000L;
@@ -63,7 +66,7 @@ final class EmptyMessageBench {
     private void bench(int numClient, long loopMsec) throws InterruptedException, ExecutionException {
         RunManager mgr = new RunManager(numClient);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
-        var clients = new LinkedList<Future<Long>>();
+        var clients = new ArrayList<Future<Long>>(numClient);
         for (int i = 0; i < numClient; i++) {
             clients.add(executor.submit(new EmptyMessageLoop(mgr)));
         }

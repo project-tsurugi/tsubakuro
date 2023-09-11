@@ -1,7 +1,8 @@
 package com.tsurugidb.tsubakuro.kvs.ycsb;
 
 import java.net.URI;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -41,7 +42,7 @@ public class YCSBlikeBenchmark {
     private void createTables() throws Exception {
         int numTable = Constants.USE_SAME_TABLE ? 1 : Integer.parseInt(numClients[0]);
         ExecutorService executor = Executors.newFixedThreadPool(numTable);
-        LinkedList<Future<Void>> futures = new LinkedList<>();
+        List<Future<Void>> futures = new ArrayList<>(numTable);
         try {
             for (int i = 0; i < numTable; i++) {
                 futures.add(executor.submit(new CreateTableWorker(endpoint, i)));
@@ -100,7 +101,7 @@ public class YCSBlikeBenchmark {
     }
 
     private void bench(int numClient, int rratio) {
-        var clients = new LinkedList<Future<Long>>();
+        var clients = new ArrayList<Future<Long>>(numClient);
         ExecutorService executor = Executors.newFixedThreadPool(numClient);
         // System.err.println(numClient + " threads start");
         long sumTx = 0;

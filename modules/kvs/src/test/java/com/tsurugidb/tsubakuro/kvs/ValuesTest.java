@@ -10,7 +10,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -144,7 +144,7 @@ class ValuesTest {
     void timeOfDayWithTimeZoneValue() throws Exception {
         var builder = KvsData.Value.newBuilder();
         final var time = LocalTime.of(12, 34, 56);
-        var list = new LinkedList<OffsetTime>();
+        var list = new ArrayList<OffsetTime>(ZONE_OFFSET_LIST.size());
         for (var zone : ZONE_OFFSET_LIST) {
             list.add(OffsetTime.of(time, zone));
         }
@@ -160,7 +160,7 @@ class ValuesTest {
     void timePointWithTimeZoneValue() throws Exception {
         var builder = KvsData.Value.newBuilder();
         final var time = LocalDateTime.of(2023, 5, 22, 12, 34, 56);
-        var list = new LinkedList<OffsetDateTime>();
+        var list = new ArrayList<OffsetDateTime>(ZONE_OFFSET_LIST.size());
         for (var zone : ZONE_OFFSET_LIST) {
             list.add(OffsetDateTime.of(time, zone));
         }

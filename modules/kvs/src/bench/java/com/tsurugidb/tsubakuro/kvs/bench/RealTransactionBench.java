@@ -1,7 +1,8 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
 import java.net.URI;
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -26,7 +27,7 @@ final class RealTransactionBench {
     private final boolean bFullBench;
     private final URI endpoint;
     private final boolean useSameTable;
-    private final LinkedList<String> tableNames = new LinkedList<>();
+    private final List<String> tableNames = new ArrayList<>();
     private final long minRunMsec;
 
     private RealTransactionBench(String[] args) {
@@ -99,7 +100,7 @@ final class RealTransactionBench {
         System.out.printf(",%d", new RecordBuilder(info).makeRecordBuffer().toRecord().size());
         //
         ExecutorService executor = Executors.newFixedThreadPool(nclient);
-        var clients = new LinkedList<Future<TxStatus>>();
+        var clients = new ArrayList<Future<TxStatus>>(nclient);
         TxStatus allStatus = new TxStatus();
         RunManager mgr = new RunManager(nclient);
         for (int i = 0; i < nclient; i++) {

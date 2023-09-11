@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -16,7 +17,7 @@ import com.tsurugidb.tsubakuro.kvs.ycsb.Constants;
  */
 final class TransactionBench {
 
-    private final LinkedList<Integer> numClients = new LinkedList<>();
+    private final List<Integer> numClients;
     private final long warmupMsec;
     private final long runningMsec;
     private final long waitLoop;
@@ -26,7 +27,9 @@ final class TransactionBench {
     private static final RecordInfo DEFAULT_RECORD_INFO = new RecordInfo(DEFAULT_VALUE_TYPE, DEFAULT_VALUE_NUM);
 
     private TransactionBench(String[] args) {
-        for (var s : args[0].split(",")) {
+        var nums = args[0].split(",");
+        this.numClients = new ArrayList<Integer>(nums.length);
+        for (var s : nums) {
             this.numClients.add(Integer.parseInt(s));
         }
         this.warmupMsec = Long.parseLong(args[1]) * 1000L;
@@ -80,7 +83,7 @@ final class TransactionBench {
         //
         RunManager mgr = new RunManager(nclient);
         ExecutorService executor = Executors.newFixedThreadPool(nclient);
-        var clients = new LinkedList<Future<TxStatus>>();
+        var clients = new ArrayList<Future<TxStatus>>(nclient);
         TxStatus allStatus = new TxStatus();
         for (int i = 0; i < nclient; i++) {
             clients.add(executor.submit(new SimpleTransaction(mgr, info)));
