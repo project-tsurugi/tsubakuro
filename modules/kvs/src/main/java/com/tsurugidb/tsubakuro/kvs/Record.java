@@ -118,7 +118,8 @@ public class Record {
      * @throws IllegalArgumentException if the record doesn't have the name
      */
     public boolean isNull(@Nonnull String name) {
-        return getValue(name) == null;
+        var value = getKvsDataValue(name);
+        return value.getValueCase() == ValueCase.VALUE_NOT_SET;
     }
 
     private static String valueCase2name(KvsData.Value.ValueCase vc) {
@@ -172,8 +173,10 @@ public class Record {
      * Returns the boolean value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code BOOL}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code BOOL}
      */
     public boolean getBoolean(@Nonnull String name) {
         final ValueCase vc = ValueCase.BOOLEAN_VALUE;
@@ -188,8 +191,10 @@ public class Record {
      * Returns the integer value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code INT}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code INT}
      */
     public int getInt(@Nonnull String name) {
         final ValueCase vc = ValueCase.INT4_VALUE;
@@ -204,8 +209,10 @@ public class Record {
      * Returns the long value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code BIGINT}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code BIGINT}
      */
     public long getLong(@Nonnull String name) {
         final ValueCase vc = ValueCase.INT8_VALUE;
@@ -220,8 +227,10 @@ public class Record {
      * Returns the float value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code FLOAT}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code FLOAT}
      */
     public float getFloat(@Nonnull String name) {
         final ValueCase vc = ValueCase.FLOAT4_VALUE;
@@ -236,8 +245,10 @@ public class Record {
      * Returns the double value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code DOUBLE}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code DOUBLE}
      */
     public double getDouble(@Nonnull String name) {
         final ValueCase vc = ValueCase.FLOAT8_VALUE;
@@ -252,10 +263,12 @@ public class Record {
      * Returns the BigDecimal value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code DECIMAL}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code DECIMAL}
      */
-    public BigDecimal getDecimal(@Nonnull String name) {
+    public @Nonnull BigDecimal getDecimal(@Nonnull String name) {
         final ValueCase vc = ValueCase.DECIMAL_VALUE;
         var value = getKvsDataValue(name);
         if (value.getValueCase() == vc) {
@@ -268,10 +281,13 @@ public class Record {
      * Returns the String value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code CHAR} or {@code VARCHAR}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code CHAR} nor
+     *         {@code VARCHAR}
      */
-    public @Nullable String getCharacter(@Nonnull String name) {
+    public @Nonnull String getCharacter(@Nonnull String name) {
         final ValueCase vc = ValueCase.CHARACTER_VALUE;
         var value = getKvsDataValue(name);
         if (value.getValueCase() == vc) {
@@ -284,8 +300,11 @@ public class Record {
      * Returns the octet value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code BINARY} or {@code VARBINARY}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code BINARY} or
+     *         {@code VARBINARY}
      */
     public @Nonnull byte[] getOctet(@Nonnull String name) {
         final ValueCase vc = ValueCase.OCTET_VALUE;
@@ -300,10 +319,12 @@ public class Record {
      * Returns the date value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code DATE}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code DATE}
      */
-    public LocalDate getDate(@Nonnull String name) {
+    public @Nonnull LocalDate getDate(@Nonnull String name) {
         final ValueCase vc = ValueCase.DATE_VALUE;
         var value = getKvsDataValue(name);
         if (value.getValueCase() == vc) {
@@ -316,10 +337,12 @@ public class Record {
      * Returns the time of day value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code TIME}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code TIME}
      */
-    public LocalTime getTimeOfDay(@Nonnull String name) {
+    public @Nonnull LocalTime getTimeOfDay(@Nonnull String name) {
         final ValueCase vc = ValueCase.TIME_OF_DAY_VALUE;
         var value = getKvsDataValue(name);
         if (value.getValueCase() == vc) {
@@ -332,10 +355,12 @@ public class Record {
      * Returns the time point value of the column of the specified name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code TIMEPOINT}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not {@code TIMEPOINT}
      */
-    public LocalDateTime getTimePoint(@Nonnull String name) {
+    public @Nonnull LocalDateTime getTimePoint(@Nonnull String name) {
         final ValueCase vc = ValueCase.TIME_POINT_VALUE;
         var value = getKvsDataValue(name);
         if (value.getValueCase() == vc) {
@@ -349,8 +374,11 @@ public class Record {
      * name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code TIME WITH TIMEZONE}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not
+     *         {@code TIME WITH TIMEZONE}
      */
     public @Nonnull OffsetTime getTimeOfDayWithTimeZone(@Nonnull String name) {
         final ValueCase vc = ValueCase.TIME_OF_DAY_WITH_TIME_ZONE_VALUE;
@@ -366,8 +394,11 @@ public class Record {
      * name.
      * @param name name of the column
      * @return the value
-     * @throws IllegalArgumentException if the record doesn't have the name or the
-     *         value isn't {@code TIMEPOINT WITH TIMEZONE}
+     * @throws IllegalArgumentException the record doesn't have the column of the
+     *         name
+     * @throws IllegalArgumentException the value is {@code NULL}
+     * @throws IllegalArgumentException the value type is not
+     *         {@code TIMEPOINT WITH TIMEZONE}
      */
     public @Nonnull OffsetDateTime getTimePointWithTimeZone(@Nonnull String name) {
         final ValueCase vc = ValueCase.TIME_POINT_WITH_TIME_ZONE_VALUE;
@@ -385,7 +416,7 @@ public class Record {
      * @throws IndexOutOfBoundsException if the position is out of bounds
      * @see #size()
      */
-    public String getName(int position) {
+    public @Nonnull String getName(int position) {
         return entity.getNames(position);
     }
 
@@ -393,8 +424,22 @@ public class Record {
      * Returns the entity of this record.
      * @return the entity
      */
-    public KvsData.Record getEntity() {
+    public @Nonnull KvsData.Record getEntity() {
         return entity;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || !(o instanceof Record)) {
+            return false;
+        }
+        var other = (Record) o;
+        return this.entity.equals(other.entity);
+    }
+
+    @Override
+    public int hashCode() {
+        return entity.hashCode();
     }
 
     @Override
