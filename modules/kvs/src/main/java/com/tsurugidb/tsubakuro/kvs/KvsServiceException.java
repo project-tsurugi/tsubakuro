@@ -29,8 +29,8 @@ public class KvsServiceException extends ServerException {
 
     private static String buildMessage(@Nonnull KvsServiceCode code, @Nullable String message) {
         Objects.requireNonNull(code);
-        if (message == null) {
-            return code.getStructuredCode();
+        if (message == null || message.isEmpty()) {
+            return String.format("%s: %s", code.getStructuredCode(), code.name());
         }
         return String.format("%s: %s", code.getStructuredCode(), message); //$NON-NLS-1$
     }
