@@ -275,13 +275,13 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<RecordCursor> send(@Nonnull KvsRequest.Scan request) throws IOException {
         // TODO
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public FutureResponse<BatchResult> send(@Nonnull KvsRequest.Batch request) throws IOException {
         // TODO
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     static class RequestProcessor implements MainResponseProcessor<Void> {

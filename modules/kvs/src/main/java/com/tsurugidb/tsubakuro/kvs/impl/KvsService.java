@@ -28,7 +28,7 @@ public interface KvsService extends ServerResource {
      * @throws IllegalArgumentException if the transaction handle is not supported
      */
     default KvsTransaction.Handle extract(@Nonnull TransactionHandle handle) {
-        throw new UnsupportedOperationException(String.valueOf(handle));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -40,7 +40,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<TransactionHandle> send(@Nonnull KvsRequest.Begin request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -51,7 +51,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<Void> send(@Nonnull KvsRequest.Commit request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -62,7 +62,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<Void> send(@Nonnull KvsRequest.Rollback request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -73,7 +73,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<Void> send(@Nonnull KvsRequest.CloseTransaction request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
 
@@ -86,7 +86,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<GetResult> send(@Nonnull KvsRequest.Get request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -98,7 +98,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<PutResult> send(@Nonnull KvsRequest.Put request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -110,7 +110,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<RemoveResult> send(@Nonnull KvsRequest.Remove request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -122,7 +122,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<RecordCursor> send(@Nonnull KvsRequest.Scan request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -134,7 +134,7 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<BatchResult> send(@Nonnull KvsRequest.Batch request) throws IOException {
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     /**
