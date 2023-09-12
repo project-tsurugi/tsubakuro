@@ -41,7 +41,9 @@ public class KvsClientImpl implements KvsClient {
      */
     public static KvsClientImpl attach(@Nonnull Session session) {
         Objects.requireNonNull(session);
-        return new KvsClientImpl(new KvsServiceStub(session));
+        var service = new KvsServiceStub(session);
+        session.put(service);
+        return new KvsClientImpl(service);
     }
 
     /**
@@ -245,6 +247,9 @@ public class KvsClientImpl implements KvsClient {
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        service.close();
+        // FIXME close underlying resources (e.g. ongoing transactions)
+        if (service != null) {
+            service.close();
+        }
     }
 }

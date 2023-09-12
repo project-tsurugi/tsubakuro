@@ -30,6 +30,7 @@ import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * An implementation of {@link KvsService} communicate to the KVS service.
@@ -298,8 +299,14 @@ public class KvsServiceStub implements KvsService {
     }
 
     @Override
-    public void close() throws ServerException, IOException, InterruptedException {
-        session.close();
+    public void setCloseTimeout(Timeout timeout) {
+        resources.setCloseTimeout(timeout);
     }
 
+    @Override
+    public void close() throws ServerException, IOException, InterruptedException {
+        LOG.trace("closing underlying resources"); //$NON-NLS-1$
+        resources.close();
+        session.remove(this);
+    }
 }
