@@ -39,9 +39,6 @@ message Response {
         // rollback transaction command.
         Rollback rollback = 13;
 
-        // rollback transaction command.
-        CloseTransaction close_transaction = 14;
-
         // GET record command.
         Get get = 21;
 
@@ -56,6 +53,12 @@ message Response {
 
         // batch command.
         Batch batch = 31;
+       
+        // GetErrorInfo command. 
+        GetErrorInfo get_error_info = 41;
+       
+        // DisposeTransaction command.
+        DisposeTransaction dispose_transaction = 42;
     }
 }
 
@@ -95,20 +98,6 @@ message Commit {
 
 // rollback transaction
 message Rollback {
-    reserved 1 to 10;
-
-    // the response body.
-    oneof result {
-        // request is successfully completed.
-        Void success = 12;
-
-        // error was occurred.
-        Error error = 11;
-    }
-}
-
-// close transaction
-message CloseTransaction {
     reserved 1 to 10;
 
     // the response body.
@@ -224,4 +213,25 @@ message Scan {
     reserved 1 to 10;
 
     // FIXME
+}
+
+// GetErrorInfo operation
+message GetErrorInfo {
+    reserved 1 to 10;
+
+    // FIXME
+}
+
+// DisposeTransaction operation
+message DisposeTransaction {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 12;
+
+        // error was occurred.
+        Error error = 11;
+    }
 }

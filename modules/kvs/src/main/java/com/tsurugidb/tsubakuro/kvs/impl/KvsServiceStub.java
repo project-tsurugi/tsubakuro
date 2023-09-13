@@ -166,34 +166,6 @@ public class KvsServiceStub implements KvsService {
                 new RollbackProcessor().asResponseProcessor());
     }
 
-    static class CloseTransactionProcessor implements MainResponseProcessor<Void> {
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCloseTransaction();
-            LOG.trace("receive: {}", message); //$NON-NLS-1$
-            switch (message.getResultCase()) {
-            case SUCCESS:
-                return null;
-
-            case ERROR:
-                throw newError(message.getError());
-
-            case RESULT_NOT_SET:
-                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
-            }
-            throw new AssertionError(); // may not occur
-        }
-    }
-
-    @Override
-    public FutureResponse<Void> send(@Nonnull KvsRequest.CloseTransaction request) throws IOException {
-        LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID,
-                toDelimitedByteArray(KvsRequest.Request.newBuilder().setCloseTransaction(request).build()),
-                new CloseTransactionProcessor().asResponseProcessor());
-    }
-
     static class GetProcessor implements MainResponseProcessor<GetResult> {
         @Override
         public GetResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -296,6 +268,39 @@ public class KvsServiceStub implements KvsService {
     public FutureResponse<Void> request() throws IOException {
         return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
                 new RequestProcessor().asResponseProcessor());
+    }
+
+    @Override
+    public FutureResponse<KvsServiceException> send(@Nonnull KvsRequest.GetErrorInfo request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    static class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
+
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getDisposeTransaction();
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case ERROR:
+                throw newError(message.getError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> send(@Nonnull KvsRequest.DisposeTransaction request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(SERVICE_ID,
+                toDelimitedByteArray(KvsRequest.Request.newBuilder().setDisposeTransaction(request).build()),
+                new DisposeTransactionProcessor().asResponseProcessor());
     }
 
     @Override

@@ -54,7 +54,9 @@ class KvsClientImplTest {
         KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
             @Override
             public FutureResponse<Void> send(KvsRequest.Commit request) throws IOException {
-                assertEquals(KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED, request.getType());
+                assertEquals(KvsRequest.CommitStatus.COMMIT_STATUS_UNSPECIFIED, request.getNotificationType());
+                // NOTE assume default value of AutoDispose is true
+                assertEquals(true, request.getAutoDispose());
                 assertEquals(123, request.getTransactionHandle().getSystemId());
                 return FutureResponse.returns(null);
             }

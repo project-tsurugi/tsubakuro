@@ -9,6 +9,7 @@ import com.tsurugidb.kvs.proto.KvsTransaction;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.BatchResult;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.PutResult;
 import com.tsurugidb.tsubakuro.kvs.RecordCursor;
 import com.tsurugidb.tsubakuro.kvs.RemoveResult;
@@ -134,6 +135,28 @@ public interface KvsService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<BatchResult> send(@Nonnull KvsRequest.Batch request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code GetErrorInfo} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<KvsServiceException> send(@Nonnull KvsRequest.GetErrorInfo request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code DisposeTransaction} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<Void> send(@Nonnull KvsRequest.DisposeTransaction request) throws IOException {
         throw new UnsupportedOperationException();
     }
 

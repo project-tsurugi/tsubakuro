@@ -71,25 +71,9 @@ public class KvsClientImpl implements KvsClient {
         var handle = service.extract(transaction);
         var builder = KvsRequest.Commit.newBuilder()
                 .setTransactionHandle(handle)
-                .setType(convert(behavior));
+                .setNotificationType(BatchScript.convert(behavior))
+                .setAutoDispose(true);
         return service.send(builder.build());
-    }
-
-    private static KvsRequest.Commit.Type convert(CommitType behavior) {
-        assert behavior != null;
-        switch (behavior) {
-        case UNSPECIFIED:
-            return KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED;
-        case ACCEPTED:
-            return KvsRequest.Commit.Type.ACCEPTED;
-        case AVAILABLE:
-            return KvsRequest.Commit.Type.AVAILABLE;
-        case STORED:
-            return KvsRequest.Commit.Type.STORED;
-        case PROPAGATED:
-            return KvsRequest.Commit.Type.PROPAGATED;
-        }
-        throw new IllegalArgumentException(String.valueOf(behavior));
     }
 
     @Override
