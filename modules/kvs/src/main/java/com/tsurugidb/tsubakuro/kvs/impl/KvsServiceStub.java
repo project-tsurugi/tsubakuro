@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
@@ -30,7 +31,6 @@ import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
-import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * An implementation of {@link KvsService} communicate to the KVS service.
@@ -47,6 +47,8 @@ public class KvsServiceStub implements KvsService {
     private final Session session;
 
     private final ServerResourceHolder resources = new ServerResourceHolder();
+
+    private final ConcurrentHashMap<Long, TransactionHandleImpl> sysid2txMap = new ConcurrentHashMap<>();
 
     /**
      * Creates a new instance.
@@ -79,10 +81,23 @@ public class KvsServiceStub implements KvsService {
     public KvsTransaction.Handle extract(@Nonnull TransactionHandle handle) {
         if (handle instanceof TransactionHandleImpl) {
             var imp = (TransactionHandleImpl) handle;
-            var builder = KvsTransaction.Handle.newBuilder().setSystemId(imp.getSystemId());
-            return builder.build();
+            return imp.getHandle();
         }
         throw new AssertionError(); // may not occur
+    }
+
+    private TransactionHandleImpl makeTransaction(long systemId) {
+        var tx = new TransactionHandleImpl(systemId, this, resources);
+        sysid2txMap.put(systemId, tx);
+        return tx;
+    }
+
+    private TransactionHandleImpl findTransaction(long systemId) {
+        return sysid2txMap.get(systemId);
+    }
+
+    private void removeTransaction(long systemId) {
+        sysid2txMap.remove(systemId);
     }
 
     class BeginProcessor implements MainResponseProcessor<TransactionHandle> {
@@ -93,8 +108,8 @@ public class KvsServiceStub implements KvsService {
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
-                var tranHandle = message.getSuccess().getTransactionHandle();
-                return resources.register(new TransactionHandleImpl(tranHandle.getSystemId()));
+                var systemId = message.getSuccess().getTransactionHandle().getSystemId();
+                return makeTransaction(systemId);
 
             case ERROR:
                 throw newError(message.getError());
@@ -114,13 +129,26 @@ public class KvsServiceStub implements KvsService {
                 new BeginProcessor().asResponseProcessor());
     }
 
-    static class CommitProcessor implements MainResponseProcessor<Void> {
+    class CommitProcessor implements MainResponseProcessor<Void> {
+
+        private final KvsRequest.Commit request;
+
+        CommitProcessor(KvsRequest.Commit request) {
+            this.request = request;
+        }
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCommit();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
+                var systemId = request.getTransactionHandle().getSystemId();
+                var tx = findTransaction(systemId);
+                if (request.getAutoDispose()) {
+                    tx.setDisposed();
+                    removeTransaction(systemId);
+                }
                 return null;
 
             case ERROR:
@@ -136,8 +164,12 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Commit request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
+        var tx = findTransaction(request.getTransactionHandle().getSystemId());
+        if (tx != null) {
+            tx.setCommitCalled();
+        }
         return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setCommit(request).build()),
-                new CommitProcessor().asResponseProcessor());
+                new CommitProcessor(request).asResponseProcessor());
     }
 
     static class RollbackProcessor implements MainResponseProcessor<Void> {
@@ -162,6 +194,10 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Rollback request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
+        var tx = findTransaction(request.getTransactionHandle().getSystemId());
+        if (tx != null) {
+            tx.setRollbackCalled();
+        }
         return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRollback(request).build()),
                 new RollbackProcessor().asResponseProcessor());
     }
@@ -298,14 +334,10 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.DisposeTransaction request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
+        removeTransaction(request.getTransactionHandle().getSystemId());
         return session.send(SERVICE_ID,
                 toDelimitedByteArray(KvsRequest.Request.newBuilder().setDisposeTransaction(request).build()),
                 new DisposeTransactionProcessor().asResponseProcessor());
-    }
-
-    @Override
-    public void setCloseTimeout(Timeout timeout) {
-        resources.setCloseTimeout(timeout);
     }
 
     @Override
