@@ -219,7 +219,17 @@ message Scan {
 message GetErrorInfo {
     reserved 1 to 10;
 
-    // FIXME
+    // the response body.
+    oneof result {
+      // operation was successfully completed and error information was found.
+      Error success = 11;
+
+      // operation was successfully completed but error information was absent.
+      Void error_not_found = 12;
+
+      // engine error occurred while the retrieving existing error information.
+      Error error = 13;
+  }
 }
 
 // DisposeTransaction operation
