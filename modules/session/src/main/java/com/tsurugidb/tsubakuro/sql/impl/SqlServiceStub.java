@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,6 +160,11 @@ public class SqlServiceStub implements SqlService {
 
     static class TransactionCommitProcessor implements MainResponseProcessor<Void> {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+        private final TransactionImpl transaction;
+
+        TransactionCommitProcessor(@Nullable TransactionImpl transaction) {
+            this.transaction = transaction;
+        }
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -176,8 +182,23 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
+            if (transaction != null) {
+                transaction.notifyCommitSuccess();
+            }
             return null;
         }
+    }
+
+    FutureResponse<Void> send(
+            @Nonnull SqlRequest.Commit request, @Nonnull TransactionImpl transaction) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (commit): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(SqlRequest.Request.newBuilder()
+                    .setCommit(request)
+                    .build()),
+                new TransactionCommitProcessor(transaction).asResponseProcessor());
     }
 
     @Override
@@ -190,7 +211,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setCommit(request)
                     .build()),
-                new TransactionCommitProcessor().asResponseProcessor());
+                new TransactionCommitProcessor(null).asResponseProcessor());
     }
 
     static class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
