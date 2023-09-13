@@ -430,7 +430,7 @@ public class Record {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || !(o instanceof Record)) {
+        if (!(o instanceof Record)) {
             return false;
         }
         var other = (Record) o;
