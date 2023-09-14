@@ -5,6 +5,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tsurugidb.kvs.proto.KvsRequest;
 import com.tsurugidb.kvs.proto.KvsTransaction;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -16,10 +19,13 @@ import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
  */
 public class TransactionHandleImpl implements TransactionHandle {
 
+    static final Logger LOG = LoggerFactory.getLogger(TransactionHandleImpl.class);
+
     private final KvsTransaction.Handle handle;
     private final KvsService service;
     private final ServerResourceHolder holder;
 
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean commitAutoDisposed = new AtomicBoolean(false);
     private final AtomicBoolean commitOrRollbackCalled = new AtomicBoolean(false);
 
@@ -86,10 +92,13 @@ public class TransactionHandleImpl implements TransactionHandle {
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (service == null || commitAutoDisposed.getAndSet(true)) {
-            if (holder != null) {
-                holder.onClosed(this);
-            }
+        if (closed.getAndSet(true)) {
+            return;
+        }
+        if (holder != null) {
+            holder.onClosed(this);
+        }
+        if (service == null || commitAutoDisposed.get()) {
             return;
         }
         try {
@@ -98,11 +107,8 @@ public class TransactionHandleImpl implements TransactionHandle {
                 service.send(builder.build()).await();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.warn("rollback failed during transaction handle closing", e);
         } finally {
-            if (holder != null) {
-                holder.onClosed(this);
-            }
             var builder = KvsRequest.DisposeTransaction.newBuilder().setTransactionHandle(handle);
             service.send(builder.build()).await();
         }

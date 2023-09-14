@@ -38,6 +38,60 @@ class CommitTest extends TestBase {
     }
 
     @Test
+    public void multiCommit() throws Exception {
+        try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, 1L);
+                buffer.add(VALUE_NAME, 100L);
+                kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
+                kvs.commit(tx, CommitType.UNSPECIFIED).await();
+                // the tx is already disposed because commit was called with autoDispose=true always
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.commit(tx, CommitType.UNSPECIFIED).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+            }
+        }
+    }
+
+    @Test
+    public void opsAfterCommit() throws Exception {
+        try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, 1L);
+                buffer.add(VALUE_NAME, 100L);
+                kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
+                kvs.commit(tx, CommitType.UNSPECIFIED).await();
+
+                // the tx is already disposed because commit was called with autoDispose=true always
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.put(tx, TABLE_NAME, buffer, PutType.OVERWRITE).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                //
+                buffer.clear();
+                buffer.add(KEY_NAME, 1L);
+                ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.get(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                //
+                ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.remove(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                //
+                ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.rollback(tx).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+            }
+        }
+    }
+
+    @Test
     public void commitTypes() throws Exception {
         try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
             for (var cmtType : CommitType.values()) {
