@@ -156,7 +156,14 @@ public class KvsServiceStub implements KvsService {
                 return null;
 
             case ERROR:
-                throw newError(message.getError());
+                // TODO delete clearCommitCalled() when commit fully works
+                systemId = request.getTransactionHandle().getSystemId();
+                tx = findTransaction(systemId);
+                var error = message.getError();
+                if (error.getCode() == KvsServiceCode.NOT_IMPLEMENTED.getCodeNumber()) {
+                    tx.clearCommitCalled();
+                }
+                throw newError(error);
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$

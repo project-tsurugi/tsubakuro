@@ -71,6 +71,13 @@ public class TransactionHandleImpl implements TransactionHandle {
         return commitOrRollbackCalled.getAndSet(true);
     }
 
+    boolean clearCommitCalled() {
+        // TODO delete this method when commit fully works
+        // COMMIT called, but failed with NOT_IMPLEMENTED
+        // At close(), calling ROLLBACK and DisposeTx is necessary
+        return commitOrRollbackCalled.getAndSet(false);
+    }
+
     boolean setRollbackCalled() {
         // ROLLBACK called, it maybe succeed or fail
         // At close(), calling ROLLBACK is unnecessary, DisposeTx is necessary

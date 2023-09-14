@@ -53,7 +53,7 @@ class CommitTest extends TestBase {
                         kvs.commit(tx, cmtType).await();
                     });
                     assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                    kvs.rollback(tx);
+                    // rollback and dispose will be called at tx.close()
                 }
             }
         }
