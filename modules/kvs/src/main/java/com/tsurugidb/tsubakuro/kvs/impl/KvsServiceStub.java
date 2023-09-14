@@ -355,7 +355,9 @@ public class KvsServiceStub implements KvsService {
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
         clearTransaction();
-        resources.close();
+        synchronized (resources) {
+            resources.close();
+        }
         session.remove(this);
     }
 }
