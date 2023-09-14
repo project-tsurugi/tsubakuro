@@ -3,7 +3,6 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
@@ -848,24 +847,10 @@ public class SqlServiceStub implements SqlService {
         resources.setCloseTimeout(timeout);
     }
 
-    static class CloseAction implements Consumer<ServerResource> {
-        @Override
-        public void accept(ServerResource r)  {
-            try {
-                r.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (ServerException | InterruptedException e) {
-                throw new UncheckedIOException(new IOException(e));
-            }
-        }
-    }
-
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
         synchronized (resources) {
-            resources.forEach(new CloseAction());
             resources.close();
             resourcesClosed = true;
         }
