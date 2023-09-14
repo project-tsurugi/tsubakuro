@@ -20,23 +20,23 @@ public class TransactionHandleImpl implements TransactionHandle {
     private final KvsService service;
     private final ServerResourceHolder holder;
 
-    private final AtomicBoolean disposed = new AtomicBoolean(false);
+    private final AtomicBoolean commitAutoDisposed = new AtomicBoolean(false);
     private final AtomicBoolean commitOrRollbackCalled = new AtomicBoolean(false);
 
     /**
      * Creates a new instance.
      * @param systemId system Id of this handle got by KvsResponse.Begin
-     * @param service KVS service to call Rollback or DisposeTransaction if necessary
+     * @param service KVS service to call ROLLBACK or DisposeTransaction if necessary at {@link #close()}
      * @param holder handles {@link #close()} was invoked
      */
     public TransactionHandleImpl(long systemId, @Nullable KvsService service, @Nullable ServerResourceHolder holder) {
         var builder = KvsTransaction.Handle.newBuilder().setSystemId(systemId);
         this.handle = builder.build();
         this.holder = holder;
+        this.service = service;
         if (holder != null) {
             holder.register(this);
         }
-        this.service = service;
     }
 
     /**
@@ -59,25 +59,30 @@ public class TransactionHandleImpl implements TransactionHandle {
         return handle;
     }
 
-    boolean setDisposed() {
-        return disposed.getAndSet(true);
+    boolean setCommitAutoDisposed() {
+        // COMMIT succeeded with autoDispose=true
+        // At close(), calling ROLLBACK and DisposeTx is unnecessary
+        return commitAutoDisposed.getAndSet(true);
     }
 
     boolean setCommitCalled() {
+        // COMMIT called, it maybe succeed or fail
+        // At close(), calling ROLLBACK is unnecessary, DisposeTx is necessary
         return commitOrRollbackCalled.getAndSet(true);
     }
 
     boolean setRollbackCalled() {
+        // ROLLBACK called, it maybe succeed or fail
+        // At close(), calling ROLLBACK is unnecessary, DisposeTx is necessary
         return setCommitCalled();
     }
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (service == null) {
-            return;
-        }
-        if (disposed.getAndSet(true)) {
-            // Commit with AutoDispose=true succeeded or already disposed below
+        if (service == null || commitAutoDisposed.getAndSet(true)) {
+            if (holder != null) {
+                holder.onClosed(this);
+            }
             return;
         }
         try {

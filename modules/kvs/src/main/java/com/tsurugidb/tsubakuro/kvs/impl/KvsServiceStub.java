@@ -100,6 +100,10 @@ public class KvsServiceStub implements KvsService {
         sysid2txMap.remove(systemId);
     }
 
+    private void clearTransaction() {
+        sysid2txMap.clear();
+    }
+
     class BeginProcessor implements MainResponseProcessor<TransactionHandle> {
 
         @Override
@@ -146,7 +150,7 @@ public class KvsServiceStub implements KvsService {
                 var systemId = request.getTransactionHandle().getSystemId();
                 var tx = findTransaction(systemId);
                 if (request.getAutoDispose()) {
-                    tx.setDisposed();
+                    tx.setCommitAutoDisposed();
                     removeTransaction(systemId);
                 }
                 return null;
@@ -293,19 +297,6 @@ public class KvsServiceStub implements KvsService {
         throw new UnsupportedOperationException();
     }
 
-    static class RequestProcessor implements MainResponseProcessor<Void> {
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            return null;
-        }
-    }
-
-    @Override
-    public FutureResponse<Void> request() throws IOException {
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
-                new RequestProcessor().asResponseProcessor());
-    }
-
     @Override
     public FutureResponse<KvsServiceException> send(@Nonnull KvsRequest.GetErrorInfo request) throws IOException {
         throw new UnsupportedOperationException();
@@ -340,9 +331,23 @@ public class KvsServiceStub implements KvsService {
                 new DisposeTransactionProcessor().asResponseProcessor());
     }
 
+    static class RequestProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            return null;
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> request() throws IOException {
+        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
+                new RequestProcessor().asResponseProcessor());
+    }
+
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
+        clearTransaction();
         resources.close();
         session.remove(this);
     }
