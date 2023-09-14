@@ -96,32 +96,21 @@ public class RealTransactionTest {
             var record = builder.makeRecordBuffer();
             dumpRecord(record.toRecord());
             System.err.println("PUT");
-            /*
-            int n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
-            System.err.println(n);
-            n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
-            System.err.println(n);
-            n = kvs.put(tx, tableName, record, PutType.IF_PRESENT).await().size();
-            System.err.println(n);
-            n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
-            System.err.println(n);
-            */
             int n = kvs.put(tx, tableName, record, PutType.OVERWRITE).await().size();
             System.err.println(n);
-            var key = new RecordBuffer();
-            var pk = record.toRecord().getValue(0);
-            key.add(record.toRecord().getName(0), pk);
-            System.err.println("GET " + pk);
+            //
+            var key = RecordBuilder.makeKeyRecord(record);
+            var keyValue = key.toRecord().getValue(0);
+            System.err.println("GET " + keyValue);
             GetResult get = kvs.get(tx, tableName, key).await();
             System.err.println(get.size());
             for (var rec : get.asList()) {
                 dumpRecord(rec);
             }
-            System.err.println("REMOVE " + pk);
+            //
+            System.err.println("REMOVE " + keyValue);
             n = kvs.remove(tx, tableName, key).await().size();
             System.err.println(n);
-            // n = kvs.put(tx, tableName, record, PutType.IF_ABSENT).await().size();
-            // System.err.println(n);
             System.err.println("COMMIT");
             kvs.commit(tx).await();
         }

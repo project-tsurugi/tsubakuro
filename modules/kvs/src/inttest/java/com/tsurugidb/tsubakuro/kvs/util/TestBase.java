@@ -1,16 +1,15 @@
 package com.tsurugidb.tsubakuro.kvs.util;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 
+/**
+ * The base class for integration test class.
+ */
 public class TestBase {
 
     private static final String SYSPROP_KVSTEST_ENDPOINT = "tsurugi.kvstest.endpoint";
@@ -22,11 +21,16 @@ public class TestBase {
         System.err.println("endpoint=" + ENDPOINT);
     }
 
-    public Session getNewSession() throws IOException, ServerException, InterruptedException {
+    /**
+     * Retrieves a new session
+     * @return a new session
+     * @throws Exception failed to create a new session
+     */
+    public static Session getNewSession() throws Exception {
         return SessionBuilder.connect(ENDPOINT).withCredential(NullCredential.INSTANCE).create();
     }
 
-    private void dropTable(SqlClient client, String tableName) throws Exception {
+    private static void dropTable(SqlClient client, String tableName) throws Exception {
         try {
             try (var tx = client.createTransaction().await()) {
                 String sql = String.format("DROP TABLE %s", tableName);
@@ -41,12 +45,24 @@ public class TestBase {
         }
     }
 
+    /**
+     * Drop the table.
+     * @param tableName the name of the table
+     * @throws Exception failed to drop the table
+     * @note exception doesn't throw even if the table doesn't exists
+     */
     public void dropTable(String tableName) throws Exception {
         try (var session = getNewSession(); var client = SqlClient.attach(session)) {
             dropTable(client, tableName);
         }
     }
 
+    /**
+     * Creates a new table.
+     * @param tableName the name of the table
+     * @param schema the schema of the table
+     * @throws Exception failed to create a new table
+     */
     public void createTable(String tableName, String schema) throws Exception {
         try (var session = getNewSession(); var client = SqlClient.attach(session)) {
             dropTable(client, tableName);

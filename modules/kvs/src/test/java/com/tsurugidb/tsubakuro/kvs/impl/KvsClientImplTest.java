@@ -4,8 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.ArrayList;
 
 import javax.annotation.Nonnull;
 
@@ -55,7 +54,9 @@ class KvsClientImplTest {
         KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
             @Override
             public FutureResponse<Void> send(KvsRequest.Commit request) throws IOException {
-                assertEquals(KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED, request.getType());
+                assertEquals(KvsRequest.CommitStatus.COMMIT_STATUS_UNSPECIFIED, request.getNotificationType());
+                // NOTE assume default value of AutoDispose is true
+                assertEquals(true, request.getAutoDispose());
                 assertEquals(123, request.getTransactionHandle().getSystemId());
                 return FutureResponse.returns(null);
             }
@@ -91,7 +92,7 @@ class KvsClientImplTest {
         KvsClient client = new KvsClientImpl(new KvsServiceWithExtract() {
             @Override
             public FutureResponse<GetResult> send(KvsRequest.Get request) throws IOException {
-                List<KvsData.Record> records = new LinkedList<>();
+                var records = new ArrayList<KvsData.Record>(1);
                 records.add(buffer.toRecord().getEntity());
                 return FutureResponse.returns(new GetResultImpl(records));
             }

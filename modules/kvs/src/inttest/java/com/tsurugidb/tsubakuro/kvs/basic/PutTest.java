@@ -3,8 +3,6 @@ package com.tsurugidb.tsubakuro.kvs.basic;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.LinkedList;
-
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
@@ -12,10 +10,9 @@ import com.tsurugidb.tsubakuro.kvs.KvsServiceCode;
 import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.PutType;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
-import com.tsurugidb.tsubakuro.kvs.TransactionOption;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-public class PutTest extends TestBase {
+class PutTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + PutTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";

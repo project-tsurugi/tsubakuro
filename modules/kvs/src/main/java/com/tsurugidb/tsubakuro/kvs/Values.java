@@ -167,7 +167,7 @@ public final class Values {
             return toObject(value.getTimePointWithTimeZoneValue());
         case DATETIME_INTERVAL_VALUE:
             // FIXME: impl
-            throw new UnsupportedOperationException(value.getValueCase().toString());
+            throw new UnsupportedOperationException();
         case LIST_VALUE:
             return toObject(value.getListValue());
         case RECORD_VALUE:

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.Nonnull;
 
@@ -47,6 +48,8 @@ public class KvsServiceStub implements KvsService {
 
     private final ServerResourceHolder resources = new ServerResourceHolder();
 
+    private final ConcurrentHashMap<Long, TransactionHandleImpl> sysid2txMap = new ConcurrentHashMap<>();
+
     /**
      * Creates a new instance.
      * @param session the current session
@@ -78,10 +81,27 @@ public class KvsServiceStub implements KvsService {
     public KvsTransaction.Handle extract(@Nonnull TransactionHandle handle) {
         if (handle instanceof TransactionHandleImpl) {
             var imp = (TransactionHandleImpl) handle;
-            var builder = KvsTransaction.Handle.newBuilder().setSystemId(imp.getSystemId());
-            return builder.build();
+            return imp.getHandle();
         }
         throw new AssertionError(); // may not occur
+    }
+
+    private TransactionHandleImpl makeTransaction(long systemId) {
+        var tx = new TransactionHandleImpl(systemId, this, resources);
+        sysid2txMap.put(systemId, tx);
+        return tx;
+    }
+
+    private TransactionHandleImpl findTransaction(long systemId) {
+        return sysid2txMap.get(systemId);
+    }
+
+    private void removeTransaction(long systemId) {
+        sysid2txMap.remove(systemId);
+    }
+
+    private void clearTransaction() {
+        sysid2txMap.clear();
     }
 
     class BeginProcessor implements MainResponseProcessor<TransactionHandle> {
@@ -92,8 +112,8 @@ public class KvsServiceStub implements KvsService {
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
-                var tranHandle = message.getSuccess().getTransactionHandle();
-                return resources.register(new TransactionHandleImpl(tranHandle.getSystemId()));
+                var systemId = message.getSuccess().getTransactionHandle().getSystemId();
+                return makeTransaction(systemId);
 
             case ERROR:
                 throw newError(message.getError());
@@ -113,17 +133,37 @@ public class KvsServiceStub implements KvsService {
                 new BeginProcessor().asResponseProcessor());
     }
 
-    static class CommitProcessor implements MainResponseProcessor<Void> {
+    class CommitProcessor implements MainResponseProcessor<Void> {
+
+        private final KvsRequest.Commit request;
+
+        CommitProcessor(KvsRequest.Commit request) {
+            this.request = request;
+        }
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCommit();
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
+                var systemId = request.getTransactionHandle().getSystemId();
+                var tx = findTransaction(systemId);
+                if (request.getAutoDispose()) {
+                    tx.setCommitAutoDisposed();
+                    removeTransaction(systemId);
+                }
                 return null;
 
             case ERROR:
-                throw newError(message.getError());
+                // TODO delete clearCommitCalled() when commit fully works
+                systemId = request.getTransactionHandle().getSystemId();
+                tx = findTransaction(systemId);
+                var error = message.getError();
+                if (error.getCode() == KvsServiceCode.NOT_IMPLEMENTED.getCodeNumber()) {
+                    tx.clearCommitCalled();
+                }
+                throw newError(error);
 
             case RESULT_NOT_SET:
                 throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
@@ -135,8 +175,12 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Commit request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
+        var tx = findTransaction(request.getTransactionHandle().getSystemId());
+        if (tx != null) {
+            tx.setCommitCalled();
+        }
         return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setCommit(request).build()),
-                new CommitProcessor().asResponseProcessor());
+                new CommitProcessor(request).asResponseProcessor());
     }
 
     static class RollbackProcessor implements MainResponseProcessor<Void> {
@@ -161,36 +205,12 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<Void> send(@Nonnull KvsRequest.Rollback request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
+        var tx = findTransaction(request.getTransactionHandle().getSystemId());
+        if (tx != null) {
+            tx.setRollbackCalled();
+        }
         return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRollback(request).build()),
                 new RollbackProcessor().asResponseProcessor());
-    }
-
-    static class CloseTransactionProcessor implements MainResponseProcessor<Void> {
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getCloseTransaction();
-            LOG.trace("receive: {}", message); //$NON-NLS-1$
-            switch (message.getResultCase()) {
-            case SUCCESS:
-                return null;
-
-            case ERROR:
-                throw newError(message.getError());
-
-            case RESULT_NOT_SET:
-                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
-            }
-            throw new AssertionError(); // may not occur
-        }
-    }
-
-    @Override
-    public FutureResponse<Void> send(@Nonnull KvsRequest.CloseTransaction request) throws IOException {
-        LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID,
-                toDelimitedByteArray(KvsRequest.Request.newBuilder().setCloseTransaction(request).build()),
-                new CloseTransactionProcessor().asResponseProcessor());
     }
 
     static class GetProcessor implements MainResponseProcessor<GetResult> {
@@ -275,13 +295,47 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<RecordCursor> send(@Nonnull KvsRequest.Scan request) throws IOException {
         // TODO
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public FutureResponse<BatchResult> send(@Nonnull KvsRequest.Batch request) throws IOException {
         // TODO
-        throw new UnsupportedOperationException(String.valueOf(request));
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public FutureResponse<KvsServiceException> send(@Nonnull KvsRequest.GetErrorInfo request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    static class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
+
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = KvsResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)).getDisposeTransaction();
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case ERROR:
+                throw newError(message.getError());
+
+            case RESULT_NOT_SET:
+                throw newResultNotSet(message.getClass(), "result"); //$NON-NLS-1$
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> send(@Nonnull KvsRequest.DisposeTransaction request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        removeTransaction(request.getTransactionHandle().getSystemId());
+        return session.send(SERVICE_ID,
+                toDelimitedByteArray(KvsRequest.Request.newBuilder().setDisposeTransaction(request).build()),
+                new DisposeTransactionProcessor().asResponseProcessor());
     }
 
     static class RequestProcessor implements MainResponseProcessor<Void> {
@@ -299,7 +353,11 @@ public class KvsServiceStub implements KvsService {
 
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        session.close();
+        LOG.trace("closing underlying resources"); //$NON-NLS-1$
+        clearTransaction();
+        synchronized (resources) {
+            resources.close();
+        }
+        session.remove(this);
     }
-
 }

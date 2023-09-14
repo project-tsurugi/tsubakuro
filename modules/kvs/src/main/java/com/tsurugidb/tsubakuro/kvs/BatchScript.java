@@ -225,22 +225,28 @@ public class BatchScript {
     public void addCommit(@Nonnull CommitType behavior) {
         Objects.requireNonNull(behavior);
         builder.setCommit(KvsRequest.Commit.newBuilder()
-                .setType(convert(behavior)));
+                .setNotificationType(convert(behavior))
+                .setAutoDispose(true));
     }
 
-    private static KvsRequest.Commit.Type convert(CommitType behavior) {
+    /**
+     * Retrieves CommitStatus corresponds to the CommitType
+     * @param behavior the operation behavior
+     * @return the CommitStatus value corresponds to the behavior
+     */
+    public static KvsRequest.CommitStatus convert(CommitType behavior) {
         assert behavior != null;
         switch (behavior) {
         case UNSPECIFIED:
-            return KvsRequest.Commit.Type.COMMIT_TYPE_UNSPECIFIED;
+            return KvsRequest.CommitStatus.COMMIT_STATUS_UNSPECIFIED;
         case ACCEPTED:
-            return KvsRequest.Commit.Type.ACCEPTED;
+            return KvsRequest.CommitStatus.ACCEPTED;
         case AVAILABLE:
-            return KvsRequest.Commit.Type.AVAILABLE;
+            return KvsRequest.CommitStatus.AVAILABLE;
         case STORED:
-            return KvsRequest.Commit.Type.STORED;
+            return KvsRequest.CommitStatus.STORED;
         case PROPAGATED:
-            return KvsRequest.Commit.Type.PROPAGATED;
+            return KvsRequest.CommitStatus.PROPAGATED;
         }
         throw new IllegalArgumentException(String.valueOf(behavior));
     }

@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.impl;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,7 +17,7 @@ import com.tsurugidb.tsubakuro.kvs.Record;
  */
 public class GetResultImpl implements GetResult {
 
-    private final List<Record> records = new LinkedList<>();
+    private final List<Record> records;
 
     /**
      * Creates a new instance.
@@ -24,6 +25,7 @@ public class GetResultImpl implements GetResult {
      */
     public GetResultImpl(@Nonnull KvsData.Record record) {
         Objects.requireNonNull(record);
+        this.records = new ArrayList<Record>(1);
         this.records.add(new Record(record));
     }
 
@@ -33,8 +35,7 @@ public class GetResultImpl implements GetResult {
      */
     public GetResultImpl(@Nonnull List<KvsData.Record> records) {
         Objects.requireNonNull(records);
-        // since Java 16
-        // this.records.addAll(records.stream().map(r -> new Record(r)).toList());
+        this.records = new ArrayList<Record>(records.size());
         for (var r : records) {
             this.records.add(new Record(r));
         }
@@ -68,7 +69,7 @@ public class GetResultImpl implements GetResult {
 
     @Override
     public List<? extends Record> asList() {
-        return records;
+        return Collections.unmodifiableList(records);
     }
 
 }

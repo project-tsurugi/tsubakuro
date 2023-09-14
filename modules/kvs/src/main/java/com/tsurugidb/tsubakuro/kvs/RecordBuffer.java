@@ -1,10 +1,17 @@
 package com.tsurugidb.tsubakuro.kvs;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
+import com.google.protobuf.ByteString;
 import com.tsurugidb.kvs.proto.KvsData;
 
 /**
@@ -48,20 +55,196 @@ public class RecordBuffer {
     }
 
     /**
-     * Adds a new entry to this buffer.
-     * <p>
-     * This never checks whether or not
-     * </p>
+     * Adds a new entry to this buffer with {@code NULL} value.
+     *
      * @param name the entry name
-     * @param value the entry value, or {@code null} if it represents {@code NULL}
      * @return this
-     * @throws IllegalArgumentException if the input value is not supported for the record entry
      */
-    public RecordBuffer add(@Nonnull String name, @Nullable Object value) {
+    public RecordBuffer addNull(@Nonnull String name) {
         Objects.requireNonNull(name);
         entity.addNames(name);
-        entity.addValues(Values.toValue(value));
+        entity.addValues(KvsData.Value.getDefaultInstance());
         return this;
+    }
+
+    /**
+     * Adds a new entry to this buffer.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull KvsData.Value value) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(value);
+        entity.addNames(name);
+        entity.addValues(value);
+        return this;
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code BOOL} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, boolean value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code INT} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, int value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code BIGINT} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, long value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code FLOAT} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, float value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code DOUBLE} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, double value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code DECIMAL} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull BigDecimal value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code CHAR, VARCHAR} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull String value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code BINARY, VARBINARY} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull byte[] value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code BINARY, VARBINARY} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull ByteString value) {
+        return add(name, Values.ofBinary(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code DATE} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull LocalDate value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code TIME} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull LocalTime value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code TIMESTAMP} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull LocalDateTime value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code TIME WITH TIMEZONE} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull OffsetTime value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with {@code TIMESTAMP WITH TIMEZONE} value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull OffsetDateTime value) {
+        return add(name, Values.of(value));
+    }
+
+    /**
+     * Adds a new entry to this buffer with list value.
+     *
+     * @param name the entry name
+     * @param value the entry value
+     * @return this
+     */
+    public RecordBuffer add(@Nonnull String name, @Nonnull List<?> value) {
+        return add(name, Values.of(value));
     }
 
     /**

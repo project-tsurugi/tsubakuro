@@ -1,7 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.bench;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import javax.annotation.Nonnull;
 
@@ -68,8 +68,9 @@ class KvsServiceStubForBench implements KvsService {
     @Override
     public FutureResponse<GetResult> send(@Nonnull KvsRequest.Get request) throws IOException {
         replyWait();
-        var records = new LinkedList<KvsData.Record>();
-        for (int i = 0; i < request.getKeysCount(); i++) {
+        final var size = request.getKeysCount();
+        var records = new ArrayList<KvsData.Record>(size);
+        for (int i = 0; i < size; i++) {
             records.add(recBuilder.makeKvsDataRecord());
         }
         var result = new GetResultImpl(records);

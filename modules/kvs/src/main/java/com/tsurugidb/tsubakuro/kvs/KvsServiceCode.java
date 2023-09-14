@@ -130,10 +130,6 @@ public enum KvsServiceCode implements DiagnosticCode {
      */
     NOT_AUTHORIZED(2_001),
 
-    /**
-     * Transaction is not active.
-     */
-    TRANSACTION_INACTIVE(10_001),
 
     /**
      * Transaction is aborted by writing out of write preservation, or writing in read only transaction.

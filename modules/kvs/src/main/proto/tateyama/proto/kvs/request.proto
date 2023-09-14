@@ -30,9 +30,6 @@ message Request {
         // rollback transaction command.
         Rollback rollback = 13;
 
-        // rollback transaction command.
-        CloseTransaction close_transaction = 14;
-
         // GET record command.
         Get get = 21;
 
@@ -47,6 +44,12 @@ message Request {
 
         // batch command.
         Batch batch = 31;
+       
+        // GetErrorInfo command. 
+        GetErrorInfo get_error_info = 41;
+       
+        // DisposeTransaction command.
+        DisposeTransaction dispose_transaction = 42;
     }
 }
 
@@ -67,31 +70,30 @@ message Begin {
     transaction.Option transaction_option = 1;
 }
 
+// the transaction commit status.
+enum CommitStatus {
+    // the default commit status (rely on the database settings).
+    COMMIT_STATUS_UNSPECIFIED = 0;
+    // commit operation has accepted, and the transaction will never abort except system errors.
+    ACCEPTED = 10;
+    // commit data has been visible for others.
+    AVAILABLE = 20;
+    // commit data has been saved on the local disk.
+    STORED = 30;
+    // commit data has been propagated to the all suitable nodes.
+    PROPAGATED = 40;
+}
+
 // represents a commit transaction command.
 message Commit {
     // the target transaction handle.
     transaction.Handle transaction_handle = 1;
 
-    // operation behavior.
-    Type type = 3;
+    // response will be returned after reaching the commit status.
+    CommitStatus notification_type = 2;
 
-    // COMMIT operation behavior.
-    enum Type {
-        // the default commit type (rely on the database settings).
-        COMMIT_TYPE_UNSPECIFIED = 0;
-
-        // wait unti the commit operation has accepted.
-        ACCEPTED = 10;
-
-        // wait until the commit data have been visible for others.
-        AVAILABLE = 20;
-
-        // wait until the commit data have been saved on the local disk.
-        STORED = 30;
-
-        // wait until the commit data have been propagated to the all suitable replicas.
-        PROPAGATED = 40;
-    }
+    // dispose the target transaction handle only if notifies a successfully commit to the client.
+    bool auto_dispose = 3;
 }
 
 // represents a rollback transaction command.
@@ -267,4 +269,16 @@ message Batch {
             Remove remove = 3;
         }
     }
+}
+
+// retrieves error information of the transaction.
+message GetErrorInfo {
+    // the target transaction handle.
+    transaction.Handle transaction_handle = 1;
+}
+
+// occurred when the client side transaction handle is disposed.
+message DisposeTransaction {
+    // the target transaction handle.
+    transaction.Handle transaction_handle = 1;
 }

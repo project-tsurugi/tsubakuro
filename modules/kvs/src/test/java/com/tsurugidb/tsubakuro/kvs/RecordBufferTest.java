@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.kvs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 
@@ -31,7 +30,7 @@ class RecordBufferTest {
     @Test
     void singleNull() throws Exception {
         var buffer = new RecordBuffer();
-        buffer.add(KEY1, null);
+        buffer.addNull(KEY1);
         assertEquals(1, buffer.size());
         var record = buffer.toRecord();
         assertEquals(1, record.size());
@@ -68,19 +67,6 @@ class RecordBufferTest {
         buffer.clear();
         assertEquals(0, buffer.size());
         assertEquals(0, buffer.toRecord().size());
-    }
-
-    private static class DontUse {
-        DontUse() {
-        }
-    }
-
-    @Test
-    void illegalValue() throws Exception {
-        var buffer = new RecordBuffer();
-        assertThrows(IllegalArgumentException.class, () -> {
-            buffer.add("key", new DontUse());
-        });
     }
 
 }

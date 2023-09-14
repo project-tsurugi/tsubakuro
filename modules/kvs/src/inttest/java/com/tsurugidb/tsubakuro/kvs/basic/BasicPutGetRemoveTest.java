@@ -2,7 +2,6 @@ package com.tsurugidb.tsubakuro.kvs.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
@@ -11,9 +10,8 @@ import com.tsurugidb.tsubakuro.kvs.Record;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.RemoveType;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
 
-public class BasicPutGetRemoveTest extends TestBase {
+class BasicPutGetRemoveTest extends TestBase {
 
     private static final String TABLE_NAME = "table" + BasicPutGetRemoveTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
@@ -24,7 +22,7 @@ public class BasicPutGetRemoveTest extends TestBase {
         createTable(TABLE_NAME, schema);
     }
 
-    private void checkRecord(Record record, long key1, long value1) throws Exception {
+    private static void checkRecord(Record record, long key1, long value1) throws Exception {
         final int idxKey = 0; // TODO maybe change
         final int idxValue = 1;
         assertEquals(record.getName(idxKey), KEY_NAME);
