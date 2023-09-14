@@ -1,11 +1,12 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-    
+
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
@@ -25,7 +26,8 @@ public final class IpcLink extends Link {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-    
+    private final HashSet<ResultSetWireImpl> resources = new HashSet<>();
+
     public static final byte RESPONSE_NULL = 0;
     public static final byte RESPONSE_PAYLOAD = 1;
     public static final byte RESPONSE_BODYHEAD = 2;
@@ -118,12 +120,20 @@ public final class IpcLink extends Link {
     }
 
     private LinkMessage receive(long timeout) throws IOException, TimeoutException {
-        int slot = awaitNative(wireHandle, timeout);
-        if (slot >= 0) {
-            var info = (byte) getInfoNative(wireHandle);
-            return new LinkMessage(info, receiveNative(wireHandle), slot);
+        rwl.readLock().lock();
+        try {
+            if (closed.get()) {
+                throw new IOException("Link already closed");
+            }
+            int slot = awaitNative(wireHandle, timeout);
+            if (slot >= 0) {
+                var info = (byte) getInfoNative(wireHandle);
+                return new LinkMessage(info, receiveNative(wireHandle), slot);
+            }
+            return null;
+        } finally {
+            rwl.readLock().unlock();
         }
-        return null;
     }
 
     @Override
@@ -133,9 +143,19 @@ public final class IpcLink extends Link {
             if (closed.get()) {
                 throw new IOException("Link already closed");
             }
-            return new ResultSetWireImpl(wireHandle);
+            var rv = new ResultSetWireImpl(wireHandle, this);
+            synchronized (resources) {
+                resources.add(rv);
+            }
+            return rv;
         } finally {
             rwl.readLock().unlock();
+        }
+    }
+
+    public void remove(ResultSetWireImpl resultSetWire) {
+        synchronized (resources) {
+            resources.remove(resultSetWire);
         }
     }
 
@@ -152,6 +172,11 @@ public final class IpcLink extends Link {
         rwl.writeLock().lock();
         try {
             if (!closed.getAndSet(true)) {
+                synchronized (resources) {
+                    for (var e : resources) {
+                        e.close();
+                    }
+                }
                 closeNative(wireHandle);
                 destroyNative(wireHandle);
             }

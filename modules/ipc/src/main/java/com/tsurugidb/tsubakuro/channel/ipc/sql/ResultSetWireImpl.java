@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
 
 /**
  * ResultSetWireImpl type.
@@ -16,7 +17,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
 
-
+    private final IpcLink link;
     private long sessionWireHandle;
     private ByteBufferBackedInput byteBufferBackedInput;
 
@@ -50,6 +51,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                     super.close();
                     closeNative(wireHandle);
                     wireHandle = 0;
+                    link.remove(ResultSetWireImpl.this);
                 }
             }
         }
@@ -68,9 +70,10 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Class constructor, called from FutureResultWireImpl.
      * @param sessionWireHandle the handle of the Wire to which the transaction that created this object belongs
      */
-    public ResultSetWireImpl(long sessionWireHandle) {
+    public ResultSetWireImpl(long sessionWireHandle, IpcLink link) {
         this.sessionWireHandle = sessionWireHandle;
         this.byteBufferBackedInput = null;
+        this.link = link;
     }
 
     /**
@@ -100,6 +103,10 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Close do nothing
      */
     @Override
-    public void close() {
+    public void close() throws IOException {
+        if (byteBufferBackedInput != null) {
+            byteBufferBackedInput.close();
+            byteBufferBackedInput = null;
+        }
     }
 }
