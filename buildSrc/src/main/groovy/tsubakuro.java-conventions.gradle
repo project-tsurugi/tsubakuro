@@ -38,11 +38,6 @@ spotbugsMain {
 spotbugsTest.enabled = false
 checkstyleTest.enabled = false
 
-task testsJar(type: Jar) {
-    classifier 'tests'
-    from sourceSets.test.output
-}
-
 jar {
     manifest.attributes (
         'Build-Timestamp': buildTimestamp,
