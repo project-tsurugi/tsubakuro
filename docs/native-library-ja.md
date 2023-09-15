@@ -17,4 +17,4 @@
 
 * JNI ライブラリのロードに、Java ライブラリと JNI ライブラリのビルドの一貫性を検証し、不整合があればエラー終了する
   * ビルド時の環境変数 `GITHUB_SHA` を一貫性の識別子として利用する
-* 上記のエラーを抑制するには、システムプロパティ `com.tsurugidb.tsubakuro.jniverify=false` を指定する
+* デフォルトではこの検証は無効になっている。有効にするには、システムプロパティ `com.tsurugidb.tsubakuro.jniverify=true` を指定する
