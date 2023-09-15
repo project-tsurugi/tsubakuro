@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,11 +31,13 @@ import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
+import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.Types;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 
 class SqlServiceStubTest {
     private static final String RS_RD = "relation"; //$NON-NLS-1$
@@ -251,6 +256,66 @@ class SqlServiceStubTest {
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
             assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    static class TransactionImplTest extends TransactionImpl {
+        private boolean notified = false;
+        public TransactionImplTest(SqlService service) {
+            super(null, service, null);
+        }
+        boolean isNotified() {
+            return notified;
+        }
+        @Override
+        void notifyCommitSuccess() {
+            notified = true;
+        }
+        @Override
+        public void close() {
+        }
+    }
+
+    @Test
+    void sendCommitSuccessAutoDispose() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+
+        var message = SqlRequest.Commit.newBuilder()
+                .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImplTest(service);
+            var future = service.send(message, transaction);
+        ) {
+            assertDoesNotThrow(() -> future.get());
+            assertTrue(transaction.isNotified());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendCommitEngineErrorAutoDispose() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.Commit.newBuilder()
+                .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImplTest(service);
+            var future = service.send(message, transaction);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+            assertFalse(transaction.isNotified());
         }
         assertFalse(wire.hasRemaining());
     }

@@ -43,6 +43,8 @@ public class TransactionImpl implements Transaction {
     private TimeUnit unit;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
+    private final boolean autoDispose = true;
+    private boolean needDispose = true;
 
     /**
      * Creates a new instance.
@@ -215,6 +217,13 @@ public class TransactionImpl implements Transaction {
         if (cleanuped.getAndSet(true)) {
             throw new IOException("transaction already closed");
         }
+        if (autoDispose && (service instanceof SqlServiceStub)) {
+            return ((SqlServiceStub) service).send(SqlRequest.Commit.newBuilder()
+                    .setTransactionHandle(transaction.getTransactionHandle())
+                    .setNotificationType(status)
+                    .setAutoDispose(true)
+                    .build(), this);
+        }
         return service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .setNotificationType(status)
@@ -274,17 +283,19 @@ public class TransactionImpl implements Transaction {
                             e -> LOG.warn("error occurred while collecting garbage", e),
                             () -> closeHandler.onClosed(this));
                 }
-                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .build())) {
-                    if (timeout == 0) {
-                        futureResponse.get();
-                    } else {
-                        futureResponse.get(timeout, unit);
+                if (needDispose) {
+                    try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                            .setTransactionHandle(transaction.getTransactionHandle())
+                            .build())) {
+                        if (timeout == 0) {
+                            futureResponse.get();
+                        } else {
+                            futureResponse.get(timeout, unit);
+                        }
+                    } catch (TimeoutException e) {
+                        LOG.warn("timeout occurred in the transaction disposal", e);
+                        throw new ResponseTimeoutException(e.getMessage(), e);
                     }
-                } catch (TimeoutException e) {
-                    LOG.warn("timeout occurred in the transaction disposal", e);
-                    throw new ResponseTimeoutException(e.getMessage(), e);
                 }
             }
         }
@@ -306,6 +317,10 @@ public class TransactionImpl implements Transaction {
         return service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
+    }
+
+    void notifyCommitSuccess() {
+        needDispose = false;
     }
 
     // for diagnostic
