@@ -36,6 +36,11 @@ class ResultSetWireTest {
         public void run() {
             byte[] ba = new byte[1024];
             try {
+                try {
+                    Thread.sleep(100);
+                } catch(InterruptedException e) {
+                    // do nothing
+                }
                 writeCount = 0;
                 for (int i = 0; i < COUNT; i++) {
                     server.putRecordsRSL(serverResultSetWire, ba);
@@ -43,7 +48,7 @@ class ResultSetWireTest {
                 }
                 server.eorRSL(serverResultSetWire);
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(100);
                 } catch(InterruptedException e) {
                     // do nothing
                 }
