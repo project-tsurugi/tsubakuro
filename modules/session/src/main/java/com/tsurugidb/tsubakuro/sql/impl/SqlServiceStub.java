@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
@@ -770,6 +771,9 @@ public class SqlServiceStub implements SqlService {
             switch (detailResponse.getResultCase()) {
                 case SUCCESS:
                     var response = detailResponse.getSuccess();
+                    if (response.getCode() == SqlError.Code.TRANSACTION_NOT_FOUND_EXCEPTION) {
+                        return null;
+                    }
                     return SqlServiceException.of(SqlServiceCode.valueOf(response.getCode()), response.getDetail());
                 case ERROR_NOT_FOUND:
                     return null;
