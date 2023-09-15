@@ -55,7 +55,7 @@ public final class NativeLibrary {
     /**
      * The default value of {@link #KEY_PROPERTY_VERIFY_VERSION}.
      */
-    public static final boolean DEFAULT_VERIFY_VERSION = true;
+    public static final boolean DEFAULT_VERIFY_VERSION = false;
 
     private static final boolean REQUIRE_VERIFY_VERSION =
             Optional.ofNullable(System.getProperty(KEY_PROPERTY_VERIFY_VERSION))
