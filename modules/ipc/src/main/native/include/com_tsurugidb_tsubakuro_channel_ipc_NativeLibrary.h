@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 #undef com_tsurugidb_tsubakuro_channel_ipc_NativeLibrary_DEFAULT_VERIFY_VERSION
-#define com_tsurugidb_tsubakuro_channel_ipc_NativeLibrary_DEFAULT_VERIFY_VERSION 1L
+#define com_tsurugidb_tsubakuro_channel_ipc_NativeLibrary_DEFAULT_VERIFY_VERSION 0L
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_NativeLibrary
  * Method:    getNativeLibraryVersionNative
