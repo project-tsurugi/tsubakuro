@@ -250,6 +250,9 @@ public class TransactionImpl implements Transaction {
         if (closed.get()) {
             throw new IOException("transaction already closed");
         }
+        if (!needDispose) {
+            return FutureResponse.returns(null);
+        }
         return service.send(SqlRequest.GetErrorInfo.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
