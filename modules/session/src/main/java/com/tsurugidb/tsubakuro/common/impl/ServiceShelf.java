@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.common.impl;
 
 import java.util.LinkedHashSet;
-import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
