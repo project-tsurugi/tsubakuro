@@ -1,13 +1,12 @@
 name: Tsubakuro-CI
 
-on:
-  push:
-  pull_request:
-  workflow_dispatch:
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   Build:
     runs-on: [self-hosted, docker]
+    permissions:
+      checks: write
     timeout-minutes: 30
     container:
       image: ghcr.io/project-tsurugi/oltp-sandbox:ubuntu-22.04
@@ -23,51 +22,27 @@ jobs:
       JAVA_TOOL_OPTIONS: -Dfile.encoding=UTF8
 
     steps:
-      - id: Setup_Java
-        name: Setup_Java
+      - name: Setup_Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '11'
 
-      - id: Checkout
-        name: Checkout
+      - name: Checkout
         uses: actions/checkout@v3
         with:
-          submodules: recursive
           token: ${{ secrets.GHA_PAT }}
 
-      - id: Checkout_Actions
-        name: Checkout_Actions
-        uses: actions/checkout@v3
-        with:
-          repository: project-tsurugi/tsurugi-github-actions
-          path: .github/actions
-          ref: master
-          submodules: recursive
-          token: ${{ secrets.GHA_PAT }}
-
-      - id: Assemble
-        name: Assemble
+      - name: Assemble
         run: |
           ./gradlew -i clean assemble
 
-      - id: Check
-        name: Check
+      - name: Check
         run: |
           ./gradlew -i check --continue
 
-      - id: Upload_Artifact
-        name: Upload_Artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: libtsubakuro
-          path: modules/ipc/build/native/lib/libtsubakuro.so
-          retention-days: 1
-
-      - id: Generate_Annotations
-        name: Generate_Annotations
-        uses: ./.github/actions/tsurugi-annotations-action
+      - name: Verify
+        uses: project-tsurugi/tsurugi-annotations-action@v1
         if: always()
         with:
           junit_input: '**/build/test-results/**/TEST-*.xml'
@@ -75,35 +50,8 @@ jobs:
           spotbugs_input: '**/build/reports/spotbugs/main/*.xml'
           checkstyle_input: '**/build/reports/checkstyle/main.xml'
 
-      - id: Notify_Slack
-        name: Notify_Slack
-        uses: ./.github/actions/tsurugi-slack-action
-        if: always() && (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        with:
-          kind: 'job-result'
-          channel: 'tsurugi-build'
-          status: ${{ job.status }}
-          step_context: ${{ toJson(steps) }}
-          username: ${{ github.workflow }}
-
   Publish:
     uses: ./.github/workflows/ci-publish.yml
     if: (contains(github.ref, '/tags/') || contains(github.ref, '/heads/master'))
     needs: Build
     secrets: inherit
-
-  Eisen:
-    uses: ./.github/workflows/eisen-integration-test.yml
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-
-  Iceaxe:
-    uses: project-tsurugi/eisen/.github/workflows/iceaxe-dbtest-ipc.yml@master
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-    with:
-      job_name: 'Iceaxe / Test'
