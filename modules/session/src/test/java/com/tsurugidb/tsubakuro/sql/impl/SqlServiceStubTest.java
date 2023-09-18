@@ -269,8 +269,8 @@ class SqlServiceStubTest {
             return notified;
         }
         @Override
-        void notifyCommitSuccess() {
-            notified = true;
+        void notifyCommitSuccess(boolean success) {
+            notified = success;
         }
         @Override
         public void close() {

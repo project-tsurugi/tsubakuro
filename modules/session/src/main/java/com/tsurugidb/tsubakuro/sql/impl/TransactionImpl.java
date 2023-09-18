@@ -8,6 +8,9 @@ import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -44,7 +47,11 @@ public class TransactionImpl implements Transaction {
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     private final boolean autoDispose = true;
-    private boolean needDispose = true;
+    private final Lock lock = new ReentrantLock();
+    private final Condition commitCondition = lock.newCondition();
+    private boolean disposed = false;
+    private boolean committing = false;
+    private int gettigException = 0;
 
     /**
      * Creates a new instance.
@@ -218,11 +225,29 @@ public class TransactionImpl implements Transaction {
             throw new IOException("transaction already closed");
         }
         if (autoDispose && (service instanceof SqlServiceStub)) {
-            return ((SqlServiceStub) service).send(SqlRequest.Commit.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle())
-                    .setNotificationType(status)
-                    .setAutoDispose(true)
-                    .build(), this);
+            lock.lock();
+            try {
+                if (gettigException > 0) {
+                    while (true) {
+                        try {
+                            commitCondition.await();
+                            if (gettigException == 0) {
+                                break;
+                            }
+                        } catch (InterruptedException e) {
+                            throw new IOException(e);
+                        }
+                    }
+                }
+                committing = true;
+                return ((SqlServiceStub) service).send(SqlRequest.Commit.newBuilder()
+                        .setTransactionHandle(transaction.getTransactionHandle())
+                        .setNotificationType(status)
+                        .setAutoDispose(true)
+                        .build(), this);
+            } finally {
+                lock.unlock();
+            }
         }
         return service.send(SqlRequest.Commit.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
@@ -247,15 +272,61 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
-        if (closed.get()) {
-            throw new IOException("transaction already closed");
-        }
-        if (!needDispose) {
-            return FutureResponse.returns(null);
+        if (autoDispose && (service instanceof SqlServiceStub)) {
+            lock.lock();
+            try {
+                if (closed.get()) {
+                    throw new IOException("transaction already closed");
+                }
+                if (committing) {
+                    while (true) {
+                        try {
+                            commitCondition.await();
+                            if (!committing) {
+                                break;
+                            }
+                        } catch (InterruptedException e) {
+                            throw new IOException(e);
+                        }
+                    }
+                }
+                if (disposed) {
+                    return FutureResponse.returns(null);
+                }
+                gettigException++;
+                return ((SqlServiceStub) service).send(SqlRequest.GetErrorInfo.newBuilder()
+                        .setTransactionHandle(transaction.getTransactionHandle())
+                        .build(), this);
+            } finally {
+                lock.unlock();
+            }
         }
         return service.send(SqlRequest.GetErrorInfo.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
+    }
+
+    void notifyCommitSuccess(boolean success) throws InterruptedException {
+        lock.lock();
+        try {
+            disposed = success;
+            committing = false;
+            commitCondition.signalAll();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    void notifyGettingExceptionFinish() throws InterruptedException {
+        lock.lock();
+        try {
+            gettigException--;
+            if (gettigException == 0) {
+                commitCondition.signalAll();
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -286,7 +357,7 @@ public class TransactionImpl implements Transaction {
                             e -> LOG.warn("error occurred while collecting garbage", e),
                             () -> closeHandler.onClosed(this));
                 }
-                if (needDispose) {
+                if (!disposed) {
                     try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
                             .setTransactionHandle(transaction.getTransactionHandle())
                             .build())) {
@@ -320,10 +391,6 @@ public class TransactionImpl implements Transaction {
         return service.send(SqlRequest.Rollback.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
-    }
-
-    void notifyCommitSuccess() {
-        needDispose = false;
     }
 
     // for diagnostic

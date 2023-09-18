@@ -180,11 +180,14 @@ public class SqlServiceStub implements SqlService {
             var detailResponse = detailResponseCache.get();
             LOG.trace("receive (commit): {}", detailResponse); //$NON-NLS-1$
             if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                if (transaction != null) {
+                    transaction.notifyCommitSuccess(false);
+                }
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
             if (transaction != null) {
-                transaction.notifyCommitSuccess();
+                transaction.notifyCommitSuccess(true);
             }
             return null;
         }
@@ -755,12 +758,20 @@ public class SqlServiceStub implements SqlService {
 
     static class GetErrorInfoProcessor implements MainResponseProcessor<SqlServiceException> {
         private final AtomicReference<SqlResponse.GetErrorInfo> detailResponseCache = new AtomicReference<>();
+        private final TransactionImpl transaction;
+
+        GetErrorInfoProcessor(@Nullable TransactionImpl transaction) {
+            this.transaction = transaction;
+        }
 
         @Override
         public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
                 if (!SqlResponse.Response.ResponseCase.GET_ERROR_INFO.equals(response.getResponseCase())) {
+                    if (transaction != null) {
+                        transaction.notifyGettingExceptionFinish();
+                    }
                     // FIXME log error message
                     throw new IOException("response type is inconsistent with the request type");
                 }
@@ -768,6 +779,9 @@ public class SqlServiceStub implements SqlService {
             }
             var detailResponse = detailResponseCache.get();
             LOG.trace("receive (GetErrorInfo): {}", detailResponse); //$NON-NLS-1$
+            if (transaction != null) {
+                transaction.notifyGettingExceptionFinish();
+            }
             switch (detailResponse.getResultCase()) {
                 case SUCCESS:
                     var response = detailResponse.getSuccess();
@@ -785,6 +799,19 @@ public class SqlServiceStub implements SqlService {
         }
     }
 
+    FutureResponse<SqlServiceException> send(
+            @Nonnull SqlRequest.GetErrorInfo request, @Nonnull TransactionImpl transaction) throws IOException {
+        Objects.requireNonNull(request);
+        Objects.requireNonNull(transaction);
+        LOG.trace("send (GetErrorInfo): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(SqlRequest.Request.newBuilder()
+                    .setGetErrorInfo(request)
+                    .build()),
+                new GetErrorInfoProcessor(transaction).asResponseProcessor());
+    }
+
     @Override
     public FutureResponse<SqlServiceException> send(
             @Nonnull SqlRequest.GetErrorInfo request) throws IOException {
@@ -795,7 +822,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(SqlRequest.Request.newBuilder()
                     .setGetErrorInfo(request)
                     .build()),
-                new GetErrorInfoProcessor().asResponseProcessor());
+                new GetErrorInfoProcessor(null).asResponseProcessor());
     }
 
     static class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
