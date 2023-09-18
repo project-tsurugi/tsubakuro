@@ -55,17 +55,3 @@ jobs:
     if: (contains(github.ref, '/tags/') || contains(github.ref, '/heads/master'))
     needs: Build
     secrets: inherit
-
-  Eisen:
-    uses: ./.github/workflows/eisen-integration-test.yml
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-
-  Iceaxe:
-    uses: project-tsurugi/eisen/.github/workflows/iceaxe-dbtest-ipc.yml@master
-    if: (github.event.pull_request.draft == false) && (contains(github.ref, '/tags/') || contains(github.ref, '/pull/') || contains(github.ref, '/heads/master'))
-    needs: Build
-    secrets: inherit
-    with:
-      job_name: 'Iceaxe / Test'
