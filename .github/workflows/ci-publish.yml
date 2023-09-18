@@ -5,6 +5,8 @@ on: [workflow_dispatch, workflow_call]
 jobs:
   Publish:
     runs-on: [self-hosted, docker]
+    permissions:
+      packages: write
     timeout-minutes: 30
     container:
       image: ghcr.io/project-tsurugi/oltp-sandbox:ubuntu-22.04
