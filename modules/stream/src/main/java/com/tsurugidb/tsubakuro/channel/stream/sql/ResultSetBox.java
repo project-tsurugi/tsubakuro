@@ -74,7 +74,13 @@ public class ResultSetBox {
         if (boxes[slot] == null) {
             waitRegistration(slot);
         }
-        boxes[slot].add(writerId, payload);
+        Lock l =  slotLock[slot];
+        l.lock();
+        try {
+            boxes[slot].add(writerId, payload);
+        } finally {
+            l.unlock();
+        }
     }
 
     public void pushBye(int slot) throws IOException {  // for RESPONSE_RESULT_SET_BYE
