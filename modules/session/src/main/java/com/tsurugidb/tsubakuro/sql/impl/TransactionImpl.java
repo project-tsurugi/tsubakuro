@@ -43,7 +43,7 @@ public class TransactionImpl implements Transaction {
     private TimeUnit unit;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final boolean autoDispose = true;
+    private final boolean autoDispose = false;
     private boolean needDispose = true;
 
     /**
