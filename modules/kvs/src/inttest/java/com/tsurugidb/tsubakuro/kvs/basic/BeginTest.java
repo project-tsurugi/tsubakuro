@@ -38,7 +38,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 for (var p : Priority.values()) {
@@ -50,7 +50,7 @@ class BeginTest extends TestBase {
                         kvs.beginTransaction(opt).await();
                     });
                     assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                    System.err.println(ex.getMessage());
+                    System.err.println(getLineNumber() + "\t" + ex.getMessage());
                 }
             }
         }
@@ -65,7 +65,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 for (var p : Priority.values()) {
@@ -77,7 +77,7 @@ class BeginTest extends TestBase {
                         kvs.beginTransaction(opt).await();
                     });
                     assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                    System.err.println(ex.getMessage());
+                    System.err.println(getLineNumber() + "\t" + ex.getMessage());
                 }
             }
             {
@@ -86,7 +86,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 var opt = TransactionOption.forLongTransaction().addWritePreserve("table1").build();
@@ -94,7 +94,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 var opt = TransactionOption.forLongTransaction().addInclusiveReadArea("table1").build();
@@ -102,7 +102,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 var opt = TransactionOption.forLongTransaction().addExclusiveReadArea("table1").build();
@@ -110,7 +110,7 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(opt).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
         }
     }
@@ -123,14 +123,14 @@ class BeginTest extends TestBase {
                     kvs.beginTransaction(TransactionOption.forLongTransaction().build()).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
             {
                 KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
                     kvs.beginTransaction(TransactionOption.forReadOnlyTransaction().build()).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
             }
         }
     }

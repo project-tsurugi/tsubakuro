@@ -37,7 +37,7 @@ class SecondaryIndexTableTest extends TestBase {
                     kvs.put(tx, TABLE_NAME, buffer).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
                 kvs.rollback(tx).await();
             }
             RecordBuffer keyBuffer = new RecordBuffer();
@@ -54,7 +54,7 @@ class SecondaryIndexTableTest extends TestBase {
                     kvs.remove(tx, TABLE_NAME, keyBuffer).await();
                 });
                 assertEquals(KvsServiceCode.NOT_IMPLEMENTED, ex.getDiagnosticCode());
-                System.err.println(ex.getMessage());
+                System.err.println(getLineNumber() + "\t" + ex.getMessage());
                 kvs.rollback(tx).await();
             }
         }

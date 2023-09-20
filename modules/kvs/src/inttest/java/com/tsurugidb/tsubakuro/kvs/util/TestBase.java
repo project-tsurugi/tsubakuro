@@ -88,4 +88,12 @@ public class TestBase {
         }
     }
 
+    /**
+     * retrieves line number of source
+     * @return line number
+     */
+    public static int getLineNumber() {
+        return Thread.currentThread().getStackTrace()[2].getLineNumber();
+    }
+
 }
