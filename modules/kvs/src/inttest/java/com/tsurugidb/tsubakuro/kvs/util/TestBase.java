@@ -74,4 +74,18 @@ public class TestBase {
         }
     }
 
+    /**
+     * Executes SQL statement.
+     * @param sql SQL statement
+     * @throws Exception failed to execute the SQL statement
+     */
+    public void executeStatement(String sql) throws Exception {
+        try (var session = getNewSession(); var client = SqlClient.attach(session)) {
+            try (var tx = client.createTransaction().await()) {
+                tx.executeStatement(sql).await();
+                tx.commit().await();
+            }
+        }
+    }
+
 }
