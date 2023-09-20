@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,49 +12,57 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
-import com.tsurugidb.tsubakuro.kvs.Record;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceCode;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.Values;
 import com.tsurugidb.tsubakuro.kvs.util.TestBase;
 
-class DataTypesTest extends TestBase {
+class NotNullDataTypesTest extends TestBase {
 
-    private static final String TABLE_NAME = "table" + DataTypesTest.class.getSimpleName();
+    private static final String TABLE_NAME = "table" + NotNullDataTypesTest.class.getSimpleName();
     private static final String KEY_NAME = "k1";
     private static final String VALUE_NAME = "v1";
-
-    private static void checkRecord(Record record, KvsData.Value key1, KvsData.Value value1) throws Exception {
-        final int idxKey = 0; // TODO maybe change
-        final int idxValue = 1;
-        assertEquals(KEY_NAME, record.getName(idxKey));
-        assertEquals(VALUE_NAME, record.getName(idxValue));
-        assertEquals(key1, record.getEntity().getValues(idxKey));
-        assertEquals(value1, record.getEntity().getValues(idxValue));
-    }
 
     private static void checkPutGet(KvsData.Value key1, KvsData.Value value1) throws Exception {
         RecordBuffer buffer = new RecordBuffer();
         try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
+            // key: null, value: non-null
             try (var tx = kvs.beginTransaction().await()) {
-                buffer.add(KEY_NAME, key1);
+                buffer.addNull(KEY_NAME);
                 buffer.add(VALUE_NAME, value1);
-                var put = kvs.put(tx, TABLE_NAME, buffer).await();
-                kvs.commit(tx).await();
-                assertEquals(1, put.size());
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.put(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                kvs.rollback(tx).await();
             }
+            // key: null, value: null
+            try (var tx = kvs.beginTransaction().await()) {
+                buffer.addNull(KEY_NAME);
+                buffer.addNull(VALUE_NAME);
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.put(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                kvs.rollback(tx).await();
+            }
+            // key: non-null, value: null
             try (var tx = kvs.beginTransaction().await()) {
                 buffer.clear();
                 buffer.add(KEY_NAME, key1);
-                var get = kvs.get(tx, TABLE_NAME, buffer).await();
-                kvs.commit(tx).await();
-                assertEquals(1, get.size());
-                checkRecord(get.asRecord(), key1, value1);
+                buffer.addNull(VALUE_NAME);
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.put(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(KvsServiceCode.INVALID_ARGUMENT, ex.getDiagnosticCode());
+                kvs.rollback(tx).await();
             }
         }
     }
 
     private static String schema(String typeName) {
-        return String.format("%s %s PRIMARY KEY, %s %s", KEY_NAME, typeName, VALUE_NAME, typeName);
+        return String.format("%s %s PRIMARY KEY, %s %s NOT NULL", KEY_NAME, typeName, VALUE_NAME, typeName);
     }
 
     private void checkDataType(String typeName, KvsData.Value key1, KvsData.Value value1) throws Exception {
