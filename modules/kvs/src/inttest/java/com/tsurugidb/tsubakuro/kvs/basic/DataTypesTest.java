@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -205,7 +206,7 @@ class DataTypesTest extends TestBase {
         // TODO support short fraction part
         System.err.println("TODO: 'short fraction part' should be acceppted?");
         checkPutNG(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")),
-              KvsServiceCode.INVALID_ARGUMENT);
+                KvsServiceCode.INVALID_ARGUMENT);
 //        checkPutGet(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")));
         checkPutGet(Values.of(new BigDecimal("12.30")), Values.of(new BigDecimal("56.70")));
 
@@ -235,6 +236,12 @@ class DataTypesTest extends TestBase {
         final LocalTime key1 = LocalTime.of(12, 34, 56);
         final LocalTime value1 = LocalTime.of(18, 0, 0, 123456789);
         checkDataType("time", Values.of(key1), Values.of(value1));
+        assertThrows(DateTimeException.class, () -> {
+            LocalTime.of(18, 0, 0, -1);
+        });
+        assertThrows(DateTimeException.class, () -> {
+            LocalTime.of(18, 0, 0, 999999999 + 1);
+        });
     }
 
     @Test
