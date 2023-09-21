@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -11,6 +12,7 @@ import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.kvs.proto.KvsData;
+import com.tsurugidb.kvs.proto.KvsData.Value.ValueCase;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.KvsServiceCode;
 import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
@@ -25,13 +27,31 @@ class DataTypesTest extends TestBase {
     private static final String KEY_NAME = "k1";
     private static final String VALUE_NAME = "v1";
 
+    private static BigDecimal convert(KvsData.Value v) {
+        KvsData.Decimal dec = v.getDecimalValue();
+        return new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
+    }
+
+    private static void checkValue(KvsData.Value expected, KvsData.Value value) throws Exception {
+        if (expected.getValueCase() != ValueCase.DECIMAL_VALUE) {
+            assertEquals(expected, value);
+        } else {
+            var expectedDec = convert(expected);
+            var valueDec = convert(value);
+            assertEquals(expectedDec, valueDec);
+            assertEquals(expectedDec.scale(), valueDec.scale());
+            assertEquals(expectedDec.toString(), valueDec.toString());
+            System.err.println(expectedDec + "\t" + valueDec);
+        }
+    }
+
     private static void checkRecord(Record record, KvsData.Value key1, KvsData.Value value1) throws Exception {
         final int idxKey = 0; // TODO maybe change
         final int idxValue = 1;
         assertEquals(KEY_NAME, record.getName(idxKey));
         assertEquals(VALUE_NAME, record.getName(idxValue));
-        assertEquals(key1, record.getEntity().getValues(idxKey));
-        assertEquals(value1, record.getEntity().getValues(idxValue));
+        checkValue(key1, record.getEntity().getValues(idxKey));
+        checkValue(value1, record.getEntity().getValues(idxValue));
     }
 
     private static void checkPutGet(KvsData.Value key1, KvsData.Value value1) throws Exception {
@@ -174,6 +194,33 @@ class DataTypesTest extends TestBase {
         final BigDecimal value1 = new BigDecimal("56.78");
         createTable(TABLE_NAME, schema("decimal(4,2)"));
         checkPutGet(Values.of(key1), Values.of(value1));
+        // OK: too short integer part
+        checkPutGet(Values.of(new BigDecimal("1.45")), Values.of(new BigDecimal("5.67")));
+
+        // NG: too long fraction part, precision (=4) is OK
+        checkPutNG(Values.of(new BigDecimal("1.456")), Values.of(new BigDecimal("5.678")),
+                KvsServiceCode.INVALID_ARGUMENT);
+
+        // OK: too short fraction part
+        // TODO support short fraction part
+        System.err.println("TODO: 'short fraction part' should be acceppted?");
+        checkPutNG(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")),
+              KvsServiceCode.INVALID_ARGUMENT);
+//        checkPutGet(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")));
+        checkPutGet(Values.of(new BigDecimal("12.30")), Values.of(new BigDecimal("56.70")));
+
+        // NG: too long integer part
+        final BigDecimal key2 = new BigDecimal("123.45");
+        final BigDecimal value2 = new BigDecimal("567.89");
+        checkPutNG(Values.of(key2), Values.of(value1), KvsServiceCode.INVALID_ARGUMENT);
+        checkPutNG(Values.of(key1), Values.of(value2), KvsServiceCode.INVALID_ARGUMENT);
+        checkPutNG(Values.of(key2), Values.of(value2), KvsServiceCode.INVALID_ARGUMENT);
+        // NG: too long fraction part
+        final BigDecimal key3 = new BigDecimal("12.456");
+        final BigDecimal value3 = new BigDecimal("56.789");
+        checkPutNG(Values.of(key3), Values.of(value1), KvsServiceCode.INVALID_ARGUMENT);
+        checkPutNG(Values.of(key1), Values.of(value3), KvsServiceCode.INVALID_ARGUMENT);
+        checkPutNG(Values.of(key3), Values.of(value3), KvsServiceCode.INVALID_ARGUMENT);
     }
 
     @Test
