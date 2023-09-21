@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.basic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceCode;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.Record;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.Values;
@@ -48,6 +51,21 @@ class DataTypesTest extends TestBase {
                 kvs.commit(tx).await();
                 assertEquals(1, get.size());
                 checkRecord(get.asRecord(), key1, value1);
+            }
+        }
+    }
+
+    private static void checkPutNG(KvsData.Value key1, KvsData.Value value1, KvsServiceCode code) throws Exception {
+        RecordBuffer buffer = new RecordBuffer();
+        try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
+            try (var tx = kvs.beginTransaction().await()) {
+                buffer.add(KEY_NAME, key1);
+                buffer.add(VALUE_NAME, value1);
+                KvsServiceException ex = assertThrows(KvsServiceException.class, () -> {
+                    kvs.put(tx, TABLE_NAME, buffer).await();
+                });
+                assertEquals(code, ex.getDiagnosticCode());
+                kvs.rollback(tx).await();
             }
         }
     }
@@ -95,6 +113,45 @@ class DataTypesTest extends TestBase {
         final String key1 = "aaa";
         final String value1 = "hello";
         checkDataType("string", Values.of(key1), Values.of(value1));
+        checkPutGet(Values.of(""), Values.of(""));
+    }
+
+    @Test
+    public void char10Test() throws Exception {
+        final String key1 = "1234567890"; // OK
+        final String value1 = "abcdefghij"; // OK
+        createTable(TABLE_NAME, schema("char(10)"));
+        checkPutGet(Values.of(key1), Values.of(value1));
+        //
+        checkPutGet(Values.of(""), Values.of(""));
+        //
+        final String key2 = "9876543210"; // OK
+        final String value2 = "1234567890A"; // NG: too long
+        checkPutNG(Values.of(key2), Values.of(value2), KvsServiceCode.RESOURCE_LIMIT_REACHED);
+        checkPutNG(Values.of(value2), Values.of(key2), KvsServiceCode.RESOURCE_LIMIT_REACHED);
+        //
+        final String key3 = "987654321"; // OK: too short
+        checkPutGet(Values.of(key3), Values.of(value1));
+        checkPutGet(Values.of(value1), Values.of(key3));
+    }
+
+    @Test
+    public void varchar10Test() throws Exception {
+        final String key1 = "1234567890"; // OK
+        final String value1 = "abcdefghij"; // OK
+        createTable(TABLE_NAME, schema("varchar(10)"));
+        checkPutGet(Values.of(key1), Values.of(value1));
+        //
+        checkPutGet(Values.of(""), Values.of(""));
+        //
+        final String key2 = "9876543210"; // OK
+        final String value2 = "1234567890A"; // NG: too long
+        checkPutNG(Values.of(key2), Values.of(value2), KvsServiceCode.RESOURCE_LIMIT_REACHED);
+        checkPutNG(Values.of(value2), Values.of(key2), KvsServiceCode.RESOURCE_LIMIT_REACHED);
+        //
+        final String key3 = "987654321"; // OK: too short
+        checkPutGet(Values.of(key3), Values.of(value1));
+        checkPutGet(Values.of(value1), Values.of(key3));
     }
 
     @Test
