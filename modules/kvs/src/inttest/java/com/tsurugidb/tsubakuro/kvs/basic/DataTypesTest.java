@@ -28,9 +28,16 @@ class DataTypesTest extends TestBase {
     private static final String KEY_NAME = "k1";
     private static final String VALUE_NAME = "v1";
 
+    private static final int DECIMAL_SCALE = 2;
+
     private static BigDecimal convert(KvsData.Value v) {
         KvsData.Decimal dec = v.getDecimalValue();
-        return new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
+        var big = new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
+        if (big.scale() < DECIMAL_SCALE) {
+            // "12.3" -> "12.30" etc
+            big = big.setScale(DECIMAL_SCALE);
+        }
+        return big;
     }
 
     private static void checkValue(KvsData.Value expected, KvsData.Value value) throws Exception {
@@ -39,6 +46,7 @@ class DataTypesTest extends TestBase {
         } else {
             var expectedDec = convert(expected);
             var valueDec = convert(value);
+            // NOTE: BigDecimal("12.3") != BigDecimal("12.30")
             assertEquals(expectedDec, valueDec);
             assertEquals(expectedDec.scale(), valueDec.scale());
             assertEquals(expectedDec.toString(), valueDec.toString());
@@ -193,7 +201,7 @@ class DataTypesTest extends TestBase {
     public void decimalScaleTest() throws Exception {
         final BigDecimal key1 = new BigDecimal("12.34");
         final BigDecimal value1 = new BigDecimal("56.78");
-        createTable(TABLE_NAME, schema("decimal(4,2)"));
+        createTable(TABLE_NAME, schema("decimal(4," + DECIMAL_SCALE + ")"));
         checkPutGet(Values.of(key1), Values.of(value1));
         // OK: too short integer part
         checkPutGet(Values.of(new BigDecimal("1.45")), Values.of(new BigDecimal("5.67")));
@@ -203,12 +211,9 @@ class DataTypesTest extends TestBase {
                 KvsServiceCode.INVALID_ARGUMENT);
 
         // OK: too short fraction part
-        // TODO support short fraction part
-        System.err.println("TODO: 'short fraction part' should be acceppted?");
-        checkPutNG(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")),
-                KvsServiceCode.INVALID_ARGUMENT);
-//        checkPutGet(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")));
-        checkPutGet(Values.of(new BigDecimal("12.30")), Values.of(new BigDecimal("56.70")));
+        checkPutGet(Values.of(new BigDecimal("12.30")), Values.of(new BigDecimal("56.7")));
+        checkPutGet(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.70")));
+        checkPutGet(Values.of(new BigDecimal("12.3")), Values.of(new BigDecimal("56.7")));
 
         // NG: too long integer part
         final BigDecimal key2 = new BigDecimal("123.45");
