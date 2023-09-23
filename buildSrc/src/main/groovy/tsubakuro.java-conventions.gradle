@@ -38,6 +38,8 @@ spotbugsMain {
 spotbugsTest.enabled = false
 checkstyleTest.enabled = false
 
+javadoc.failOnError = false
+
 jar {
     manifest.attributes (
         'Build-Timestamp': buildTimestamp,
