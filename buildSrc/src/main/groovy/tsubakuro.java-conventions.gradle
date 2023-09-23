@@ -5,13 +5,13 @@ plugins {
     id 'com.github.spotbugs'
 }
 
-
 repositories {
     mavenCentral()
 }
 
 java {
     withSourcesJar()
+    withJavadocJar()
 }
 
 dependencies {

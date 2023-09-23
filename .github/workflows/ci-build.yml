@@ -52,8 +52,6 @@ jobs:
 
   Publish:
     uses: ./.github/workflows/ci-publish.yml
-    if: (contains(github.ref, '/tags/') || contains(github.ref, '/heads/master'))
+    if: github.repository_owner == 'project-tsurugi' && (contains(github.ref, '/tags/') || contains(github.ref, '/heads/master'))
     needs: Build
     secrets: inherit
-    permissions:
-      packages: write
