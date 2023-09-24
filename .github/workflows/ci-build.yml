@@ -4,17 +4,10 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   Build:
-    runs-on: [self-hosted, docker]
+    runs-on: ubuntu-latest
     permissions:
       checks: write
     timeout-minutes: 30
-    container:
-      image: ghcr.io/project-tsurugi/oltp-sandbox:ubuntu-22.04
-      credentials:
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GHCR_PAT }}
-      volumes:
-        - ${{ vars.gradle_cache_dir }}:/root/.gradle
     defaults:
       run:
         shell: bash
@@ -32,6 +25,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GHA_PAT }}
+
+      - name: Apt_Install
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y git build-essential cmake libboost-system-dev
 
       - name: Assemble
         run: |
