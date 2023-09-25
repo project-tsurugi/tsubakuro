@@ -12,7 +12,7 @@ publishing {
             name 'OSSRH'
             def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
             def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            url version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            url isReleaseVersion ? releasesRepoUrl : snapshotsRepoUrl
             credentials {
                 username findProperty('st.ossrh.user') ?: System.getenv('ST_OSSRH_USER')
                 password findProperty('st.ossrh.password') ?: System.getenv('ST_OSSRH_PASSWORD')
@@ -48,6 +48,7 @@ publishing {
 }
 
 signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask(":${project.name}:publishMavenJavaPublicationToOSSRHRepository") }
     def signingKeyId = findProperty("signingKeyId")
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
