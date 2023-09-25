@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.Lang;
 
 /**
  * A {@link FutureResponse} that converts {@link Response} into specific type in background.
@@ -41,6 +43,8 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
 
     private final AtomicBoolean gotton = new AtomicBoolean();
 
+    private final ServerResource.CloseHandler closeHandler;
+
     /**
      * Creates a new instance.
      * @param delegate the decoration target
@@ -48,11 +52,13 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
      */
     public BackgroundFutureResponse(
             @Nonnull FutureResponse<? extends Response> delegate,
-            @Nonnull ResponseProcessor<? extends V> mapper) {
+            @Nonnull ResponseProcessor<? extends V> mapper,
+            @Nullable ServerResource.CloseHandler closeHandler) {
         Objects.requireNonNull(delegate);
         Objects.requireNonNull(mapper);
         this.delegate = delegate;
         this.mapper = mapper;
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -114,6 +120,11 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
                 }
             }
         } finally {
+            if (closeHandler != null) {
+                Lang.suppress(
+                        e -> LOG.warn("error occurred while collecting garbage", e),
+                        () -> closeHandler.onClosed(this));
+            }
             delegate.close();
             closed.set(true);
         }
