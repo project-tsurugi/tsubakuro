@@ -5,13 +5,13 @@ plugins {
     id 'com.github.spotbugs'
 }
 
-
 repositories {
     mavenCentral()
 }
 
 java {
     withSourcesJar()
+    withJavadocJar()
 }
 
 dependencies {
@@ -37,6 +37,8 @@ spotbugsMain {
 
 spotbugsTest.enabled = false
 checkstyleTest.enabled = false
+
+javadoc.failOnError = false
 
 jar {
     manifest.attributes (

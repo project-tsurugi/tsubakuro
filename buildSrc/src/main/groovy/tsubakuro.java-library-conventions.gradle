@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'signing'
 
     id 'tsubakuro.java-conventions'
 }
@@ -8,17 +9,48 @@ plugins {
 publishing {
     repositories {
         maven {
-            name 'GitHubPackages'
-            url 'https://maven.pkg.github.com/project-tsurugi/tsubakuro'
+            name 'OSSRH'
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url version.endsWith('-SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username findProperty('gpr.user') ?: System.getenv('GPR_USER')
-                password findProperty('gpr.key') ?: System.getenv('GPR_KEY')
+                username findProperty('st.ossrh.user') ?: System.getenv('ST_OSSRH_USER')
+                password findProperty('st.ossrh.password') ?: System.getenv('ST_OSSRH_PASSWORD')
             }
         }
     }
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            pom {
+                name = 'Tsubakuro'
+                description = 'Communication library for direct use of lower-level functions of Tsurugi'
+                url = 'https://github.com/project-tsurugi/tsubakuro'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'project-tsurugi'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/project-tsurugi/tsubakuro.git'
+                    developerConnection = 'scm:git:https://github.com/project-tsurugi/tsubakuro.git'
+                    url = 'https://github.com/project-tsurugi/tsubakuro'
+                }
+            }
         }
     }
+}
+
+signing {
+    def signingKeyId = findProperty("signingKeyId")
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
 }
