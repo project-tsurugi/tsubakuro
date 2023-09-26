@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,22 +29,16 @@ class DataTypesTest extends TestBase {
 
     private static final int DECIMAL_SCALE = 2;
 
-    private static BigDecimal convert(KvsData.Value v) {
-        KvsData.Decimal dec = v.getDecimalValue();
-        var big = new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
-        if (big.scale() < DECIMAL_SCALE) {
-            // "12.3" -> "12.30" etc
-            big = big.setScale(DECIMAL_SCALE);
-        }
-        return big;
+    private static BigDecimal toBigDecimal(KvsData.Value v) {
+        return toBigDecimal(v, DECIMAL_SCALE);
     }
 
     private static void checkValue(KvsData.Value expected, KvsData.Value value) throws Exception {
         if (expected.getValueCase() != ValueCase.DECIMAL_VALUE) {
             assertEquals(expected, value);
         } else {
-            var expectedDec = convert(expected);
-            var valueDec = convert(value);
+            var expectedDec = toBigDecimal(expected);
+            var valueDec = toBigDecimal(value);
             // NOTE: BigDecimal("12.3") != BigDecimal("12.30")
             assertEquals(expectedDec, valueDec);
             assertEquals(expectedDec.scale(), valueDec.scale());

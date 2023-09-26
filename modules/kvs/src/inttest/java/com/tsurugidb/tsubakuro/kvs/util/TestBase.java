@@ -1,7 +1,10 @@
 package com.tsurugidb.tsubakuro.kvs.util;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 
+import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
@@ -94,6 +97,22 @@ public class TestBase {
      */
     public static int getLineNumber() {
         return Thread.currentThread().getStackTrace()[2].getLineNumber();
+    }
+
+    /**
+     * retrieves BigDecimal value
+     * @param value value contains Decimal value
+     * @param scale scale of return BigDecimal
+     * @return BigDecimalValue
+     */
+    public static BigDecimal toBigDecimal(KvsData.Value value, int scale) {
+        KvsData.Decimal dec = value.getDecimalValue();
+        var big = new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
+        if (big.scale() < scale) {
+            // "12.3" -> "12.30" etc
+            big = big.setScale(scale);
+        }
+        return big;
     }
 
 }
