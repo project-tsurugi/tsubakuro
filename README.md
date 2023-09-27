@@ -38,7 +38,7 @@ where ${ProjectTopDirectory} is a directory created by clone of the tsubakuro re
 Build only java libraries and skip testing and building native libraries.
 
 ```
-./gradlew assemble -x tsubakuro-ipc:nativeLib
+./gradlew assemble -PskipBuildNative
 ```
 
 ### install
@@ -50,7 +50,7 @@ Build and deploy the java and native libraries into Maven Local Repository.
 ### install only java libraries
 Build and deploy only the java libraries into Maven Local Repository.
 ```
-./gradlew PublishMavenJavaPublicationToMavenLocal
+./gradlew PublishMavenJavaPublicationToMavenLocal -PskipBuildNative
 ```
 
 ### generate all(aggregated) Javadoc
