@@ -130,7 +130,7 @@ tasks.register('runMultiEmptyMessageBench', JavaExec) {
 tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '8', 'createDB']
@@ -139,7 +139,7 @@ tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {
 tasks.register('runYCSBlikeBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
@@ -148,7 +148,7 @@ tasks.register('runYCSBlikeBench', JavaExec) {
 tasks.register('runYCSBlikeBenchBySql', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M', '-DuseSqlClient=true']
     args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
