@@ -1,7 +1,10 @@
 package com.tsurugidb.tsubakuro.kvs.util;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 
+import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.SessionBuilder;
@@ -68,10 +71,49 @@ public class TestBase {
             dropTable(client, tableName);
             try (var tx = client.createTransaction().await()) {
                 String sql = String.format("CREATE TABLE %s (%s)", tableName, schema);
+                System.err.println(sql);
                 tx.executeStatement(sql).await();
                 tx.commit().await();
             }
         }
+    }
+
+    /**
+     * Executes SQL statement.
+     * @param sql SQL statement
+     * @throws Exception failed to execute the SQL statement
+     */
+    public void executeStatement(String sql) throws Exception {
+        try (var session = getNewSession(); var client = SqlClient.attach(session)) {
+            try (var tx = client.createTransaction().await()) {
+                tx.executeStatement(sql).await();
+                tx.commit().await();
+            }
+        }
+    }
+
+    /**
+     * retrieves line number of source
+     * @return line number
+     */
+    public static int getLineNumber() {
+        return Thread.currentThread().getStackTrace()[2].getLineNumber();
+    }
+
+    /**
+     * retrieves BigDecimal value
+     * @param value value contains Decimal value
+     * @param scale scale of return BigDecimal
+     * @return BigDecimalValue
+     */
+    public static BigDecimal toBigDecimal(KvsData.Value value, int scale) {
+        KvsData.Decimal dec = value.getDecimalValue();
+        var big = new BigDecimal(new BigInteger(dec.getUnscaledValue().toByteArray()), -dec.getExponent());
+        if (big.scale() < scale) {
+            // "12.3" -> "12.30" etc
+            big = big.setScale(scale);
+        }
+        return big;
     }
 
 }

@@ -62,53 +62,6 @@ task kvsIntegrationTest(type: Test) {
     outputs.upToDateWhen { false }
 }
 
-application {
-    applicationName = 'YCSBlikeBench'
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
-	// see modules/kvs/build/distributions/YCSBlikeBench-xxx.zip
-}
-
-tasks.register('runShortMockBench', JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
-    jvmArgs = ['-Xmx1024M']
-    args = ['1,2,4,8', '10', '30', '100000']
-}
-
-tasks.register('runFullMockBench', JavaExec) {
-    classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.TransactionBench'
-    jvmArgs = ['-Xmx1024M']
-    args = ['full']
-}
-
-tasks.register('runShortBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['short', 'ipc:tsurugi', 'sameTable']
-}
-
-tasks.register('runTestBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.realbench.RealTransactionTest'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi']
-}
-
-tasks.register('runFullBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.RealTransactionBench'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['full']
-}
-
 tasks.register('runSingleEmptyMessageBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
@@ -130,7 +83,7 @@ tasks.register('runMultiEmptyMessageBench', JavaExec) {
 tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '8', 'createDB']
@@ -139,7 +92,7 @@ tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {
 tasks.register('runYCSBlikeBench', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
     args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
@@ -148,7 +101,7 @@ tasks.register('runYCSBlikeBench', JavaExec) {
 tasks.register('runYCSBlikeBenchBySql', JavaExec) {
     dependsOn ':tsubakuro-ipc:assemble'
     classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/libtsubakuro.so"
+    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
     mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
     jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M', '-DuseSqlClient=true']
     args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
