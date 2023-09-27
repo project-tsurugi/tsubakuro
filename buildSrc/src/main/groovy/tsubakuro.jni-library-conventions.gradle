@@ -118,32 +118,34 @@ task cmakeTestBuild {
     }
 }
 
-assemble.dependsOn nativeLib
-test.dependsOn cmakeBuild
-test.dependsOn cmakeTestBuild
+if (!hasProperty('skipBuildNative')) {
+    assemble.dependsOn nativeLib
+    test.dependsOn cmakeBuild
+    test.dependsOn cmakeTestBuild
 
-cmakeConfigure.dependsOn compileJava
-cmakeTestConfigure.dependsOn compileTestJava
+    cmakeConfigure.dependsOn compileJava
+    cmakeTestConfigure.dependsOn compileTestJava
 
-cmakeBuild.dependsOn cmakeConfigure
-cmakeTestBuild.dependsOn cmakeTestConfigure
+    cmakeBuild.dependsOn cmakeConfigure
+    cmakeTestBuild.dependsOn cmakeTestConfigure
 
-nativeLib.dependsOn cmakeBuild
+    nativeLib.dependsOn cmakeBuild
 
-clean {
-    delete += "$nativeBuildDir"
-}
-cleanTest {
-    delete += "$nativeTestBuildDir"
-}
+    clean {
+        delete += "$nativeBuildDir"
+    }
+    cleanTest {
+        delete += "$nativeTestBuildDir"
+    }
 
-compileJava {
-    options.headerOutputDirectory = file("${nativeIncludeDir}")
-}
-compileTestJava {
-    options.headerOutputDirectory = file("${nativeTestIncludeDir}")
-}
+    compileJava {
+        options.headerOutputDirectory = file("${nativeIncludeDir}")
+    }
+    compileTestJava {
+        options.headerOutputDirectory = file("${nativeTestIncludeDir}")
+    }
 
-tasks.named('test') {
-    systemProperty 'java.library.path', "${nativeBuildDir}/src:${nativeTestBuildDir}/src"
+    tasks.named('test') {
+        systemProperty 'java.library.path', "${nativeBuildDir}/src:${nativeTestBuildDir}/src"
+    }
 }
