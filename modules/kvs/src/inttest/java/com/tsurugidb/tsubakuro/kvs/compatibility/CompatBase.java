@@ -112,22 +112,22 @@ class CompatBase extends TestBase {
         }
     }
 
-    private final int idxKey = 0; // TODO maybe change
-    private final int idxValue = 1;
-    private final int idxValue2 = 2;
+    private static final int IDX_KEY = 0; // TODO maybe change
+    private static final int IDX_VALUE = 1;
+    private static final int IDX_VALUE2 = 2;
 
     private void checkRecord(KvsData.Value key, KvsData.Value value, Record record) throws Exception {
-        assertEquals(KEY_NAME, record.getName(idxKey));
-        assertEquals(VALUE_NAME, record.getName(idxValue));
-        checkValue(key, record.getEntity().getValues(idxKey));
-        checkValue(value, record.getEntity().getValues(idxValue));
+        assertEquals(KEY_NAME, record.getName(IDX_KEY));
+        assertEquals(VALUE_NAME, record.getName(IDX_VALUE));
+        checkValue(key, record.getEntity().getValues(IDX_KEY));
+        checkValue(value, record.getEntity().getValues(IDX_VALUE));
     }
 
     private void checkRecord(KvsData.Value key, KvsData.Value value, KvsData.Value value2, Record record)
             throws Exception {
         checkRecord(key, value, record);
-        assertEquals(VALUE2_NAME, record.getName(idxValue2));
-        checkValue(value2, record.getEntity().getValues(idxValue2));
+        assertEquals(VALUE2_NAME, record.getName(IDX_VALUE2));
+        checkValue(value2, record.getEntity().getValues(IDX_VALUE2));
     }
 
     private GetResult sqlSelect(SqlClient sql, String keystr) throws Exception {
