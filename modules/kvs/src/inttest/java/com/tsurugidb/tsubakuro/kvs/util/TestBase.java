@@ -71,6 +71,7 @@ public class TestBase {
             dropTable(client, tableName);
             try (var tx = client.createTransaction().await()) {
                 String sql = String.format("CREATE TABLE %s (%s)", tableName, schema);
+                System.err.println(sql);
                 tx.executeStatement(sql).await();
                 tx.commit().await();
             }

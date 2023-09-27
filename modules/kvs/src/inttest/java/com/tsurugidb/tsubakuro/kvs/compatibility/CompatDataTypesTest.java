@@ -3,6 +3,9 @@ package com.tsurugidb.tsubakuro.kvs.compatibility;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
@@ -133,6 +136,27 @@ class CompatDataTypesTest extends TestBase {
         }
     }
 
+    private static void checkSQLisNull(SqlClient sql, String keystr) throws Exception {
+        try (var tx = sql.createTransaction().await()) {
+            var st = String.format("SELECT * FROM %s WHERE %s=%s", TABLE_NAME, KEY_NAME, keystr);
+            int n = 0;
+            try (var rs = tx.executeQuery(st).await()) {
+                while (rs.nextRow()) {
+                    while (rs.nextColumn()) {
+                        if (n != 1) {
+                            assertEquals(false, rs.isNull());
+                        } else {
+                            assertEquals(true, rs.isNull());
+                        }
+                        n++;
+                    }
+                }
+            }
+            tx.commit().await();
+            assertEquals(2, n);
+        }
+    }
+
     private static void checkKVSrecord(KvsClient kvs, KvsData.Value key, KvsData.Value value) throws Exception {
         try (var tx = kvs.beginTransaction().await()) {
             RecordBuffer buffer = new RecordBuffer();
@@ -154,102 +178,195 @@ class CompatDataTypesTest extends TestBase {
         }
     }
 
-    private static void checkRecord(SqlClient sql, KvsClient kvs, KvsData.Value key, String keystr, KvsData.Value value)
-            throws Exception {
-        checkSQLrecord(sql, key, keystr, value);
-        checkKVSrecord(kvs, key, value);
-    }
-
-    private static void checkNotFound(SqlClient sql, KvsClient kvs, KvsData.Value key, String keystr) throws Exception {
-        checkSQLnotFound(sql, keystr);
-        checkKVSnotFound(kvs, key);
-    }
-
-    private static String toSqlString(String typeName, KvsData.Value v) {
-        Object o = Values.toObject(v);
-        if (o == null) {
-            return null;
+    private static void checkKVSisNull(KvsClient kvs, KvsData.Value key) throws Exception {
+        try (var tx = kvs.beginTransaction().await()) {
+            RecordBuffer buffer = new RecordBuffer();
+            buffer.add(KEY_NAME, key);
+            var get = kvs.get(tx, TABLE_NAME, buffer).await();
+            kvs.commit(tx).await();
+            assertEquals(1, get.size());
+            var record = get.asRecord();
+            assertEquals(key, record.getEntity().getValues(0));
+            assertEquals(true, record.isNull(VALUE_NAME));
         }
-        String s = o.toString();
-        switch (v.getValueCase()) {
-        case FLOAT4_VALUE:
-        case DECIMAL_VALUE:
-            return String.format("cast('%s' as %s)", s, typeName);
-        case CHARACTER_VALUE:
-            return String.format("'%s'", s);
-        default:
-            return s;
+    }
+
+    private static void checkRecord(SqlClient sql, KvsClient kvs, SqlValue key, SqlValue value) throws Exception {
+        checkSQLrecord(sql, key.value, key.str, value.value);
+        checkKVSrecord(kvs, key.value, value.value);
+    }
+
+    private static void checkNotFound(SqlClient sql, KvsClient kvs, SqlValue key) throws Exception {
+        checkSQLnotFound(sql, key.str);
+        checkKVSnotFound(kvs, key.value);
+    }
+
+    private static void checkIsNull(SqlClient sql, KvsClient kvs, SqlValue key) throws Exception {
+        checkSQLisNull(sql, key.str);
+        checkKVSisNull(kvs, key.value);
+    }
+
+    private static void checkNonNull(SqlValue key1, SqlValue value1, SqlValue key2, SqlValue value2) throws Exception {
+        try (var session = getNewSession(); var sql = SqlClient.attach(session); var kvs = KvsClient.attach(session)) {
+            // SQL INSERT
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("INSERT INTO %s (%s, %s) VALUES(%s, %s)", TABLE_NAME, KEY_NAME, VALUE_NAME,
+                        key1.str, value1.str);
+                System.err.println(st);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkRecord(sql, kvs, key1, value1);
+            // KVS PUT (OVERWRITE)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key1.value);
+                buffer.add(VALUE_NAME, value2.value);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, put.size());
+            }
+            checkRecord(sql, kvs, key1, value2);
+
+            // KVS PUT (INSERT)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                buffer.add(VALUE_NAME, value1.value);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, put.size());
+            }
+            checkRecord(sql, kvs, key1, value2); // not changed
+            checkRecord(sql, kvs, key2, value1); // newly inserted
+
+            // SQL UPDATE
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("UPDATE %s SET %s=%s WHERE %s=%s", TABLE_NAME, VALUE_NAME, value2.str, KEY_NAME,
+                        key2.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkRecord(sql, kvs, key1, value2); // not changed
+            checkRecord(sql, kvs, key2, value2); // value updated
+
+            // SQL REMOVE
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("DELETE FROM %s WHERE %s=%s", TABLE_NAME, KEY_NAME, key1.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkNotFound(sql, kvs, key1); // deleted
+            checkRecord(sql, kvs, key2, value2); // not changed
+
+            // KVS REMOVE
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                var remove = kvs.remove(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, remove.size());
+            }
+            checkNotFound(sql, kvs, key1); // already deleted
+            checkNotFound(sql, kvs, key2); // deleted
+        }
+    }
+
+    private static void checkWithNull(SqlValue key1, SqlValue value1, SqlValue key2, SqlValue value2) throws Exception {
+        try (var session = getNewSession(); var sql = SqlClient.attach(session); var kvs = KvsClient.attach(session)) {
+            // SQL INSERT (value is null)
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("INSERT INTO %s (%s) VALUES(%s)", TABLE_NAME, KEY_NAME, key1.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkIsNull(sql, kvs, key1);
+
+            // KVS INSERT (value is null)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                buffer.addNull(VALUE_NAME);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, put.size());
+            }
+            checkIsNull(sql, kvs, key1);
+            checkIsNull(sql, kvs, key2);
+
+            // SQL UPDATE (make value non-null)
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("UPDATE %s SET %s=%s WHERE %s=%s", TABLE_NAME, VALUE_NAME, value1.str, KEY_NAME,
+                        key1.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkRecord(sql, kvs, key1, value1); // null -> value1
+            checkIsNull(sql, kvs, key2);
+
+            // KVS UPDATE (make value non-null)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                buffer.add(VALUE_NAME, value2.value);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, put.size());
+            }
+            checkRecord(sql, kvs, key1, value1);
+            checkRecord(sql, kvs, key2, value2); // null -> value2
+
+            // SQL UPDATE (make value null)
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("UPDATE %s SET %s=NULL WHERE %s=%s", TABLE_NAME, VALUE_NAME, KEY_NAME, key1.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkIsNull(sql, kvs, key1); // value1 -> null
+            checkRecord(sql, kvs, key2, value2);
+
+            // KVS UPDATE (make value null)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                buffer.addNull(VALUE_NAME);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, put.size());
+            }
+            checkIsNull(sql, kvs, key1);
+            checkIsNull(sql, kvs, key2); // value2 -> null
+
+            // SQL DELETE (value is null)
+            try (var tx = sql.createTransaction().await()) {
+                var st = String.format("DELETE FROM %s WHERE %s=%s", TABLE_NAME, KEY_NAME, key1.str);
+                tx.executeStatement(st).await();
+                tx.commit().await();
+            }
+            checkNotFound(sql, kvs, key1); // deleted
+            checkIsNull(sql, kvs, key2);
+
+            // KVS REMOVE (value is null)
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(KEY_NAME, key2.value);
+                var remove = kvs.remove(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(1, remove.size());
+            }
+            checkNotFound(sql, kvs, key1);
+            checkNotFound(sql, kvs, key2); // deleted
         }
     }
 
     private static void check(String typeName, KvsData.Value key1, KvsData.Value value1, KvsData.Value key2,
             KvsData.Value value2) throws Exception {
-        final String key1str = toSqlString(typeName, key1);
-        final String value1str = toSqlString(typeName, value1);
-        final String key2str = toSqlString(typeName, key2);
-        final String value2str = toSqlString(typeName, value2);
-        try (var session = getNewSession(); var sql = SqlClient.attach(session); var kvs = KvsClient.attach(session)) {
-            // SQL INSERT
-            try (var tx = sql.createTransaction().await()) {
-                var st = String.format("INSERT INTO %s (%s, %s) VALUES(%s, %s)", TABLE_NAME, KEY_NAME, VALUE_NAME,
-                        key1str, value1str);
-                tx.executeStatement(st).await();
-                tx.commit().await();
-            }
-            checkRecord(sql, kvs, key1, key1str, value1);
-            // KVS PUT (OVERWRITE)
-            try (var tx = kvs.beginTransaction().await()) {
-                RecordBuffer buffer = new RecordBuffer();
-                buffer.add(KEY_NAME, key1);
-                buffer.add(VALUE_NAME, value2);
-                var put = kvs.put(tx, TABLE_NAME, buffer).await();
-                kvs.commit(tx).await();
-                assertEquals(1, put.size());
-            }
-            checkRecord(sql, kvs, key1, key1str, value2);
-
-            // KVS PUT (INSERT)
-            try (var tx = kvs.beginTransaction().await()) {
-                RecordBuffer buffer = new RecordBuffer();
-                buffer.add(KEY_NAME, key2);
-                buffer.add(VALUE_NAME, value1);
-                var put = kvs.put(tx, TABLE_NAME, buffer).await();
-                kvs.commit(tx).await();
-                assertEquals(1, put.size());
-            }
-            checkRecord(sql, kvs, key1, key1str, value2); // not changed
-            checkRecord(sql, kvs, key2, key2str, value1); // newly inserted
-
-            // SQL UPDATE
-            try (var tx = sql.createTransaction().await()) {
-                var st = String.format("UPDATE %s SET %s=%s WHERE %s=%s", TABLE_NAME, VALUE_NAME, value2str, KEY_NAME,
-                        key2str);
-                tx.executeStatement(st).await();
-                tx.commit().await();
-            }
-            checkRecord(sql, kvs, key1, key1str, value2); // not changed
-            checkRecord(sql, kvs, key2, key2str, value2); // value updated
-
-            // SQL REMOVE
-            try (var tx = sql.createTransaction().await()) {
-                var st = String.format("DELETE FROM %s WHERE %s=%s", TABLE_NAME, KEY_NAME, key1str);
-                tx.executeStatement(st).await();
-                tx.commit().await();
-            }
-            checkNotFound(sql, kvs, key1, key1str); // deleted
-            checkRecord(sql, kvs, key2, key2str, value2); // not changed
-
-            // KVS REMOVE
-            try (var tx = kvs.beginTransaction().await()) {
-                RecordBuffer buffer = new RecordBuffer();
-                buffer.add(KEY_NAME, key2);
-                var remove = kvs.remove(tx, TABLE_NAME, buffer).await();
-                kvs.commit(tx).await();
-                assertEquals(1, remove.size());
-            }
-            checkNotFound(sql, kvs, key1, key1str); // already deleted
-            checkNotFound(sql, kvs, key2, key2str); // deleted
-        }
+        final SqlValue k1 = new SqlValue(typeName, key1);
+        final SqlValue v1 = new SqlValue(typeName, value1);
+        final SqlValue k2 = new SqlValue(typeName, key2);
+        final SqlValue v2 = new SqlValue(typeName, value2);
+        checkNonNull(k1, v1, k2, v2);
+        checkWithNull(k1, v1, k2, v2);
     }
 
     private void checkDataType(String typeName, KvsData.Value key1, KvsData.Value value1, KvsData.Value key2,
@@ -294,5 +411,26 @@ class CompatDataTypesTest extends TestBase {
     public void decimal2Test() throws Exception {
         checkDataType("decimal(4,2)", Values.of(new BigDecimal("12.34")), Values.of(new BigDecimal("23.45")),
                 Values.of(new BigDecimal("34.56")), Values.of(new BigDecimal("45.67")));
+    }
+
+    // NOTE jogasaki not supported yet (use placeholder/parameter)
+    // see insert_temporal_types test at
+    // jogasaki/test/jogasaki/api/host_variables_test.cpp etc
+    public void dateTest() throws Exception {
+        checkDataType("date", Values.of(LocalDate.of(2023, 1, 1)), Values.of(LocalDate.of(2023, 2, 2)),
+                Values.of(LocalDate.of(2023, 3, 3)), Values.of(LocalDate.of(2023, 4, 4)));
+    }
+
+    // see dateTest
+    public void timeTest() throws Exception {
+        checkDataType("time", Values.of(LocalTime.of(1, 1, 1)), Values.of(LocalTime.of(2, 2, 2)),
+                Values.of(LocalTime.of(3, 3, 3)), Values.of(LocalTime.of(4, 4, 4)));
+    }
+
+    // see dateTest
+    public void timePointTest() throws Exception {
+        checkDataType("timestamp", Values.of(LocalDateTime.of(2023, 1, 1, 1, 1, 1)),
+                Values.of(LocalDateTime.of(2023, 2, 2, 2, 2, 2)), Values.of(LocalDateTime.of(2023, 3, 3, 3, 3, 3)),
+                Values.of(LocalDateTime.of(2023, 4, 4, 4, 4, 4)));
     }
 }
