@@ -51,6 +51,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
      * Creates a new instance.
      * @param delegate the decoration target
      * @param mapper the response mapper
+     * @param closeHandler handles {@link #close()} was invoked
      */
     public ForegroundFutureResponse(
             @Nonnull FutureResponse<? extends Response> delegate,

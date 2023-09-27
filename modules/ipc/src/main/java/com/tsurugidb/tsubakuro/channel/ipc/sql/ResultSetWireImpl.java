@@ -69,6 +69,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Class constructor, called from FutureResultWireImpl.
      * @param sessionWireHandle the handle of the Wire to which the transaction that created this object belongs
+     * @param link the link through which the result set will be sent
      */
     public ResultSetWireImpl(long sessionWireHandle, IpcLink link) {
         this.sessionWireHandle = sessionWireHandle;

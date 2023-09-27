@@ -49,6 +49,7 @@ public class BackgroundFutureResponse<V> implements FutureResponse<V>, Runnable 
      * Creates a new instance.
      * @param delegate the decoration target
      * @param mapper the response mapper
+     * @param closeHandler handles {@link #close()} was invoked
      */
     public BackgroundFutureResponse(
             @Nonnull FutureResponse<? extends Response> delegate,

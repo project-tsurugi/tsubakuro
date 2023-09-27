@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -62,7 +63,7 @@ public interface Response extends ServerResource {
      * @throws InterruptedException if interrupted by other threads while opening the sub-responses
      * @see #getSubResponseIds()
      */
-    default InputStream openSubResponse(String id) throws IOException, ServerException, InterruptedException {
+    default InputStream openSubResponse(String id) throws NoSuchElementException, IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 
@@ -83,7 +84,7 @@ public interface Response extends ServerResource {
      * @see #getSubResponseIds()
      */
     default InputStream openSubResponse(String id, long timeout, TimeUnit unit)
-            throws IOException, ServerException, InterruptedException, TimeoutException {
+            throws NoSuchElementException, IOException, ServerException, InterruptedException, TimeoutException {
         throw new UnsupportedOperationException();
     }
 }

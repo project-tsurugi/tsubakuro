@@ -96,7 +96,7 @@ public class SessionImpl implements Session {
      * Note. How to connect to a SQL server is implementation dependent.
      * This implementation assumes that the session wire connected to the database is given.
      *
-     * @param Wire the wire that connects to the Database
+     * @param w the wire that connects to the Database
      */
     @Override
     public void connect(@Nonnull Wire w) {
