@@ -67,6 +67,7 @@ public class SqlServiceException extends ServerException {
      * @param code the diagnostic code
      * @param message the error message
      * @param cause the original cause
+     * @return SqlServiceException or its child class corresponding to the code
      */
     public static SqlServiceException of(@Nonnull SqlServiceCode code, @Nullable String message, @Nullable Throwable cause) {
         switch (code) {
@@ -131,6 +132,7 @@ public class SqlServiceException extends ServerException {
     /**
      * Creates a new instance.
      * @param code the diagnostic code
+     * @return SqlServiceException or its child class corresponding to the code
      */
     public static SqlServiceException of(@Nonnull SqlServiceCode code) {
         return of(code, null, null);
@@ -140,6 +142,7 @@ public class SqlServiceException extends ServerException {
      * Creates a new instance.
      * @param code the diagnostic code
      * @param message the error message
+     * @return SqlServiceException or its child class corresponding to the code
      */
     public static SqlServiceException of(@Nonnull SqlServiceCode code, @Nullable String message) {
         return of(code, message, null);
@@ -149,6 +152,7 @@ public class SqlServiceException extends ServerException {
      * Creates a new instance.
      * @param code the diagnostic code
      * @param cause the original cause
+     * @return SqlServiceException or its child class corresponding to the code
      */
     public static SqlServiceException of(@Nonnull SqlServiceCode code, @Nullable Throwable cause) {
         return of(code, null, cause);

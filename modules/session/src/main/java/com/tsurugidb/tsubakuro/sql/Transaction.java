@@ -273,7 +273,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
 
     /**
     * Returns occurred error in the target transaction, only if the transaction has been accidentally aborted.
-    * @returns the future response of the error information:
+    * @return the future response of the error information:
     * if the transaction will have been accidentally aborted, this provides the occurred error information.
     * otherwise, the transaction is running, successfully committed, or manually aborted, then this will provide {@code null
     * The returned object may <b>raise exception</b> if this operation occurs a new error in the server side.

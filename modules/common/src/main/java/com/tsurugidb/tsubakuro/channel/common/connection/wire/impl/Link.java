@@ -37,6 +37,7 @@ public abstract class Link implements ServerResource {
      * @param u the timeout unit
      * @throws TimeoutException if Timeout error was occurred while pulling response message,
      *      which won't be occured when t is 0
+     * @throws IOException if I/O error was occurred while pulling response message
      */
     public void pullMessage(long checkedMessageNumber, long t, TimeUnit u) throws TimeoutException, IOException {
         while (true) {
@@ -97,13 +98,15 @@ public abstract class Link implements ServerResource {
      * @param s the slot number for the responseBox
      * @param frameHeader the frameHeader of the request
      * @param payload the payload of the request
+     * @param channelResponse the channelResponse that will store a response for the request
      */
     public abstract void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse);
 
     /**
      * Create a ResultSetWire without a name, meaning that this link is not connected
      * @return ResultSetWire
-    */
+     * @throws IOException if I/O error was occurred while creating a ResultSetWire
+     */
     public abstract ResultSetWire createResultSetWire() throws IOException;
 
     /**

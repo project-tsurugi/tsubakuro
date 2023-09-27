@@ -151,14 +151,14 @@ public interface Session extends ServerResource {
     /**
      * Put a {@link ServerResource} to this.
      * The registered object will be closed in {@link ServerResourceHolder#close()}.
-     * @param resource the resource
-     * @return the input resource
+     * @param resource the resource related to the Session to be put
      */
     void put(@Nonnull ServerResource resource);
 
     /**
      * Remove a {@link ServerResource} from this.
      * If such the object is not registered, this does nothing.
+     * @param resource the resource related to the Session to be removed
      */
     void remove(@Nonnull ServerResource resource);
 }

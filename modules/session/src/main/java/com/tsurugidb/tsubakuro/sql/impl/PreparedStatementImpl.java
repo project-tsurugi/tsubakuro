@@ -46,6 +46,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     /**
      * Creates a new instance without service, closeHandle, request for test purpose.
+     * @param handle the handle of the PreparedStatement
      */
     public PreparedStatementImpl(SqlCommon.PreparedStatement handle) {
         this(handle, null, null, null);
@@ -90,6 +91,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     /**
      * Returns the prepared statement handle
      * @return the SqlCommon.PreparedStatement
+     * @throws IOException if I/O error was occurred while obtaining the handle
      */
     public SqlCommon.PreparedStatement getHandle() throws IOException {
         if (closed.get()) {

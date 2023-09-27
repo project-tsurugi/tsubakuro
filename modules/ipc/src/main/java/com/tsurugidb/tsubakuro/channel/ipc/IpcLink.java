@@ -51,7 +51,6 @@ public final class IpcLink extends Link {
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param name the name of shared memory for this IpcLink through which the SQL server is connected
-     * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
      * @throws IOException error occurred in openNative()
      */
     public IpcLink(@Nonnull String name) throws IOException {

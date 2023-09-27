@@ -89,10 +89,13 @@ public class ResultSetImpl implements ResultSet {
 
     /**
      * Creates a new instance.
+     * @param closeHandler handles {@link #close()} was invoked
      * @param metadata the metadata
      * @param cursor the relation cursor to delegate
      * @param response the original response
      * @param checker tests if response is normal
+     * @param resultSetName the name of the ResultSetImpl
+     * @param request the request origin of the ResultSetImpl
      */
     public ResultSetImpl(
             @Nullable ServerResource.CloseHandler closeHandler,

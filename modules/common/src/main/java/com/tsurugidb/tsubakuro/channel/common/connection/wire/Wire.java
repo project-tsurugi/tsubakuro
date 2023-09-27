@@ -74,7 +74,8 @@ public interface Wire extends ServerResource {
     /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
      * @return ResultSetWire
-    */
+     * @throws IOException if I/O error was occurred while creating a ResultSetWire
+     */
     default ResultSetWire createResultSetWire() throws IOException {
         throw new UnsupportedOperationException();
     }

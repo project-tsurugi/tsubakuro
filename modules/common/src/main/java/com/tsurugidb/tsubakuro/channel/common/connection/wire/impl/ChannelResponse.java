@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,6 +38,7 @@ public class ChannelResponse implements Response {
 
     /**
      * Creates a new instance
+     * @param link the link object by which this ChannelResponse pulls a message from the SQL server
      */
     public ChannelResponse(Link link) {
         this.link = link;
@@ -72,7 +74,7 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public InputStream openSubResponse(String id) throws IOException, InterruptedException {
+    public InputStream openSubResponse(String id) throws NoSuchElementException, IOException, InterruptedException {
         if (id.equals(METADATA_CHANNEL_ID)) {
             waitForResultSetOrMainResponse();
             return metadataChannel();
@@ -80,11 +82,11 @@ public class ChannelResponse implements Response {
             waitForResultSetOrMainResponse();
             return relationChannel();
         }
-        throw new IOException("illegal SubResponse id");
+        throw new NoSuchElementException("illegal SubResponse id");
     }
 
     @Override
-    public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws IOException, InterruptedException, TimeoutException {
+    public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws NoSuchElementException, IOException, InterruptedException, TimeoutException {
         if (id.equals(METADATA_CHANNEL_ID)) {
             waitForResultSetOrMainResponse(timeout, unit);
             return metadataChannel();
@@ -92,7 +94,7 @@ public class ChannelResponse implements Response {
             waitForResultSetOrMainResponse(timeout, unit);
             return relationChannel();
         }
-        throw new IOException("illegal SubResponse id");
+        throw new NoSuchElementException("illegal SubResponse id");
     }
 
     @Override
