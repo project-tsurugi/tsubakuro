@@ -30,7 +30,7 @@ public class DatastoreServiceException extends ServerException {
     private static String buildMessage(DatastoreServiceCode code, @Nullable String message) {
         Objects.requireNonNull(code);
         if (message == null) {
-            return code.getStructuredCode();
+            return String.format("%s: %s", code.getStructuredCode(), code.name());
         }
         return String.format("%s: %s", code.getStructuredCode(), message); //$NON-NLS-1$
     }
