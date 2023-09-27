@@ -78,6 +78,64 @@ class PutMultiValuesTest extends TestBase {
     }
 
     @Test
+    public void columnOrder() throws Exception {
+        final long key1 = 1L;
+        final long value1 = 100L;
+        final long value2 = 101L;
+        try (var session = getNewSession(); var kvs = KvsClient.attach(session)) {
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(VALUE1_NAME, value2);
+                buffer.add(KEY_NAME, key1);
+                buffer.add(VALUE2_NAME, value1);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(put.size(), 1);
+            }
+            RecordBuffer keyBuffer = new RecordBuffer();
+            keyBuffer.add(KEY_NAME, key1);
+            try (var tx = kvs.beginTransaction().await()) {
+                var get = kvs.get(tx, TABLE_NAME, keyBuffer).await();
+                kvs.commit(tx).await();
+                assertEquals(get.size(), 1);
+                checkRecord(get.asRecord(), key1, value2, value1);
+            }
+            //
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(VALUE2_NAME, value2);
+                buffer.add(VALUE1_NAME, value1);
+                buffer.add(KEY_NAME, key1);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(put.size(), 1);
+            }
+            try (var tx = kvs.beginTransaction().await()) {
+                var get = kvs.get(tx, TABLE_NAME, keyBuffer).await();
+                kvs.commit(tx).await();
+                assertEquals(get.size(), 1);
+                checkRecord(get.asRecord(), key1, value1, value2);
+            }
+            //
+            try (var tx = kvs.beginTransaction().await()) {
+                RecordBuffer buffer = new RecordBuffer();
+                buffer.add(VALUE2_NAME, value1);
+                buffer.add(KEY_NAME, key1);
+                buffer.add(VALUE1_NAME, value2);
+                var put = kvs.put(tx, TABLE_NAME, buffer).await();
+                kvs.commit(tx).await();
+                assertEquals(put.size(), 1);
+            }
+            try (var tx = kvs.beginTransaction().await()) {
+                var get = kvs.get(tx, TABLE_NAME, keyBuffer).await();
+                kvs.commit(tx).await();
+                assertEquals(get.size(), 1);
+                checkRecord(get.asRecord(), key1, value2, value1);
+            }
+        }
+    }
+
+    @Test
     public void invalidRequests() throws Exception {
         final long key1 = 1L;
         final long value1 = 100L;
