@@ -108,6 +108,10 @@ public class SqlServiceException extends ServerException {
         case INTERNAL_EXCEPTION: return new InternalException(code, message, cause);
         case UNSUPPORTED_RUNTIME_FEATURE_EXCEPTION: return new UnsupportedRuntimeFeatureException(code, message, cause);
         case BLOCKED_BY_HIGH_PRIORITY_TRANSACTION_EXCEPTION: return new BlockedByHighPriorityTransactionException(code, message, cause);
+        case INVALID_RUNTIME_VALUE_EXCEPTION: return new InvalidRuntimeValueException(code, message, cause);
+        case VALUE_OUT_OF_RANGE_EXCEPTION: return new ValueOutOfRangeException(code, message, cause);
+        case VALUE_TOO_LONG_EXCEPTION: return new ValueTooLongException(code, message, cause);
+        case INVALID_DECIMAL_VALUE_EXCEPTION: return new InvalidDecimalValueException(code, message, cause);
         case COMPILE_EXCEPTION: return new CompileException(code, message, cause);
         case SYNTAX_EXCEPTION: return new SyntaxException(code, message, cause);
         case ANALYZE_EXCEPTION: return new AnalyzeException(code, message, cause);
