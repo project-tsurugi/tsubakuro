@@ -36,7 +36,6 @@ import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
@@ -51,7 +50,6 @@ public class SessionImpl implements Session {
     public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
 
     private final ServiceShelf services = new ServiceShelf();
-    private final ServerResourceHolder resources = new ServerResourceHolder();
     private final AtomicBoolean closed = new AtomicBoolean();
     private Wire wire;
     private Timeout closeTimeout;
@@ -135,11 +133,11 @@ public class SessionImpl implements Session {
         assert response != null;
         assert processor != null;
         if (background) {
-            var f = new BackgroundFutureResponse<>(response, processor, resources);
+            var f = new BackgroundFutureResponse<>(response, processor);
             executor.execute(f); // process in background thread
-            return resources.register(f);
+            return f;
         }
-        return resources.register(new ForegroundFutureResponse<>(response, processor, resources));
+        return new ForegroundFutureResponse<>(response, processor);
     }
 
     @Override
@@ -209,7 +207,6 @@ public class SessionImpl implements Session {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            resources.close();
             if (executor != null) {
                 executor.shutdownNow();
             }
