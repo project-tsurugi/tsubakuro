@@ -152,6 +152,15 @@ public final class SessionBuilder {
             session.connect(wire);
             sessionInfo.addSession(session);
             green = true;
+            Runtime.getRuntime().addShutdownHook(new Thread(
+                () -> {
+                    try {
+                        session.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            ));
             return session;
         } finally {
             if (!green) {
