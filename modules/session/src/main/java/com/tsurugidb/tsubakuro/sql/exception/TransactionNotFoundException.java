@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * TransactionNotFoundException which occurs if Tsurugi OLTP server core is something wrong.
+ * request failed before starting processing (e.g. due to pre-condition not fulfilled)
  */
 public class TransactionNotFoundException extends RequestFailureException {
 

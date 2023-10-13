@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * LtxWriteOperationWithoutWritePreserveException which occurs if Tsurugi OLTP server core is something wrong.
+ * restricted operation was requested
  */
 public class LtxWriteOperationWithoutWritePreserveException extends RestrictedOperationException {
 

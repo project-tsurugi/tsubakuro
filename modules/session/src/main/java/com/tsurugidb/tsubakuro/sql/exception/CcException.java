@@ -7,7 +7,7 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * CcException which occurs if Tsurugi OLTP server core is something wrong.
+ * generic error in SQL service
  */
 public class CcException extends SqlServiceException {
 

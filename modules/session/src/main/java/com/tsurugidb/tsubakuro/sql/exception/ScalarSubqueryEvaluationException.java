@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * ScalarSubqueryEvaluationException which occurs if Tsurugi OLTP server core is something wrong.
+ * error in expression evaluation
  */
 public class ScalarSubqueryEvaluationException extends EvaluationException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * UniqueConstraintViolationException which occurs if Tsurugi OLTP server core is something wrong.
+ * constraint Violation
  */
 public class UniqueConstraintViolationException extends ConstraintViolationException {
 

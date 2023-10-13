@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * SyntaxException which occurs if Tsurugi OLTP server core is something wrong.
+ * compile error
  */
 public class SyntaxException extends CompileException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * ValueOutOfRangeException which occurs if Tsurugi OLTP server core is something wrong.
+ * invalid value was used in runtime
  */
 public class ValueOutOfRangeException extends InvalidRuntimeValueException {
 

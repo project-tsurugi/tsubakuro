@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * LtxWriteException which occurs if Tsurugi OLTP server core is something wrong.
+ * LTX aborted
  */
 public class LtxWriteException extends LtxException {
 

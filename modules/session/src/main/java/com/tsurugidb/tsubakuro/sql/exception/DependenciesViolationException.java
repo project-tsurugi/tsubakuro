@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * DependenciesViolationException which occurs if Tsurugi OLTP server core is something wrong.
+ * restricted operation was requested
  */
 public class DependenciesViolationException extends RestrictedOperationException {
 

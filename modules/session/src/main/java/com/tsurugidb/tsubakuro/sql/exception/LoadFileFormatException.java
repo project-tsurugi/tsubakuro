@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * LoadFileFormatException which occurs if Tsurugi OLTP server core is something wrong.
+ * error on files for load
  */
 public class LoadFileFormatException extends LoadFileException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * BlockedByConcurrentOperationException which occurs if Tsurugi OLTP server core is something wrong.
+ * error in CC serialization
  */
 public class BlockedByConcurrentOperationException extends CcException {
 

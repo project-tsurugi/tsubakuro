@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * SqlRequestTimeoutException which occurs if Tsurugi OLTP server core is something wrong.
+ * generic error in SQL execution
  */
 public class SqlRequestTimeoutException extends SqlExecutionException {
 
