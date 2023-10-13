@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * ConflictOnWritePreserveException which occurs if Tsurugi OLTP server core is something wrong.
+ * OCC aborted due to its read
  */
 public class ConflictOnWritePreserveException extends OccReadException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * SecondaryIndexCorruptionException which occurs if Tsurugi OLTP server core is something wrong.
+ * detected data corruption
  */
 public class SecondaryIndexCorruptionException extends DataCorruptionException {
 

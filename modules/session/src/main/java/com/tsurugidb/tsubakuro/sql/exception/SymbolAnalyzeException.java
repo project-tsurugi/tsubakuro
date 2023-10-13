@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * SymbolAnalyzeException which occurs if Tsurugi OLTP server core is something wrong.
+ * analyze error
  */
 public class SymbolAnalyzeException extends AnalyzeException {
 

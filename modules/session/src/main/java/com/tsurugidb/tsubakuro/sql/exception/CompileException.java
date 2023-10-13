@@ -7,7 +7,7 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * CompileException which occurs if Tsurugi OLTP server core is something wrong.
+ * generic error in SQL service
  */
 public class CompileException extends SqlServiceException {
 

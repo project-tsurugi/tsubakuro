@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * InvalidDecimalValueException which occurs if Tsurugi OLTP server core is something wrong.
+ * invalid value was used in runtime
  */
 public class InvalidDecimalValueException extends InvalidRuntimeValueException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * OccWriteException which occurs if Tsurugi OLTP server core is something wrong.
+ * OCC aborted
  */
 public class OccWriteException extends OccException {
 

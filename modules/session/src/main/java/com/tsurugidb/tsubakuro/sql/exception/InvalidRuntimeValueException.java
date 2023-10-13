@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * InvalidRuntimeValueException which occurs if Tsurugi OLTP server core is something wrong.
+ * the requested operation reached the SQL limit
  */
 public class InvalidRuntimeValueException extends SqlLimitReachedException {
 
