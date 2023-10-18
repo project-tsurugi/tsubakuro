@@ -46,7 +46,7 @@ public final class IpcConnectorImpl implements Connector {
         long handle = getConnectorNative(name);
         try {
             long id = requestNative(handle);
-            return new FutureWireImpl(this, handle, id);
+            return new FutureIpcWireImpl(this, handle, id);
         } catch (IOException e) {
             throw new IOException("the server has declined the connection request");
         }

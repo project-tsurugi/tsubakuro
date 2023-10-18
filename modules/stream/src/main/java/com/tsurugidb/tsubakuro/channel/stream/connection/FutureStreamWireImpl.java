@@ -12,14 +12,14 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
- * FutureWireImpl type.
+ * FutureStreamWireImpl type.
  */
-public class FutureWireImpl implements FutureResponse<Wire> {
+public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
     StreamLink streamLink;
     private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureWireImpl(StreamLink streamLink) {
+    FutureStreamWireImpl(StreamLink streamLink) {
         this.streamLink = streamLink;
     }
 
@@ -41,7 +41,7 @@ public class FutureWireImpl implements FutureResponse<Wire> {
                 throw new IOException(e);
             }
         }
-        throw new IOException("programming error: FutureWire is already closed");
+        throw new IOException("programming error: FutureStreamWire is already closed");
     }
 
     @Override

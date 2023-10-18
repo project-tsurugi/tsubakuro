@@ -10,16 +10,16 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
- * FutureWireImpl type.
+ * FutureIpcWireImpl type.
  */
-public class FutureWireImpl implements FutureResponse<Wire> {
+public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     private IpcConnectorImpl connector;
     private long handle;
     private long id;
-    private final AtomicBoolean done = new AtomicBoolean();
+    private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureWireImpl(IpcConnectorImpl connector, long handle, long id) {
+    FutureIpcWireImpl(IpcConnectorImpl connector, long handle, long id) {
         this.connector = connector;
         this.handle = handle;
         this.id = id;
@@ -27,19 +27,23 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException {
-        done.set(true);
-        return connector.getSessionWire(handle, id);
+        if (!gotton.getAndSet(true)) {
+            return connector.getSessionWire(handle, id);
+        }
+        throw new IOException("FutureIpcWireImpl is already closed");
     }
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
-        done.set(true);
-        return connector.getSessionWire(handle, id, timeout, unit);
+        if (!gotton.getAndSet(true)) {
+            return connector.getSessionWire(handle, id, timeout, unit);
+        }
+        throw new IOException("FutureIpcWireImpl is already closed");
     }
 
     @Override
     public boolean isDone() {
-        if (done.get()) {
+        if (gotton.get()) {
             return true;
         }
         return connector.checkConnection(handle, id);
@@ -47,8 +51,8 @@ public class FutureWireImpl implements FutureResponse<Wire> {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!done.getAndSet(true)) {
-            var wire = get();
+        if (!gotton.getAndSet(true)) {
+            var wire = connector.getSessionWire(handle, id);
             wire.close();
         }
     }
