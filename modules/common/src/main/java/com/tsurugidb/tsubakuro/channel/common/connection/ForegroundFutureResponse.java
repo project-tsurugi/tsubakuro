@@ -101,9 +101,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             return Owner.of(delegate.get(timeout, unit));
         }
         long timeoutMillis = Math.max(unit.toMillis(timeout), 2);
-        try (Owner<Response> response = Owner.of(delegate.get(timeoutMillis / 2, TimeUnit.MILLISECONDS))) {
+        long startTime = System.currentTimeMillis();
+        try (Owner<Response> response = Owner.of(delegate.get(timeoutMillis, TimeUnit.MILLISECONDS))) {
             try {
-                response.get().waitForMainResponse(timeoutMillis / 2, TimeUnit.MILLISECONDS);
+                timeoutMillis = Math.max(timeoutMillis - (System.currentTimeMillis() - startTime), 2);
+                response.get().waitForMainResponse(timeoutMillis, TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 unprocessed.set(response.release());
                 throw new ResponseTimeoutException(e);
