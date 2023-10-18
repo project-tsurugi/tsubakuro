@@ -3,6 +3,7 @@ package com.tsurugidb.tsubakuro.channel.ipc.sql;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
@@ -22,6 +23,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private ByteBufferBackedInput byteBufferBackedInput;
 
     class ByteBufferBackedInputForIpc extends ByteBufferBackedInput {
+        private final AtomicBoolean closed = new AtomicBoolean();
         private long wireHandle;  // for c++
 
         ByteBufferBackedInputForIpc(long sessionWireHandle, String name) throws IOException {
@@ -45,13 +47,13 @@ public class ResultSetWireImpl implements ResultSetWire {
 
         @Override
         public void close() throws IOException {
-            synchronized (this) {
-                if (wireHandle != 0) {
+            if (!closed.getAndSet(true)) {
+                synchronized (this) {
                     discardRemainingResultSet();
                     super.close();
                     closeNative(wireHandle);
-                    wireHandle = 0;
                     link.remove(ResultSetWireImpl.this);
+                    wireHandle = 0;
                 }
             }
         }
