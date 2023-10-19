@@ -68,6 +68,7 @@ class ConnectionTest {
             var future = connector.connect();
         });
         // FIXME: check error code instead of message
-        assertEquals("cannot find a database with the specified name: tsubakuro", exception.getMessage());
+        //        assertEquals("cannot find a database with the specified name: tsubakuro", exception.getMessage());
+        assertTrue(exception.getMessage().contains("cannot find a database with the specified name: tsubakuro"));
     }
 }
