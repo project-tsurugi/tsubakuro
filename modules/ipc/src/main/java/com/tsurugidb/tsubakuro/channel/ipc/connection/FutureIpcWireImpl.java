@@ -15,20 +15,18 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     private IpcConnectorImpl connector;
-    private long handle;
     private long id;
     private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureIpcWireImpl(IpcConnectorImpl connector, long handle, long id) {
+    FutureIpcWireImpl(IpcConnectorImpl connector, long id) {
         this.connector = connector;
-        this.handle = handle;
         this.id = id;
     }
 
     @Override
     public Wire get() throws IOException {
         if (!gotton.getAndSet(true)) {
-            return connector.getSessionWire(handle, id);
+            return connector.getSessionWire(id);
         }
         throw new IOException("FutureIpcWireImpl is already closed");
     }
@@ -36,7 +34,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException  {
         if (!gotton.getAndSet(true)) {
-            return connector.getSessionWire(handle, id, timeout, unit);
+            return connector.getSessionWire(id, timeout, unit);
         }
         throw new IOException("FutureIpcWireImpl is already closed");
     }
@@ -46,13 +44,13 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
         if (gotton.get()) {
             return true;
         }
-        return connector.checkConnection(handle, id);
+        return connector.checkConnection(id);
     }
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            var wire = connector.getSessionWire(handle, id);
+            var wire = connector.getSessionWire(id);
             wire.close();
         }
     }
