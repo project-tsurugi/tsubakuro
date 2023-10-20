@@ -18,6 +18,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.Types;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -87,7 +88,7 @@ class TransactionImplTest {
                                               .build(),
                                               new SqlService() {
                 @Override
-                public FutureResponse<Void> send(SqlRequest.ExecuteStatement request) throws IOException {
+                public FutureResponse<ExecuteResult> send(SqlRequest.ExecuteStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals("SELECT 100", request.getSql());
@@ -117,7 +118,7 @@ class TransactionImplTest {
                                               .build(),
                                               new SqlService() {
                 @Override
-                public FutureResponse<Void> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
+                public FutureResponse<ExecuteResult> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(100, request.getPreparedStatementHandle().getHandle());
