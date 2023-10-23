@@ -31,7 +31,7 @@ public final class IpcConnectorImpl implements Connector {
     private static native void closeConnectorNative(long handle);
 
     private final String name;
-    private final Cleaner cleaner = Cleaner.create();
+    private static final Cleaner CLEANER = Cleaner.create();
     private final CloseRunnable closeRunnable;
     private final Cleaner.Cleanable cleanable;
     private long handle;
@@ -45,7 +45,7 @@ public final class IpcConnectorImpl implements Connector {
 
         // for GC
         this.closeRunnable = new CloseRunnable();
-        this.cleanable = cleaner.register(this, closeRunnable);
+        this.cleanable = CLEANER.register(this, closeRunnable);
     }
 
     @Override
