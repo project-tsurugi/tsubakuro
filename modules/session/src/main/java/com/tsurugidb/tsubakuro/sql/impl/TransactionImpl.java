@@ -25,7 +25,6 @@ import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -65,7 +64,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
+    public FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (cleanuped.get()) {
             throw new IOException("transaction already closed");
@@ -89,7 +88,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> executeStatement(
+    public FutureResponse<Void> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);

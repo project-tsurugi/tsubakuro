@@ -103,10 +103,10 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecuteStatement request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
-    default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
+    default FutureResponse<Void> send(@Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
 

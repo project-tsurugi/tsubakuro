@@ -88,7 +88,7 @@ class TransactionImplTest {
                                               .build(),
                                               new SqlService() {
                 @Override
-                public FutureResponse<ExecuteResult> send(SqlRequest.ExecuteStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecuteStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals("SELECT 100", request.getSql());
@@ -118,7 +118,7 @@ class TransactionImplTest {
                                               .build(),
                                               new SqlService() {
                 @Override
-                public FutureResponse<ExecuteResult> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
+                public FutureResponse<Void> send(SqlRequest.ExecutePreparedStatement request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(100, request.getPreparedStatementHandle().getHandle());
