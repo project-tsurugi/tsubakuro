@@ -39,7 +39,8 @@ message Error {
  * Each response message
  */
 
-/* For response to ExecuteStatement, ExecutePreparedStatement, Commit, and/or Rollback. */
+/* For response to ExecuteQuery, ExecutePreparedQuery, Commit, Rollback, 
+DisposePreparedStatement, DisposeTransaction, ExecuteDump and ExecuteLoad. */
 message ResultOnly {
   oneof result {
     Success success = 1;
@@ -239,7 +240,7 @@ message DisposeTransaction {
   }
 }
 
-// execute a ExecuteQuery and/or ExecutePreparedQuery.
+/* For response to ExecuteStatement and ExecutePreparedStatement. */
 message ExecuteResult {
   reserved 1 to 10;
 
@@ -279,7 +280,7 @@ message ExecuteResult {
       // The number of rows updated in the execution.
       UPDATED_ROWS = 20;
 
-      // The number of rows inserted or replaced/updated or inserted in the execution.
+      // The number of rows merged in the execution.
       MERGED_ROWS = 30;
 
       // The number of rows deleted in the execution.
