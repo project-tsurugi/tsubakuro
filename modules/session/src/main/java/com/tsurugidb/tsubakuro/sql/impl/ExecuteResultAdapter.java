@@ -38,8 +38,12 @@ public class ExecuteResultAdapter implements ExecuteResult {
 
     private CounterType counterType(SqlResponse.ExecuteResult.CounterType type) throws IOException {
         switch (type) {
+        case INSERTED_ROWS:
+            return CounterType.INSERTED_ROWS;
         case UPDATED_ROWS:
             return CounterType.UPDATED_ROWS;
+        case  MERGED_ROWS:
+            return CounterType.MERGED_ROWS;
         case DELETED_ROWS:
             return CounterType.DELETED_ROWS;
         }
