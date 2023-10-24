@@ -424,25 +424,33 @@ public class SqlServiceStub implements SqlService {
     }
 
     static class ExecuteProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+        private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getResultOnly());
+            if (responseCache.get() == null) {
+                responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
             }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (execute (prepared) statement): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+            var response = responseCache.get();
+            switch (response.getResponseCase()) {
+                case EXECUTE_RESULT:
+                    var detailResponse = response.getExecuteResult();
+                    LOG.trace("receive (ExecuteResult): {}", detailResponse); //$NON-NLS-1$
+                    if (SqlResponse.ExecuteResult.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                        var errorResponse = detailResponse.getError();
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                    }
+                    return null;
+                case RESULT_ONLY:
+                    var resultOnlyResponse = response.getResultOnly();
+                    LOG.trace("receive (ResultOnly): {}", resultOnlyResponse); //$NON-NLS-1$
+                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(resultOnlyResponse.getResultCase())) {
+                        var errorResponse = resultOnlyResponse.getError();
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                    }
+                    return null;
             }
-            return null;
+            throw new IOException("response type is inconsistent with the request type");
         }
     }
 
