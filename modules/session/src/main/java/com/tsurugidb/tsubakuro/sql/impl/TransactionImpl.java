@@ -190,7 +190,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<Void> executeLoad(
+    public FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {

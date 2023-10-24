@@ -449,7 +449,7 @@ public class SqlServiceStub implements SqlService {
                         var errorResponse = resultOnlyResponse.getError();
                         throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
-                    return null;
+                    return new ExecuteResultAdapter();
             }
             throw new IOException("response type is inconsistent with the request type");
         }
@@ -654,31 +654,39 @@ public class SqlServiceStub implements SqlService {
                     new QueryProcessor(request));
     }
 
-    static class LoadProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+    static class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
+        private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getResultOnly());
+        public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (responseCache.get() == null) {
+                responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
             }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (execute load): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+            var response = responseCache.get();
+            switch (response.getResponseCase()) {
+                case EXECUTE_RESULT:
+                    var detailResponse = response.getExecuteResult();
+                    LOG.trace("receive (ExecuteResult): {}", detailResponse); //$NON-NLS-1$
+                    if (SqlResponse.ExecuteResult.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                        var errorResponse = detailResponse.getError();
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                    }
+                    return new ExecuteResultAdapter(detailResponse.getSuccess());
+                case RESULT_ONLY:
+                    var resultOnlyResponse = response.getResultOnly();
+                    LOG.trace("receive (ResultOnly): {}", resultOnlyResponse); //$NON-NLS-1$
+                    if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(resultOnlyResponse.getResultCase())) {
+                        var errorResponse = resultOnlyResponse.getError();
+                        throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                    }
+                    return new ExecuteResultAdapter();
             }
-            return null;
+            throw new IOException("response type is inconsistent with the request type");
         }
     }
 
     @Override
-    public FutureResponse<Void> send(
+    public FutureResponse<ExecuteResult> send(
             @Nonnull SqlRequest.ExecuteLoad request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute load): {}", request); //$NON-NLS-1$

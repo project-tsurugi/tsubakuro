@@ -14,6 +14,7 @@ import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -64,7 +65,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see Transaction#executeLoad(PreparedStatement, Collection, Collection)
      */
-    public FutureResponse<Void> submit(
+    public FutureResponse<ExecuteResult> submit(
             @Nonnull Transaction transaction,
             @Nonnull Collection<? extends Path> files) throws IOException {
         Objects.requireNonNull(transaction);
@@ -80,7 +81,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see #submit(Transaction, Collection)
      */
-    public FutureResponse<Void> submit(
+    public FutureResponse<ExecuteResult> submit(
             @Nonnull Transaction transaction,
             @Nonnull Path... files) throws IOException {
         Objects.requireNonNull(transaction);
@@ -96,7 +97,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see SqlClient#executeLoad(PreparedStatement, Collection, Collection)
      */
-    public FutureResponse<Void> submit(
+    public FutureResponse<ExecuteResult> submit(
             @Nonnull SqlClient client,
             @Nonnull Collection<? extends Path> files) throws IOException {
         Objects.requireNonNull(client);
@@ -112,7 +113,7 @@ public class Load implements ServerResource {
      * @throws IOException if I/O error was occurred
      * @see #submit(SqlClient, Collection)
      */
-    public FutureResponse<Void> submit(
+    public FutureResponse<ExecuteResult> submit(
             @Nonnull SqlClient client,
             @Nonnull Path... files) throws IOException {
         Objects.requireNonNull(client);

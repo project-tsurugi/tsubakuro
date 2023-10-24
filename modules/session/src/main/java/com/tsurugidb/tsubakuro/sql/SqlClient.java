@@ -164,7 +164,7 @@ public interface SqlClient extends ServerResource {
      * @throws IOException if I/O error was occurred while sending request
      * @see Parameters
      */
-    default FutureResponse<Void> executeLoad(
+    default FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {

@@ -17,6 +17,9 @@ public class ExecuteResultAdapter implements ExecuteResult {
     private final HashSet<CounterType> counterTypes = new HashSet<>();
     private final HashMap<CounterType, Long> counters = new HashMap<>();
 
+    ExecuteResultAdapter() {
+    }
+
     ExecuteResultAdapter(SqlResponse.ExecuteResult.Success executeResult) throws IOException {
         var result = executeResult.getCountersList();
         for (var e : result) {

@@ -17,6 +17,7 @@ import com.tsurugidb.tsubakuro.sql.impl.TableMetadataAdapter;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
@@ -71,7 +72,7 @@ class LoadBuilderTest {
 
     private final Transaction transaction = new Transaction() {
         @Override
-        public FutureResponse<Void> executeLoad(
+        public FutureResponse<ExecuteResult> executeLoad(
                 PreparedStatement statement,
                 Collection<? extends SqlRequest.Parameter> parameters,
                 Collection<? extends Path> files) throws IOException {
@@ -346,7 +347,7 @@ class LoadBuilderTest {
 
     private final SqlClient sqlClient = new SqlClient() {
         @Override
-        public FutureResponse<Void> executeLoad(
+        public FutureResponse<ExecuteResult> executeLoad(
                 PreparedStatement statement,
                 Collection<? extends SqlRequest.Parameter> parameters,
                 Collection<? extends Path> files) throws IOException {

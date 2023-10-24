@@ -326,7 +326,7 @@ class TransactionImplTest {
                                               .build(),
                                               new SqlService() {
                 @Override
-                public FutureResponse<Void> send(SqlRequest.ExecuteLoad request) throws IOException {
+                public FutureResponse<ExecuteResult> send(SqlRequest.ExecuteLoad request) throws IOException {
                     count.incrementAndGet();
                     assertEquals(100, request.getTransactionHandle().getHandle());
                     assertEquals(200, request.getPreparedStatementHandle().getHandle());
