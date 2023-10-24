@@ -26,7 +26,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<Void> executeStatement(@Nonnull String source) throws IOException {
+    default FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -39,7 +39,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<Void> executeStatement(
+    default FutureResponse<ExecuteResult> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull SqlRequest.Parameter... parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -56,7 +56,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<Void> executeStatement(
+    default FutureResponse<ExecuteResult> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         throw new UnsupportedOperationException();
@@ -205,7 +205,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @return a future response of the result set
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<Void> executeLoad(
+    default FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path... files) throws IOException {
@@ -234,7 +234,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @throws IOException if I/O error was occurred while sending request
      * @see Parameters
      */
-    default FutureResponse<Void> executeLoad(
+    default FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {

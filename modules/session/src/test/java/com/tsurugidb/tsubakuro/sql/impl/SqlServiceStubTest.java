@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlRequest.ExecuteStatement;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlStatus;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
@@ -30,6 +31,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
@@ -635,7 +637,7 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendExecuteSuccess() throws Exception {
+    void sendExecuteSuccess_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
@@ -648,13 +650,17 @@ class SqlServiceStubTest {
             var service = new SqlServiceStub(session);
             var future = service.send(message);
         ) {
-            assertDoesNotThrow(() -> future.get());
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.isEmpty());
+            var counters = executeResult.getCounters();
+            assertTrue(counters.isEmpty());
         }
         assertFalse(wire.hasRemaining());
     }
 
     @Test
-    void sendExecuteEngineError() throws Exception {
+    void sendExecuteEngineError_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
@@ -672,6 +678,58 @@ class SqlServiceStubTest {
         }
         assertFalse(wire.hasRemaining());
     }
+
+    @Test
+    void sendExecuteSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4)))
+                        .build())));
+
+        var message = SqlRequest.ExecuteStatement.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.containsAll(List.of(CounterType.INSERTED_ROWS, CounterType.UPDATED_ROWS, CounterType.MERGED_ROWS, CounterType.DELETED_ROWS)));
+            var counters = executeResult.getCounters();
+            assertEquals(counters.get(CounterType.INSERTED_ROWS), 1);
+            assertEquals(counters.get(CounterType.UPDATED_ROWS), 2);
+            assertEquals(counters.get(CounterType.MERGED_ROWS), 3);
+            assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendExecuteEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.ExecuteStatement.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+
 
     @Test
     void sendQuerySuccess() throws Exception {
@@ -1064,7 +1122,7 @@ class SqlServiceStubTest {
     }
 
     @Test
-    void sendLoadSuccess() throws Exception {
+    void sendLoadSuccess_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
@@ -1080,7 +1138,67 @@ class SqlServiceStubTest {
             var service = new SqlServiceStub(session);
             var future = service.send(message);
         ) {
-            assertDoesNotThrow(() -> future.get());
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.isEmpty());
+            var counters = executeResult.getCounters();
+            assertTrue(counters.isEmpty());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendLoadEngineError_deprecated() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.ExecuteLoad.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
+                .addFile("a")
+                .addFile("b")
+                .addFile("c")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendLoadSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4)))
+                        .build())));
+
+        var message = SqlRequest.ExecuteLoad.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
+                .addFile("a")
+                .addFile("b")
+                .addFile("c")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.containsAll(List.of(CounterType.INSERTED_ROWS, CounterType.UPDATED_ROWS, CounterType.MERGED_ROWS, CounterType.DELETED_ROWS)));
+            var counters = executeResult.getCounters();
+            assertEquals(counters.get(CounterType.INSERTED_ROWS), 1);
+            assertEquals(counters.get(CounterType.UPDATED_ROWS), 2);
+            assertEquals(counters.get(CounterType.MERGED_ROWS), 3);
+            assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1088,7 +1206,7 @@ class SqlServiceStubTest {
     @Test
     void sendLoadEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
