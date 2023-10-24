@@ -38,6 +38,7 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -423,11 +424,11 @@ public class SqlServiceStub implements SqlService {
                 new DescribeTableProcessor().asResponseProcessor());
     }
 
-    static class ExecuteProcessor implements MainResponseProcessor<Void> {
+    static class ExecuteProcessor implements MainResponseProcessor<ExecuteResult> {
         private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (responseCache.get() == null) {
                 responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
             }
@@ -440,7 +441,7 @@ public class SqlServiceStub implements SqlService {
                         var errorResponse = detailResponse.getError();
                         throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
-                    return null;
+                    return new ExecuteResultAdapter(detailResponse.getSuccess());
                 case RESULT_ONLY:
                     var resultOnlyResponse = response.getResultOnly();
                     LOG.trace("receive (ResultOnly): {}", resultOnlyResponse); //$NON-NLS-1$
@@ -455,7 +456,7 @@ public class SqlServiceStub implements SqlService {
     }
 
     @Override
-    public FutureResponse<Void> send(
+    public FutureResponse<ExecuteResult> send(
             @Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute statement): {}", request); //$NON-NLS-1$
@@ -468,7 +469,7 @@ public class SqlServiceStub implements SqlService {
     }
 
     @Override
-    public FutureResponse<Void> send(
+    public FutureResponse<ExecuteResult> send(
             @Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
