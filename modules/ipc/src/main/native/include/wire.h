@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 Project Tsurugi.
+ * Copyright 2018-2023 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -595,6 +595,9 @@ public:
         }
 
         void write(char* base, const char* from, std::size_t length) {
+            if (length > room()) {
+                wait_to_resultset_write(length);
+            }
             write_in_buffer(base, buffer_address(base, pushed_.load()), from, length);
             pushed_.fetch_add(length);
         }
