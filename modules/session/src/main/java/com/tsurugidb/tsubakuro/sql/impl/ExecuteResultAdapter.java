@@ -1,21 +1,19 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.util.Set;
-import java.util.Map;
-import java.util.HashSet;
 import java.io.IOException;
-import java.util.HashMap;
+import java.text.MessageFormat;
+import java.util.EnumMap;
+import java.util.Map;
 
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.CounterType;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 
 /**
  * Represents an execution result of SQL statements.
  */
 public class ExecuteResultAdapter implements ExecuteResult {
-    private final HashSet<CounterType> counterTypes = new HashSet<>();
-    private final HashMap<CounterType, Long> counters = new HashMap<>();
+    private final Map<CounterType, Long> counters = new EnumMap<>(CounterType.class);
 
     ExecuteResultAdapter() {
     }
@@ -24,14 +22,8 @@ public class ExecuteResultAdapter implements ExecuteResult {
         var result = executeResult.getCountersList();
         for (var e : result) {
             var type = counterType(e.getType());
-            counterTypes.add(type);
             counters.put(type, e.getValue());
         }
-    }
-
-    @Override
-    public Set<CounterType> getCounterTypes() {
-        return counterTypes;
     }
 
     @Override
@@ -50,6 +42,6 @@ public class ExecuteResultAdapter implements ExecuteResult {
         case DELETED_ROWS:
             return CounterType.DELETED_ROWS;
         }
-        throw new IOException("illegal counter type");
+        throw new IOException(MessageFormat.format("illegal counter type. type={0}", type));
     }
 }

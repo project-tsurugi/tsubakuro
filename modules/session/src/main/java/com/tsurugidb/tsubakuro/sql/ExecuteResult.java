@@ -1,7 +1,7 @@
 package com.tsurugidb.tsubakuro.sql;
 
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an execution result of SQL statements.
@@ -13,7 +13,7 @@ public interface ExecuteResult {
      * @return the available counter types
      */
     default Set<CounterType> getCounterTypes() {
-        throw new UnsupportedOperationException();
+        return getCounters().keySet();
     }
 
     /**
