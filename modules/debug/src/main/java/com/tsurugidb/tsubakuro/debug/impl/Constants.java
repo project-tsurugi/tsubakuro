@@ -8,7 +8,7 @@ public final class Constants {
     /**
      * The service ID of debugging service.
      */
-    public static final int SERVICE_ID_DEBUG = 1; // FIXME
+    public static final int SERVICE_ID_DEBUG = 6;
 
     private Constants() {
         throw new AssertionError();
