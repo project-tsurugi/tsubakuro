@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package tateyama.proto.debug.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.debug.proto";
+option java_outer_classname = "DebugRequest";
+
+// request message for RPC.
+message Request {
+    // the request message version.
+    uint64 message_version = 1;
+    reserved 2 to 10;
+
+    // the request command.
+    oneof command {
+
+        // Output a log record on the server side.
+        Logging logging = 11;
+    }
+}
+
+// the message to output a log record on the server side.
+message Logging {
+
+    // the log level.
+    Level level = 1;
+
+    // the log message.
+    string message = 2;
+
+    // the log level.
+    enum Level {
+
+        // the default log level.
+        LOGGING_LEVEL_NOT_SPECIFIED = 0;
+        
+        // the INFO level.
+        INFO = 10;
+
+        // the WARN level.
+        WARN = 20;
+
+        // the ERROR level.
+        ERROR = 30;
+    }
+}
