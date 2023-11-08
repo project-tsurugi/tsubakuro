@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.debug.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
@@ -19,6 +20,7 @@ import com.tsurugidb.tsubakuro.debug.DebugServiceCode;
 import com.tsurugidb.tsubakuro.debug.DebugServiceException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -44,6 +46,13 @@ public class DebugServiceStub implements DebugService {
         this.session = session;
     }
 
+    private static byte[] toDelimitedByteArray(DebugRequest.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        }
+    }
+
     static DebugServiceException newUnknown(@Nonnull DebugResponse.UnknownError message) {
         assert message != null;
         return new DebugServiceException(DebugServiceCode.UNKNOWN, message.getMessage());
@@ -62,7 +71,7 @@ public class DebugServiceStub implements DebugService {
     static class LoggingProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DebugResponse.Logging.parseFrom(payload);
+            var message = DebugResponse.Logging.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -84,10 +93,10 @@ public class DebugServiceStub implements DebugService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                DebugRequest.Request.newBuilder()
-                    .setLogging(request)
-                    .build()
-                    .toByteArray(),
+                toDelimitedByteArray(
+                    DebugRequest.Request.newBuilder()
+                        .setLogging(request)
+                        .build()),
                 new LoggingProcessor().asResponseProcessor());
     }
 
