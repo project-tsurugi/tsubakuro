@@ -33,7 +33,7 @@ message Logging {
     enum Level {
 
         // the default log level.
-        LOGGING_LEVEL_NOT_SPECIFIED = 0;
+        NOT_SPECIFIED = 0;
         
         // the INFO level.
         INFO = 10;
