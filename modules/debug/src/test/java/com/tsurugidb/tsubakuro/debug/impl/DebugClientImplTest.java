@@ -17,7 +17,7 @@ class DebugClientImplTest {
         var client = new DebugClientImpl(new DebugService() {
             @Override
             public FutureResponse<Void> send(DebugRequest.Logging request) throws IOException {
-                assertEquals(DebugRequest.Logging.Level.LOGGING_LEVEL_NOT_SPECIFIED, request.getLevel());
+                assertEquals(DebugRequest.Logging.Level.NOT_SPECIFIED, request.getLevel());
                 assertEquals("TESTING", request.getMessage());
                 return FutureResponse.returns(null);
             }
