@@ -6,6 +6,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.debug.impl.DebugClientImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -22,7 +23,7 @@ public interface DebugClient extends ServerResource {
      */
     static DebugClient attach(@Nonnull Session session) {
         Objects.requireNonNull(session);
-        throw new UnsupportedOperationException();
+        return DebugClientImpl.attach(session);
     }
 
     /**
