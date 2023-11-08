@@ -15,10 +15,6 @@ repositories {
 dependencies {
     api project(':tsubakuro-session')
     
-    // tsubakuro-ipc/stream dependencies are just for runDebugClientExample task below
-    api project(':tsubakuro-ipc')
-    api project(':tsubakuro-stream')
-    
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'org.slf4j:slf4j-api:1.7.36'
     api 'com.google.protobuf:protobuf-java:3.8.0'
@@ -32,20 +28,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 }
-sourceSets {
-    main {
-        java {
-            srcDir "src/example/java"
-        }
-    }
-}
-/*
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(11)
-    }
-}
-*/
 test {
     useJUnitPlatform()
 }
@@ -92,13 +74,4 @@ tasks.matching { it.name == 'eclipseJdt' }.each { task ->
         classpath.entries.add(src)
         classpath.entries.unique()
     }
-}
-
-tasks.register('runDebugClientExample', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.debug.example.DebugClientExample'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED']
-    args = ['ipc:tsurugi', '<<<Tsubakuro DebugClient Test Message>>>']
 }
