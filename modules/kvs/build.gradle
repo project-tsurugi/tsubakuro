@@ -14,8 +14,6 @@ repositories {
 
 dependencies {
     api project(':tsubakuro-session')
-    api project(':tsubakuro-ipc')
-    api project(':tsubakuro-stream')
 
     api 'com.google.code.findbugs:jsr305:3.0.2'
     api 'org.slf4j:slf4j-api:1.7.36'
@@ -29,82 +27,6 @@ dependencies {
 
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir "src/bench/java"
-        }
-    }
-    kvsIntegrationTest {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
-            srcDir "src/inttest/java"
-        }
-        resources.srcDir file('src/inttest/resources')
-    }
-}
-
-configurations {
-    kvsIntegrationTestImplementation.extendsFrom testImplementation
-    kvsIntegrationTestRuntime.extendsFrom testRuntime
-}
-
-task kvsIntegrationTest(type: Test) {
-    systemProperty 'tsurugi.kvstest.endpoint', 'ipc:tsurugi'
-    dependsOn ':tsubakuro-ipc:assemble'
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    useJUnitPlatform()
-    testClassesDirs = sourceSets.kvsIntegrationTest.output.classesDirs
-    classpath = sourceSets.kvsIntegrationTest.runtimeClasspath
-    outputs.upToDateWhen { false }
-}
-
-tasks.register('runSingleEmptyMessageBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.EmptyMessageBench'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi', '1', '10', '30']
-}
-
-tasks.register('runMultiEmptyMessageBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.bench.EmptyMessageBench'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi', '1,2,4,8', '10', '30']
-}
-
-tasks.register('runYCSBlikeBenchCreateDB', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi', '8', 'createDB']
-}
-
-tasks.register('runYCSBlikeBench', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M']
-    args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
-}
-
-tasks.register('runYCSBlikeBenchBySql', JavaExec) {
-    dependsOn ':tsubakuro-ipc:assemble'
-    classpath = sourceSets.main.runtimeClasspath
-    systemProperty 'com.tsurugidb.tsubakuro.jnilib', "${project(':tsubakuro-ipc').buildDir}/native/lib/libtsubakuro.so"
-    mainClass = 'com.tsurugidb.tsubakuro.kvs.ycsb.YCSBlikeBenchmark'
-    jvmArgs = ['--add-opens=java.base/java.nio=ALL-UNNAMED', '-Xmx1024M', '-DuseSqlClient=true']
-    args = ['ipc:tsurugi', '1,2,4,8', '50', '10', '30']
 }
 
 test {
