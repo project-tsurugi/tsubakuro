@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package tateyama.proto.debug.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.debug.proto";
+option java_outer_classname = "DebugResponse";
+
+// empty message
+message Void {}
+
+// unknown error was occurred.
+message UnknownError {
+    // the error message.
+    string message = 1;
+}
+
+
+// Output a log record on the server side.
+message Logging {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 12;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}

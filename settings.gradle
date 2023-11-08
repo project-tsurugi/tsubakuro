@@ -10,6 +10,7 @@ include "${rootProject.name}-auth-http"
 include "${rootProject.name}-auth-mock"
 include "${rootProject.name}-explain"
 include "${rootProject.name}-kvs"
+include "${rootProject.name}-debug"
 
 rootProject.children.each { project ->
     var dirName = project.name.substring("${rootProject.name}-".length());
