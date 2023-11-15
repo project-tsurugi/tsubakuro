@@ -126,7 +126,7 @@ public interface DatastoreService extends ServerResource {
      * @param time the expiration time from now
      * @param unit the time unit of expiration time
      * @return the future response of the request;
-     *     it will raise {@link CoreServiceException} if request was failure
+     *     it will raise {@link ServerException} if request was failure
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Void> updateExpirationTime(long time, TimeUnit unit) throws IOException {

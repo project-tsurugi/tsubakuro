@@ -129,7 +129,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * Please split the parameter table and execute {@link #batch(PreparedStatement, Collection) batch()} for the
      * individual fragment of the parameter table.
      * For large parameter tables, please consider to use
-     * {@link #load(PreparedStatement, Collection, Collection) load()} instead.
+     * {@link #executeLoad(PreparedStatement, Collection, Collection) load()} instead.
      * </p>
      * @param statement the prepared statement to execute for each 1-D parameter set
      * @param parameterTable 2-D parameter table (list of 1-D parameter set) for place-holders in the prepared statement
@@ -275,7 +275,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
     * Returns occurred error in the target transaction, only if the transaction has been accidentally aborted.
     * @return the future response of the error information:
     * if the transaction will have been accidentally aborted, this provides the occurred error information.
-    * otherwise, the transaction is running, successfully committed, or manually aborted, then this will provide {@code null
+    * otherwise, the transaction is running, successfully committed, or manually aborted, then this will provide {@code null}
     * The returned object may <b>raise exception</b> if this operation occurs a new error in the server side.
     * @throws IOException if I/O error was occurred while sending request
     */
