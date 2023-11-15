@@ -61,7 +61,6 @@ public interface Response extends ServerResource {
      * @throws IOException if I/O error was occurred while opening the sub-responses
      * @throws ServerException if server error was occurred while opening the sub-responses
      * @throws InterruptedException if interrupted by other threads while opening the sub-responses
-     * @see #getSubResponseIds()
      */
     default InputStream openSubResponse(String id) throws NoSuchElementException, IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
@@ -81,7 +80,6 @@ public interface Response extends ServerResource {
      * @throws ServerException if server error was occurred while opening the sub-responses
      * @throws InterruptedException if interrupted by other threads while opening the sub-responses
      * @throws TimeoutException if the wait time out;
-     * @see #getSubResponseIds()
      */
     default InputStream openSubResponse(String id, long timeout, TimeUnit unit)
             throws NoSuchElementException, IOException, ServerException, InterruptedException, TimeoutException {
