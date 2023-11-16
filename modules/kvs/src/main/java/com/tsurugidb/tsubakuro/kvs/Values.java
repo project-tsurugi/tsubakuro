@@ -23,7 +23,7 @@ import com.tsurugidb.kvs.proto.KvsData;
 /**
  * Utilities for values.
  *
- * <h3> Value type mapping </h3>
+ * <p><b>Value type mapping</b></p>
  *
  * <table>
  *   <caption> value type mapping </caption>

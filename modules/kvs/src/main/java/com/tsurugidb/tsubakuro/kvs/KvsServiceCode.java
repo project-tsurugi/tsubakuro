@@ -58,7 +58,9 @@ public enum KvsServiceCode implements DiagnosticCode {
 
     /**
      * transaction operation met an user-defined error.
-     * @details this code is returned only from transaction_exec() and transaction_commit()
+     * <p>
+     * this code is returned only from transaction_exec() and transaction_commit()
+     * </p>
      */
     USER_ERROR(106),
 
@@ -83,40 +85,44 @@ public enum KvsServiceCode implements DiagnosticCode {
     NOT_IMPLEMENTED(110),
 
     /**
-     * @brief the operation is not valid
+     * the operation is not valid
      */
     ILLEGAL_OPERATION(111),
 
     /**
-     * @brief the operation conflicted on write preserve
+     * the operation conflicted on write preserve
      */
     CONFLICT_ON_WRITE_PRESERVE(112),
 
     /**
-     * @brief long tx issued write operation without preservation
+     * long tx issued write operation without preservation
      */
     WRITE_WITHOUT_WRITE_PRESERVE(114),
 
     /**
-     * @brief transaction is inactive
-     * @details transaction is inactive since it's already committed or aborted. The request is failed.
+     * transaction is inactive
+     * <p>
+     * transaction is inactive since it's already committed or aborted. The request is failed.
+     * </p>
      */
     INACTIVE_TRANSACTION(115),
 
     /**
-     * @brief requested operation is blocked by concurrent operation
-     * @details the request cannot be fulfilled due to the operation concurrently executed by other transaction.
+     * requested operation is blocked by concurrent operation
+     * <p>
+     * the request cannot be fulfilled due to the operation concurrently executed by other transaction.
      * After the blocking transaction completes, re-trying the request may lead to different result.
+     * </p>
      */
     BLOCKED_BY_CONCURRENT_OPERATION(116),
 
     /**
-     * @brief reached resource limit and request could not be accomplished
+     * reached resource limit and request could not be accomplished
      */
     RESOURCE_LIMIT_REACHED(117),
 
     /**
-     * @brief key length passed to the API is invalid
+     * key length passed to the API is invalid
      */
     INVALID_KEY_LENGTH(118),
 
