@@ -14,6 +14,9 @@ public class KvsServiceException extends ServerException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * the diagnostic code
+     */
     private final KvsServiceCode code;
 
     /**
