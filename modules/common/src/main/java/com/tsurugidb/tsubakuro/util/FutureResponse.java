@@ -67,21 +67,19 @@ public interface FutureResponse<V> extends ServerResource {
      * <p>
      * Developers should use this method instead of {@link #get()}, unless there is some special reason.
      * This will avoid like as the following ugly code
-<pre>
-try (
+     * </p>
+<pre>{@code try (
     FutureResponse<Resource> future = send(...);
     Resource resource = future.get();
 ) {
     ...
 }
-</pre>
+}</pre>
      * Using {@link #await()}, it can be rewritten as follows:
-<pre>
-try (Resource resource = send(...).await()) {
+<pre>{@code try (Resource resource = send(...).await()) {
     ...
 }
-</pre>
-     * </p>
+}</pre>
      * @return the response
      * @throws IOException if exception was occurred while communicating to the server
      * @throws ServerException if exception was occurred while processing the request in the server
@@ -107,7 +105,7 @@ try (Resource resource = send(...).await()) {
      * @throws ServerException if exception was occurred while processing the request in the server
      * @throws InterruptedException if interrupted from other threads while waiting for response
      * @throws TimeoutException if the wait time out
-     * @see {@link #get(long, TimeUnit)}
+     * @see #get(long, TimeUnit)
      */
     default V await(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
         try (var self = this) {

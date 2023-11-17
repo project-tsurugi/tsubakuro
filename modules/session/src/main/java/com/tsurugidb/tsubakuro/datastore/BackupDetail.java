@@ -14,9 +14,8 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 /**
  * Represents detail backup information.
  *
- * <h3>example snippet</h3>
-<pre>
-Session session = ...;
+ * <p><b>example snippet</b></p>
+<pre>{@code Session session = ...;
 Path destination = ...;
 try (
     var client = DatastoreClient.attach(session);
@@ -41,7 +40,7 @@ try (
         backup.keepAlive();
     }
 }
-</pre>
+}</pre>
  * @see Backup
  * @see DatastoreClient#beginBackup(BackupType)
  */
@@ -101,11 +100,11 @@ public interface BackupDetail extends ServerResource {
      * </p>
      * <p>
      * Ordinary, the datastore will decide the configuration ID using the following elements:
+     * </p>
      * <ul>
      * <li> data layout in file </li>
      * <li> path layout on file system </li>
      * </ul>
-     * </p>
      * @return the configuration ID
      */
     String getConfigurationId();

@@ -191,11 +191,11 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * Executes a load action.
      * <p>
      * This operation performs like as following:
+     * </p>
      * <ol>
      *   <li> extracts each row from the input dump files </li>
      *   <li> perform the statement for every rows, with substituting place-holders with the row data </li>
      * </ol>
-     * </p>
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement.
      *      parameter can refer the column on the input dump file, by specifying
@@ -219,11 +219,11 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * Executes a load action.
      * <p>
      * This operation performs like as following:
+     * </p>
      * <ol>
      *   <li> extracts each row from the input dump files </li>
      *   <li> perform the statement for every rows, with substituting place-holders with the row data </li>
      * </ol>
-     * </p>
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement.
      *      parameter can refer the column on the input dump file, by specifying

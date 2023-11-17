@@ -238,14 +238,13 @@ public final class Relation {
      * <p>
      * The first dimension represents individual elements of rows.
      * This method is equivalent to the following:
-<pre>
-// converts each elements into rows
+<pre>{@code // converts each elements into rows
 List<Row> rows = of(Arrays.stream(values)
     .map(it -> row(it)
     .collect(Collectors.toList());
 // builds a relation
 return of(rows);
-</pre>
+}</pre>
      *
      * </p>
      * <p>

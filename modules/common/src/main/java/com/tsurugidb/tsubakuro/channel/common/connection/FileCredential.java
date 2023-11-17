@@ -24,13 +24,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * <p>
  * Each credential file is JSON formatted and has the following fields:
+ * </p>
  * <ul>
  * <li> {@code "user"} - {@link #getEncryptedName() encrypted user name} </li>
  * <li> {@code "user"} - {@link #getEncryptedPassword() encrypted password} </li>
  * </ul>
  *
  * Each field value will be encrypted using public key file.
- * </p>
  */
 public class FileCredential implements Credential {
 

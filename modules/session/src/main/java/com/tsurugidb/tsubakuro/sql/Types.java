@@ -27,9 +27,10 @@ import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
  * This helps to build a SQL type representation from the Java types.
  * </p>
  *
- * <h3>type mapping rule</h3>
+ * <p><b>Type mapping rule</b></p>
  *
  * <table>
+ *   <caption> type mapping rule </caption>
  *   <thead>
  *     <tr>
  *       <th> SQL type </th>

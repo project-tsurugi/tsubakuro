@@ -19,9 +19,8 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * Note that, you can change directory hierarchy of individual files.
  * </p>
  *
- * <h3>example snippet</h3>
-<pre>
-Path destination = Paths.get("/path/to/backup-target");
+ * <p><b>example snippet</b></p>
+<pre>{@code Path destination = Paths.get("/path/to/backup-target");
 try (Backup backup = ...) {
     for (Path source : backup) {
         // extend the expiration time
@@ -31,7 +30,7 @@ try (Backup backup = ...) {
         Files.copy(source, destination.resolve(source.getFileName()))
     }
 }
-</pre>
+}</pre>
  * @see DatastoreClient#beginBackup()
  */
 public interface Backup extends ServerResource, Iterable<Path> {
