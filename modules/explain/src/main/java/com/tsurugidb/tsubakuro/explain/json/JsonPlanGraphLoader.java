@@ -217,6 +217,7 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
          * </p>
          * <p>
          * {@link JsonPlanGraphLoader} decides whether to keep individual operators as follows:
+         * </p>
          * <ol>
          * <li>
          * First, each operator which kind is in {@link #withExcludeOperators(Collection) exclude list} is removed.
@@ -231,7 +232,6 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
          * Otherwise, all operators are filtered out.
          * </li>
          * </ol>
-         * </p>
          * @param filter the node filter, or {@code null} to use the default filter
          * @return this
          */

@@ -173,6 +173,7 @@ public class MockTicketProvider implements TicketProvider {
      * </p>
      * <p>
      * The returned ticket will have the following properties:
+     * </p>
      *
      * <ul>
      * <li>
@@ -187,8 +188,6 @@ public class MockTicketProvider implements TicketProvider {
      *      The individual tokens will have the expiration date based on the time which is set in {@link #withIssuedAt(Instant)}.
      * </li>
      * </ul>
-     *
-     * </p>
      * @see #withUser(String, String)
      * @see #withRefreshExpiration(long, TimeUnit)
      * @see #withAccessExpiration(long, TimeUnit)

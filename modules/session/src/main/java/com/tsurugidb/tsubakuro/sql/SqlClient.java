@@ -43,7 +43,7 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Starts a new transaction.
-     * The consequence of close() call of the returned FutureResponse<Transaction> is undefined, 
+     * The consequence of close() call of the returned {@code FutureResponse<Transaction>} is undefined,
      * if the close() is called without get() the Transaction object.
      * @param option the transaction option
      * @return a future response of transaction object
@@ -73,7 +73,7 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Prepares a SQL statement.
-     * The consequence of close() call of the returned FutureResponse<PreparedStatement> is undefined, 
+     * The consequence of close() call of the returned {@code FutureResponse<PreparedStatement>} is undefined,
      * if the close() is called without get() the PreparedStatement object.
      * @param source the SQL statement text (may includes place-holders)
      * @param placeholders the place-holders in the statement text
@@ -89,7 +89,7 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves execution plan of the statement.
-     * The consequence of close() call of the returned FutureResponse<StatementMetadata> is undefined, 
+     * The consequence of close() call of the returned {@code FutureResponse<StatementMetadata>} is undefined,
      * if the close() is called without get() the StatementMetadata object.
      * @param source the SQL statement text
      * @return a future response of statement metadata
@@ -118,7 +118,7 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves execution plan of the statement.
-     * The consequence of close() call of the returned FutureResponse<StatementMetadata> is undefined, 
+     * The consequence of close() call of the returned {@code FutureResponse<StatementMetadata>} is undefined,
      * if the close() is called without get() the StatementMetadata object.
      * @param statement the prepared statement
      * @param parameters parameter list for place-holders in the prepared statement
@@ -134,7 +134,7 @@ public interface SqlClient extends ServerResource {
 
     /**
      * Retrieves metadata for a table.
-     * The consequence of close() call of the returned FutureResponse<TableMetadata> is undefined, 
+     * The consequence of close() call of the returned {@code FutureResponse<TableMetadata>} is undefined,
      * if the close() is called without get() the TableMetadata object.
      * @param tableName the target table name
      * @return a future response of table metadata
@@ -149,11 +149,11 @@ public interface SqlClient extends ServerResource {
      * Executes a load action out side transaction context.
      * <p>
      * This operation performs like as following:
+     * </p>
      * <ol>
      *   <li> extracts each row from the input dump files </li>
      *   <li> perform the statement for every rows, with substituting place-holders with the row data </li>
      * </ol>
-     * </p>
      * @param statement the prepared statement to execute
      * @param parameters parameter list for place-holders in the prepared statement.
      *      parameter can refer the column on the input dump file, by specifying
