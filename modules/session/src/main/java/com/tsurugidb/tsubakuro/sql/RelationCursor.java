@@ -381,6 +381,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Advances the cursor to the head of the next row.
      * @deprecated Method name changed to nextRow
+     * @return {@code true} if the cursor successfully advanced to the head of the next row,
+     *  or {@code false} if there are no more rows in this relation.
+     * @throws IOException if I/O error was occurred while retrieving the next row data
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while retrieving the next row data
      */
     @Deprecated
     default boolean nextRecord() throws IOException, ServerException, InterruptedException {
@@ -389,6 +394,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Retrieves a {@code INT4} value on the column of the cursor position.
      * @deprecated Method name changed to fetchInt4Value
+     * @return the value
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
      */
     @Deprecated
     default int getInt4() throws IOException, ServerException, InterruptedException {
@@ -397,6 +407,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Retrieves a {@code INT8} value on the column of the cursor position.
      * @deprecated Method name changed to fetchInt8Value
+     * @return the value
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
      */
     @Deprecated
     default long getInt8() throws IOException, ServerException, InterruptedException {
@@ -405,6 +420,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Retrieves a {@code FLOAT4} value on the column of the cursor position.
      * @deprecated Method name changed to fetchFloat4Value
+     * @return the value
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
      */
     @Deprecated
     default float getFloat4() throws IOException, ServerException, InterruptedException {
@@ -413,6 +433,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Retrieves a {@code FLOAT8} value on the column of the cursor position.
      * @deprecated Method name changed to fetchFloat8Value
+     * @return the value
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
      */
     @Deprecated
     default double getFloat8() throws IOException, ServerException, InterruptedException {
@@ -421,6 +446,11 @@ public interface RelationCursor extends ServerResource {
     /**
      * Retrieves a {@code CHARACTER} value on the column of the cursor position.
      * @deprecated Method name changed to fetchCharacterValue
+     * @return the value
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
      */
     @Deprecated
     default String getCharacter() throws IOException, ServerException, InterruptedException {
