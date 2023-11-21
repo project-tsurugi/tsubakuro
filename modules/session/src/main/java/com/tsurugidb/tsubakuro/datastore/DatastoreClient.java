@@ -8,6 +8,8 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -18,7 +20,26 @@ import com.tsurugidb.tsubakuro.datastore.impl.DatastoreClientImpl;
  * A datastore service client.
  * @see #attach(Session)
  */
-public interface DatastoreClient extends ServerResource {
+@ServiceMessageVersion(
+        service = DatastoreClient.SERVICE,
+        major = DatastoreClient.MAJOR,
+        minor = DatastoreClient.MINOR)
+public interface DatastoreClient extends ServerResource, ServiceClient {
+
+    /**
+     * the service name.
+     */
+    String SERVICE = "DATASTORE";
+
+    /**
+     * the major version.
+     */
+    int MAJOR = 1;
+
+    /**
+     * the minor version.
+     */
+    int MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.

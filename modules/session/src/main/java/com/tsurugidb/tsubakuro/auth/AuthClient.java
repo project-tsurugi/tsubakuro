@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -13,7 +15,26 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * An auth service client.
  * @see #attach(Session)
  */
-public interface AuthClient extends ServerResource {
+@ServiceMessageVersion(
+        service = AuthClient.SERVICE,
+        major = AuthClient.MAJOR,
+        minor = AuthClient.MINOR)
+public interface AuthClient extends ServerResource, ServiceClient {
+
+    /**
+     * the service name.
+     */
+    String SERVICE = "AUTH";
+
+    /**
+     * the major version.
+     */
+    int MAJOR = 1;
+
+    /**
+     * the minor version.
+     */
+    int MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.

@@ -9,6 +9,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.SqlClientImpl;
@@ -19,7 +21,26 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * A SQL service client.
  * @see #attach(Session)
  */
-public interface SqlClient extends ServerResource {
+@ServiceMessageVersion(
+        service = SqlClient.SERVICE,
+        major = SqlClient.MAJOR,
+        minor = SqlClient.MINOR)
+public interface SqlClient extends ServerResource, ServiceClient {
+
+    /**
+     * the service name.
+     */
+    String SERVICE = "SQL";
+
+    /**
+     * the major version.
+     */
+    int MAJOR = 1;
+
+    /**
+     * the minor version.
+     */
+    int MINOR = 0;
 
     /**
      * Attaches to the SQL service in the current session.
