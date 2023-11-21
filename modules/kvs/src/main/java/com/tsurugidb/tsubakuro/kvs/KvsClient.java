@@ -6,6 +6,8 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.impl.KvsClientImpl;
@@ -20,7 +22,26 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * {@link KvsServiceException}.
  * </p>
  */
-public interface KvsClient extends ServerResource {
+@ServiceMessageVersion(
+        service = KvsClient.SERVICE,
+        major = KvsClient.MAJOR,
+        minor = KvsClient.MINOR)
+public interface KvsClient extends ServerResource, ServiceClient {
+
+    /**
+     * the service name.
+     */
+    String SERVICE = "KVS";
+
+    /**
+     * the major version.
+     */
+    int MAJOR = 1;
+
+    /**
+     * the minor version.
+     */
+    int MINOR = 0;
 
     /**
      * Attaches to the SQL service in the current session.

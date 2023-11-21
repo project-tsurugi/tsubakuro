@@ -5,6 +5,8 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.debug.impl.DebugClientImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -14,7 +16,26 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 /**
  * A debugging service client.
  */
-public interface DebugClient extends ServerResource {
+@ServiceMessageVersion(
+        service = DebugClient.SERVICE,
+        major = DebugClient.MAJOR,
+        minor = DebugClient.MINOR)
+public interface DebugClient extends ServerResource, ServiceClient {
+
+    /**
+     * the service name.
+     */
+    String SERVICE = "DEBUG";
+
+    /**
+     * the major version.
+     */
+    int MAJOR = 1;
+
+    /**
+     * the minor version.
+     */
+    int MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.
