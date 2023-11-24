@@ -11,12 +11,6 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-checkstyle {
-    sourceSets = [ sourceSets.main, sourceSets.testFixtures ]
-    if ('strict' == findProperty('checkMode')) {
-        maxWarnings = 0
-    }
-}
 
 spotbugsMain {
     onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
