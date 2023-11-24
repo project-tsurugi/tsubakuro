@@ -31,10 +31,15 @@ checkstyle {
 checkstyleMain.exclude '**/proto/*.java'
 
 spotbugsMain {
+    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
     reports {
         xml {
             enabled = true
             destination = file("$buildDir/reports/spotbugs/main/spotbugs.xml")
+        }
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
         }
     }
 }

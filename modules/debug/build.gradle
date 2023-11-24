@@ -12,27 +12,6 @@ test {
     useJUnitPlatform()
 }
 
-spotbugsMain {
-    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
-//  excludeFilter = rootProject.file('config/spotbugs/exclude.xml')
-    reports {
-        html.enabled = true
-        xml.enabled = true
-    }
-}
-
-spotbugsTestFixtures {
-    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
-    reports {
-        html.enabled = true
-        xml.enabled = true
-    }
-}
-
-spotbugsTest {
-    enabled = false
-}
-
 protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc:3.8.0'
