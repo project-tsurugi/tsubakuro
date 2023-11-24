@@ -67,7 +67,7 @@ jar {
 task writeVersion(type: WriteProperties) {
     description 'generate version file to META-INF/tsurugidb/{project.name}.properties'
     inputs.property('Build-Revision', buildRevision)
-    outputFile "${project.buildDir}/generated/version/META-INF/tsurugidb/${project.name}.properties"
+    destinationFile = file("${project.buildDir}/generated/version/META-INF/tsurugidb/${project.name}.properties")
     properties (
         'Build-Timestamp': buildTimestamp,
         'Build-Revision' : buildRevision,
