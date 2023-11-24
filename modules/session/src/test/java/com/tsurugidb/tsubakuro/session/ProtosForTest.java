@@ -781,13 +781,11 @@ public final class ProtosForTest {
         static SqlResponse.Error.Builder builder() {
             return
                 SqlResponse.Error.newBuilder()
-                .setStatus(SqlStatus.Status.NOT_FOUND)
                 .setDetail(ERROR);
         }
         static boolean check(SqlResponse.Error dst) {
             return
-                dst.getStatus().equals(SqlStatus.Status.NOT_FOUND)
-                && dst.getDetail().equals(ERROR);
+                dst.getDetail().equals(ERROR);
         }
         
         void test() {

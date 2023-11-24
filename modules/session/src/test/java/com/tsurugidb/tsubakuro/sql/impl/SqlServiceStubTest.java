@@ -25,7 +25,7 @@ import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlRequest.ExecuteStatement;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.sql.proto.SqlStatus;
+import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -71,7 +71,7 @@ class SqlServiceStubTest {
 
     private static SqlResponse.Error newEngineError() {
         return SqlResponse.Error.newBuilder()
-                .setStatus(SqlStatus.Status.ERR_UNKNOWN)
+                .setCode(SqlError.Code.SQL_SERVICE_EXCEPTION)
                 .build();
     }
 
@@ -1348,8 +1348,7 @@ class SqlServiceStubTest {
     void sendGetErrorInfoSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
                 RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
-                        .setSuccess(SqlResponse.Error.newBuilder()
-                            .setStatus(SqlStatus.Status.ERR_UNKNOWN))
+                            .setSuccess(newEngineError())
                         .build())));
 
         var message = SqlRequest.GetErrorInfo.newBuilder()
