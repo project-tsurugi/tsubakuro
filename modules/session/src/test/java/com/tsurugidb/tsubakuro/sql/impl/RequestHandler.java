@@ -135,8 +135,8 @@ public interface RequestHandler {
         Objects.requireNonNull(response);
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(relation);
-        var sqlStatus = SqlResponse.Response.newBuilder().setResultOnly(response).build();
-        return returns(toDelimitedByteArray(sqlStatus), metadata, relation);
+        var status = SqlResponse.Response.newBuilder().setResultOnly(response).build();
+        return returns(toDelimitedByteArray(status), metadata, relation);
     }
     // for result set transfer without metadata case (error)
     static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
