@@ -11,9 +11,13 @@ dependencies {
 }
 
 compileJava {
-    options.compilerArgs << '-Xlint:unchecked'
+    if ('lint:unchecked' == findProperty('lintMode')) {
+        options.compilerArgs << '-Xlint:unchecked'
+    }
 }
 
 compileTestJava {
-    options.compilerArgs << '-Xlint:unchecked'
+    if ('lint:unchecked' == findProperty('lintMode')) {
+        options.compilerArgs << '-Xlint:unchecked'
+    }
 }
