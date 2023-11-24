@@ -1,10 +1,5 @@
 plugins {
     id 'tsubakuro.java-library-conventions'
-    id 'java-library'
-    id 'java-test-fixtures'
-    id 'application'
-    id 'checkstyle'
-//    id 'com.github.spotbugs' version '4.7.1'
     id 'com.google.protobuf' version '0.8.18'
 }
 
