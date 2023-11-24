@@ -25,35 +25,29 @@ class SessionWireTest {
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
 
-    private WireImpl client;
-    private ServerWireImpl server;
+
     private final String dbName = "tsubakuro";
     private final long sessionID = 1;
 
     @Test
     void requestBegin() {
-        try {
-            server = new ServerWireImpl(PORT, sessionID);
-            client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        try (
+            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        ) {
+            CommunicationChecker.check(server, client);
         } catch (Exception e) {
             fail("cought Exception");
         }
 
-        CommunicationChecker.check(server, client);
-
-        try {
-            client.close();
-            server.close();
-        } catch (IOException e) {
-            fail("cought IOException in close");
-        }
     }
 
     @Test
     void inconsistentResponse() {
-        try {
-            server = new ServerWireImpl(PORT, sessionID);
-            client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        try (
+            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        ) {
 
             // REQUEST test begin
             // client side send Request
@@ -71,8 +65,6 @@ class SessionWireTest {
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
             assertFalse(SqlResponse.Response.ResponseCase.BEGIN.equals(responseReceived.getResponseCase()));
 
-            client.close();
-            server.close();
         } catch (IOException | ServerException | InterruptedException e) {
             fail("cought IOException");
         }
@@ -80,9 +72,10 @@ class SessionWireTest {
 
     @Test
     void timeout() {
-        try {
-            server = new ServerWireImpl(PORT, sessionID);
-            client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        try (
+            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+        ) {
 
             // REQUEST test begin
             // client side send Request
@@ -104,8 +97,6 @@ class SessionWireTest {
             var duration = System.currentTimeMillis() - start;
             assertTrue((750 < duration) && (duration < 1250));
 
-            client.close();
-            server.close();
         } catch (IOException e) {
             fail("cought IOException");
         }
@@ -114,7 +105,7 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
         });
         assertTrue(exception.getMessage().contains("Connection refused"));
     }
