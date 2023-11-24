@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api 'com.google.code.findbugs:jsr305:3.0.2'
-
     implementation project(':tsubakuro-common')
+
+    api 'com.google.code.findbugs:jsr305:3.0.2'
 }
