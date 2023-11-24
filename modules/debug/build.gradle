@@ -1,62 +1,12 @@
 plugins {
     id 'tsubakuro.java-library-conventions'
-    id 'java-library'
-    id 'java-test-fixtures'
-    id 'application'
-    id 'checkstyle'
-//    id 'com.github.spotbugs' version '4.7.1'
-    id 'com.google.protobuf' version '0.8.18'
-}
-
-repositories {
-    mavenCentral()
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 dependencies {
     api project(':tsubakuro-session')
-    
-    api 'com.google.code.findbugs:jsr305:3.0.2'
-    api 'org.slf4j:slf4j-api:1.7.36'
-    api 'com.google.protobuf:protobuf-java:3.8.0'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.3'
 
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.7.1'
-
-    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
-    testImplementation(testFixtures(project(':tsubakuro-session')))
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
-}
-test {
-    useJUnitPlatform()
-}
-checkstyle {
-    sourceSets = [ sourceSets.main, sourceSets.testFixtures ]
-    if ('strict' == findProperty('checkMode')) {
-        maxWarnings = 0
-    }
-}
-
-spotbugsMain {
-    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
-//  excludeFilter = rootProject.file('config/spotbugs/exclude.xml')
-    reports {
-        html.enabled = true
-        xml.enabled = true
-    }
-}
-
-spotbugsTestFixtures {
-    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
-    reports {
-        html.enabled = true
-        xml.enabled = true
-    }
-}
-
-spotbugsTest {
-    enabled = false
+    api 'com.google.protobuf:protobuf-java:3.17.3'
 }
 
 protobuf {

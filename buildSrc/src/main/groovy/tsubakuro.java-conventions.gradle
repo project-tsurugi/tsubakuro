@@ -15,8 +15,11 @@ java {
 }
 
 dependencies {
-    testImplementation(platform('org.junit:junit-bom:5.7.1'))
-    testImplementation('org.junit.jupiter:junit-jupiter')
+    api 'com.google.code.findbugs:jsr305:3.0.2'
+    api 'org.slf4j:slf4j-api:1.7.36'
+    testImplementation 'org.slf4j:slf4j-simple:1.7.36'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 }
 
 checkstyle {
@@ -25,12 +28,18 @@ checkstyle {
         maxWarnings = 0
     }
 }
+checkstyleMain.exclude '**/proto/*.java'
 
 spotbugsMain {
+    onlyAnalyze = [ 'com.tsurugidb.tsubakuro.-' ]
     reports {
         xml {
             enabled = true
             destination = file("$buildDir/reports/spotbugs/main/spotbugs.xml")
+        }
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
         }
     }
 }
@@ -38,7 +47,11 @@ spotbugsMain {
 spotbugsTest.enabled = false
 checkstyleTest.enabled = false
 
-javadoc.failOnError = false
+javadoc {
+    failOnError = true
+    exclude "**/proto/**"
+    options.addStringOption('Xdoclint', '-quiet')
+}
 
 jar {
     manifest.attributes (
@@ -54,7 +67,7 @@ jar {
 task writeVersion(type: WriteProperties) {
     description 'generate version file to META-INF/tsurugidb/{project.name}.properties'
     inputs.property('Build-Revision', buildRevision)
-    outputFile "${project.buildDir}/generated/version/META-INF/tsurugidb/${project.name}.properties"
+    destinationFile = file("${project.buildDir}/generated/version/META-INF/tsurugidb/${project.name}.properties")
     properties (
         'Build-Timestamp': buildTimestamp,
         'Build-Revision' : buildRevision,

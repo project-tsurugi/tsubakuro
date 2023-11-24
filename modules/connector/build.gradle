@@ -3,8 +3,6 @@ plugins {
 }
 
 dependencies {
-    testImplementation 'org.slf4j:slf4j-nop:1.7.32'
-
     api project(':tsubakuro-common')
     api project(':tsubakuro-ipc')
     api project(':tsubakuro-stream')

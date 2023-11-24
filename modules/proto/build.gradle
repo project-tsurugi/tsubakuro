@@ -1,7 +1,6 @@
 plugins {
     id 'tsubakuro.java-library-conventions'
-
-    id 'com.google.protobuf' version '0.8.18'
+    id 'com.google.protobuf' version '0.9.4'
 }
 
 dependencies {
@@ -32,4 +31,7 @@ spotbugsMain.enabled = false
 
 tasks.withType(com.google.protobuf.gradle.GenerateProtoTask){
     sourcesJar.dependsOn(generateProto)
+}
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
