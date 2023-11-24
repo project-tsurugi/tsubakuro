@@ -3,8 +3,6 @@ package com.tsurugidb.tsubakuro.protos;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.sql.proto.SqlStatus;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 // import org.junit.jupiter.api.Test;
