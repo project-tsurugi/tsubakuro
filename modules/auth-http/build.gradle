@@ -2,10 +2,6 @@ plugins {
     id 'tsubakuro.java-library-conventions'
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     api project(':tsubakuro-session')
 
