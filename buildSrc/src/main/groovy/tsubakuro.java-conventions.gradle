@@ -47,7 +47,11 @@ spotbugsMain {
 spotbugsTest.enabled = false
 checkstyleTest.enabled = false
 
-javadoc.failOnError = false
+javadoc {
+    failOnError = true
+    exclude "**/proto/**"
+    options.addStringOption('Xdoclint', '-quiet')
+}
 
 jar {
     manifest.attributes (
