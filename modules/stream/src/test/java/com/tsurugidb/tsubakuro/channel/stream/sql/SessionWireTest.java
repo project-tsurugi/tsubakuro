@@ -17,14 +17,12 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.sql.proto.SqlResponse;
 
 class SessionWireTest {
     static final int SERVICE_ID_SQL = 3;
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
-
 
     private final String dbName = "tsubakuro";
     private final long sessionID = 1;
@@ -37,6 +35,7 @@ class SessionWireTest {
         ) {
             CommunicationChecker.check(server, client);
         } catch (Exception e) {
+            e.printStackTrace();
             fail("cought Exception");
         }
 
@@ -66,6 +65,7 @@ class SessionWireTest {
             assertFalse(SqlResponse.Response.ResponseCase.BEGIN.equals(responseReceived.getResponseCase()));
 
         } catch (IOException | ServerException | InterruptedException e) {
+            e.printStackTrace();
             fail("cought IOException");
         }
     }
@@ -98,6 +98,7 @@ class SessionWireTest {
             assertTrue((750 < duration) && (duration < 1250));
 
         } catch (IOException e) {
+            e.printStackTrace();
             fail("cought IOException");
         }
     }
