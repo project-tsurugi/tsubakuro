@@ -18,6 +18,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 /**
@@ -30,8 +31,8 @@ public class ChannelResponse implements Response {
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
     private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
-    private final AtomicReference<IOException> exceptionMain = new AtomicReference<>();
-    private final AtomicReference<IOException> exceptionResultSet = new AtomicReference<>();
+    private final AtomicReference<Exception> exceptionMain = new AtomicReference<>();
+    private final AtomicReference<Exception> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Link link;
     private String resultSetName = "";  // for diagnostic
@@ -152,7 +153,7 @@ public class ChannelResponse implements Response {
         Objects.requireNonNull(response);
         try {
             main.set(skipFrameworkHeader(response));
-        } catch (IOException e) {
+        } catch (IOException | ServerException e) {
             exceptionMain.set(e);
         }
     }
@@ -172,17 +173,17 @@ public class ChannelResponse implements Response {
 
             metadata.set(detailResponse);
             resultSet.set(resultSetWire);
-        } catch (IOException e) {
+        } catch (IOException | ServerException e) {
             exceptionResultSet.set(e);
         }
     }
 
-    private ByteBuffer skipFrameworkHeader(ByteBuffer response) throws IOException {
+    private ByteBuffer skipFrameworkHeader(ByteBuffer response) throws IOException, ServerException {
         response.rewind();
         var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
-            throw new IOException(new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage()));
+            throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
         }
         return response;
     }

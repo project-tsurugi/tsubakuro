@@ -23,6 +23,21 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 public interface Wire extends ServerResource {
 
     /**
+     * The symbolic ID of the destination service.
+    */
+    String SERVICE_SYMBOLIC_ID = "framework";
+
+    /**
+     * The major service message version which this client requests.
+     */
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
+
+    /**
+     * The minor service message version which this client requests.
+     */
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
+
+    /**
      * send a message to the destination server.
      * <p>
      * The returned future will raise {@link CoreServiceException} on calling {@link FutureResponse#get()}.

@@ -28,6 +28,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.datastore.Backup;
 import com.tsurugidb.tsubakuro.datastore.BackupDetail;
 // import com.tsurugidb.tsubakuro.datastore.BackupEstimate;
+import com.tsurugidb.tsubakuro.datastore.DatastoreClient;
 import com.tsurugidb.tsubakuro.datastore.DatastoreService;
 import com.tsurugidb.tsubakuro.datastore.DatastoreServiceCode;
 import com.tsurugidb.tsubakuro.datastore.DatastoreServiceException;
@@ -94,6 +95,12 @@ public class DatastoreServiceStub implements DatastoreService {
         return value;
     }
 
+    private static DatastoreRequest.Request.Builder newRequest() {
+        return DatastoreRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(DatastoreClient.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(DatastoreClient.SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
     class BackupBeginProcessor implements MainResponseProcessor<Backup> {
         @Override
         public Backup process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -126,8 +133,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
-                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+            toDelimitedByteArray(newRequest()
                                  .setBackupBegin(request)
                                  .build()),
             new BackupBeginProcessor().asResponseProcessor());
@@ -183,8 +189,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
-                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+            toDelimitedByteArray(newRequest()
                                  .setBackupDetailBegin(request)
                                  .build()),
             new BackupDetailBeginProcessor().asResponseProcessor());
@@ -220,8 +225,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
-                                 .setMessageVersion(Constants.MESSAGE_VERSION)
+            toDelimitedByteArray(newRequest()
                                  .setBackupEnd(request)
                                  .build()),
             new BackupEndProcessor().asResponseProcessor());
@@ -263,7 +267,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
+                toDelimitedByteArray(newRequest()
                                      .setTagList(request)
                                      .build()),
                 new TagListProcessor().asResponseProcessor());
@@ -311,7 +315,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
+                toDelimitedByteArray(newRequest()
                                      .setTagAdd(request)
                                      .build()),
                 new TagAddProcessor().asResponseProcessor());
@@ -347,7 +351,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
+                toDelimitedByteArray(newRequest()
                                      .setTagGet(request)
                                      .build()),
                 new TagGetProcessor().asResponseProcessor());
@@ -383,7 +387,7 @@ public class DatastoreServiceStub implements DatastoreService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(DatastoreRequest.Request.newBuilder()
+                toDelimitedByteArray(newRequest()
                                      .setTagRemove(request)
                                      .build()),
                 new TagRemoveProcessor().asResponseProcessor());

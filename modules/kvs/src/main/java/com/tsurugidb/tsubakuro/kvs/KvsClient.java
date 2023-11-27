@@ -23,25 +23,25 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * </p>
  */
 @ServiceMessageVersion(
-        service = KvsClient.SERVICE,
-        major = KvsClient.MAJOR,
-        minor = KvsClient.MINOR)
+        service = KvsClient.SERVICE_SYMBOLIC_ID,
+        major = KvsClient.SERVICE_MESSAGE_VERSION_MAJOR,
+        minor = KvsClient.SERVICE_MESSAGE_VERSION_MINOR)
 public interface KvsClient extends ServerResource, ServiceClient {
 
     /**
-     * the service name.
-     */
-    String SERVICE = "KVS";
+     * The symbolic ID of the destination service.
+    */
+    String SERVICE_SYMBOLIC_ID = "kvs";
 
     /**
-     * the major version.
+     * The major service message version which this client requests.
      */
-    int MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
-     * the minor version.
+     * The minor service message version which this client requests.
      */
-    int MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the SQL service in the current session.

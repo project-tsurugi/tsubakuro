@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.auth.proto.AuthRequest;
 import com.tsurugidb.auth.proto.AuthResponse;
+import com.tsurugidb.tsubakuro.auth.AuthClient;
 import com.tsurugidb.tsubakuro.auth.AuthInfo;
 import com.tsurugidb.tsubakuro.auth.AuthService;
 import com.tsurugidb.tsubakuro.auth.AuthServiceCode;
@@ -63,6 +64,12 @@ public class AuthServiceStub implements AuthService {
                 name));
     }
 
+    private static AuthRequest.Request.Builder newRequest() {
+        return AuthRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(AuthClient.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(AuthClient.SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
     static class AuthInfoProcessor implements MainResponseProcessor<AuthInfo> {
         @Override
         public AuthInfo process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -94,7 +101,7 @@ public class AuthServiceStub implements AuthService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         return session.send(
             SERVICE_ID,
-            AuthRequest.Request.newBuilder()
+            newRequest()
             .setAuthInfo(request)
             .build()
             .toByteArray(),

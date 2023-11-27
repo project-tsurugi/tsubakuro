@@ -1,0 +1,3 @@
+com.tsurugidb.tsubakuro.auth.impl.AuthClientImpl
+com.tsurugidb.tsubakuro.datastore.impl.DatastoreClientImpl
+com.tsurugidb.tsubakuro.sql.impl.SqlClientImpl

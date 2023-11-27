@@ -20,9 +20,12 @@ message Error {
 
 // response message for RPC.
 message Response {
-    // the response message version.
-    uint64 message_version = 1;
-    reserved 2 to 10;
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+    reserved 3 to 10;
     reserved 15 to 20;
     reserved 25 to 30;
     reserved 32 to 40;
