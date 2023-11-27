@@ -23,17 +23,12 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 public interface Wire extends ServerResource {
 
     /**
-     * The symbolic ID of the destination service.
-    */
-    String SERVICE_SYMBOLIC_ID = "framework";
-
-    /**
-     * The major service message version which this client requests.
+     * The major service message version for FrameworkRequest.Header.
      */
     int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
-     * The minor service message version which this client requests.
+     * The minor service message version for FrameworkRequest.Header.
      */
     int SERVICE_MESSAGE_VERSION_MINOR = 0;
 

@@ -28,7 +28,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
-import com.tsurugidb.tsubakuro.common.CoreClient;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
@@ -171,8 +170,8 @@ public class SessionImpl implements Session {
         return send(
             SERVICE_ID,
             toDelimitedByteArray(CoreRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(CoreClient.SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(CoreClient.SERVICE_MESSAGE_VERSION_MINOR)
+                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR)
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
                     .setExpirationTime(u.toMillis(t)))
                 .build()),

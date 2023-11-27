@@ -69,7 +69,7 @@ public class DebugServiceStub implements DebugService {
                 name));
     }
 
-        private static DebugRequest.Request.Builder newRequest() {
+    private static DebugRequest.Request.Builder newRequest() {
         return DebugRequest.Request.newBuilder()
                 .setServiceMessageVersionMajor(DebugClient.SERVICE_MESSAGE_VERSION_MAJOR)
                 .setServiceMessageVersionMinor(DebugClient.SERVICE_MESSAGE_VERSION_MINOR);
