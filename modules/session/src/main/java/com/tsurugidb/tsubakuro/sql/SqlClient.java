@@ -22,25 +22,25 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * @see #attach(Session)
  */
 @ServiceMessageVersion(
-        service = SqlClient.SERVICE,
-        major = SqlClient.MAJOR,
-        minor = SqlClient.MINOR)
+        service = SqlClient.SERVICE_SYMBOLIC_ID,
+        major = SqlClient.SERVICE_MESSAGE_VERSION_MAJOR,
+        minor = SqlClient.SERVICE_MESSAGE_VERSION_MINOR)
 public interface SqlClient extends ServerResource, ServiceClient {
 
     /**
-     * the service name.
-     */
-    String SERVICE = "SQL";
+     * The symbolic ID of the destination service.
+    */
+    String SERVICE_SYMBOLIC_ID = "sql";
 
     /**
-     * the major version.
+     * The major service message version which this client requests.
      */
-    int MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 1;
 
     /**
-     * the minor version.
+     * The minor service message version which this client requests.
      */
-    int MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the SQL service in the current session.

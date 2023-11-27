@@ -22,6 +22,7 @@ import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.BatchResult;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
+import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.KvsServiceCode;
 import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.PutResult;
@@ -68,6 +69,12 @@ public class KvsServiceStub implements KvsService {
         assert aClass != null;
         assert name != null;
         return new BrokenResponseException(MessageFormat.format("{0}.{1} is not set", aClass.getSimpleName(), name));
+    }
+
+    private static KvsRequest.Request.Builder newRequest() {
+        return KvsRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(KvsClient.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(KvsClient.SERVICE_MESSAGE_VERSION_MINOR);
     }
 
     private static byte[] toDelimitedByteArray(KvsRequest.Request request) throws IOException {
@@ -129,7 +136,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<TransactionHandle> send(@Nonnull KvsRequest.Begin request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setBegin(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setBegin(request).build()),
                 new BeginProcessor().asResponseProcessor());
     }
 
@@ -179,7 +186,7 @@ public class KvsServiceStub implements KvsService {
         if (tx != null) {
             tx.setCommitCalled();
         }
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setCommit(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setCommit(request).build()),
                 new CommitProcessor(request).asResponseProcessor());
     }
 
@@ -209,7 +216,7 @@ public class KvsServiceStub implements KvsService {
         if (tx != null) {
             tx.setRollbackCalled();
         }
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRollback(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setRollback(request).build()),
                 new RollbackProcessor().asResponseProcessor());
     }
 
@@ -236,7 +243,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<GetResult> send(@Nonnull KvsRequest.Get request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setGet(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setGet(request).build()),
                 new GetProcessor().asResponseProcessor());
     }
 
@@ -262,7 +269,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<PutResult> send(@Nonnull KvsRequest.Put request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setPut(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setPut(request).build()),
                 new PutProcessor().asResponseProcessor());
     }
 
@@ -288,7 +295,7 @@ public class KvsServiceStub implements KvsService {
     @Override
     public FutureResponse<RemoveResult> send(@Nonnull KvsRequest.Remove request) throws IOException {
         LOG.trace("send: {}", request); //$NON-NLS-1$
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().setRemove(request).build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().setRemove(request).build()),
                 new RemoveProcessor().asResponseProcessor());
     }
 
@@ -334,7 +341,7 @@ public class KvsServiceStub implements KvsService {
         LOG.trace("send: {}", request); //$NON-NLS-1$
         removeTransaction(request.getTransactionHandle().getSystemId());
         return session.send(SERVICE_ID,
-                toDelimitedByteArray(KvsRequest.Request.newBuilder().setDisposeTransaction(request).build()),
+                toDelimitedByteArray(newRequest().setDisposeTransaction(request).build()),
                 new DisposeTransactionProcessor().asResponseProcessor());
     }
 
@@ -347,7 +354,7 @@ public class KvsServiceStub implements KvsService {
 
     @Override
     public FutureResponse<Void> request() throws IOException {
-        return session.send(SERVICE_ID, toDelimitedByteArray(KvsRequest.Request.newBuilder().build()),
+        return session.send(SERVICE_ID, toDelimitedByteArray(newRequest().build()),
                 new RequestProcessor().asResponseProcessor());
     }
 

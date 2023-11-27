@@ -22,6 +22,16 @@ import com.tsurugidb.tsubakuro.util.Timeout;
 @ThreadSafe
 public interface Session extends ServerResource {
     /**
+     * The major service message version for routing service.
+     */
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
+
+    /**
+     * The minor service message version for routing service.
+     */
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
+
+    /**
      * Sends a message to the destination server.
      * @param <R> the result value type
      * @param serviceId the destination service ID

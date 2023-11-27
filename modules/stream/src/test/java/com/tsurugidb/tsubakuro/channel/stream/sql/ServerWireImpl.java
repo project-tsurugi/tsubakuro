@@ -8,6 +8,8 @@ import java.net.ServerSocket;
 // import java.text.MessageFormat;
 // import java.util.Objects;
 import java.util.ArrayDeque;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +34,7 @@ public class ServerWireImpl implements Closeable {
     private final ArrayDeque<Message> sendQueue;
     private SendWorker sender;
     private final long sessionID;
+    private final CyclicBarrier barrier = new CyclicBarrier(2);
 
     private static class Message {
         byte[] bytes;
@@ -55,6 +58,12 @@ public class ServerWireImpl implements Closeable {
             LOG.info("start listen TCP/IP port: {}", port);
             try {
                 serverSocket = new ServerSocket(port);
+                try {
+                    barrier.await();
+                } catch (InterruptedException | BrokenBarrierException e) {
+                    e.printStackTrace();
+                    System.err.println(e);
+                }
 
                 serverStreamLink = new ServerStreamLink(serverSocket.accept());
                 LOG.info("accept client: {}", port);
@@ -131,8 +140,8 @@ public class ServerWireImpl implements Closeable {
         this.receiver = new ReceiveWorker(port);
         receiver.start();
         try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
+            barrier.await();
+        } catch (InterruptedException | BrokenBarrierException e) {
             e.printStackTrace();
             System.err.println(e);
         }

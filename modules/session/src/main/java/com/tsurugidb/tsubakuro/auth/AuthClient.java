@@ -16,25 +16,25 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * @see #attach(Session)
  */
 @ServiceMessageVersion(
-        service = AuthClient.SERVICE,
-        major = AuthClient.MAJOR,
-        minor = AuthClient.MINOR)
+        service = AuthClient.SERVICE_SYMBOLIC_ID,
+        major = AuthClient.SERVICE_MESSAGE_VERSION_MAJOR,
+        minor = AuthClient.SERVICE_MESSAGE_VERSION_MINOR)
 public interface AuthClient extends ServerResource, ServiceClient {
 
     /**
-     * the service name.
-     */
-    String SERVICE = "AUTH";
+     * The symbolic ID of the destination service.
+    */
+    String SERVICE_SYMBOLIC_ID = "auth";
 
     /**
-     * the major version.
+     * The major service message version which this client requests.
      */
-    int MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
-     * the minor version.
+     * The minor service message version which this client requests.
      */
-    int MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.

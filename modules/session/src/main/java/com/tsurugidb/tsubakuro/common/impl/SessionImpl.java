@@ -170,7 +170,8 @@ public class SessionImpl implements Session {
         return send(
             SERVICE_ID,
             toDelimitedByteArray(CoreRequest.Request.newBuilder()
-                .setMessageVersion(Constants.MESSAGE_VERSION)
+                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR)
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
                     .setExpirationTime(u.toMillis(t)))
                 .build()),

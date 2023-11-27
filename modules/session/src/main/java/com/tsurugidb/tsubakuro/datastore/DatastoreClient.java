@@ -21,25 +21,25 @@ import com.tsurugidb.tsubakuro.datastore.impl.DatastoreClientImpl;
  * @see #attach(Session)
  */
 @ServiceMessageVersion(
-        service = DatastoreClient.SERVICE,
-        major = DatastoreClient.MAJOR,
-        minor = DatastoreClient.MINOR)
+        service = DatastoreClient.SERVICE_SYMBOLIC_ID,
+        major = DatastoreClient.SERVICE_MESSAGE_VERSION_MAJOR,
+        minor = DatastoreClient.SERVICE_MESSAGE_VERSION_MINOR)
 public interface DatastoreClient extends ServerResource, ServiceClient {
 
     /**
-     * the service name.
+     * The symbolic ID of the destination service.
      */
-    String SERVICE = "DATASTORE";
+    String SERVICE_SYMBOLIC_ID = "datastore";
 
     /**
-     * the major version.
+     * The major service message version which this client requests.
      */
-    int MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
-     * the minor version.
-     */
-    int MINOR = 0;
+     * The minor service message version which this client requests.
+    */
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.

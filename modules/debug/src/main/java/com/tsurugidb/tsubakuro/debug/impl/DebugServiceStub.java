@@ -16,6 +16,7 @@ import com.tsurugidb.debug.proto.DebugRequest;
 import com.tsurugidb.debug.proto.DebugResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.debug.DebugClient;
 import com.tsurugidb.tsubakuro.debug.DebugServiceCode;
 import com.tsurugidb.tsubakuro.debug.DebugServiceException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
@@ -66,6 +67,12 @@ public class DebugServiceStub implements DebugService {
                 "{0}.{1} is not set",
                 aClass.getSimpleName(),
                 name));
+    }
+
+    private static DebugRequest.Request.Builder newRequest() {
+        return DebugRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(DebugClient.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(DebugClient.SERVICE_MESSAGE_VERSION_MINOR);
     }
 
     static class LoggingProcessor implements MainResponseProcessor<Void> {

@@ -56,7 +56,12 @@ public class WireImpl implements Wire {
         if (closed.get()) {
             throw new IOException("already closed");
         }
-        var header = FrameworkRequest.Header.newBuilder().setMessageVersion(1).setServiceId(serviceId).setSessionId(sessionID).build();
+        var header = FrameworkRequest.Header.newBuilder()
+            .setServiceMessageVersionMajor(Wire.SERVICE_MESSAGE_VERSION_MAJOR)
+            .setServiceMessageVersionMinor(Wire.SERVICE_MESSAGE_VERSION_MINOR)
+            .setServiceId(serviceId)
+            .setSessionId(sessionID)
+            .build();
         var response = responseBox.register(toDelimitedByteArray(header), payload);
         return FutureResponse.wrap(Owner.of(response));
     }

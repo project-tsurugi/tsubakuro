@@ -17,25 +17,25 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * A debugging service client.
  */
 @ServiceMessageVersion(
-        service = DebugClient.SERVICE,
-        major = DebugClient.MAJOR,
-        minor = DebugClient.MINOR)
+        service = DebugClient.SERVICE_SYMBOLIC_ID,
+        major = DebugClient.SERVICE_MESSAGE_VERSION_MAJOR,
+        minor = DebugClient.SERVICE_MESSAGE_VERSION_MINOR)
 public interface DebugClient extends ServerResource, ServiceClient {
 
     /**
-     * the service name.
-     */
-    String SERVICE = "DEBUG";
+     * The symbolic ID of the destination service.
+    */
+    String SERVICE_SYMBOLIC_ID = "debug";
 
     /**
-     * the major version.
+     * The major service message version which this client requests.
      */
-    int MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
-     * the minor version.
+     * The minor service message version which this client requests.
      */
-    int MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the datastore service in the current session.
