@@ -45,8 +45,8 @@ class SessionWireTest {
     @Test
     void inconsistentResponse() {
         try (
-            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+            ServerWireImpl server = new ServerWireImpl(PORT - 1, sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 1), sessionID);
         ) {
 
             // REQUEST test begin
@@ -73,8 +73,8 @@ class SessionWireTest {
     @Test
     void timeout() {
         try (
-            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+            ServerWireImpl server = new ServerWireImpl(PORT - 2, sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 2), sessionID);
         ) {
 
             // REQUEST test begin
@@ -105,7 +105,7 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 3), sessionID);
         });
         assertTrue(exception.getMessage().contains("Connection refused"));
     }
