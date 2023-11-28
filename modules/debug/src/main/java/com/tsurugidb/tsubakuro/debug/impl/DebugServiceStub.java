@@ -101,7 +101,7 @@ public class DebugServiceStub implements DebugService {
         return session.send(
                 SERVICE_ID,
                 toDelimitedByteArray(
-                    DebugRequest.Request.newBuilder()
+                    newRequest()
                         .setLogging(request)
                         .build()),
                 new LoggingProcessor().asResponseProcessor());
