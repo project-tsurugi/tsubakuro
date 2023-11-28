@@ -10,6 +10,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import javax.annotation.Nonnull;
 
@@ -134,6 +135,37 @@ public final class ServiceClientCollector {
                     url));
         }
         return results;
+    }
+
+    /**
+     * Extracts service message version code from the {@link ServiceClient} interface.
+     *
+     * <p>
+     * The service message code is is string format as follows:
+     *
+     * <code>
+     * "&lt;{@linkplain ServiceMessageVersion#service() service
+     * }&gt;-&lt;{@linkplain ServiceMessageVersion#major() major
+     * }&gt;-&lt;{@linkplain ServiceMessageVersion#service() minor}&gt;"
+     * </code>.
+     * </p>
+     *
+     * @param clientClass the target {@link ServiceClient} interface
+     * @return the service message version code, or {@code empty} if it is not defined
+     */
+    public static Optional<String> findServiceMessageVersion(@Nonnull Class<? extends ServiceClient> clientClass) {
+        Objects.requireNonNull(clientClass);
+        var annotation = clientClass.getAnnotation(ServiceMessageVersion.class);
+        return Optional.ofNullable(annotation)
+                .map(ServiceClientCollector::toServiceMessageVersionCode);
+    }
+
+    private static String toServiceMessageVersionCode(ServiceMessageVersion annotation) {
+        return String.format(
+                "%s-%d.%d", // //$NON-NLS-1$
+                annotation.service(),
+                annotation.major(),
+                annotation.minor());
     }
 
     private ServiceClientCollector() {
