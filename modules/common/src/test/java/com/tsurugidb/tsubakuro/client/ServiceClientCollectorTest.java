@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -111,5 +112,26 @@ class ServiceClientCollectorTest {
             var results = ServiceClientCollector.collect(cl, false);
             assertEquals(List.of(MockClient.class), results);
         }
+    }
+
+    @ServiceMessageVersion(service = "a", major = 10, minor = 20)
+    static interface A extends ServiceClient {
+        // nothing
+    }
+
+    static interface Miss extends ServiceClient {
+        // nothing
+    }
+
+    @Test
+    void findServiceMessageVersion() throws Exception {
+        var r = ServiceClientCollector.findServiceMessageVersion(A.class);
+        assertEquals(Optional.of("a-10.20"), r);
+    }
+
+    @Test
+    void findServiceMessageVersion_missing() throws Exception {
+        var r = ServiceClientCollector.findServiceMessageVersion(Miss.class);
+        assertEquals(Optional.empty(), r);
     }
 }
