@@ -9,9 +9,6 @@ dependencies {
 
 sourceSets {
     main {
-        java {
-            srcDir('build/generated/source/proto/main/java')
-        }
         proto {
             srcDir("src/main/protos")
         }
@@ -28,10 +25,3 @@ protobuf {
 
 checkstyleMain.enabled = false
 spotbugsMain.enabled = false
-
-tasks.withType(com.google.protobuf.gradle.GenerateProtoTask){
-    sourcesJar.dependsOn(generateProto)
-}
-sourcesJar {
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-}
