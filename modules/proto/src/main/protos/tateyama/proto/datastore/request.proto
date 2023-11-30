@@ -6,8 +6,6 @@ option java_multiple_files = false;
 option java_package = "com.tsurugidb.datastore.proto";
 option java_outer_classname = "DatastoreRequest";
 
-import "tateyama/proto/datastore/common.proto";
-
 // the request message to datastore service.
 message Request {
     // service message version (major)
