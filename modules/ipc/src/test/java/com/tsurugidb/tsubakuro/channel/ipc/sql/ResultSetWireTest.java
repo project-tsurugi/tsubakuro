@@ -89,7 +89,7 @@ class ResultSetWireTest {
     }
 
     @Test
-    void readRecordsServerCrashTest() throws Exception {
+    void serverCrashDetectionTest() throws Exception {
         try {
             server = new ServerWireImpl(dbName, sessionID, false);
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
