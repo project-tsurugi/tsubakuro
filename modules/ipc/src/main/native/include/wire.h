@@ -360,6 +360,12 @@ static constexpr std::int64_t MAX_TIMEOUT = 10L * 365L * 24L * 3600L * 1000L * 1
 inline static std::int64_t u_cap(std::int64_t timeout) {
     return (timeout > MAX_TIMEOUT) ? MAX_TIMEOUT : timeout;
 }
+inline static std::int64_t u_round(std::int64_t timeout) {
+    if (timeout == 0) {
+        return timeout;
+    }
+    return (((timeout-500)/1000)+1) * 1000;
+}
 inline static std::int64_t n_cap(std::int64_t timeout) {
     return (timeout > (MAX_TIMEOUT * 1000)) ? (MAX_TIMEOUT * 1000) : timeout;
 }
@@ -420,7 +426,7 @@ public:
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
 
-                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(timeout)), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
@@ -465,6 +471,7 @@ private:
 
 // for resultset
 class unidirectional_simple_wires {
+    constexpr static std::size_t watch_interval = 5;
 public:
 
     class unidirectional_simple_wire : public simple_wire<length_header> {
@@ -719,6 +726,10 @@ public:
      *  used by clinet
      */
     unidirectional_simple_wire* active_wire(std::int64_t timeout = 0) {
+        if (timeout == 0) {
+            timeout = watch_interval * 1000 * 1000;
+        }
+
         do {
             for (auto&& wire: unidirectional_simple_wires_) {
                 if(wire.has_record()) {
@@ -730,35 +741,23 @@ public:
                 wait_for_record_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
                 unidirectional_simple_wire* active_wire = nullptr;
-                if (timeout <= 0) {
-                    c_record_.wait(lock,
-                                   [this, &active_wire](){
-                                       for (auto&& wire: unidirectional_simple_wires_) {
-                                           if (wire.has_record()) {
-                                               active_wire = &wire;
-                                               return true;
-                                           }
-                                       }
-                                       return is_eor();
-                                   });
-                } else {
-                    if (!c_record_.timed_wait(lock,
+                if (!c_record_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
-                                              boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
+                                          boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
 #else
-                                              boost::get_system_time() + boost::posix_time::microseconds(u_cap(((timeout-500)/1000)+1)),
+                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))),
 #endif
-                                              [this, &active_wire](){
-                                                  for (auto&& wire: unidirectional_simple_wires_) {
-                                                      if (wire.has_record()) {
-                                                          active_wire = &wire;
-                                                          return true;
-                                                      }
+                                          [this, &active_wire](){
+                                              for (auto&& wire: unidirectional_simple_wires_) {
+                                                  if (wire.has_record()) {
+                                                      active_wire = &wire;
+                                                      return true;
                                                   }
-                                                  return is_eor();
-                                              })) {
-                        throw std::runtime_error("record has not been received within the specified time");
-                    }
+                                              }
+                                              return is_eor();
+                                          })) {
+                    wait_for_record_ = false;
+                    throw std::runtime_error("record has not been received within the specified time");
                 }
                 wait_for_record_ = false;
                 if (active_wire != nullptr) {
@@ -983,7 +982,7 @@ public:
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
                                         boost::get_system_time() + boost::posix_time::nanoseconds(n_cap(timeout)),
 #else
-                                        boost::get_system_time() + boost::posix_time::microseconds(u_cap(((timeout-500)/1000)+1)),
+                                        boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))),
 #endif
                                         [this](){ return (session_id_ != 0); })) {
                     throw std::runtime_error("connection response has not been accepted within the specified time");

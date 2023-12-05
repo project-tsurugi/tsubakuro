@@ -89,7 +89,7 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
     try {
-        return container->get_connection_queue().wait(id, timeout);
+        return container->get_connection_queue().wait(id, timeout / 1000);
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
         if (classj == nullptr) { std::abort(); }
