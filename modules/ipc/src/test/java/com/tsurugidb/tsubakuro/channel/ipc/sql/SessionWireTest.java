@@ -104,6 +104,32 @@ class SessionWireTest {
     }
 
     @Test
+    void serverCrashDetectionTest() throws Exception {
+        server = new ServerWireImpl(dbName, sessionID, false);
+        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+
+        // REQUEST test begin
+        // client side send Request
+        var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
+        // server side receive Request
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+        // REQUEST test end
+
+        // RESPONSE test begin
+        // server side does not send Response
+
+        Throwable exception = assertThrows(IOException.class, () -> {
+            var response = futureResponse.get();
+            var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
+        });
+
+        // FIXME: check error code instead of message
+        assertEquals("Server crashed", exception.getMessage());
+        client.close();
+        server.close();
+    }
+
+    @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID); // not exist
