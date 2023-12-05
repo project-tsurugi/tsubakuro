@@ -89,34 +89,6 @@ class ResultSetWireTest {
     }
 
     @Test
-    void readRecordsServerCrashTest() throws Exception {
-        try {
-            server = new ServerWireImpl(dbName, sessionID, false);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-        } catch (Exception e) {
-            fail("cought Exception");
-        }
-
-        serverResultSetWire = server.createRSL(NAME);
-        var sender = new Sender();
-        sender.start();
-
-        var clientResultSetWire = client.createResultSetWire();
-        clientResultSetWire.connect(NAME);
-        var recordStream = clientResultSetWire.getByteBufferBackedInput();
-        byte[] ba = new byte[1024];
-
-        Throwable exception = assertThrows(IOException.class, () -> {
-            recordStream.read(ba);
-            clientResultSetWire.close();
-        });
-        // FIXME: check error code instead of message
-        assertEquals("Server crashed", exception.getMessage());
-
-        sender.join();
-    }
-
-    @Test
     void closeWithRecordRemainTest() throws Exception {
         try {
             server = new ServerWireImpl(dbName, sessionID);

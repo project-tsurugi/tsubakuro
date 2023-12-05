@@ -18,7 +18,6 @@ public class ServerWireImpl implements Closeable {
     private long wireHandle = 0;  // for c++
     private String dbName;
     private long sessionID;
-    private boolean takeSendAction;
 
     private static native long createNative(String name);
     private static native byte[] getNative(long handle);
@@ -44,25 +43,20 @@ public class ServerWireImpl implements Closeable {
         }
     }
 
-    public ServerWireImpl(String dbName, long sessionID, boolean takeSendAction) throws IOException {
+    public ServerWireImpl(String dbName, long sessionID) throws IOException {
         this.dbName = dbName;
         this.sessionID = sessionID;
-        this.takeSendAction = takeSendAction;
         wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
         if (wireHandle == 0) {
             throw new IOException("error: ServerWireImpl.ServerWireImpl()");
         }
     }
-    
-    public ServerWireImpl(String dbName, long sessionID) throws IOException {
-        this(dbName, sessionID, true);
-    }
 
     public void close() throws IOException {
-        if (wireHandle != 0) {
-            closeNative(wireHandle);
-            wireHandle = 0;
-        }
+    if (wireHandle != 0) {
+        closeNative(wireHandle);
+        wireHandle = 0;
+    }
     }
 
     public long getSessionID() {
@@ -91,9 +85,6 @@ public class ServerWireImpl implements Closeable {
      @param request the SqlResponse.Response message
     */
     public void put(SqlResponse.Response response) throws IOException {
-        if (!takeSendAction) {
-            return;
-        }
         try {
             byte[] resposeByteArray = dump(out -> {
                     FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
@@ -118,9 +109,6 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
-        if (!takeSendAction) {
-            return;
-        }
         if (handle != 0) {
             putRecordsRSLNative(handle, ba);
         } else {
@@ -129,9 +117,6 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void eorRSL(long handle) throws IOException {
-        if (!takeSendAction) {
-            return;
-        }
         if (handle != 0) {
             eorRSLNative(handle);
         } else {

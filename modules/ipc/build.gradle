@@ -6,3 +6,7 @@ plugins {
 dependencies {
     implementation project(':tsubakuro-common')
 }
+
+tasks.withType(Test) {
+    environment "LD_PRELOAD", System.getenv()['JAVA_HOME'] + '/lib/server/libjsig.so'
+}
