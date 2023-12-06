@@ -72,6 +72,14 @@ public class MockWire implements Wire {
         return !handlers.isEmpty();
     }
 
+    /**
+     * Retrieves the number of remaining handlers
+     * @return number of remaining handlers
+     */
+    public int size() {
+        return handlers.size();
+    }
+
     @Override
     public void close() throws IOException, InterruptedException {
         handlers.clear();
