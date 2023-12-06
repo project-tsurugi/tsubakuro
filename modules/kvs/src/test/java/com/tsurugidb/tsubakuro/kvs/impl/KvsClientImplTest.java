@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.kvs.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -14,17 +15,20 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.kvs.proto.KvsRequest;
+import com.tsurugidb.kvs.proto.KvsResponse;
 import com.tsurugidb.kvs.proto.KvsTransaction;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
+import com.tsurugidb.tsubakuro.kvs.KvsServiceException;
 import com.tsurugidb.tsubakuro.kvs.PutResult;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.RemoveResult;
 import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
 import com.tsurugidb.tsubakuro.mock.MockWire;
+import com.tsurugidb.tsubakuro.mock.RequestHandler;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 class KvsClientImplTest {
@@ -183,6 +187,29 @@ class KvsClientImplTest {
     }
 
     @Test
+    void commitFailedAutoClose() throws Exception {
+        final long systemId = 1234L;
+        wire.next(StubUtils.newAcceptBegin(systemId));
+        wire.next(RequestHandler.returns(
+                KvsResponse.Response.newBuilder().setCommit(
+                        KvsResponse.Commit.newBuilder()
+                            .setError(StubUtils.newError())
+                            ).build()));
+        wire.next(StubUtils.newAcceptDispose());
+
+        KvsClient client = new KvsClientImpl(new KvsServiceStub(session));
+        try (var tx = client.beginTransaction().await()) {
+            assertEquals(2, wire.size());
+            var e = assertThrows(KvsServiceException.class, () -> client.commit(tx).await());
+            StubUtils.checkException(e);
+            assertEquals(1, wire.size());
+            // NOTE: tx is NOT disposed at server side
+            // disposeTransaction will be called
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
     void rollbackAutoClose() throws Exception {
         final long systemId = 1234L;
         wire.next(StubUtils.newAcceptBegin(systemId));
@@ -200,5 +227,27 @@ class KvsClientImplTest {
         assertFalse(wire.hasRemaining());
     }
 
+    @Test
+    void rollbackFailedAutoClose() throws Exception {
+        final long systemId = 1234L;
+        wire.next(StubUtils.newAcceptBegin(systemId));
+        wire.next(RequestHandler.returns(
+                KvsResponse.Response.newBuilder().setRollback(
+                        KvsResponse.Rollback.newBuilder()
+                            .setError(StubUtils.newError())
+                            ).build()));
+        wire.next(StubUtils.newAcceptDispose());
+
+        KvsClient client = new KvsClientImpl(new KvsServiceStub(session));
+        try (var tx = client.beginTransaction().await()) {
+            assertEquals(2, wire.size());
+            var e = assertThrows(KvsServiceException.class, () -> client.rollback(tx).await());
+            StubUtils.checkException(e);
+            assertEquals(1, wire.size());
+            // NOTE: tx is NOT disposed at server side
+            // dispose will be called at tx.close()
+        }
+        assertFalse(wire.hasRemaining());
+    }
 }
 
