@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.kvs.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -8,17 +9,22 @@ import java.util.ArrayList;
 
 import javax.annotation.Nonnull;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.kvs.proto.KvsData;
 import com.tsurugidb.kvs.proto.KvsRequest;
 import com.tsurugidb.kvs.proto.KvsTransaction;
+import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.kvs.GetResult;
 import com.tsurugidb.tsubakuro.kvs.KvsClient;
 import com.tsurugidb.tsubakuro.kvs.PutResult;
 import com.tsurugidb.tsubakuro.kvs.RecordBuffer;
 import com.tsurugidb.tsubakuro.kvs.RemoveResult;
 import com.tsurugidb.tsubakuro.kvs.TransactionHandle;
+import com.tsurugidb.tsubakuro.mock.MockWire;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 class KvsClientImplTest {
@@ -131,5 +137,68 @@ class KvsClientImplTest {
         var result = client.remove(handle, "TABLE", buffer).await();
         assertEquals(1, result.size());
     }
+
+    //////////////////////////////////////////////////////////////////////////////////
+
+    private final MockWire wire = new MockWire();
+    private final Session session = new SessionImpl(wire);
+
+    @AfterEach
+    void tearDown() throws IOException, InterruptedException, ServerException {
+        session.close();
+    }
+
+    @Test
+    void autoRollbackClose() throws Exception {
+        final long systemId = 1234L;
+        wire.next(StubUtils.newAcceptBegin(systemId));
+        wire.next(StubUtils.newAcceptRollback());
+        wire.next(StubUtils.newAcceptDispose());
+
+        KvsClient client = new KvsClientImpl(new KvsServiceStub(session));
+        try (var tx = client.beginTransaction().await()) {
+            assertEquals(TransactionHandleImpl.class, tx.getClass());
+            // neither commit nor rollback called
+            // NOTE: rollback and dispose will be called at tx.close()
+            assertEquals(2, wire.size());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void commitAutoDispose() throws Exception {
+        final long systemId = 1234L;
+        wire.next(StubUtils.newAcceptBegin(systemId));
+        wire.next(StubUtils.newAcceptCommit());
+
+        KvsClient client = new KvsClientImpl(new KvsServiceStub(session));
+        try (var tx = client.beginTransaction().await()) {
+            assertEquals(1, wire.size());
+            client.commit(tx).await();
+            assertEquals(0, wire.size());
+            // NOTE: tx is disposed at server side
+            // disposeTransaction will NOT be called
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void rollbackAutoClose() throws Exception {
+        final long systemId = 1234L;
+        wire.next(StubUtils.newAcceptBegin(systemId));
+        wire.next(StubUtils.newAcceptRollback());
+        wire.next(StubUtils.newAcceptDispose());
+
+        KvsClient client = new KvsClientImpl(new KvsServiceStub(session));
+        try (var tx = client.beginTransaction().await()) {
+            assertEquals(2, wire.size());
+            client.rollback(tx).await();
+            // NOTE: tx is NOT disposed at server side
+            // dispose will be called at tx.close()
+            assertEquals(1, wire.size());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
 }
 
