@@ -7,15 +7,15 @@ import java.util.Objects;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.sql.impl.SimpleResponse;
 import com.tsurugidb.core.proto.CoreResponse;
+import com.tsurugidb.tsubakuro.mock.RequestHandler;
 
 /**
  * Handles request for wires and returns its response.
  */
 @FunctionalInterface
-public interface RequestHandler {
+public interface RequestHandlerForCommon extends RequestHandler {
 
     /**
      * Handles a request message and returns a response for it.
@@ -32,7 +32,7 @@ public interface RequestHandler {
      * @param response the response payload
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response) {
+    static RequestHandlerForCommon returns(ByteBuffer response) {
         Objects.requireNonNull(response);
         return (id, request) -> new SimpleResponse(response);
     }
@@ -42,7 +42,7 @@ public interface RequestHandler {
      * @param response the response payload
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response) {
+    static RequestHandlerForCommon returns(byte[] response) {
         Objects.requireNonNull(response);
         return returns(ByteBuffer.wrap(response));
     }
@@ -52,7 +52,7 @@ public interface RequestHandler {
      * @param response the response payload
      * @return the request handler
      */
-    static RequestHandler returns(CoreResponse.UpdateExpirationTime response) {
+    static RequestHandlerForCommon returns(CoreResponse.UpdateExpirationTime response) {
         Objects.requireNonNull(response);
         return returns(toDelimitedByteArray(response));
     }
@@ -62,7 +62,7 @@ public interface RequestHandler {
      * @param exception the exception object
      * @return the request handler
      */
-    static RequestHandler raises(ServerException exception) {
+    static RequestHandlerForCommon raises(ServerException exception) {
         Objects.requireNonNull(exception);
         return (id, request) -> {
             throw exception; 

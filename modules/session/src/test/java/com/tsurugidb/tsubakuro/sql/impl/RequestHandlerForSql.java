@@ -11,12 +11,13 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
+import com.tsurugidb.tsubakuro.mock.RequestHandler;
 
 /**
  * Handles request for wires and returns its response.
  */
 @FunctionalInterface
-public interface RequestHandler {
+public interface RequestHandlerForSql extends RequestHandler {
 
     /**
      * Handles a request message and returns a response for it.
@@ -35,12 +36,12 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(ByteBuffer response, ByteBuffer metadata, Relation relation) {
+    static RequestHandlerForSql returns(ByteBuffer response, ByteBuffer metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
         return (id, request) -> new SimpleResponse(response, metadata, relation.getByteBuffer());
     }
-    static RequestHandler returns(ByteBuffer response) {
+    static RequestHandlerForSql returns(ByteBuffer response) {
         Objects.requireNonNull(response);
         return (id, request) -> new SimpleResponse(response);
     }
@@ -51,7 +52,7 @@ public interface RequestHandler {
      * @param relation the resultSet
      * @return the request handler
      */
-    static RequestHandler returns(byte[] response, byte[] metadata, Relation relation) {
+    static RequestHandlerForSql returns(byte[] response, byte[] metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
         if (metadata != null) {
@@ -59,7 +60,7 @@ public interface RequestHandler {
         }
         return returns(ByteBuffer.wrap(response), null, relation);
     }
-    static RequestHandler returns(byte[] response) {
+    static RequestHandlerForSql returns(byte[] response) {
         Objects.requireNonNull(response);
         return returns(ByteBuffer.wrap(response));
     }
@@ -69,69 +70,69 @@ public interface RequestHandler {
      * @param response the response payload
      * @return the request handler
      */
-//    static RequestHandler returns(Message response) {
+//    static RequestHandlerForSql returns(Message response) {
 //        Objects.requireNonNull(response);
 //        return returns(response.toByteArray());
 //    }
     // for each response without result set transfer
-    static RequestHandler returns(SqlResponse.ResultOnly response) {
+    static RequestHandlerForSql returns(SqlResponse.ResultOnly response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Begin response) {
+    static RequestHandlerForSql returns(SqlResponse.Begin response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setBegin(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Prepare response) {
+    static RequestHandlerForSql returns(SqlResponse.Prepare response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setPrepare(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Explain response) {
+    static RequestHandlerForSql returns(SqlResponse.Explain response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setExplain(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.DescribeTable response) {
+    static RequestHandlerForSql returns(SqlResponse.DescribeTable response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setDescribeTable(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.ExecuteResult response) {
+    static RequestHandlerForSql returns(SqlResponse.ExecuteResult response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setExecuteResult(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Batch response) {
+    static RequestHandlerForSql returns(SqlResponse.Batch response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setBatch(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.ListTables response) {
+    static RequestHandlerForSql returns(SqlResponse.ListTables response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setListTables(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.GetSearchPath response) {
+    static RequestHandlerForSql returns(SqlResponse.GetSearchPath response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setGetSearchPath(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.GetErrorInfo response) {
+    static RequestHandlerForSql returns(SqlResponse.GetErrorInfo response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setGetErrorInfo(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.DisposeTransaction response) {
+    static RequestHandlerForSql returns(SqlResponse.DisposeTransaction response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setDisposeTransaction(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
 
     // for result set transfer (normal case)
-    static RequestHandler returns(SqlResponse.ResultOnly response, byte[] metadata, Relation relation) {
+    static RequestHandlerForSql returns(SqlResponse.ResultOnly response, byte[] metadata, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(metadata);
         Objects.requireNonNull(relation);
@@ -139,7 +140,7 @@ public interface RequestHandler {
         return returns(toDelimitedByteArray(status), metadata, relation);
     }
     // for result set transfer without metadata case (error)
-    static RequestHandler returns(SqlResponse.ResultOnly response, Relation relation) {
+    static RequestHandlerForSql returns(SqlResponse.ResultOnly response, Relation relation) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(relation);
         var sqlResponse = SqlResponse.Response.newBuilder().setResultOnly(response).build();
@@ -151,7 +152,7 @@ public interface RequestHandler {
      * @param exception the exception object
      * @return the request handler
      */
-    static RequestHandler raises(ServerException exception) {
+    static RequestHandlerForSql raises(ServerException exception) {
         Objects.requireNonNull(exception);
         return (id, request) -> {
             throw exception;

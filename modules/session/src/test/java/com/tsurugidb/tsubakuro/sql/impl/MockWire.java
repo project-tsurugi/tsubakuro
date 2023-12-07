@@ -14,15 +14,16 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.ResultSetWireMock;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.mock.MockError;
 
 /**
  * Mock implementation of {@link Wire}.
  */
 public class MockWire implements Wire {
 
-    private final Queue<RequestHandler> handlers = new ConcurrentLinkedQueue<>();
+    private final Queue<RequestHandlerForSql> handlers = new ConcurrentLinkedQueue<>();
 
-    private final AtomicReference<RequestHandler> defaultHandler = new AtomicReference<>(new RequestHandler() {
+    private final AtomicReference<RequestHandlerForSql> defaultHandler = new AtomicReference<>(new RequestHandlerForSql() {
         @Override
         public Response handle(int serviceId, ByteBuffer payload) {
             throw new MockError("no more handlers"); //$NON-NLS-1$
@@ -52,22 +53,22 @@ public class MockWire implements Wire {
     }
 
     /**
-     * Add a {@link RequestHandler} to the handler queue.
+     * Add a {@link RequestHandlerForSql} to the handler queue.
      * @param handler the request handler
      * @return this
      */
-    public MockWire next(RequestHandler handler) {
+    public MockWire next(RequestHandlerForSql handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
         return this;
     }
 
     /**
-     * Add a {@link RequestHandler} that activates when there is no more handlers.
+     * Add a {@link RequestHandlerForSql} that activates when there is no more handlers.
      * @param handler the request handler
      * @return this
      */
-    public MockWire otherwise(RequestHandler handler) {
+    public MockWire otherwise(RequestHandlerForSql handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
         return this;

@@ -53,8 +53,8 @@ class SqlServiceStubTest {
         session.close();
     }
 
-    private static RequestHandler accepts(SqlRequest.Request.RequestCase command, RequestHandler next) {
-        return new RequestHandler() {
+    private static RequestHandlerForSql accepts(SqlRequest.Request.RequestCase command, RequestHandlerForSql next) {
+        return new RequestHandlerForSql() {
             @Override
             public Response handle(int serviceId, ByteBuffer request) throws IOException, ServerException {
                 SqlRequest.Request message = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
@@ -96,7 +96,7 @@ class SqlServiceStubTest {
     @Test
     void sendBeginSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
-                RequestHandler.returns(SqlResponse.Begin.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Begin.newBuilder()
                         .setSuccess(SqlResponse.Begin.Success.newBuilder()
                             .setTransactionHandle(SqlCommon.Transaction.newBuilder()
                                 .setHandle(100)))
@@ -141,7 +141,7 @@ class SqlServiceStubTest {
     @Test
     void sendBeginSuccessAutoclose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
-                RequestHandler.returns(SqlResponse.Begin.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Begin.newBuilder()
                         .setSuccess(SqlResponse.Begin.Success.newBuilder()
                             .setTransactionHandle(SqlCommon.Transaction.newBuilder()
                                 .setHandle(100)))
@@ -188,7 +188,7 @@ class SqlServiceStubTest {
     @Test
     void sendBeginEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
-                RequestHandler.returns(SqlResponse.Begin.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Begin.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -208,7 +208,7 @@ class SqlServiceStubTest {
 //    @Test  FIXME
     void sendBeginBroken() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
-                RequestHandler.returns(SqlResponse.Begin.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Begin.newBuilder()
                         .build())));
 
         var message = SqlRequest.Begin.newBuilder()
@@ -226,7 +226,7 @@ class SqlServiceStubTest {
     @Test
     void sendCommitSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -245,7 +245,7 @@ class SqlServiceStubTest {
     @Test
     void sendCommitEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -282,7 +282,7 @@ class SqlServiceStubTest {
     @Test
     void sendCommitSuccessAutoDispose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -303,7 +303,7 @@ class SqlServiceStubTest {
     @Test
     void sendCommitEngineErrorAutoDispose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -325,7 +325,7 @@ class SqlServiceStubTest {
     @Test
     void sendRollbackSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.ROLLBACK,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -344,7 +344,7 @@ class SqlServiceStubTest {
     @Test
     void sendRollbackEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.ROLLBACK,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -364,7 +364,7 @@ class SqlServiceStubTest {
     @Test
     void sendPrepareSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.PREPARE,
-                RequestHandler.returns(SqlResponse.Prepare.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Prepare.newBuilder()
                         .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder()
                                 .setHandle(100))
                         .build())));
@@ -422,7 +422,7 @@ class SqlServiceStubTest {
     @Test
     void sendPrepareSuccessAutoclose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.PREPARE,
-                RequestHandler.returns(SqlResponse.Prepare.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Prepare.newBuilder()
                         .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
                         .build())));
 
@@ -456,7 +456,7 @@ class SqlServiceStubTest {
     @Test
     void sendPrepareEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.PREPARE,
-                RequestHandler.returns(SqlResponse.Prepare.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Prepare.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -476,7 +476,7 @@ class SqlServiceStubTest {
     @Test
     void sendDisposePreparedStatementSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_PREPARED_STATEMENT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -495,7 +495,7 @@ class SqlServiceStubTest {
     @Test
     void sendDisposePreparedStatementEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_PREPARED_STATEMENT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -519,7 +519,7 @@ class SqlServiceStubTest {
                 Types.column("b", Types.of(String.class)),
                 Types.column("c", Types.of(double.class)));
         wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Explain.newBuilder()
                         .setSuccess(SqlResponse.Explain.Success.newBuilder()
                                 .setFormatId("T")
                                 .setFormatVersion(123)
@@ -546,7 +546,7 @@ class SqlServiceStubTest {
     @Test
     void sendExplainOutput() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Explain.newBuilder()
                         .setOutput("TESTING")
                         .build())));
 
@@ -569,7 +569,7 @@ class SqlServiceStubTest {
     @Test
     void sendExplainError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
-                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.Explain.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -592,7 +592,7 @@ class SqlServiceStubTest {
                 Types.column("b", Types.of(String.class)),
                 Types.column("c", Types.of(double.class)));
         wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_TABLE,
-                RequestHandler.returns(SqlResponse.DescribeTable.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.DescribeTable.newBuilder()
                         .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
                                 .setDatabaseName("A")
                                 .setSchemaName("B")
@@ -619,7 +619,7 @@ class SqlServiceStubTest {
     @Test
     void sendDescribeTableEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_TABLE,
-                RequestHandler.returns(SqlResponse.DescribeTable.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.DescribeTable.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -639,7 +639,7 @@ class SqlServiceStubTest {
     @Test
     void sendExecuteSuccess_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -662,7 +662,7 @@ class SqlServiceStubTest {
     @Test
     void sendExecuteEngineError_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -682,7 +682,7 @@ class SqlServiceStubTest {
     @Test
     void sendExecuteSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
-                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ExecuteResult.newBuilder()
                         .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
                             .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
                             .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
@@ -712,7 +712,7 @@ class SqlServiceStubTest {
     @Test
     void sendExecuteEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_STATEMENT,
-                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ExecuteResult.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -734,7 +734,7 @@ class SqlServiceStubTest {
     @Test
     void sendQuerySuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_QUERY,
-                RequestHandler.returns(
+                RequestHandlerForSql.returns(
                         SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
                         toResultSetMetadata(
                             Types.column("a", Types.of(BigDecimal.class)),
@@ -776,7 +776,7 @@ class SqlServiceStubTest {
 //    @Test
 //    void sendQuerySuccess_with_metadata_broken() throws Exception {
 //        wire.next(accepts(SqlRequest.Request.RequestCase.QUERY,
-//                RequestHandler.returns(
+//                RequestHandlerForSql.returns(
 //                        SqlResponse.Query.newBuilder()
 //                                .setSuccess(newVoid())
 //                                .build()
@@ -806,7 +806,7 @@ class SqlServiceStubTest {
 //    @Test
 //    void sendQuerySuccess_with_relation_broken() throws Exception {
 //        wire.next(accepts(SqlRequest.Request.RequestCase.QUERY,
-//                RequestHandler.returns(
+//                RequestHandlerForSql.returns(
 //                        SqlResponse.Query.newBuilder()
 //                                .setSuccess(newVoid())
 //                                .build()
@@ -834,7 +834,7 @@ class SqlServiceStubTest {
     @Test
     void sendQuerySuccessWithoutMetadata() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_QUERY,
-                RequestHandler.returns(
+                RequestHandlerForSql.returns(
                         SqlResponse.ResultOnly.newBuilder()
                             .setError(newEngineError())
                             .build(),
@@ -862,7 +862,7 @@ class SqlServiceStubTest {
 //    void sendQuerySuccess_without_relation() throws Exception {
 //        wire.next(accepts(
 //                SqlRequest.Request.RequestCase.QUERY,
-//                        RequestHandler.returns(SqlResponse.Query.newBuilder()
+//                        RequestHandlerForSql.returns(SqlResponse.Query.newBuilder()
 //                                .setSuccess(newVoid())
 //                                .build()
 //                                .toByteArray(),
@@ -887,7 +887,7 @@ class SqlServiceStubTest {
 //    @Test
 //    void sendQueryEngineError_with_correct_subs() throws Exception {
 //        wire.next(accepts(SqlRequest.Request.RequestCase.QUERY,
-//                RequestHandler.returns(
+//                RequestHandlerForSql.returns(
 //                        SqlResponse.Query.newBuilder()
 //                                .setEngineError(newEngineError())
 //                                .build()
@@ -938,7 +938,7 @@ class SqlServiceStubTest {
 //    @Test
 //    void sendQueryEngineError_with_metadata_broken() throws Exception {
 //        wire.next(accepts(SqlRequest.Request.RequestCase.QUERY,
-//                RequestHandler.returns(
+//                RequestHandlerForSql.returns(
 //                        SqlResponse.Query.newBuilder()
 //                                .setEngineError(newEngineError())
 //                                .build()
@@ -969,7 +969,7 @@ class SqlServiceStubTest {
 //    @Test
 //    void sendQueryEngineError_with_relation_broken() throws Exception {
 //        wire.next(accepts(SqlRequest.Request.RequestCase.QUERY,
-//                RequestHandler.returns(
+//                RequestHandlerForSql.returns(
 //                        SqlResponse.Query.newBuilder()
 //                                .setEngineError(newEngineError())
 //                                .build()
@@ -999,7 +999,7 @@ class SqlServiceStubTest {
 //    void sendQueryEngineError_without_metadata() throws Exception {
 //        wire.next(accepts(
 //                SqlRequest.Request.RequestCase.QUERY,
-//                        RequestHandler.returns(SqlResponse.Query.newBuilder()
+//                        RequestHandlerForSql.returns(SqlResponse.Query.newBuilder()
 //                                .setEngineError(newEngineError())
 //                                .build()
 //                                .toByteArray(),
@@ -1029,7 +1029,7 @@ class SqlServiceStubTest {
 //    void sendQueryEngineError_without_relation() throws Exception {
 //        wire.next(accepts(
 //                SqlRequest.Request.RequestCase.QUERY,
-//                        RequestHandler.returns(SqlResponse.Query.newBuilder()
+//                        RequestHandlerForSql.returns(SqlResponse.Query.newBuilder()
 //                                .setEngineError(newEngineError())
 //                                .build()
 //                                .toByteArray(),
@@ -1055,7 +1055,7 @@ class SqlServiceStubTest {
     @Test
     void sendDumpSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_DUMP,
-                RequestHandler.returns(
+                RequestHandlerForSql.returns(
                         SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
                         toResultSetMetadata(
                             Types.column("path", Types.of(String.class))).toByteArray(),
@@ -1097,7 +1097,7 @@ class SqlServiceStubTest {
     @Test
     void sendDumpEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_DUMP,
-                    RequestHandler.returns(
+                    RequestHandlerForSql.returns(
                         SqlResponse.ResultOnly.newBuilder()
                             .setError(newEngineError())
                         .build(),
@@ -1124,7 +1124,7 @@ class SqlServiceStubTest {
     @Test
     void sendLoadSuccess_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -1150,7 +1150,7 @@ class SqlServiceStubTest {
     @Test
     void sendLoadEngineError_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
-                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -1173,7 +1173,7 @@ class SqlServiceStubTest {
     @Test
     void sendLoadSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
-                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ExecuteResult.newBuilder()
                         .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
                             .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
                             .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
@@ -1206,7 +1206,7 @@ class SqlServiceStubTest {
     @Test
     void sendLoadEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
-                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ExecuteResult.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -1250,7 +1250,7 @@ class SqlServiceStubTest {
     @Test
     void sendListTablesSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.LISTTABLES,
-                RequestHandler.returns(SqlResponse.ListTables.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ListTables.newBuilder()
                         .setSuccess(SqlResponse.ListTables.Success.newBuilder()
                                 .addTablePathNames(SqlResponse.Name.newBuilder()
                                         .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("database1"))
@@ -1283,7 +1283,7 @@ class SqlServiceStubTest {
     @Test
     void sendListTablesEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.LISTTABLES,
-                RequestHandler.returns(SqlResponse.ListTables.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.ListTables.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -1302,7 +1302,7 @@ class SqlServiceStubTest {
     @Test
     void sendSearchPathSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
-                RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.GetSearchPath.newBuilder()
                         .setSuccess(SqlResponse.GetSearchPath.Success.newBuilder()
                                 .addSearchPaths(SqlResponse.Name.newBuilder()
                                     .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1")))
@@ -1328,7 +1328,7 @@ class SqlServiceStubTest {
     @Test
     void sendSearchPathEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GETSEARCHPATH,
-                RequestHandler.returns(SqlResponse.GetSearchPath.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.GetSearchPath.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -1347,7 +1347,7 @@ class SqlServiceStubTest {
     @Test
     void sendGetErrorInfoSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.GetErrorInfo.newBuilder()
                             .setSuccess(newEngineError())
                         .build())));
 
@@ -1366,7 +1366,7 @@ class SqlServiceStubTest {
     @Test
     void sendGetErrorInfoErrorNotFound() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.GetErrorInfo.newBuilder()
                         .setErrorNotFound(SqlResponse.Void.newBuilder())
                         .build())));
 
@@ -1385,7 +1385,7 @@ class SqlServiceStubTest {
     @Test
     void sendGetErrorInfoEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_ERROR_INFO,
-                RequestHandler.returns(SqlResponse.GetErrorInfo.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.GetErrorInfo.newBuilder()
                         .setError(newEngineError())
                         .build())));
 
@@ -1404,7 +1404,7 @@ class SqlServiceStubTest {
     @Test
     void sendDisposeTransactionSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
-                RequestHandler.returns(SqlResponse.DisposeTransaction.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.DisposeTransaction.newBuilder()
                         .setSuccess(SqlResponse.Void.newBuilder())
                         .build())));
 
@@ -1422,7 +1422,7 @@ class SqlServiceStubTest {
     @Test
     void sendDisposeTransactionEngineError() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
-                RequestHandler.returns(SqlResponse.DisposeTransaction.newBuilder()
+                RequestHandlerForSql.returns(SqlResponse.DisposeTransaction.newBuilder()
                         .setError(newEngineError())
                         .build())));
 

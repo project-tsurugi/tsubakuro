@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.nio.ByteBuffer;
-import java.io.ByteArrayOutputStream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -18,15 +17,10 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
-import com.tsurugidb.tsubakuro.sql.SqlServiceException;
-import com.tsurugidb.tsubakuro.sql.Types;
-import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.mock.MockWire;
 
 class SessionImplTest {
     private static final String RS_RD = "relation"; //$NON-NLS-1$
@@ -40,8 +34,8 @@ class SessionImplTest {
         session.close();
     }
 
-    private static RequestHandler accepts(CoreRequest.Request.CommandCase command, RequestHandler next) {
-        return new RequestHandler() {
+    private static RequestHandlerForCommon accepts(CoreRequest.Request.CommandCase command, RequestHandlerForCommon next) {
+        return new RequestHandlerForCommon() {
             @Override
             public Response handle(int serviceId, ByteBuffer request) throws IOException, ServerException {
                 CoreRequest.Request message = CoreRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
@@ -65,7 +59,7 @@ class SessionImplTest {
     @Test
     void updateExpirationTime_success() throws Exception {
         wire.next(accepts(CoreRequest.Request.CommandCase.UPDATE_EXPIRATION_TIME,
-                RequestHandler.returns(CoreResponse.UpdateExpirationTime.newBuilder()
+                RequestHandlerForCommon.returns(CoreResponse.UpdateExpirationTime.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
 
@@ -83,7 +77,7 @@ class SessionImplTest {
     @Test
     void updateExpirationTime_fail() throws Exception {
         wire.next(accepts(CoreRequest.Request.CommandCase.UPDATE_EXPIRATION_TIME,
-                RequestHandler.returns(CoreResponse.UpdateExpirationTime.newBuilder()
+                RequestHandlerForCommon.returns(CoreResponse.UpdateExpirationTime.newBuilder()
                         .setUnknownError(newEngineError())
                         .build())));
 
