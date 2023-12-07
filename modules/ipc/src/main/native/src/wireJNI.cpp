@@ -239,11 +239,24 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
 
-    auto buf = rwc->get_chunk();
-    if(buf.data()) {
-        return env->NewDirectByteBuffer(static_cast<void*>(const_cast<char*>(buf.data())), buf.length());
+    while (true) {
+        try {
+            auto buf = rwc->get_chunk();
+            if(buf.data()) {
+                return env->NewDirectByteBuffer(static_cast<void*>(const_cast<char*>(buf.data())), buf.length());
+            }
+            return nullptr;
+        } catch (std::runtime_error &e) {
+            if (!rwc->get_envelope()->get_status_provider().is_alive()) {
+                jclass classj = env->FindClass("Ljava/io/IOException;");
+                if (classj == nullptr) { std::abort(); }
+                env->ThrowNew(classj, "Server crashed");
+                env->DeleteLocalRef(classj);
+                return nullptr;
+            }
+            continue;
+        }
     }
-    return nullptr;
 }
 
 /*
