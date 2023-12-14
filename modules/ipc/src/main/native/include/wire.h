@@ -42,7 +42,7 @@ class message_header {
 public:
     using length_type = std::uint32_t;
     using index_type = std::uint16_t;
-    static constexpr index_type not_use = 0xffff;
+    static constexpr index_type termination_request = 0xffff;
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
 
@@ -380,22 +380,48 @@ public:
      */
     message_header peep(const char* base, bool wait_flag = false) {
         while (true) {
-            if(stored() >= message_header::size) {
+            if(stored() >= message_header::size || termination_requested_.load()) {
                 break;
             }
             if (wait_flag) {
                 boost::interprocess::scoped_lock lock(m_mutex_);
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
-                c_empty_.wait(lock, [this](){ return stored() >= message_header::size; });
+                c_empty_.wait(lock, [this](){ return (stored() >= message_header::size) || termination_requested_.load(); });
                 wait_for_read_ = false;
             } else {
                 if (stored() < message_header::size) { return {}; }
             }
         }
-        copy_header(base);
+        if (!termination_requested_.load()) {
+            copy_header(base);
+        } else {
+            header_received_ = message_header(message_header::termination_request, 0);
+        }
         return header_received_;
     }
+
+    /**
+     * @brief wake up the worker thread waiting for request arrival, supposed to be used in server termination.
+     */
+    void terminate() {
+        termination_requested_.store(true);
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
+    }
+    /**
+     * @brief check if an termination request has been made
+     * @retrun true if terminate request has been made
+     */
+    [[nodiscard]] bool terminate_requested() {
+        return termination_requested_.load();
+    }
+
+private:
+    std::atomic_bool termination_requested_{};
 };
 
 
@@ -938,6 +964,11 @@ public:
         void notify() {
             condition_.notify_one();
         }
+
+        // for diagnostic
+        [[nodiscard]] std::size_t size() const {
+            return pushed_.load() - poped_.load();
+        }
     private:
         boost::interprocess::vector<std::size_t, long_allocator> queue_;
         std::size_t capacity_;
@@ -1058,6 +1089,14 @@ public:
     }
     bool is_terminated() noexcept { return terminate_; }
     void confirm_terminated() { s_terminated_.post(); }
+
+    // for diagnostic
+    [[nodiscard]] std::size_t pending_requests() const {
+        return q_requested_.size();
+    }
+    [[nodiscard]] std::size_t session_id_accepted() const {
+        return session_id_;
+    }
 
 private:
     index_queue q_free_;
