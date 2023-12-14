@@ -21,17 +21,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
  */
 @ThreadSafe
 public interface Wire extends ServerResource {
-
-    /**
-     * The major service message version for FrameworkRequest.Header.
-     */
-    int SERVICE_MESSAGE_VERSION_MAJOR = 0;
-
-    /**
-     * The minor service message version for FrameworkRequest.Header.
-     */
-    int SERVICE_MESSAGE_VERSION_MINOR = 0;
-
     /**
      * send a message to the destination server.
      * <p>

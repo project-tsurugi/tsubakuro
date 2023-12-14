@@ -23,6 +23,15 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * WireImpl type.
  */
 public class WireImpl implements Wire {
+    /**
+     * The major service message version for FrameworkRequest.Header.
+     */
+    private static final int SERVICE_MESSAGE_VERSION_MAJOR = 0;
+
+    /**
+     * The minor service message version for FrameworkRequest.Header.
+     */
+    private static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
@@ -57,8 +66,8 @@ public class WireImpl implements Wire {
             throw new IOException("already closed");
         }
         var header = FrameworkRequest.Header.newBuilder()
-            .setServiceMessageVersionMajor(Wire.SERVICE_MESSAGE_VERSION_MAJOR)
-            .setServiceMessageVersionMinor(Wire.SERVICE_MESSAGE_VERSION_MINOR)
+            .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
+            .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR)
             .setServiceId(serviceId)
             .setSessionId(sessionID)
             .build();

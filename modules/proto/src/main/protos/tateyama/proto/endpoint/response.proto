@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package tateyama.proto.endpoint.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.endpoint.proto";
+option java_outer_classname = "EndpointResponse";
+
+// empty message
+message Void {}
+
+// unknown error was occurred.
+message UnknownError {
+    // the error message.
+    string message = 1;
+}
+
+// handshake operation.
+message Handshake {
+    reserved 1 to 10;
+    
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Void success = 11;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 13;
+    }
+}

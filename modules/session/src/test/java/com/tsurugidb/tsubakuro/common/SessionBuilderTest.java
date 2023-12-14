@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
@@ -23,7 +24,7 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential) throws IOException {
+                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
                     assertSame(credential, creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
@@ -41,7 +42,7 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential) throws IOException {
+                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
                     assertSame(credential, creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }

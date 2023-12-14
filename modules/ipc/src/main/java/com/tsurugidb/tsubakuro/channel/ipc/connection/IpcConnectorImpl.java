@@ -3,11 +3,15 @@ package com.tsurugidb.tsubakuro.channel.ipc.connection;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.annotation.Nonnull;
+
 import java.lang.ref.Cleaner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
@@ -49,7 +53,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(@Nonnull Credential credential, @Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         if (handle == 0) {
