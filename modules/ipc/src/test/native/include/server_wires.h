@@ -58,27 +58,38 @@ public:
     class wire_container {
     public:
         wire_container() = default;
-        wire_container(unidirectional_message_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
-        message_header peep(bool wait = false) {
-            return wire_->peep(bip_buffer_, wait);
+        wire_container(unidirectional_message_wire* wire, char* bip_buffer, server_wire_container* envelope)
+            : wire_(wire), bip_buffer_(bip_buffer), envelope_(envelope) {
+        }
+        message_header peep() {
+            auto rv = wire_->peep(bip_buffer_, true);
+            envelope_->slot(rv.get_idx());
+            return rv;
         }
         std::string_view payload() {
             return wire_->payload(bip_buffer_);
         }
+        void dispose() {
+            return wire_->dispose();
+        }
     private:
         unidirectional_message_wire* wire_{};
         char* bip_buffer_{};
+        server_wire_container* envelope_;
     };
     class response_wire_container {
     public:
         response_wire_container() = default;
-        response_wire_container(unidirectional_response_wire* wire, char* bip_buffer) : wire_(wire), bip_buffer_(bip_buffer) {};
+        response_wire_container(unidirectional_response_wire* wire, char* bip_buffer, server_wire_container* envelope)
+            : wire_(wire), bip_buffer_(bip_buffer), envelope_(envelope) {};
         void write(const char* from, response_header header) {
-            wire_->write(bip_buffer_, from, header);
+            response_header rh(envelope_->slot(), header.get_length(), header.get_type());
+            wire_->write(bip_buffer_, from, rh);
         }
     private:
         unidirectional_response_wire* wire_{};
         char* bip_buffer_{};
+        server_wire_container* envelope_;
     };
 
     using resultset_wire = shm_resultset_wire;
@@ -93,8 +104,8 @@ public:
             auto res_wire = managed_shared_memory_->construct<unidirectional_response_wire>(response_wire_name)(managed_shared_memory_.get(), response_buffer_size);
             status_provider_ = managed_shared_memory_->construct<status_provider>(status_provider_name)(managed_shared_memory_.get(), "dummy_as_it_is_test");
 
-            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()));
-            response_wire_ = response_wire_container(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()));
+            request_wire_ = wire_container(req_wire, req_wire->get_bip_address(managed_shared_memory_.get()), this);
+            response_wire_ = response_wire_container(res_wire, res_wire->get_bip_address(managed_shared_memory_.get()), this);
         }
         catch(const boost::interprocess::interprocess_exception& ex) {
             std::abort();  // FIXME
@@ -125,7 +136,9 @@ public:
         }
         return resultset_wires_.get();
     }
-    
+
+    void slot(response_header::index_type slot) { slot_ = slot; }
+    response_header::index_type slot() { return slot_; }
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};
@@ -133,6 +146,7 @@ private:
     response_wire_container response_wire_;
     status_provider* status_provider_{};
     std::unique_ptr<resultset_wires_container> resultset_wires_{};
+    response_header::index_type slot_{};
 };
 
 class connection_container

@@ -10,9 +10,6 @@ import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +18,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -32,25 +28,24 @@ public final class StreamLink extends Link {
     private BufferedOutputStream outStream;
     private DataInputStream inStream;
     private ResultSetBox resultSetBox = new ResultSetBox();
-    private final Lock lock = new ReentrantLock();
-    private final AtomicReference<LinkMessage> helloResponse = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
     private final AtomicBoolean socketClosed = new AtomicBoolean();
 
-    private static final byte REQUEST_SESSION_HELLO = 1;
+    // 1 is nolonger used
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
     private static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
-    public static final byte RESPONSE_SESSION_HELLO_OK = 3;
-    public static final byte RESPONSE_SESSION_HELLO_NG = 4;
+    // 3, 4 are nolonger used
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
     public static final byte RESPONSE_SESSION_BODYHEAD = 7;
     public static final byte RESPONSE_SESSION_BYE_OK = 8;
+
+    private static final int TERMINATION_REQUEST = 0xffff;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
@@ -59,24 +54,6 @@ public final class StreamLink extends Link {
         this.socket.setTcpNoDelay(true);
         this.outStream = new BufferedOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
-        this.helloResponse.set(null);
-        send(REQUEST_SESSION_HELLO, ResponseBox.responseBoxSize());
-    }
-
-    public LinkMessage helloResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
-        lock.lock();
-        try {
-            while (helloResponse.get() == null) {
-                try {
-                    doPull(timeout, unit, true);
-                } catch (IOException e) {
-                    throw new IOException("Server crashed");
-                }
-            }
-            return helloResponse.get();
-        } finally {
-            lock.unlock();
-        }
     }
 
     @Override
@@ -157,17 +134,6 @@ public final class StreamLink extends Link {
             resultSetBox.pushBye(slot);
             return true;
 
-        case RESPONSE_SESSION_HELLO_OK:
-        case RESPONSE_SESSION_HELLO_NG:
-            LOG.trace("receive SESSION_HELLO_{}", ((info == RESPONSE_SESSION_HELLO_OK) ? "OK" : "NG"));
-            lock.lock();
-            try {
-                helloResponse.set(message);
-            } finally {
-                lock.unlock();
-            }
-            return true;
-
         case RESPONSE_SESSION_BYE_OK:
             LOG.trace("receive RESPONSE_SESSION_BYE_OK");
             closeBoxes(true);
@@ -195,7 +161,7 @@ public final class StreamLink extends Link {
         return resultSetBox;
     }
 
-    private void send(byte i, int s) throws IOException {  // SESSION_HELLO, RESULT_SET_BYE_OK
+    private void send(byte i, int s) throws IOException {  // REQUEST_SESSION_BYE, RESULT_SET_BYE_OK
         byte[] header = new byte[7];
 
         header[0] = i;  // info
@@ -213,7 +179,7 @@ public final class StreamLink extends Link {
             outStream.write(header, 0, header.length);
             outStream.flush();
         }
-        LOG.trace("send {}, slot = {}", ((i == REQUEST_SESSION_HELLO) ? "SESSION_HELLO" : "RESULT_SET_BYE_OK"), s); //$NON-NLS-1$
+        LOG.trace("send RESULT_SET_BYE_OK, slot = {}", s); //$NON-NLS-1$
     }
 
     @Override
@@ -313,7 +279,7 @@ public final class StreamLink extends Link {
     public void close() throws IOException, ServerException {
         if (!closed.getAndSet(true) && !socketError.get()) {
             try (var c1 = socket; var c2 = inStream; var c3 = outStream) {
-                send(REQUEST_SESSION_BYE, 0);
+                send(REQUEST_SESSION_BYE, TERMINATION_REQUEST);
                 while (!socketClosed.get()) {
                     doPull(timeout, timeUnit);
                 }

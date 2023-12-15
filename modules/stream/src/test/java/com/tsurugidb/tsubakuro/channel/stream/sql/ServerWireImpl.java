@@ -32,6 +32,7 @@ public class ServerWireImpl implements Closeable {
     private final ArrayDeque<Message> sendQueue;
     private SendWorker sender;
     private final long sessionID;
+    private int slot;
 
     private static class Message {
         byte[] bytes;
@@ -59,10 +60,8 @@ public class ServerWireImpl implements Closeable {
                 LOG.info("accept client: {}", port);
                 while (serverStreamLink.receive()) {
                     LOG.debug("received: ", serverStreamLink.getInfo());
+                    slot = serverStreamLink.getSlot();
                     switch (serverStreamLink.getInfo()) {
-                        case 1: // StreamLink.REQUEST_SESSION_HELLO
-                            serverStreamLink.sendResponseHelo();
-                            break;
                         case 2: // StreamLink.REQUEST_SESSION_PAYLOAD
                             receiveQueue.add(new Message(serverStreamLink.getBytes()));
                             break;
@@ -92,12 +91,12 @@ public class ServerWireImpl implements Closeable {
         @Override
         public void run() {
             try {
-                serverStreamLink.sendRecordHello(0, name);
+                serverStreamLink.sendRecordHello(slot, name);
                 while (true) {
                     if (serverStreamLink.isSnedOk()) {
                         while (!sendQueue.isEmpty()) {
                             var entry = sendQueue.poll().getBytes();
-                            serverStreamLink.sendRecord(0, 0, entry);
+                            serverStreamLink.sendRecord(slot, 0, entry);
                             if (entry.length == 0) {
                                 return;
                             }
@@ -128,6 +127,7 @@ public class ServerWireImpl implements Closeable {
         this.receiveQueue = new ArrayDeque<Message>();
         this.sendQueue = new ArrayDeque<Message>();
         this.receiver = new ReceiveWorker(port);
+        this.slot = 0;
         receiver.start();
     }
 
@@ -175,7 +175,7 @@ public class ServerWireImpl implements Closeable {
             header.writeDelimitedTo(buffer);
             response.writeDelimitedTo(buffer);
             var bytes = buffer.toByteArray();
-            serverStreamLink.sendResponse(0, bytes);
+            serverStreamLink.sendResponse(slot, bytes);
         }
     }
 

@@ -56,4 +56,50 @@ class SessionBuilderTest {
         }
     }
 
+    @Test
+    void createWithClientInformation() throws Exception {
+        try (var wire = new MockWire()) {
+            String label = "label for the test";
+            String applicationName = "applicationName for the test";
+            String userName = "userName for the test";
+            var builder = SessionBuilder.connect(new Connector() {
+                @Override
+                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.connectionLabel(), label);
+                    assertSame(clientInformation.applicationName(), applicationName);
+                    assertSame(clientInformation.userName(), userName);
+                    return FutureResponse.wrap(Owner.of(wire));
+                }
+            })
+                    .withLabel(label).withApplicationName(applicationName).withUserName(userName);
+            try (var session = builder.create()) {
+                // ok.
+            }
+        }
+    }
+
+    @Test
+    void createAsyncWithClientInformation() throws Exception {
+        try (var wire = new MockWire()) {
+            String label = "label for the test";
+            String applicationName = "applicationName for the test";
+            String userName = "userName for the test";
+            var builder = SessionBuilder.connect(new Connector() {
+                @Override
+                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.connectionLabel(), label);
+                    assertSame(clientInformation.applicationName(), applicationName);
+                    assertSame(clientInformation.userName(), userName);
+                    return FutureResponse.wrap(Owner.of(wire));
+                }
+            })
+                    .withLabel(label).withApplicationName(applicationName).withUserName(userName);
+            try (
+                    var fSession = builder.createAsync();
+                    var session = fSession.get(10, TimeUnit.SECONDS)) {
+                // ok.
+            }
+        }
+    }
+
 }

@@ -56,6 +56,16 @@ public interface Connector {
 
     /**
      * Establishes a connection to the Tsurugi server.
+     * @param clientInformation the client information
+     * @return future session wire
+     * @throws IOException connection error
+     */
+    default FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
+        return connect(NullCredential.INSTANCE, clientInformation);
+    }
+
+    /**
+     * Establishes a connection to the Tsurugi server.
      * @param credential the connection credential
      * @param clientInformation the client information
      * @return future session wire

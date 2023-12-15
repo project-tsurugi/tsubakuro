@@ -9,8 +9,8 @@ using namespace tateyama::common::wire;
 JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireImpl_createNative
 (JNIEnv *env, [[maybe_unused]] jclass thisObj, jstring name)
 {
-    const char* name_ = env->GetStringUTFChars(name, NULL);
-    if (name_ == NULL) return 0;
+    const char* name_ = env->GetStringUTFChars(name, nullptr);
+    if (name_ == nullptr) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
     server_wire_container* container = new server_wire_container(std::string_view(name_, len_));
@@ -25,21 +25,23 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_Server
 
     auto& wire = container->get_request_wire();
     message_header h = wire.peep();
-    if (h.get_idx() != 0) {
-        std::abort();  // out of the scope of this test program
-    }
     std::size_t length = h.get_length();
     jbyteArray dstj = env->NewByteArray(length);
-    if (dstj == NULL) {
-        return NULL;
+    if (dstj == nullptr) {
+        wire.dispose();
+        return nullptr;
     }
-    jbyte* dst = env->GetByteArrayElements(dstj, NULL);
-    if (dst == NULL) {
-        return NULL;
+    jbyte* dst = env->GetByteArrayElements(dstj, nullptr);
+    if (dst == nullptr) {
+        wire.dispose();
+        return nullptr;
     }
 
-    memcpy(dst, wire.payload().data(), length);
+    if (length > 0) {
+        memcpy(dst, wire.payload().data(), length);
+    }
     env->ReleaseByteArrayElements(dstj, dst, 0);
+    wire.dispose();
     return dstj;
 }
 
@@ -57,7 +59,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireIm
         std::abort();  // This is OK, because server_wire is used for test purpose only
     }
 
-    // use slot 0 only in test
+    // 0 will be rewrited
     response_header header(0, capacity, RESPONSE_PAYLOAD);
     container->write(src, header);
     env->ReleaseByteArrayElements(srcj, src, 0);
@@ -81,8 +83,8 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireI
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
-    const char* name_ = env->GetStringUTFChars(name, NULL);
-    if (name_ == NULL) return 0;
+    const char* name_ = env->GetStringUTFChars(name, nullptr);
+    if (name_ == nullptr) return 0;
     jsize len_ = env->GetStringUTFLength(name);
 
     server_wire_container::resultset_wires_container* rs_container = container->create_resultset_wires(std::string_view(name_, len_));

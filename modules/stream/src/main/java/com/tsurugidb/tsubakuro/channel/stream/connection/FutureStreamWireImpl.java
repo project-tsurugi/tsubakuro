@@ -5,9 +5,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nonnull;
+
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -16,32 +20,37 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  */
 public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
+    private final Credential credential;
+    private final ClientInformation clientInformation;
     StreamLink streamLink;
     private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureStreamWireImpl(StreamLink streamLink) {
+    FutureStreamWireImpl(StreamLink streamLink, @Nonnull Credential credential, @Nonnull ClientInformation clientInformation) {
         this.streamLink = streamLink;
+        this.credential = credential;
+        this.clientInformation = clientInformation;
     }
 
     @Override
-    public Wire get() throws IOException {
-        return get(0, null);  // No timeout
-    }
-
-    @Override
-    public Wire get(long timeout, TimeUnit unit) throws IOException {
+    public Wire get() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            try {
-                var message = streamLink.helloResponse(timeout, unit);
-                if (message.getInfo() == StreamLink.RESPONSE_SESSION_HELLO_OK) {
-                    return new WireImpl(streamLink, Long.parseLong(message.getString()));
-                }
-                throw new IOException("the server has declined the connection request");
-            } catch (TimeoutException e) {
-                throw new IOException(e);
-            }
+            var wireImpl = new WireImpl(streamLink);
+            var futureSessionID = wireImpl.handshake(credential, clientInformation);
+            wireImpl.setSessionID(futureSessionID.get());
+            return wireImpl;
         }
-        throw new IOException("programming error: FutureStreamWire is already closed");
+        throw new IOException("FutureStreamWireImpl already closed.");
+    }
+
+    @Override
+    public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+        if (!gotton.getAndSet(true)) {
+            var wireImpl = new WireImpl(streamLink);
+            var futureSessionID = wireImpl.handshake(credential, clientInformation);
+            wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+            return wireImpl;
+        }
+        throw new IOException("FutureStreamWireImpl already closed.");
     }
 
     @Override

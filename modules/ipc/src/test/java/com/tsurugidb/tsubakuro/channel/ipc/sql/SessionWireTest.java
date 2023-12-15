@@ -12,6 +12,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -31,6 +33,7 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionID);
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            client.handshake(NullCredential.INSTANCE, new ClientInformation());
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -50,7 +53,8 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionID);
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-    
+            client.handshake(NullCredential.INSTANCE, new ClientInformation());
+
             // REQUEST test begin
             // client side send Request
             var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
@@ -78,6 +82,7 @@ class SessionWireTest {
     void timeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionID);
         client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        client.handshake(NullCredential.INSTANCE, new ClientInformation());
 
         // REQUEST test begin
         // client side send Request
@@ -107,6 +112,7 @@ class SessionWireTest {
     void serverCrashDetectionTest() throws Exception {
         server = new ServerWireImpl(dbName, sessionID, false);
         client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        client.handshake(NullCredential.INSTANCE, new ClientInformation());
 
         // REQUEST test begin
         // client side send Request

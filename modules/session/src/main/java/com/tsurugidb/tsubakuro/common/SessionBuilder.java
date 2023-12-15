@@ -91,7 +91,7 @@ public final class SessionBuilder {
      */
     public SessionBuilder withLabel(@Nonnull String label) {
         Objects.requireNonNull(label);
-        this.clientInformation.label(label);
+        this.clientInformation.connectionlabel(label);
         return this;
     }
 
@@ -103,6 +103,17 @@ public final class SessionBuilder {
     public SessionBuilder withApplicationName(@Nonnull String applicationName) {
         Objects.requireNonNull(applicationName);
         this.clientInformation.applicationName(applicationName);
+        return this;
+    }
+
+    /**
+     * Sets userName information to connect.
+     * @param userName the userName information
+     * @return this
+     */
+    public SessionBuilder withUserName(@Nonnull String userName) {
+        Objects.requireNonNull(userName);
+        this.clientInformation.userName(userName);
         return this;
     }
 
