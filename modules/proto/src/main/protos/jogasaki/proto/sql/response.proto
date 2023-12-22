@@ -38,7 +38,7 @@ message Error {
  */
 
 /* For response to ExecuteQuery, ExecutePreparedQuery, Commit, Rollback, 
-DisposePreparedStatement, DisposeTransaction, and ExecuteDump. */
+DisposePreparedStatement, DisposeTransaction and ExecuteDump. */
 message ResultOnly {
   oneof result {
     Success success = 1;
@@ -238,7 +238,7 @@ message DisposeTransaction {
   }
 }
 
-/* For response to ExecuteStatement, ExecutePreparedStatement, and ExecuteLoad. */
+/* For response to ExecuteStatement, ExecutePreparedStatement and ExecuteLoad. */
 message ExecuteResult {
   reserved 1 to 10;
 
