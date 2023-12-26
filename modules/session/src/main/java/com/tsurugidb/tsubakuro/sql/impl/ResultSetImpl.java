@@ -417,11 +417,12 @@ public class ResultSetImpl implements ResultSet {
                 }
             } catch (TimeoutException e) {
                 throw new ResponseTimeoutException(e);
-            }
-            if (closeHandler != null) {
-                Lang.suppress(
-                        e -> LOG.warn("error occurred while collecting garbage", e),
-                        () -> closeHandler.onClosed(this));
+            } finally {
+                if (closeHandler != null) {
+                    Lang.suppress(
+                            e -> LOG.warn("error occurred while collecting garbage", e),
+                            () -> closeHandler.onClosed(this));
+                }
             }
         }
     }
