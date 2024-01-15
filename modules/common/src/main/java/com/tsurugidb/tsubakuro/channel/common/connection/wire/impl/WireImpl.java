@@ -8,6 +8,7 @@ import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,17 +187,25 @@ public class WireImpl implements Wire {
         }
     }
 
-    public FutureResponse<Long> handshake(@Nonnull Credential credential, @Nonnull ClientInformation clientInformation) throws IOException {
+    public FutureResponse<Long> handshake(@Nonnull Credential credential, @Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
         var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
-//        if (credential != NullCredential.INSTANCE) {
-//            handshakeMessageBuilder.setAuthInfo(credential);  // FIXME
-//        }
-        handshakeMessageBuilder.setClientInformation(EndpointRequest.ClientInformation.newBuilder()
-                    .setConnectionLabel(clientInformation.connectionLabel())
-                    .setApplicationName(clientInformation.applicationName())
-                    .setUserName(clientInformation.userName())
-                    .setConnectionInformation(clientInformation.connectionInformation())
-                    .setMaximumConcurrentResultSets(clientInformation.maximumConcurrentResultSets()));
+        if (wireInformation != null) {
+            handshakeMessageBuilder.setWireInformation(wireInformation);
+        }
+
+        var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();
+        if (clientInformation.getConnectionLabel() != null) {
+            clientInformationBuilder.setConnectionLabel(clientInformation.getConnectionLabel());
+        }
+        if (clientInformation.getApplicationName() != null) {
+            clientInformationBuilder.setApplicationName(clientInformation.getApplicationName());
+        }
+        if (clientInformation.getUserName() != null) {
+            clientInformationBuilder.setCredential(
+                EndpointRequest.Credential.newBuilder().setUserName(clientInformation.getUserName()));
+        }
+        handshakeMessageBuilder.setClientInformation(clientInformationBuilder);
+
         FutureResponse<? extends Response> future = send(
             SERVICE_ID_ENDPOINT_BROKER,
                 toDelimitedByteArray(newRequest()

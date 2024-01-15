@@ -31,9 +31,13 @@ public final class SessionBuilder {
 
     private Credential connectionCredential = NullCredential.INSTANCE;
 
-    private ClientInformation clientInformation = new ClientInformation();
-
     private final SessionInfo sessionInfo;
+
+    private String connectionLabel;
+
+    private String applicationName;
+
+    private String userName;
 
     private SessionBuilder(Connector connector) {
         assert connector != null;
@@ -86,34 +90,34 @@ public final class SessionBuilder {
 
     /**
      * Sets label information to connect.
-     * @param label the label information
+     * @param connectionLabelString the label information
      * @return this
      */
-    public SessionBuilder withLabel(@Nonnull String label) {
-        Objects.requireNonNull(label);
-        this.clientInformation.connectionlabel(label);
+    public SessionBuilder withLabel(@Nonnull String connectionLabelString) {
+        Objects.requireNonNull(connectionLabelString);
+        connectionLabel = connectionLabelString;
         return this;
     }
 
     /**
      * Sets applicationName information to connect.
-     * @param applicationName the applicationName information
+     * @param applicationNameString the applicationName information
      * @return this
      */
-    public SessionBuilder withApplicationName(@Nonnull String applicationName) {
-        Objects.requireNonNull(applicationName);
-        this.clientInformation.applicationName(applicationName);
+    public SessionBuilder withApplicationName(@Nonnull String applicationNameString) {
+        Objects.requireNonNull(applicationNameString);
+        applicationName = applicationNameString;
         return this;
     }
 
     /**
      * Sets userName information to connect.
-     * @param userName the userName information
+     * @param userNameString the userName information
      * @return this
      */
-    public SessionBuilder withUserName(@Nonnull String userName) {
-        Objects.requireNonNull(userName);
-        this.clientInformation.userName(userName);
+    public SessionBuilder withUserName(@Nonnull String userNameString) {
+        Objects.requireNonNull(userNameString);
+        userName = userNameString;
         return this;
     }
 
@@ -128,7 +132,7 @@ public final class SessionBuilder {
      * @see #create(long, TimeUnit)
      */
     public Session create() throws IOException, ServerException, InterruptedException {
-        try (var fWire = connector.connect(connectionCredential, clientInformation)) {
+        try (var fWire = connector.connect(connectionCredential, new ClientInformation(connectionLabel, applicationName, userName))) {
             return create0(fWire.get());
         }
     }
@@ -146,7 +150,7 @@ public final class SessionBuilder {
     public Session create(long timeout, @Nonnull TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
-        try (var fWire = connector.connect(connectionCredential, clientInformation)) {
+        try (var fWire = connector.connect(connectionCredential, new ClientInformation(connectionLabel, applicationName, userName))) {
             var session = create0(fWire.get(timeout, unit));
             return session;
         }
@@ -159,7 +163,7 @@ public final class SessionBuilder {
      * @throws IOException if I/O error was occurred during connection
      */
     public FutureResponse<? extends Session> createAsync() throws IOException {
-        var fWire = connector.connect(connectionCredential, clientInformation);
+        var fWire = connector.connect(connectionCredential, new ClientInformation(connectionLabel, applicationName, userName));
         return new AbstractFutureResponse<Session>() {
 
             @Override

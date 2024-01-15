@@ -65,9 +65,9 @@ class SessionBuilderTest {
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
                 public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
-                    assertSame(clientInformation.connectionLabel(), label);
-                    assertSame(clientInformation.applicationName(), applicationName);
-                    assertSame(clientInformation.userName(), userName);
+                    assertSame(clientInformation.getConnectionLabel(), label);
+                    assertSame(clientInformation.getApplicationName(), applicationName);
+                    assertSame(clientInformation.getUserName(), userName);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
@@ -87,9 +87,9 @@ class SessionBuilderTest {
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
                 public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
-                    assertSame(clientInformation.connectionLabel(), label);
-                    assertSame(clientInformation.applicationName(), applicationName);
-                    assertSame(clientInformation.userName(), userName);
+                    assertSame(clientInformation.getConnectionLabel(), label);
+                    assertSame(clientInformation.getApplicationName(), applicationName);
+                    assertSame(clientInformation.getUserName(), userName);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })

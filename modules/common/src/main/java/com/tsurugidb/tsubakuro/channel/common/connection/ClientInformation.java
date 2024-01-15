@@ -2,123 +2,71 @@ package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.text.MessageFormat;
 
+import javax.annotation.Nullable;
+
 /**
  * A credential by user name and password.
  */
-public class ClientInformation {
+public final class ClientInformation {
 
-    private String connectionLabel;
+    private final String connectionLabel;
 
-    private String applicationName;
+    private final String applicationName;
 
-    private String userName;
+    private final String userName;
 
-    private String connectionInformation;  // used by IPC only
-
-    private long maxResultSets;  // used by Stream
+    /**
+     * Creates a new instance without information.
+     */
+    public ClientInformation() {
+        this.connectionLabel = null;
+        this.applicationName = null;
+        this.userName = null;
+    }
 
     /**
      * Creates a new instance.
+     * @param connectionLabel the label
+     * @param applicationName the application name
+     * @param userName the application name
      */
-    public ClientInformation() {
+    public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nullable String userName) {
+        this.connectionLabel = connectionLabel;
+        this.applicationName = applicationName;
+        this.userName = userName;
     }
 
     /**
      * Get the connection label.
-     * @return the connection label.
+     * @return the connection label, null if connection label has not been set.
      */
-    public String connectionLabel() {
-        if (connectionLabel != null) {
-            return connectionLabel;
-        }
-        return "";
+    public String getConnectionLabel() {
+        return connectionLabel;
     }
 
     /**
      * Get the application name.
-     * @return the application name.
+     * @return the application name, null if application name has not been set.
      */
-    public String applicationName() {
-        if (applicationName != null) {
-            return applicationName;
-        }
-        return "";
+    public String getApplicationName() {
+        return applicationName;
     }
 
     /**
      * Get the user name.
-     * @return the user name.
+     * @return the user name, null if user name has not been set.
      */
-    public String userName() {
-        if (userName != null) {
-            return userName;
-        }
-        return "";
-    }
-
-    /**
-     * Get the connection information.
-     * @return the connection information.
-     */
-    public String connectionInformation() {
-        if (connectionInformation != null) {
-            return connectionInformation;
-        }
-        return "";
-    }
-
-    /**
-     * Get the maximumConcurrentResultSets.
-     * @return the maximumConcurrentResultSets.
-     */
-    public long maximumConcurrentResultSets() {
-        return maxResultSets;
-    }
-
-    /**
-     * Set label.
-     * @param labelString the label
-     */
-    public void connectionlabel(String labelString) {
-        this.connectionLabel = labelString;
-    }
-
-    /**
-     * Set application name.
-     * @param applicationNameString the application name
-     */
-    public void applicationName(String applicationNameString) {
-        this.applicationName = applicationNameString;
-    }
-
-    /**
-     * Set user name.
-     * @param userNameString the application name
-     */
-    public void userName(String userNameString) {
-        this.userName = userNameString;
-    }
-
-    /**
-     * Set connectionInformation name.
-     * @param connectionInformationString the connectionInformation
-     */
-    public void connectionInformation(String connectionInformationString) {
-        this.connectionInformation = connectionInformationString;
-    }
-
-    /**
-     * Set maximumConcurrentResultSets.
-     * @param maximumConcurrentResultSets the number of maximumConcurrentResultSets
-     */
-    public void maximumConcurrentResultSets(long maximumConcurrentResultSets) {
-        this.maxResultSets = maximumConcurrentResultSets;
+    public String getUserName() {
+        return userName;
     }
 
     @Override
     public String toString() {
         return MessageFormat.format(
-                "ClientInformation(connectionLabel={0}, applicationName={1}, userName={2}, connectionInformation={3}, maximumConcurrentResultSets={4})",
-                connectionLabel, applicationName, userName, connectionInformation, maxResultSets);
+                "ClientInformation(connectionLabel={0}, applicationName={1}, userName={2})",
+                checkNull(connectionLabel), checkNull(applicationName), checkNull(userName));
+    }
+    private String checkNull(String string) {
+        return (string != null) ? string : "";
     }
 }

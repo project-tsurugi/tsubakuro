@@ -2,24 +2,15 @@ package com.tsurugidb.tsubakuro.channel.ipc.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
-import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.protos.ProtosForTest;
-import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.sql.proto.SqlResponse;
 
 class ResultSetWireTest {
     private final String NAME = "resultset";

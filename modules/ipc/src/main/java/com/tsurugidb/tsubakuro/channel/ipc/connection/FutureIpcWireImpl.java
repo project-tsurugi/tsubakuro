@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
@@ -32,13 +33,19 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
         this.clientInformation = clientInformation;
     }
 
+    private EndpointRequest.WireInformation wireInformation() {
+        return EndpointRequest.WireInformation.newBuilder().setIpcInformation(
+            EndpointRequest.WireInformation.IpcInformation.newBuilder().setConnectionInformation(Long.toString(ProcessHandle.current().pid()))
+        ).build();
+    }
+
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
             var wire = connector.getSessionWire(id);
             if (wire instanceof WireImpl) {
                 var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(credential, clientInformation);
+                var futureSessionID = wireImpl.handshake(credential, clientInformation, wireInformation());
                 wireImpl.checkSessionID(futureSessionID.get());
                 return wireImpl;
             }
@@ -53,7 +60,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             var wire = connector.getSessionWire(id, timeout, unit);
             if (wire instanceof WireImpl) {
                 var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(credential, clientInformation);
+                var futureSessionID = wireImpl.handshake(credential, clientInformation, wireInformation());
                 wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
                 return wireImpl;
             }

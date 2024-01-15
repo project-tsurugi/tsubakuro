@@ -61,7 +61,6 @@ public final class IpcConnectorImpl implements Connector {
         }
         try {
             long id = requestNative(handle);
-            clientInformation.connectionInformation(Long.toString(ProcessHandle.current().pid()));
             return new FutureIpcWireImpl(this, id, credential, clientInformation);
         } catch (IOException e) {
             throw new ConnectException("the server has declined the connection request");

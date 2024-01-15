@@ -1,9 +1,10 @@
 package com.tsurugidb.tsubakuro.channel.ipc.sql;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.Closeable;
@@ -74,12 +75,13 @@ public class ServerWireImpl implements Closeable {
                     } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                         System.err.println(e);
                         e.printStackTrace();
-                        throw new IOException("error: ServerWireImpl.get()");
+                        fail("error: ServerWireImpl.get()");
                     }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
                 System.err.println(e);
+                fail(e);
             }
         }
     }
@@ -90,7 +92,7 @@ public class ServerWireImpl implements Closeable {
         this.takeSendAction = takeSendAction;
         this.wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
         if (wireHandle == 0) {
-            throw new IOException("error: ServerWireImpl.ServerWireImpl()");
+            fail("error: ServerWireImpl.ServerWireImpl()");
         }
         this.receiver = new ReceiveWorker();
         receiver.start();
@@ -128,18 +130,14 @@ public class ServerWireImpl implements Closeable {
                         FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
                         response.writeDelimitedTo(out);
                     });
-                if (wireHandle != 0) {
-                    putNative(wireHandle, resposeByteArray);
-                } else {
-                    throw new IOException("error: sessionWireHandle is 0");
-                }
+                putNative(wireHandle, resposeByteArray);
             } catch (IOException | InterruptedException e) {
                 throw new IOException(e);
             }
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
             System.err.println(e);
             e.printStackTrace();
-            throw new IOException("error: ServerWireImpl.getHandshakeRequest()");
+            fail("error: ServerWireImpl.getHandshakeRequest()");
         }
     }
 
@@ -150,10 +148,10 @@ public class ServerWireImpl implements Closeable {
     public SqlRequest.Request get() throws IOException {
         try {
             available.acquire();
-            return sqlRequest;
         } catch(InterruptedException e) {
-            throw new IOException(e);
+            fail(e);
         }
+        return sqlRequest;
     }
 
     /**
@@ -169,22 +167,18 @@ public class ServerWireImpl implements Closeable {
                     FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
                     response.writeDelimitedTo(out);
                 });
-            if (wireHandle != 0) {
-                putNative(wireHandle, resposeByteArray);
-            } else {
-                throw new IOException("error: sessionWireHandle is 0");
-            }
+            putNative(wireHandle, resposeByteArray);
         } catch (IOException | InterruptedException e) {
-            throw new IOException(e);
+            fail(e);
         }
     }
 
     public long createRSL(String name) throws IOException {
-        if (wireHandle != 0) {
-            return createRSLNative(wireHandle, name);
-        } else {
-            throw new IOException("error: ServerWireImpl.createRSL()");
+        var handle = createRSLNative(wireHandle, name);
+        if (handle == 0) {
+            fail("error: createRSLNative() returns 0");
         }
+        return handle;
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
@@ -194,7 +188,7 @@ public class ServerWireImpl implements Closeable {
         if (handle != 0) {
             putRecordsRSLNative(handle, ba);
         } else {
-            throw new IOException("error: resultSetWireHandle is 0");
+            fail("error: resultSetWireHandle given is 0");
         }
     }
 
@@ -205,7 +199,7 @@ public class ServerWireImpl implements Closeable {
         if (handle != 0) {
             eorRSLNative(handle);
         } else {
-            throw new IOException("error: resultSetWireHandle is 0");
+            fail("error: resultSetWireHandle given is 0");
         }
     }
 }

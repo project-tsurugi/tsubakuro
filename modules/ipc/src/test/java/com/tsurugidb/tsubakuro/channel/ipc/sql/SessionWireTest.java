@@ -33,7 +33,7 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionID);
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-            client.handshake(NullCredential.INSTANCE, new ClientInformation());
+            client.handshake(NullCredential.INSTANCE, new ClientInformation(), null);
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -53,7 +53,7 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionID);
             client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-            client.handshake(NullCredential.INSTANCE, new ClientInformation());
+            client.handshake(NullCredential.INSTANCE, new ClientInformation(), null);
 
             // REQUEST test begin
             // client side send Request
@@ -82,7 +82,7 @@ class SessionWireTest {
     void timeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionID);
         client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-        client.handshake(NullCredential.INSTANCE, new ClientInformation());
+        client.handshake(NullCredential.INSTANCE, new ClientInformation(), null);
 
         // REQUEST test begin
         // client side send Request
@@ -112,7 +112,7 @@ class SessionWireTest {
     void serverCrashDetectionTest() throws Exception {
         server = new ServerWireImpl(dbName, sessionID, false);
         client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
-        client.handshake(NullCredential.INSTANCE, new ClientInformation());
+        client.handshake(NullCredential.INSTANCE, new ClientInformation(), null);
 
         // REQUEST test begin
         // client side send Request
