@@ -132,7 +132,9 @@ public class ServerWireImpl implements Closeable {
                     });
                 putNative(wireHandle, resposeByteArray);
             } catch (IOException | InterruptedException e) {
-                throw new IOException(e);
+                System.err.println(e);
+                e.printStackTrace();
+                fail(e);
             }
         } catch (com.google.protobuf.InvalidProtocolBufferException e) {
             System.err.println(e);

@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -20,16 +19,14 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  */
 public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
-    private final Credential credential;
     private final ClientInformation clientInformation;
     private IpcConnectorImpl connector;
     private long id;
     private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureIpcWireImpl(IpcConnectorImpl connector, long id, @Nonnull Credential credential, @Nonnull ClientInformation clientInformation) {
+    FutureIpcWireImpl(IpcConnectorImpl connector, long id, @Nonnull ClientInformation clientInformation) {
         this.connector = connector;
         this.id = id;
-        this.credential = credential;
         this.clientInformation = clientInformation;
     }
 
@@ -45,7 +42,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             var wire = connector.getSessionWire(id);
             if (wire instanceof WireImpl) {
                 var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(credential, clientInformation, wireInformation());
+                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
                 wireImpl.checkSessionID(futureSessionID.get());
                 return wireImpl;
             }
@@ -60,7 +57,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             var wire = connector.getSessionWire(id, timeout, unit);
             if (wire instanceof WireImpl) {
                 var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(credential, clientInformation, wireInformation());
+                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
                 wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
                 return wireImpl;
             }

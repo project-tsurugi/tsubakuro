@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
@@ -53,7 +52,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(@Nonnull Credential credential, @Nonnull ClientInformation clientInformation) throws IOException {
+    public FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         if (handle == 0) {
@@ -61,7 +60,7 @@ public final class IpcConnectorImpl implements Connector {
         }
         try {
             long id = requestNative(handle);
-            return new FutureIpcWireImpl(this, id, credential, clientInformation);
+            return new FutureIpcWireImpl(this, id, clientInformation);
         } catch (IOException e) {
             throw new ConnectException("the server has declined the connection request");
         }

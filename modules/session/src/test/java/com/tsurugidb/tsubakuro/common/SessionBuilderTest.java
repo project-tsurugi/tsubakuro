@@ -24,8 +24,8 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
-                    assertSame(credential, creds);
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
@@ -42,8 +42,8 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
-                    assertSame(credential, creds);
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
@@ -61,17 +61,17 @@ class SessionBuilderTest {
         try (var wire = new MockWire()) {
             String label = "label for the test";
             String applicationName = "applicationName for the test";
-            String userName = "userName for the test";
+            var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
                     assertSame(clientInformation.getConnectionLabel(), label);
                     assertSame(clientInformation.getApplicationName(), applicationName);
-                    assertSame(clientInformation.getUserName(), userName);
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
-                    .withLabel(label).withApplicationName(applicationName).withUserName(userName);
+                    .withLabel(label).withApplicationName(applicationName).withCredential(creds);
             try (var session = builder.create()) {
                 // ok.
             }
@@ -83,17 +83,17 @@ class SessionBuilderTest {
         try (var wire = new MockWire()) {
             String label = "label for the test";
             String applicationName = "applicationName for the test";
-            String userName = "userName for the test";
+            var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential, ClientInformation clientInformation) throws IOException {
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
                     assertSame(clientInformation.getConnectionLabel(), label);
                     assertSame(clientInformation.getApplicationName(), applicationName);
-                    assertSame(clientInformation.getUserName(), userName);
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
-                    .withLabel(label).withApplicationName(applicationName).withUserName(userName);
+                    .withLabel(label).withApplicationName(applicationName).withCredential(creds);
             try (
                     var fSession = builder.createAsync();
                     var session = fSession.get(10, TimeUnit.SECONDS)) {

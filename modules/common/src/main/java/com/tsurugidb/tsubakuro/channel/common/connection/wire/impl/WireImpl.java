@@ -17,7 +17,6 @@ import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
@@ -187,7 +186,7 @@ public class WireImpl implements Wire {
         }
     }
 
-    public FutureResponse<Long> handshake(@Nonnull Credential credential, @Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
+    public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
         var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
         if (wireInformation != null) {
             handshakeMessageBuilder.setWireInformation(wireInformation);
@@ -199,10 +198,6 @@ public class WireImpl implements Wire {
         }
         if (clientInformation.getApplicationName() != null) {
             clientInformationBuilder.setApplicationName(clientInformation.getApplicationName());
-        }
-        if (clientInformation.getUserName() != null) {
-            clientInformationBuilder.setCredential(
-                EndpointRequest.Credential.newBuilder().setUserName(clientInformation.getUserName()));
         }
         handshakeMessageBuilder.setClientInformation(clientInformationBuilder);
 

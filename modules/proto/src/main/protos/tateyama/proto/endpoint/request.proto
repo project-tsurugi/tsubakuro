@@ -27,14 +27,11 @@ message Request {
 
 // handshake operation.
 message Handshake {
-    // the credential.
-    Credential credential = 1;
-
     // the client information.
-    ClientInformation client_information = 2;
+    ClientInformation client_information = 1;
 
     // reserved for system use
-    reserved 3 to 10;
+    reserved 2 to 10;
 
     // the wire information.
     WireInformation wire_information = 11;
@@ -48,14 +45,13 @@ message ClientInformation {
     // the application name.
     string application_name = 2;
 
-    // the credential
+    // the credential.
     Credential credential = 3;
 }
 
 // the credential
 message Credential {
-    // the user name.
-    string user_name = 1;
+    // FIXME (T.B.D.)
 }
 
 // wire information

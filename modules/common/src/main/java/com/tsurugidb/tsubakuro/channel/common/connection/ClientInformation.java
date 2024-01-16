@@ -2,10 +2,11 @@ package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.text.MessageFormat;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * A credential by user name and password.
+ * A client information intened to be used in handshake.
  */
 public final class ClientInformation {
 
@@ -13,7 +14,7 @@ public final class ClientInformation {
 
     private final String applicationName;
 
-    private final String userName;
+    private final Credential credential;
 
     /**
      * Creates a new instance without information.
@@ -21,19 +22,19 @@ public final class ClientInformation {
     public ClientInformation() {
         this.connectionLabel = null;
         this.applicationName = null;
-        this.userName = null;
+        this.credential = NullCredential.INSTANCE;
     }
 
     /**
      * Creates a new instance.
-     * @param connectionLabel the label
-     * @param applicationName the application name
-     * @param userName the application name
+     * @param connectionLabel the label.
+     * @param applicationName the application name.
+     * @param credential the connection credential.
      */
-    public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nullable String userName) {
+    public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nonnull Credential credential) {
         this.connectionLabel = connectionLabel;
         this.applicationName = applicationName;
-        this.userName = userName;
+        this.credential = credential;
     }
 
     /**
@@ -53,20 +54,21 @@ public final class ClientInformation {
     }
 
     /**
-     * Get the user name.
-     * @return the user name, null if user name has not been set.
+     * Get the credential.
+     * @return the connection credential.
      */
-    public String getUserName() {
-        return userName;
+    public Credential getCredential() {
+        return credential;
     }
 
     @Override
     public String toString() {
         return MessageFormat.format(
-                "ClientInformation(connectionLabel={0}, applicationName={1}, userName={2})",
-                checkNull(connectionLabel), checkNull(applicationName), checkNull(userName));
+                "ClientInformation(connectionLabel={0}, applicationName={1}, credential={2})",
+                checkNull(connectionLabel), checkNull(applicationName), credential.toString());
     }
     private String checkNull(String string) {
         return (string != null) ? string : "";
     }
+
 }
