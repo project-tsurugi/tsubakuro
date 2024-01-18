@@ -175,7 +175,7 @@ public class WireImpl implements Wire {
                 case RESOURCE_LIMIT_REACHED:
                     throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
                 case AUTHENTICATION_ERROR:
-                    throw newUnknown(message.getError());  // FIXME
+                    throw newUnknown();  // FIXME
                 default:
                     break;
                 }
@@ -241,6 +241,10 @@ public class WireImpl implements Wire {
     static CoreServiceException newUnknown(@Nonnull EndpointResponse.Error message) {
         assert message != null;
         return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
+    }
+
+    static CoreServiceException newUnknown() {
+        return new CoreServiceException(CoreServiceCode.UNKNOWN);
     }
 
     // for diagnostic

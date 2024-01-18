@@ -1,6 +1,7 @@
 package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.text.MessageFormat;
+import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -32,6 +33,7 @@ public final class ClientInformation {
      * @param credential the connection credential.
      */
     public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nonnull Credential credential) {
+        Objects.requireNonNull(credential);
         this.connectionLabel = connectionLabel;
         this.applicationName = applicationName;
         this.credential = credential;
