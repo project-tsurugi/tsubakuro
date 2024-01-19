@@ -2,11 +2,13 @@ package com.tsurugidb.tsubakuro.channel.stream.connection;
 
 import java.io.IOException;
 
+import javax.annotation.Nonnull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -28,8 +30,8 @@ public final class StreamConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}:{}", hostname, port); //$NON-NLS-1$
-        return new FutureStreamWireImpl(new StreamLink(hostname, port));
+        return new FutureStreamWireImpl(new StreamLink(hostname, port), clientInformation);
     }
 }

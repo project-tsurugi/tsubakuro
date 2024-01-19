@@ -2,19 +2,30 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.ByteBuffer;
+import java.text.MessageFormat;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -23,13 +34,37 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * WireImpl type.
  */
 public class WireImpl implements Wire {
+    /**
+     * The major service message version for FrameworkRequest.Header.
+     */
+    private static final int SERVICE_MESSAGE_VERSION_MAJOR = 0;
+
+    /**
+     * The minor service message version for FrameworkRequest.Header.
+     */
+    private static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
+
+    private static final int SERVICE_ID_ENDPOINT_BROKER = 1;
+    private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
     private final Link link;
-    private final long sessionID;
     private final ResponseBox responseBox;
     private final AtomicBoolean closed = new AtomicBoolean();
+    private long sessionID;
+
+    /**
+     * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
+     * @param link the stream object by which this WireImpl is connected to the SQL server
+     * @throws IOException error occurred in openNative()
+     */
+    public WireImpl(@Nonnull Link link) throws IOException {
+        this.link = link;
+        this.responseBox = link.getResponseBox();
+        this.sessionID = SESSION_ID_IS_NOT_ASSIGNED;
+        LOG.trace("begin Session via ipc, id = {}", sessionID);
+    }
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -57,8 +92,8 @@ public class WireImpl implements Wire {
             throw new IOException("already closed");
         }
         var header = FrameworkRequest.Header.newBuilder()
-            .setServiceMessageVersionMajor(Wire.SERVICE_MESSAGE_VERSION_MAJOR)
-            .setServiceMessageVersionMinor(Wire.SERVICE_MESSAGE_VERSION_MINOR)
+            .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
+            .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR)
             .setServiceId(serviceId)
             .setSessionId(sessionID)
             .build();
@@ -74,7 +109,7 @@ public class WireImpl implements Wire {
      * @throws IOException error occurred in responseBox.register()
      */
     @Override
-    public  FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
         return send(serviceId, payload.array());
     }
 
@@ -119,11 +154,97 @@ public class WireImpl implements Wire {
 
     }
 
+    private static EndpointRequest.Request.Builder newRequest() {
+        return EndpointRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
+    static class HandshakeProcessor implements MainResponseProcessor<Long> {
+        @Override
+        public Long process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = EndpointResponse.Handshake.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return message.getSuccess().getSessionId();
+
+            case ERROR:
+                var errMessage = message.getError();
+                switch (errMessage.getCode()) {
+                case RESOURCE_LIMIT_REACHED:
+                    throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                case AUTHENTICATION_ERROR:
+                    throw newUnknown();  // FIXME
+                default:
+                    break;
+                }
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
+        var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
+        if (wireInformation != null) {
+            handshakeMessageBuilder.setWireInformation(wireInformation);
+        }
+
+        var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();
+        if (clientInformation.getConnectionLabel() != null) {
+            clientInformationBuilder.setConnectionLabel(clientInformation.getConnectionLabel());
+        }
+        if (clientInformation.getApplicationName() != null) {
+            clientInformationBuilder.setApplicationName(clientInformation.getApplicationName());
+        }
+        handshakeMessageBuilder.setClientInformation(clientInformationBuilder);
+
+        FutureResponse<? extends Response> future = send(
+            SERVICE_ID_ENDPOINT_BROKER,
+                toDelimitedByteArray(newRequest()
+                    .setHandshake(handshakeMessageBuilder)
+                    .build())
+            );
+        return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor());
+    }
+
+    public void setSessionID(long id) throws IOException {
+        if (sessionID == SESSION_ID_IS_NOT_ASSIGNED) {
+            this.sessionID = id;
+            return;
+        }
+        throw new IOException("handshake error (session ID is already assigned)");
+    }
+
+    public void checkSessionID(long id) throws IOException {
+        if (sessionID != id) {
+            throw new IOException(MessageFormat.format("handshake error (inconsistent session ID), {0} not equal {1}", sessionID, id));
+        }
+    }
+
     byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
         }
+    }
+
+    byte[] toDelimitedByteArray(EndpointRequest.Request request) throws IOException {
+        try (var buffer = new ByteArrayOutputStream()) {
+            request.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
+        }
+    }
+
+    static CoreServiceException newUnknown(@Nonnull EndpointResponse.Error message) {
+        assert message != null;
+        return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
+    }
+
+    static CoreServiceException newUnknown() {
+        return new CoreServiceException(CoreServiceCode.UNKNOWN);
     }
 
     // for diagnostic

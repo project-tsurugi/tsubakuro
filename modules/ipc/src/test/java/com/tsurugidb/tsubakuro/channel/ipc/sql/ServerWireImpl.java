@@ -1,13 +1,19 @@
 package com.tsurugidb.tsubakuro.channel.ipc.sql;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.io.Closeable;
 import java.io.IOException;
 
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 
@@ -15,10 +21,14 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
  * ServerWireImpl type.
  */
 public class ServerWireImpl implements Closeable {
-    private long wireHandle = 0;  // for c++
-    private String dbName;
+    private final long wireHandle;  // for c++
+    private final String dbName;
+    private final Semaphore available = new Semaphore(0, true);
     private long sessionID;
-    private boolean takeSendAction;
+    private final boolean takeSendAction;
+    private final ReceiveWorker receiver;
+    private SqlRequest.Request sqlRequest;
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     private static native long createNative(String name);
     private static native byte[] getNative(long handle);
@@ -44,14 +54,48 @@ public class ServerWireImpl implements Closeable {
         }
     }
 
+    private class ReceiveWorker extends Thread {
+        ReceiveWorker() throws IOException {
+        }
+        @Override
+        public void run() {
+            try {
+                handshake();
+                while (true) {
+                    try {
+                        var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
+                        if (byteArrayInputStream.available() == 0) {
+                            close();
+                            return;
+                        }
+                        var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
+                        sessionID = header.getSessionId();
+                        sqlRequest = SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
+                        available.release();
+                    } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+                        System.err.println(e);
+                        e.printStackTrace();
+                        fail("error: ServerWireImpl.get()");
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println(e);
+                fail(e);
+            }
+        }
+    }
+
     public ServerWireImpl(String dbName, long sessionID, boolean takeSendAction) throws IOException {
         this.dbName = dbName;
         this.sessionID = sessionID;
         this.takeSendAction = takeSendAction;
-        wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
+        this.wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
         if (wireHandle == 0) {
-            throw new IOException("error: ServerWireImpl.ServerWireImpl()");
+            fail("error: ServerWireImpl.ServerWireImpl()");
         }
+        this.receiver = new ReceiveWorker();
+        receiver.start();
     }
     
     public ServerWireImpl(String dbName, long sessionID) throws IOException {
@@ -59,9 +103,8 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void close() throws IOException {
-        if (wireHandle != 0) {
+        if (!closed.getAndSet(true)) {
             closeNative(wireHandle);
-            wireHandle = 0;
         }
     }
 
@@ -70,20 +113,47 @@ public class ServerWireImpl implements Closeable {
     }
 
     /**
+     * implement handshake protocol
+     *  step 1) receives the FrameworkRequest.Header and EndpointRequest.Request
+     *  step 2) sends a FrameworkResponse.Header and EndpointResponse.Handshake with success
+    */
+    public void handshake() throws IOException {
+        try {
+            var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
+            var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
+            var request = EndpointRequest.Request.parseDelimitedFrom(byteArrayInputStream);
+            try {
+                var response = EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder().setSessionId(1))  // who assign this sessionId?
+                    .build();
+                byte[] resposeByteArray = dump(out -> {
+                        FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
+                        response.writeDelimitedTo(out);
+                    });
+                putNative(wireHandle, resposeByteArray);
+            } catch (IOException | InterruptedException e) {
+                System.err.println(e);
+                e.printStackTrace();
+                fail(e);
+            }
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+            System.err.println(e);
+            e.printStackTrace();
+            fail("error: ServerWireImpl.getHandshakeRequest()");
+        }
+    }
+
+    /**
      * Get SqlRequest.Request from a client via the native wire.
      @returns SqlRequest.Request
     */
     public SqlRequest.Request get() throws IOException {
         try {
-            var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
-            var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
-            sessionID = header.getSessionId();
-            return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-            System.err.println(e);
-            e.printStackTrace();
-            throw new IOException("error: ServerWireImpl.get()");
+            available.acquire();
+        } catch(InterruptedException e) {
+            fail(e);
         }
+        return sqlRequest;
     }
 
     /**
@@ -99,22 +169,18 @@ public class ServerWireImpl implements Closeable {
                     FrameworkResponse.Header.newBuilder().build().writeDelimitedTo(out);
                     response.writeDelimitedTo(out);
                 });
-            if (wireHandle != 0) {
-                putNative(wireHandle, resposeByteArray);
-            } else {
-                throw new IOException("error: sessionWireHandle is 0");
-            }
+            putNative(wireHandle, resposeByteArray);
         } catch (IOException | InterruptedException e) {
-            throw new IOException(e);
+            fail(e);
         }
     }
 
     public long createRSL(String name) throws IOException {
-        if (wireHandle != 0) {
-            return createRSLNative(wireHandle, name);
-        } else {
-            throw new IOException("error: ServerWireImpl.createRSL()");
+        var handle = createRSLNative(wireHandle, name);
+        if (handle == 0) {
+            fail("error: createRSLNative() returns 0");
         }
+        return handle;
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
@@ -124,7 +190,7 @@ public class ServerWireImpl implements Closeable {
         if (handle != 0) {
             putRecordsRSLNative(handle, ba);
         } else {
-            throw new IOException("error: resultSetWireHandle is 0");
+            fail("error: resultSetWireHandle given is 0");
         }
     }
 
@@ -135,7 +201,7 @@ public class ServerWireImpl implements Closeable {
         if (handle != 0) {
             eorRSLNative(handle);
         } else {
-            throw new IOException("error: resultSetWireHandle is 0");
+            fail("error: resultSetWireHandle given is 0");
         }
     }
 }

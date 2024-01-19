@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package tateyama.proto.endpoint.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.endpoint.proto";
+option java_outer_classname = "EndpointRequest";
+
+// the request message to endpoint pseudo service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // handshake operation.
+        Handshake handshake = 11;
+    }
+    reserved 12 to 99;
+}
+
+// handshake operation.
+message Handshake {
+    // the client information.
+    ClientInformation client_information = 1;
+
+    // reserved for system use
+    reserved 2 to 10;
+
+    // the wire information.
+    WireInformation wire_information = 11;
+}
+
+// client information
+message ClientInformation {
+    // the connection label.
+    string connection_label = 1;
+
+    // the application name.
+    string application_name = 2;
+
+    // the credential.
+    Credential credential = 3;
+}
+
+// the credential
+message Credential {
+    // FIXME (T.B.D.)
+}
+
+// wire information
+message WireInformation {
+    oneof wire_information {
+        IpcInformation ipc_information = 1;
+        StreamInformation stream_information = 2;
+    }
+
+    // ipc information
+    message IpcInformation {
+        // the connection information
+        string connection_information = 1;
+    }
+
+    // stream information
+    message StreamInformation {
+        // the maximum concurrent result sets
+        uint64 maximum_concurrent_result_sets = 1;
+    }
+}

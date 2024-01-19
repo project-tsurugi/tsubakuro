@@ -15,7 +15,7 @@ class TestingConnector implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
         throw new UnsupportedOperationException();
     }
 }

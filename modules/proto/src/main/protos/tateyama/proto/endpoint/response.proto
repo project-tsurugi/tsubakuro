@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package tateyama.proto.endpoint.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.endpoint.proto";
+option java_outer_classname = "EndpointResponse";
+
+import "tateyama/proto/diagnostics.proto";
+
+// unknown error was occurred.
+message Error {
+    // the error message.
+    string message = 1;
+
+    // error code
+    diagnostics.Code code = 2;
+
+    // supplemental text for debug purpose
+    string supplemental_text = 4;
+}
+
+// handshake operation.
+message Handshake {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // unknown error was occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+        // the session id.
+        uint64 session_id = 11;
+    }
+}

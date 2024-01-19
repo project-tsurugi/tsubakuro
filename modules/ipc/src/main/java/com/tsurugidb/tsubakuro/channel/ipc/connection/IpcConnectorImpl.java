@@ -1,15 +1,18 @@
 package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
+import java.lang.ref.Cleaner;
+import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.lang.ref.Cleaner;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
-import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
@@ -49,7 +52,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(Credential credential) throws IOException {
+    public FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         if (handle == 0) {
@@ -57,9 +60,9 @@ public final class IpcConnectorImpl implements Connector {
         }
         try {
             long id = requestNative(handle);
-            return new FutureIpcWireImpl(this, id);
+            return new FutureIpcWireImpl(this, id, clientInformation);
         } catch (IOException e) {
-            throw new IOException("the server has declined the connection request");
+            throw new ConnectException("the server has declined the connection request");
         }
     }
 

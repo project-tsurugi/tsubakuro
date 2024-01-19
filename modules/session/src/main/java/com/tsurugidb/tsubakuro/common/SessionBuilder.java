@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
@@ -31,6 +32,12 @@ public final class SessionBuilder {
     private Credential connectionCredential = NullCredential.INSTANCE;
 
     private final SessionInfo sessionInfo;
+
+    private String connectionLabel;
+
+    private String applicationName;
+
+    private String userName;
 
     private SessionBuilder(Connector connector) {
         assert connector != null;
@@ -82,6 +89,28 @@ public final class SessionBuilder {
     }
 
     /**
+     * Sets label information to connect.
+     * @param connectionLabelString the label information
+     * @return this
+     */
+    public SessionBuilder withLabel(@Nonnull String connectionLabelString) {
+        Objects.requireNonNull(connectionLabelString);
+        connectionLabel = connectionLabelString;
+        return this;
+    }
+
+    /**
+     * Sets applicationName information to connect.
+     * @param applicationNameString the applicationName information
+     * @return this
+     */
+    public SessionBuilder withApplicationName(@Nonnull String applicationNameString) {
+        Objects.requireNonNull(applicationNameString);
+        applicationName = applicationNameString;
+        return this;
+    }
+
+    /**
      * Establishes a connection to the Tsurugi server.
      * This operation will block until the connection was established,
      * please consider to use {@link #create(long, TimeUnit)}.
@@ -92,7 +121,7 @@ public final class SessionBuilder {
      * @see #create(long, TimeUnit)
      */
     public Session create() throws IOException, ServerException, InterruptedException {
-        try (var fWire = connector.connect(connectionCredential)) {
+        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential))) {
             return create0(fWire.get());
         }
     }
@@ -110,7 +139,7 @@ public final class SessionBuilder {
     public Session create(long timeout, @Nonnull TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
-        try (var fWire = connector.connect(connectionCredential)) {
+        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential))) {
             var session = create0(fWire.get(timeout, unit));
             return session;
         }
@@ -123,7 +152,7 @@ public final class SessionBuilder {
      * @throws IOException if I/O error was occurred during connection
      */
     public FutureResponse<? extends Session> createAsync() throws IOException {
-        var fWire = connector.connect(connectionCredential);
+        var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential));
         return new AbstractFutureResponse<Session>() {
 
             @Override

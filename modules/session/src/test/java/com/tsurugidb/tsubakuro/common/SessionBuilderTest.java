@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
@@ -23,8 +24,8 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential) throws IOException {
-                    assertSame(credential, creds);
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
@@ -41,12 +42,58 @@ class SessionBuilderTest {
             var creds = new RememberMeCredential("testing");
             var builder = SessionBuilder.connect(new Connector() {
                 @Override
-                public FutureResponse<Wire> connect(Credential credential) throws IOException {
-                    assertSame(credential, creds);
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getCredential(), creds);
                     return FutureResponse.wrap(Owner.of(wire));
                 }
             })
                     .withCredential(creds);
+            try (
+                    var fSession = builder.createAsync();
+                    var session = fSession.get(10, TimeUnit.SECONDS)) {
+                // ok.
+            }
+        }
+    }
+
+    @Test
+    void createWithClientInformation() throws Exception {
+        try (var wire = new MockWire()) {
+            String label = "label for the test";
+            String applicationName = "applicationName for the test";
+            var creds = new RememberMeCredential("testing");
+            var builder = SessionBuilder.connect(new Connector() {
+                @Override
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getConnectionLabel(), label);
+                    assertSame(clientInformation.getApplicationName(), applicationName);
+                    assertSame(clientInformation.getCredential(), creds);
+                    return FutureResponse.wrap(Owner.of(wire));
+                }
+            })
+                    .withLabel(label).withApplicationName(applicationName).withCredential(creds);
+            try (var session = builder.create()) {
+                // ok.
+            }
+        }
+    }
+
+    @Test
+    void createAsyncWithClientInformation() throws Exception {
+        try (var wire = new MockWire()) {
+            String label = "label for the test";
+            String applicationName = "applicationName for the test";
+            var creds = new RememberMeCredential("testing");
+            var builder = SessionBuilder.connect(new Connector() {
+                @Override
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getConnectionLabel(), label);
+                    assertSame(clientInformation.getApplicationName(), applicationName);
+                    assertSame(clientInformation.getCredential(), creds);
+                    return FutureResponse.wrap(Owner.of(wire));
+                }
+            })
+                    .withLabel(label).withApplicationName(applicationName).withCredential(creds);
             try (
                     var fSession = builder.createAsync();
                     var session = fSession.get(10, TimeUnit.SECONDS)) {
