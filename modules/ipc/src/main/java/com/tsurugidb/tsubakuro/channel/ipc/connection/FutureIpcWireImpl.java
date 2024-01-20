@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,11 +24,18 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
     private IpcConnectorImpl connector;
     private long id;
     private final AtomicBoolean gotton = new AtomicBoolean();
+    private final boolean connectException;
 
     FutureIpcWireImpl(IpcConnectorImpl connector, long id, @Nonnull ClientInformation clientInformation) {
         this.connector = connector;
         this.id = id;
         this.clientInformation = clientInformation;
+        this.connectException = false;
+    }
+
+    FutureIpcWireImpl() {
+        this.clientInformation = null;  // do not use when connectException occurs
+        this.connectException = true;
     }
 
     private EndpointRequest.WireInformation wireInformation() {
@@ -38,6 +46,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
+        if (connectException) {
+            throw new ConnectException("the server has declined the connection request");
+        }
         if (!gotton.getAndSet(true)) {
             var wire = connector.getSessionWire(id);
             if (wire instanceof WireImpl) {
@@ -53,6 +64,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
+        if (connectException) {
+            throw new ConnectException("the server has declined the connection request");
+        }
         if (!gotton.getAndSet(true)) {
             var wire = connector.getSessionWire(id, timeout, unit);
             if (wire instanceof WireImpl) {
@@ -76,7 +90,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (!gotton.getAndSet(true)) {
+        if (!connectException && !gotton.getAndSet(true)) {
             var wire = connector.getSessionWire(id);
             wire.close();
         }
