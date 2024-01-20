@@ -2,7 +2,6 @@ package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
 import java.lang.ref.Cleaner;
-import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -62,7 +61,7 @@ public final class IpcConnectorImpl implements Connector {
             long id = requestNative(handle);
             return new FutureIpcWireImpl(this, id, clientInformation);
         } catch (IOException e) {
-            throw new ConnectException("the server has declined the connection request");
+            return new FutureIpcWireImpl();  // a future that throws ConnectException on get()
         }
     }
 
