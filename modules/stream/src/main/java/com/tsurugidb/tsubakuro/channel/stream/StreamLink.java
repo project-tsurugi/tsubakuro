@@ -294,4 +294,11 @@ public final class StreamLink extends Link {
             }
         }
     }
+
+    public void closeWithoutGet() throws IOException, ServerException {
+        closed.set(true);
+        socketClosed.set(true);
+        socket.close();
+        closeBoxes(false);
+    }
 }

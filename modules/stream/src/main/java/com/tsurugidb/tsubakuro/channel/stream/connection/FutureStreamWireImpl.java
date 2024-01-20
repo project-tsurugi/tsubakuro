@@ -5,12 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nonnull;
-
-import com.tsurugidb.endpoint.proto.EndpointRequest;
-import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -21,26 +16,20 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  */
 public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
-    private final ClientInformation clientInformation;
-    StreamLink streamLink;
+    private final StreamLink streamLink;
+    private final WireImpl wireImpl;
+    private final FutureResponse<Long> futureSessionID;
     private final AtomicBoolean gotton = new AtomicBoolean();
 
-    FutureStreamWireImpl(StreamLink streamLink, @Nonnull ClientInformation clientInformation) {
+    FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionID) {
         this.streamLink = streamLink;
-        this.clientInformation = clientInformation;
-    }
-
-    private EndpointRequest.WireInformation wireInformation() {
-        return EndpointRequest.WireInformation.newBuilder().setStreamInformation(
-            EndpointRequest.WireInformation.StreamInformation.newBuilder().setMaximumConcurrentResultSets(ResponseBox.responseBoxSize())
-        ).build();
+        this.wireImpl = wireImpl;
+        this.futureSessionID = futureSessionID;
     }
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            var wireImpl = new WireImpl(streamLink);
-            var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
             wireImpl.setSessionID(futureSessionID.get());
             return wireImpl;
         }
@@ -50,8 +39,6 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
         if (!gotton.getAndSet(true)) {
-            var wireImpl = new WireImpl(streamLink);
-            var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
             wireImpl.setSessionID(futureSessionID.get(timeout, unit));
             return wireImpl;
         }
@@ -67,7 +54,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            streamLink.close();
+            futureSessionID.get();  // ensure notify client of session limit error 
+            streamLink.closeWithoutGet();
+            wireImpl.close();
         }
     }
 }
