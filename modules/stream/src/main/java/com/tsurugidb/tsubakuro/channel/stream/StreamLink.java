@@ -153,8 +153,12 @@ public final class StreamLink extends Link {
     private void closeBoxes(boolean intentionalClose) throws IOException {
         responseBox.doClose(intentionalClose);
         resultSetBox.doClose(intentionalClose);
+        if (!socket.isClosed()) {
+            int millis = ((timeout == 0) ? 0 : ((timeUnit.toMillis(timeout) > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) timeUnit.toMillis(timeout)));
+            socket.setSoTimeout(millis);
+            socket.close();
+        }
         socketClosed.set(true);
-        socket.close();
     }
 
     public ResultSetBox getResultSetBox() {
@@ -297,8 +301,6 @@ public final class StreamLink extends Link {
 
     public void closeWithoutGet() throws IOException, ServerException {
         closed.set(true);
-        socketClosed.set(true);
-        socket.close();
         closeBoxes(false);
     }
 }
