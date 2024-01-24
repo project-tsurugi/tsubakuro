@@ -30,8 +30,13 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            wireImpl.setSessionID(futureSessionID.get());
-            return wireImpl;
+            try {
+                wireImpl.setSessionID(futureSessionID.get());
+                return wireImpl;
+            } catch (IOException | ServerException | InterruptedException e) {
+                streamLink.closeWithoutGet();
+                throw e;
+            }
         }
         throw new IOException("FutureStreamWireImpl already closed.");
     }
@@ -39,8 +44,13 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     @Override
     public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
         if (!gotton.getAndSet(true)) {
-            wireImpl.setSessionID(futureSessionID.get(timeout, unit));
-            return wireImpl;
+            try {
+                wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+                return wireImpl;
+            } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
+                streamLink.closeWithoutGet();
+                throw e;
+            }
         }
         throw new IOException("FutureStreamWireImpl already closed.");
     }
