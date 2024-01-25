@@ -19,8 +19,8 @@ public abstract class Link implements ServerResource {
     private long receivedMessageNumber = 0;
 
     protected ResponseBox responseBox = new ResponseBox(this);
-    protected TimeUnit timeUnit;
-    protected long timeout = 0;
+    protected TimeUnit closeTimeUnit;
+    protected long closeTimeout = 0;
 
     /**
      * Getter of the receivedMessageNumber.
@@ -114,8 +114,8 @@ public abstract class Link implements ServerResource {
      * @param t the timeout
      */
     public void setCloseTimeout(Timeout t) {
-        timeout = t.value();
-        timeUnit = t.unit();
+        closeTimeout = t.value();
+        closeTimeUnit = t.unit();
     }
 
     /**
@@ -140,9 +140,9 @@ public abstract class Link implements ServerResource {
 
     // to suppress spotbug error
     long value() {
-        return this.timeout;
+        return this.closeTimeout;
     }
     TimeUnit unit() {
-        return this.timeUnit;
+        return this.closeTimeUnit;
     }
 }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
@@ -143,15 +144,21 @@ public class WireImpl implements Wire {
      */
     @Override
     public void close() throws IOException {
-        try {
-            if (!closed.get()) {
+        if (!closed.getAndSet(true)) {
+            try {
                 link.close();
-                closed.set(true);
+            } catch (ServerException | InterruptedException e) {
+                throw new IOException(e);
             }
-        } catch (ServerException | InterruptedException e) {
-            throw new IOException(e);
         }
+    }
 
+    /**
+     * Set wire to close state without link close.
+     * The link must be closed for this method to be called.
+     */
+    public void closeWithoutGet() {
+        closed.set(true);
     }
 
     private static EndpointRequest.Request.Builder newRequest() {
