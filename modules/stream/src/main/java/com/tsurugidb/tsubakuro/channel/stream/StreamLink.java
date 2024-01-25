@@ -311,6 +311,7 @@ public final class StreamLink extends Link {
     /**
      * Close the socket without sending REQUEST_SESSION_BYE.
      * This method is intended to use before session open.
+     * @throws IOException if I/O error was occurred while close the socket
      */
     public void closeWithoutGet() throws IOException {
         closed.set(true);
