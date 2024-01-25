@@ -34,7 +34,12 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                 wireImpl.setSessionID(futureSessionID.get());
                 return wireImpl;
             } catch (IOException | ServerException | InterruptedException e) {
-                streamLink.closeWithoutGet();
+                try {
+                    streamLink.closeWithoutGet();
+                    wireImpl.closeWithoutGet();
+                } catch (IOException exceptionOnClose) {
+                    e.addSuppressed(exceptionOnClose);
+                }
                 throw e;
             }
         }
@@ -48,7 +53,12 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                 wireImpl.setSessionID(futureSessionID.get(timeout, unit));
                 return wireImpl;
             } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
-                streamLink.closeWithoutGet();
+                try {
+                    streamLink.closeWithoutGet();
+                    wireImpl.closeWithoutGet();
+                } catch (IOException exceptionOnClose) {
+                    e.addSuppressed(exceptionOnClose);
+                }
                 throw e;
             }
         }
@@ -66,7 +76,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
         if (!gotton.getAndSet(true)) {
             futureSessionID.get();  // ensure notify client of session limit error 
             streamLink.closeWithoutGet();
-            wireImpl.close();
+            wireImpl.closeWithoutGet();
         }
     }
 }

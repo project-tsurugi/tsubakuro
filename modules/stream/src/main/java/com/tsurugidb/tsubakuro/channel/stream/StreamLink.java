@@ -150,11 +150,24 @@ public final class StreamLink extends Link {
         }
     }
 
+    private int closeTimeoutMillis() {
+        if (closeTimeout == 0) {
+            return 0;
+        }
+        if (closeTimeUnit.toMillis(closeTimeout) > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+         }
+         return (int) closeTimeUnit.toMillis(closeTimeout);
+    }
+
     private void closeBoxes(boolean intentionalClose) throws IOException {
         responseBox.doClose(intentionalClose);
         resultSetBox.doClose(intentionalClose);
+        if (!socket.isClosed()) {
+            socket.setSoTimeout(closeTimeoutMillis());
+            socket.close();
+        }
         socketClosed.set(true);
-        socket.close();
     }
 
     public ResultSetBox getResultSetBox() {
@@ -281,7 +294,7 @@ public final class StreamLink extends Link {
             try (var c1 = socket; var c2 = inStream; var c3 = outStream) {
                 send(REQUEST_SESSION_BYE, TERMINATION_REQUEST);
                 while (!socketClosed.get()) {
-                    doPull(timeout, timeUnit);
+                    doPull(closeTimeout, closeTimeUnit);
                 }
             } catch (TimeoutException e) {
                 socketError.set(true);
@@ -295,10 +308,12 @@ public final class StreamLink extends Link {
         }
     }
 
-    public void closeWithoutGet() throws IOException, ServerException {
+    /**
+     * Close the socket without sending REQUEST_SESSION_BYE.
+     * This method is intended to use before session open.
+     */
+    public void closeWithoutGet() throws IOException {
         closed.set(true);
-        socketClosed.set(true);
-        socket.close();
         closeBoxes(false);
     }
 }
