@@ -97,7 +97,7 @@ class SessionWireTest {
             var duration = System.currentTimeMillis() - start;
             assertTrue((750 < duration) && (duration < 1250));
 
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException | ServerException e) {
             e.printStackTrace();
             fail("cought IOException");
         }

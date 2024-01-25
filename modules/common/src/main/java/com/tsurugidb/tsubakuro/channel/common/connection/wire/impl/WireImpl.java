@@ -142,13 +142,9 @@ public class WireImpl implements Wire {
      * Close the wire
      */
     @Override
-    public void close() throws IOException {
+    public void close() throws IOException, InterruptedException, ServerException {
         if (!closed.getAndSet(true)) {
-            try {
-                link.close();
-            } catch (ServerException | InterruptedException e) {
-                throw new IOException(e);
-            }
+            link.close();
         }
     }
 
