@@ -9,6 +9,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -100,7 +101,7 @@ public interface Wire extends ServerResource {
      * This method will be invoked one or more times.
      */
     @Override
-    void close() throws IOException, InterruptedException;
+    void close() throws IOException, InterruptedException, ServerException;
 
     // for diagnostic
     default String diagnosticInfo() {
