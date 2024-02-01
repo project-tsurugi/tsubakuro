@@ -43,6 +43,7 @@ spotbugsMain {
             destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
         }
     }
+    excludeFilter = rootProject.file('buildSrc/src/main/resources/spotbugsExclude.xml')
 }
 
 spotbugsTest.enabled = false
