@@ -16,13 +16,13 @@ jobs:
 
     steps:
       - name: Setup_Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '11'
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Apt_Install
         run: |
@@ -31,11 +31,11 @@ jobs:
 
       - name: Assemble
         run: |
-          ./gradlew -i clean assemble
+          ./gradlew -i clean assemble --warning-mode all
 
       - name: Check
         run: |
-          ./gradlew -i check --continue
+          ./gradlew -i check --continue --warning-mode all
 
       - name: Verify
         uses: project-tsurugi/tsurugi-annotations-action@v1

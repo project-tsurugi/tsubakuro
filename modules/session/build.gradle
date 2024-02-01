@@ -21,3 +21,6 @@ compileTestJava {
         options.compilerArgs << '-Xlint:unchecked'
     }
 }
+
+spotbugsTestFixtures.enabled = false
+checkstyleTestFixtures.enabled = false
