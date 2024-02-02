@@ -43,6 +43,8 @@ publishing {
                     url = 'https://github.com/project-tsurugi/tsubakuro'
                 }
             }
+            suppressPomMetadataWarningsFor("testFixturesApiElements")
+            suppressPomMetadataWarningsFor("testFixturesRuntimeElements")
         }
     }
 }
