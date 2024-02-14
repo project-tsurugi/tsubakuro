@@ -66,12 +66,7 @@ public final class DiagnosticCodeCollector {
      */
     public static <T> List<DocumentedElement<T>> findDocument(@Nonnull Class<T> codeClass) {
         Objects.requireNonNull(codeClass);
-        if (!Enum.class.isAssignableFrom(codeClass)) {
-            return List.of();
-        }
-        @SuppressWarnings("unchecked")
-        List<DocumentedElement<T>> elements = DocumentedElement.constantsOf(codeClass.asSubclass(Enum.class));
-        return elements;
+        return DocumentedElement.constantsOf(codeClass);
     }
 
     private DiagnosticCodeCollector() {

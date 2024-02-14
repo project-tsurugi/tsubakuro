@@ -71,4 +71,10 @@ class DocumentedElementTest {
         assertEquals(NoDoc.C, c.getElement());
         assertEquals(new BasicDocumentSnippet(), c.getDocument());
     }
+
+    @Test
+    void constantsOf_not_enum() {
+        var constants = DocumentedElement.constantsOf(DocumentedElement.class);
+        assertEquals(List.of(), constants);
+    }
 }

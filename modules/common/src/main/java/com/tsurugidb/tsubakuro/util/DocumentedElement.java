@@ -37,19 +37,24 @@ public class DocumentedElement<T> {
 
     /**
      * Creates a list of {@link DocumentedElement} about enum constants.
+     * <p>
+     * Note: For convenience, the type parameter bound does not have {@code Enum<T>}.
+     * </p>
      * @param <T> the enum type
      * @param enumClass the enum class object
-     * @return a list of created instances for the constants of the specified enum type
+     * @return a list of created instances for the constants of the specified enum type,
+     *      or empty list if the specified type does not indicates an enum type
      */
-    public static <T extends Enum<T>> List<DocumentedElement<T>> constantsOf(@Nonnull Class<T> enumClass) {
+    public static <T> List<DocumentedElement<T>> constantsOf(@Nonnull Class<T> enumClass) {
         Objects.requireNonNull(enumClass);
+        if (!Enum.class.isAssignableFrom(enumClass)) {
+            return List.of();
+        }
         var fields = enumClass.getFields();
         var results = new ArrayList<DocumentedElement<T>>(fields.length);
         var constants = enumClass.getEnumConstants();
-        if (constants == null) {
-            return List.of(); // not an enum type
-        }
-        for (var constant : constants) {
+        for (var c : constants) {
+            var constant = (Enum<?>) c;
             Field field;
             try {
                 field = enumClass.getField(constant.name());
@@ -61,7 +66,7 @@ public class DocumentedElement<T> {
             var document = Optional.ofNullable(field.getAnnotation(Doc.class))
                     .map(BasicDocumentSnippet::of)
                     .orElseGet(BasicDocumentSnippet::new);
-            results.add(new DocumentedElement<>(document, constant));
+            results.add(new DocumentedElement<>(document, c));
         }
         return results;
     }
