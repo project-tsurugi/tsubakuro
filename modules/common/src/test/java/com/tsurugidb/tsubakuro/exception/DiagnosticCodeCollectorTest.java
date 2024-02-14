@@ -117,6 +117,12 @@ class DiagnosticCodeCollectorTest {
     }
 
     @Test
+    void collect_system() throws Exception {
+        var results = DiagnosticCodeCollector.collect(true);
+        assertTrue(results.contains(CoreServiceCode.class));
+    }
+
+    @Test
     void findDocument() {
         var docs = DiagnosticCodeCollector.findDocument(MockDiagnosticCode.class);
         assertEquals(1, docs.size());
@@ -124,5 +130,13 @@ class DiagnosticCodeCollectorTest {
         var c = docs.get(0);
         assertEquals(MockDiagnosticCode.TESTING, c.getElement());
         assertEquals(BasicDocumentSnippet.of("OK"), c.getDocument());
+    }
+
+    @Test
+    void findDocument_system() {
+        var docs = DiagnosticCodeCollector.findDocument(CoreServiceCode.class);
+        for (var element : docs) {
+            System.out.println(element);
+        }
     }
 }
