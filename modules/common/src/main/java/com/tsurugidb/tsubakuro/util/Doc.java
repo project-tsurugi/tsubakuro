@@ -33,4 +33,18 @@ public @interface Doc {
      * @return additional notes for the target element
      */
     String[] note() default {};
+
+
+    /**
+     * Optional references for the target element.
+     * <p>
+     * Any of following notations is allowed:
+     * </p>
+     * <ul>
+     * <li> <code>https://...</code> </li>
+     * <li> <code>page-title&#64;https://...</code> </li>
+     * </ul>
+     * @return optional references for the target element.
+     */
+    String[] reference() default {};
 }
