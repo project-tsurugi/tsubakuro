@@ -1,21 +1,14 @@
 package com.tsurugidb.tsubakuro.client;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.tsurugidb.tsubakuro.util.ClassCollector;
 
 /**
  * Collects declared {@link ServiceClient} from service client definition files in class-path.
@@ -28,8 +21,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class ServiceClientCollector {
 
-    static final Logger LOG = LoggerFactory.getLogger(ServiceClientCollector.class);
-
     /**
      * Path to the service client definition file in class-path.
      */
@@ -38,9 +29,7 @@ public final class ServiceClientCollector {
     /**
      * Character set encoding of {@link #PATH_METADATA}.
      */
-    public static final Charset ENCODING_METADATA = StandardCharsets.UTF_8;
-
-    private static final char COMMENT_START = '#';
+    public static final Charset ENCODING_METADATA = ClassCollector.ENCODING_METADATA;
 
     /**
      * Returns a list of available ServiceClient subclasses.
@@ -67,74 +56,7 @@ public final class ServiceClientCollector {
             @Nonnull ClassLoader loader,
             boolean failOnError) throws IOException {
         Objects.requireNonNull(loader);
-        List<Class<? extends ServiceClient>> results = new ArrayList<>();
-        LOG.debug("loading {}", PATH_METADATA); //$NON-NLS-1$
-        var resources = loader.getResources(PATH_METADATA);
-        while (resources.hasMoreElements()) {
-            var element = resources.nextElement();
-            LOG.debug("found service client definition: {}", element); //$NON-NLS-1$
-
-            var found = collectFromUrl(element, loader, failOnError);
-            results.addAll(found);
-        }
-        return results;
-    }
-
-    private static List<? extends Class<? extends ServiceClient>> collectFromUrl(
-            URL url, ClassLoader loader, boolean failOnError) throws IOException {
-        List<Class<? extends ServiceClient>> results = new ArrayList<>();
-        try (var in = url.openStream();
-                var isr = new InputStreamReader(in, ENCODING_METADATA);
-                var reader = new BufferedReader(isr)) {
-            while (true) {
-                var line = reader.readLine();
-                if (line == null) {
-                    break;
-                }
-                // strip comments
-                var commentAt = line.indexOf(COMMENT_START);
-                if (commentAt >= 0) {
-                    line = line.substring(0, commentAt);
-                }
-                var className = line.trim();
-                // skip empty lines
-                if (className.isEmpty()) {
-                    continue;
-                }
-
-                LOG.debug("loading ServiceClient class: {}", className); //$NON-NLS-1$
-                try {
-                    var clazz = loader.loadClass(className);
-                    results.add(clazz.asSubclass(ServiceClient.class));
-                } catch (ClassNotFoundException e) {
-                    var message = MessageFormat.format(
-                            "cannot load ServiceClient: {0} ({1})",
-                            className,
-                            url);
-                    if (failOnError) {
-                        throw new IOException(message, e);
-                    }
-                    LOG.warn(message);
-                } catch (ClassCastException e) {
-                    var message = MessageFormat.format(
-                            "ServiceClient is not valid: {0} ({1})",
-                            className,
-                            url);
-                    if (failOnError) {
-                        throw new IOException(message, e);
-                    }
-                    LOG.warn(message);
-                }
-            }
-        } catch (IOException e) {
-            if (failOnError) {
-                throw e;
-            }
-            LOG.warn(MessageFormat.format(
-                    "error occurred while loading service definition file: {0}",
-                    url));
-        }
-        return results;
+        return ClassCollector.collect(ServiceClient.class, loader, PATH_METADATA, failOnError);
     }
 
     /**

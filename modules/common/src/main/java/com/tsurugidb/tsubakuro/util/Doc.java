@@ -23,6 +23,11 @@ import java.lang.annotation.Target;
 public @interface Doc {
 
     /**
+     * A delimiter character to separate reference title and its location.
+     */
+    char REFERENCE_DELIMITER = '@';
+
+    /**
      * Description of the target element.
      * @return Description of the target element
      */
@@ -34,7 +39,6 @@ public @interface Doc {
      */
     String[] note() default {};
 
-
     /**
      * Optional references for the target element.
      * <p>
@@ -45,6 +49,7 @@ public @interface Doc {
      * <li> <code>page-title&#64;https://...</code> </li>
      * </ul>
      * @return optional references for the target element.
+     * @see #REFERENCE_DELIMITER
      */
     String[] reference() default {};
 }
