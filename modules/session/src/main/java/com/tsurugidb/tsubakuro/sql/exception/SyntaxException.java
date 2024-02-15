@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * compile error
+ * syntax error
  */
 public class SyntaxException extends CompileException {
 

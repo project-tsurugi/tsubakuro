@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * constraint Violation
+ * referential integrity constraint violation
  */
 public class ReferentialIntegrityConstraintViolationException extends ConstraintViolationException {
 

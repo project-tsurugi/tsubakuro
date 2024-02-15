@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * request failed before starting processing (e.g. due to pre-condition not fulfilled)
  */
 public class RequestFailureException extends SqlExecutionException {
 

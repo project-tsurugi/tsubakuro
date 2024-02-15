@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * constraint Violation
+ * not-null constraint violation
  */
 public class NotNullConstraintViolationException extends ConstraintViolationException {
 

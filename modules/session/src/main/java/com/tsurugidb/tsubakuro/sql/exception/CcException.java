@@ -7,7 +7,7 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL service
+ * error in CC serialization
  */
 public class CcException extends SqlServiceException {
 

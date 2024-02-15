@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * restricted operation was requested
+ * operation was requested using transaction that had already committed or aborted
  */
 public class InactiveTransactionException extends RestrictedOperationException {
 

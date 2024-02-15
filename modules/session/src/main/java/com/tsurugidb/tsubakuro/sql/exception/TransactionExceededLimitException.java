@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * the requested operation reached the SQL limit
+ * the number of running transactions exceeded the maximum limit allowed, and new transaction failed to start
  */
 public class TransactionExceededLimitException extends SqlLimitReachedException {
 

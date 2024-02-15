@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * target already exists for newly creation request
  */
 public class TargetAlreadyExistsException extends SqlExecutionException {
 

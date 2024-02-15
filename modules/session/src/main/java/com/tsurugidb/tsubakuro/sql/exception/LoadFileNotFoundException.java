@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error on files for load
+ * target load file is not found
  */
 public class LoadFileNotFoundException extends LoadFileException {
 

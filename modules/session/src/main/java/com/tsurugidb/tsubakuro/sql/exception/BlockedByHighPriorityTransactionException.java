@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * tried to execute operations with priority to higher priority transactions
  */
 public class BlockedByHighPriorityTransactionException extends SqlExecutionException {
 

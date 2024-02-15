@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * request failed before starting processing (e.g. due to pre-condition not fulfilled)
+ * requested transaction is not found (or already released)
  */
 public class TransactionNotFoundException extends RequestFailureException {
 

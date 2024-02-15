@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * compile error
+ * unsupported feature/syntax was requested
  */
 public class UnsupportedCompilerFeatureException extends CompileException {
 

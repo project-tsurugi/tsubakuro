@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * analyze error
+ * error on symbols
  */
 public class SymbolAnalyzeException extends AnalyzeException {
 

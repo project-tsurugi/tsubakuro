@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * restricted operation was requested
+ * deletion was requested for the object with dependencies on others
  */
 public class DependenciesViolationException extends RestrictedOperationException {
 

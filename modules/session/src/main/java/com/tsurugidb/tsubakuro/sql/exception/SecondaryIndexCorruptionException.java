@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * detected data corruption
+ * detected secondary index data corruption
  */
 public class SecondaryIndexCorruptionException extends DataCorruptionException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * restricted operation was requested
+ * LTX write operation was requested outside of write preserve
  */
 public class LtxWriteOperationWithoutWritePreserveException extends RestrictedOperationException {
 

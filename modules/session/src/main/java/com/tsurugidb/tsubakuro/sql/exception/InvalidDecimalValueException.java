@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * invalid value was used in runtime
+ * used value was not valid for the decimal type
  */
 public class InvalidDecimalValueException extends InvalidRuntimeValueException {
 

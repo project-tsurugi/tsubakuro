@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * statement is inconsistent with the request
  */
 public class InconsistentStatementException extends SqlExecutionException {
 

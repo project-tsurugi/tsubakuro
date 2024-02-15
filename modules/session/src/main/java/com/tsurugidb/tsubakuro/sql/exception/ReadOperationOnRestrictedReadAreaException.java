@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * restricted operation was requested
+ * read operation was requested on restricted read area
  */
 public class ReadOperationOnRestrictedReadAreaException extends RestrictedOperationException {
 

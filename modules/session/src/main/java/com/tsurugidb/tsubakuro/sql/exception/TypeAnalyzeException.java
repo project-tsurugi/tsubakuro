@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * analyze error
+ * error on types
  */
 public class TypeAnalyzeException extends AnalyzeException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error on files for dump
+ * dump directory is not accessible
  */
 public class DumpDirectoryInaccessibleException extends DumpFileException {
 

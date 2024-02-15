@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * restricted operation was requested
+ * write operation was requested using RTX
  */
 public class WriteOperationByRtxException extends RestrictedOperationException {
 

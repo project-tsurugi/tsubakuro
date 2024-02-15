@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error in CC serialization
+ * LTX aborted
  */
 public class LtxException extends CcException {
 
