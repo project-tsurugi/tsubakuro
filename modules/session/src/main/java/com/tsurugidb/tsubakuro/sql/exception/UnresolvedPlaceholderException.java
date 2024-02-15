@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error on parameters or placeholders
+ * requested statement has unresolved placeholders
  */
 public class UnresolvedPlaceholderException extends ParameterException {
 

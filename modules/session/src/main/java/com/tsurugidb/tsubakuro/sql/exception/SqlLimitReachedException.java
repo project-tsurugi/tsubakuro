@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * the requested operation reached the SQL limit
  */
 public class SqlLimitReachedException extends SqlExecutionException {
 

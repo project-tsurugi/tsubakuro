@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error in CC serialization
+ * request was blocked by the other operations executed concurrently
  */
 public class BlockedByConcurrentOperationException extends CcException {
 

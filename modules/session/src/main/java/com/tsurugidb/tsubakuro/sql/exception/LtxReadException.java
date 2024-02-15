@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * LTX aborted
+ * LTX aborted due to its read
  */
 public class LtxReadException extends LtxException {
 

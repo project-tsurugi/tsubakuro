@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error in expression evaluation
+ * non-scalar results from scalar subquery
  */
 public class ScalarSubqueryEvaluationException extends EvaluationException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * restricted operation was requested
  */
 public class RestrictedOperationException extends SqlExecutionException {
 

@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL execution
+ * error on parameters or placeholders
  */
 public class ParameterException extends SqlExecutionException {
 

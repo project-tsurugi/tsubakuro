@@ -61,6 +61,7 @@ public final class DiagnosticCodeCollector {
 
     /**
      * Extracts documents about individual diagnostics from the specified {@link DiagnosticCode} class.
+     * @param <T> the generics for the target class
      * @param codeClass the target {@link DiagnosticCode} class
      * @return the service message version code, or {@code empty} if it is not defined
      */

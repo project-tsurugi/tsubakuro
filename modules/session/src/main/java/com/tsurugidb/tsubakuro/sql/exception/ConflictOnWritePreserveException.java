@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * OCC aborted due to its read
+ * OCC (early) aborted because it read other LTX's write preserve
  */
 public class ConflictOnWritePreserveException extends OccReadException {
 

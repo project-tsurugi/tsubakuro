@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * the requested operation reached the SQL limit
+ * invalid value was used in runtime
  */
 public class InvalidRuntimeValueException extends SqlLimitReachedException {
 

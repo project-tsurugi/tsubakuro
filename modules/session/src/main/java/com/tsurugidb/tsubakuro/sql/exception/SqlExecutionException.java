@@ -7,7 +7,7 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * generic error in SQL service
+ * generic error in SQL execution
  */
 public class SqlExecutionException extends SqlServiceException {
 

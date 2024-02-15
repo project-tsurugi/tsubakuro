@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error on files for load
+ * unexpected load file format
  */
 public class LoadFileFormatException extends LoadFileException {
 

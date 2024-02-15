@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * invalid value was used in runtime
+ * variable length value was used exceeding the allowed maximum length
  */
 public class ValueTooLongException extends InvalidRuntimeValueException {
 

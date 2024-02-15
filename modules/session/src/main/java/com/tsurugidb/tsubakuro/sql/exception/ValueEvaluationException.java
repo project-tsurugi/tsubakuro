@@ -6,7 +6,7 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 
 /**
- * error in expression evaluation
+ * error in value evaluation
  */
 public class ValueEvaluationException extends EvaluationException {
 
