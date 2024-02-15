@@ -1,15 +1,20 @@
 package com.tsurugidb.tsubakuro.debug;
 
 import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
+import com.tsurugidb.tsubakuro.util.Doc;
 
 /**
  * Code of debugging service diagnostics.
  */
+@Doc(
+        value = "Debugging service is designed to debug the database itself.",
+        note = "Please consider disabling this service for regular database use.")
 public enum DebugServiceCode implements DiagnosticCode {
 
     /**
      * Unknown error.
      */
+    @Doc("unknown error was occurred in the debugging service.")
     UNKNOWN(0),
 
     ;

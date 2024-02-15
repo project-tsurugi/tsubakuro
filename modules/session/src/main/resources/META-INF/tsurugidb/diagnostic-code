@@ -1,0 +1,3 @@
+com.tsurugidb.tsubakuro.auth.AuthServiceCode
+com.tsurugidb.tsubakuro.datastore.DatastoreServiceCode
+com.tsurugidb.tsubakuro.sql.SqlServiceCode
