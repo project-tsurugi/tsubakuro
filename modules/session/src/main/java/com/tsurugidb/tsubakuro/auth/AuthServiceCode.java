@@ -1,20 +1,28 @@
 package com.tsurugidb.tsubakuro.auth;
 
 import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
+import com.tsurugidb.tsubakuro.util.Doc;
 
 /**
  * Code of auth service diagnostics.
  */
+@Doc(
+        value = "Authentication service is designed for external use of Tsurugi's authentication mechanism.",
+        note = "This does not work correct because authentication is not yet available in Tsurugi.")
 public enum AuthServiceCode implements DiagnosticCode {
 
     /**
      * Unknown error.
      */
+    @Doc("unknown error was occurred in the authentication service.")
     UNKNOWN(0),
 
     /**
      * Authentication information is not found.
      */
+    @Doc(
+            value = "authentication information is not found in this session.",
+            note = "Credentials may be not specified when establishing a session.")
     NOT_AUTHENTICATED(1_01),
 
     ;
