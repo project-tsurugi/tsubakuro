@@ -9,7 +9,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.exception.*;
 
 /**
- * An exception which occurs if Tsurugi OLTP server core is something wrong.
+ * generic error in SQL service
  */
 public class SqlServiceException extends ServerException {
 
