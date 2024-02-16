@@ -18,6 +18,7 @@ public enum SqlServiceCode implements DiagnosticCode {
     /**
      * SQL_SERVICE_EXCEPTION
      */
+    @Doc("generic error in SQL service")
     SQL_SERVICE_EXCEPTION(1000, SqlError.Code.SQL_SERVICE_EXCEPTION),
 
     /**
