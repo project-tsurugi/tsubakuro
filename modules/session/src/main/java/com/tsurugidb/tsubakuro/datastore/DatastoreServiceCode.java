@@ -31,7 +31,7 @@ public enum DatastoreServiceCode implements DiagnosticCode {
      * The target tag name is too long.
      */
     @Doc("the tag name is too long.")
-    TAG_NAME_TOO_LONG(6_01),
+    TAG_NAME_TOO_LONG(6_02),
 
     ;
     private final int codeNumber;
