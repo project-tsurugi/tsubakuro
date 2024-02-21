@@ -1,7 +1,6 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -22,7 +21,9 @@ public class ExecuteResultAdapter implements ExecuteResult {
         var result = executeResult.getCountersList();
         for (var e : result) {
             var type = counterType(e.getType());
-            counters.put(type, e.getValue());
+            if (type != null) {
+                counters.put(type, e.getValue());
+            }
         }
     }
 
@@ -42,6 +43,6 @@ public class ExecuteResultAdapter implements ExecuteResult {
         case DELETED_ROWS:
             return CounterType.DELETED_ROWS;
         }
-        throw new IOException(MessageFormat.format("illegal counter type. type={0}", type));
+        return null;
     }
 }
