@@ -102,7 +102,7 @@ class ResultSetWireTest {
             clientResultSetWire.close();
         });
         // FIXME: check error code instead of message
-        assertEquals("Server crashed", exception.getMessage());
+        assertEquals(0, exception.getMessage().indexOf("No response from the server for a long time, server status check result is '"));
 
         sender.join();
     }

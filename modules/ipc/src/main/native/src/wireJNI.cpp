@@ -88,10 +88,10 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
                 env->DeleteLocalRef(classj);
                 return 0;
             }
-            if (!swc->get_status_provider().is_alive()) {
+            if (auto err = swc->get_status_provider().is_alive(); !err.empty()) {
                 jclass classj = env->FindClass("Ljava/io/IOException;");
                 if (classj == nullptr) { std::abort(); }
-                env->ThrowNew(classj, "Server crashed");
+                env->ThrowNew(classj, (std::string("No response from the server for a long time, server status check result is '") + err + "'").c_str());;
                 env->DeleteLocalRef(classj);
                 return 0;
             }
@@ -147,7 +147,7 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAl
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
-    return swc->get_status_provider().is_alive();
+    return swc->get_status_provider().is_alive().empty();
 }
 
 /*
@@ -247,10 +247,10 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
             }
             return nullptr;
         } catch (std::runtime_error &e) {
-            if (!rwc->get_envelope()->get_status_provider().is_alive()) {
+            if (auto err = rwc->get_envelope()->get_status_provider().is_alive(); !err.empty()) {
                 jclass classj = env->FindClass("Ljava/io/IOException;");
                 if (classj == nullptr) { std::abort(); }
-                env->ThrowNew(classj, "Server crashed");
+                env->ThrowNew(classj, (std::string("No response from the server for a long time, server status check result is '") + err + "'").c_str());;
                 env->DeleteLocalRef(classj);
                 return nullptr;
             }
