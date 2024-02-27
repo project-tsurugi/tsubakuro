@@ -897,18 +897,22 @@ public:
     status_provider(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::string_view file) : mutex_file_(file, managed_shm_ptr->get_segment_manager()) {
     }
 
-    [[nodiscard]] bool is_alive() {
-        int fd = open(mutex_file_.c_str(), O_WRONLY);  // NOLINT
+    [[nodiscard]] std::string is_alive() {
+        int fd = open(mutex_file_.c_str(), O_RDONLY);  // NOLINT
         if (fd < 0) {
-            return false;
+            std::stringstream ss{};
+            ss << "cannot open the lock file (" << mutex_file_.c_str() << ")";
+            return ss.str();
         }
         if (flock(fd, LOCK_EX | LOCK_NB) == 0) {  // NOLINT
             flock(fd, LOCK_UN);
             close(fd);
-            return false;
+            std::stringstream ss{};
+            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server crash";
+            return ss.str();
         }
         close(fd);
-        return true;
+        return {};
     }
 
 private:
