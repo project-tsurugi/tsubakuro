@@ -57,6 +57,9 @@ enum Code {
 
     // request header or payload is not valid.
     INVALID_REQUEST = 41;
+
+    // operation was canceled by user or system.
+    OPERATION_CANCELED = 42;
 }
 
 // diagnostic record.
