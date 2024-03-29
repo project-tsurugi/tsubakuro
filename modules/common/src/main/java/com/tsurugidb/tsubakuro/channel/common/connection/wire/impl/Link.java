@@ -21,6 +21,7 @@ public abstract class Link implements ServerResource {
     protected ResponseBox responseBox = new ResponseBox(this);
     protected TimeUnit closeTimeUnit;
     protected long closeTimeout = 0;
+    protected long sessionId;
 
     /**
      * Getter of the receivedMessageNumber.
@@ -108,6 +109,14 @@ public abstract class Link implements ServerResource {
      * @throws IOException if I/O error was occurred while creating a ResultSetWire
      */
     public abstract ResultSetWire createResultSetWire() throws IOException;
+
+    /**
+     * Getter of the sessionId.
+     * @return sessionId
+     **/
+    public long sessionId() {
+        return sessionId;
+    }
 
     /**
      * Sets close timeout.

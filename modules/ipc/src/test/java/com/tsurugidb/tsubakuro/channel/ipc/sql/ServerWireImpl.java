@@ -26,7 +26,7 @@ public class ServerWireImpl implements Closeable {
     private final long wireHandle;  // for c++
     private final String dbName;
     private final Semaphore available = new Semaphore(0, true);
-    private long sessionID;
+    private long sessionId;
     private final boolean takeSendAction;
     private final ReceiveWorker receiver;
     private SqlRequest.Request sqlRequest;
@@ -57,6 +57,7 @@ public class ServerWireImpl implements Closeable {
     }
 
     private class ReceiveWorker extends Thread {
+
         ReceiveWorker() throws IOException {
         }
         @Override
@@ -71,7 +72,7 @@ public class ServerWireImpl implements Closeable {
                             return;
                         }
                         var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
-                        sessionID = header.getSessionId();
+                        sessionId = header.getSessionId();
                         sqlRequest = SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
                         available.release();
                     } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -89,11 +90,11 @@ public class ServerWireImpl implements Closeable {
         }
     }
 
-    public ServerWireImpl(String dbName, long sessionID, boolean takeSendAction) throws IOException {
+    public ServerWireImpl(String dbName, long sessionId, boolean takeSendAction) throws IOException {
         this.dbName = dbName;
-        this.sessionID = sessionID;
+        this.sessionId = sessionId;
         this.takeSendAction = takeSendAction;
-        this.wireHandle = createNative(dbName + "-" + String.valueOf(sessionID));
+        this.wireHandle = createNative(dbName + "-" + String.valueOf(sessionId));
         if (wireHandle == 0) {
             fail("error: ServerWireImpl.ServerWireImpl()");
         }
@@ -106,8 +107,8 @@ public class ServerWireImpl implements Closeable {
         }
     }
     
-    public ServerWireImpl(String dbName, long sessionID) throws IOException {
-        this(dbName, sessionID, true);
+    public ServerWireImpl(String dbName, long sessionId) throws IOException {
+        this(dbName, sessionId, true);
     }
 
     public void close() throws IOException {
@@ -119,8 +120,8 @@ public class ServerWireImpl implements Closeable {
         } 
     }
 
-    public long getSessionID() {
-        return sessionID;
+    public long getSessionId() {
+        return sessionId;
     }
 
     /**

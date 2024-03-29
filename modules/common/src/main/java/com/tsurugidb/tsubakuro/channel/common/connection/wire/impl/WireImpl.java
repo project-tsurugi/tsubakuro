@@ -44,15 +44,16 @@ public class WireImpl implements Wire {
      */
     private static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
+    /**
+     * The service id for endpoint broker.
+     */
     private static final int SERVICE_ID_ENDPOINT_BROKER = 1;
-    private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
     private final Link link;
     private final ResponseBox responseBox;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private long sessionID;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -62,21 +63,7 @@ public class WireImpl implements Wire {
     public WireImpl(@Nonnull Link link) throws IOException {
         this.link = link;
         this.responseBox = link.getResponseBox();
-        this.sessionID = SESSION_ID_IS_NOT_ASSIGNED;
-        LOG.trace("begin Session via ipc, id = {}", sessionID);
-    }
-
-    /**
-     * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
-     * @param link the stream object by which this WireImpl is connected to the SQL server
-     * @param sessionID the id of this session obtained by the connector requesting a connection to the SQL server
-     * @throws IOException error occurred in openNative()
-     */
-    public WireImpl(@Nonnull Link link, long sessionID) throws IOException {
-        this.link = link;
-        this.sessionID = sessionID;
-        this.responseBox = link.getResponseBox();
-        LOG.trace("begin Session via ipc, id = {}", sessionID);
+        LOG.trace("begin Session");
     }
 
     /**
@@ -95,7 +82,7 @@ public class WireImpl implements Wire {
             .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
             .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR)
             .setServiceId(serviceId)
-            .setSessionId(sessionID)
+            .setSessionId(sessionId())
             .build();
         var response = responseBox.register(toDelimitedByteArray(header), payload);
         return FutureResponse.wrap(Owner.of(response));
@@ -212,17 +199,9 @@ public class WireImpl implements Wire {
         return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor());
     }
 
-    public void setSessionID(long id) throws IOException {
-        if (sessionID == SESSION_ID_IS_NOT_ASSIGNED) {
-            this.sessionID = id;
-            return;
-        }
-        throw new IOException("handshake error (session ID is already assigned)");
-    }
-
-    public void checkSessionID(long id) throws IOException {
-        if (sessionID != id) {
-            throw new IOException(MessageFormat.format("handshake error (inconsistent session ID), {0} not equal {1}", sessionID, id));
+    public void checkSessionId(long id) throws IOException {
+        if (sessionId() != id) {
+            throw new IOException(MessageFormat.format("handshake error (inconsistent session ID), {0} not equal {1}", sessionId(), id));
         }
     }
 
@@ -250,8 +229,8 @@ public class WireImpl implements Wire {
     }
 
     // for diagnostic
-    public long sessionID() {
-        return sessionID;
+    public long sessionId() {
+        return link.sessionId();
     }
     @Override
     public String diagnosticInfo() {

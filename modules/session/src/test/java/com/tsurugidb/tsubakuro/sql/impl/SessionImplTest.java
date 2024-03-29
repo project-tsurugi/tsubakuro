@@ -1,12 +1,12 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -35,6 +35,7 @@ class SessionImplTest {
 
     class ChannelResponseMock implements Response {
         private final SessionWireMock wire;
+        private boolean cancelCalled = false;
 
         ChannelResponseMock(SessionWireMock wire) {
             this.wire = wire;
@@ -52,12 +53,20 @@ class SessionImplTest {
             return waitForMainResponse();
         }
         @Override
+        public void cancel() throws IOException {
+            cancelCalled = true;
+        }
+        @Override
         public void close() throws IOException, InterruptedException {
+        }
+        boolean cancelCalled() {
+            return cancelCalled;
         }
     }
 
     class SessionWireMock implements Wire {
         private boolean closed = false;
+        private ChannelResponseMock channelResponseMock;
 
         @Override
         public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
@@ -72,6 +81,11 @@ class SessionImplTest {
                     break;
                 case PREPARE:
                     nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
+                    break;
+                case EXECUTE_STATEMENT:  // for cancel test
+                    nextResponse = SqlResponse.Response.newBuilder()
+                        .setExecuteResult(SqlResponse.ExecuteResult.newBuilder())
+                        .build();
                     break;
                 case DISPOSE_PREPARED_STATEMENT:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
@@ -96,7 +110,7 @@ class SessionImplTest {
                         )
                     ).build();
                     break;
-                    case DISPOSE_TRANSACTION:
+                case DISPOSE_TRANSACTION:
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setDisposeTransaction(SqlResponse.DisposeTransaction.newBuilder()
                                        .setSuccess(SqlResponse.Void.newBuilder()))
@@ -106,7 +120,8 @@ class SessionImplTest {
                     System.out.println("falls default case%n" + request);
                     return null;  // dummy as it is test for session
             }
-            return FutureResponse.wrap(Owner.of(new ChannelResponseMock(this)));
+            channelResponseMock = new ChannelResponseMock(this);
+            return FutureResponse.wrap(Owner.of(channelResponseMock));
         }
 
         @Override
@@ -125,6 +140,10 @@ class SessionImplTest {
         @Override
         public void close() throws IOException {
             closed = true;
+        }
+
+        ChannelResponseMock channelResponseMock() {
+            return channelResponseMock;
         }
     }
 
@@ -261,5 +280,19 @@ class SessionImplTest {
         assertEquals(Optional.of("D"), info.getDatabaseName());
         assertEquals(Optional.of("S"), info.getSchemaName());
         assertEquals("TBL", info.getTableName());
+    }
+
+    @Test
+    void requestCancel() throws Exception {
+        var session = new SessionImpl();
+        var wire = new SessionWireMock();
+        session.connect(wire);
+        var sqlClient = SqlClient.attach(session);
+
+        var transaction = sqlClient.createTransaction().get();
+        var future = transaction.executeStatement("this is a sql for test");
+        future.close();
+
+        assertTrue(wire.channelResponseMock().cancelCalled());
     }
 }

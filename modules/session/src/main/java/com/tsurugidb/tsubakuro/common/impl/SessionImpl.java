@@ -236,11 +236,11 @@ public class SessionImpl implements Session {
     }
     public String diagnosticInfo() {
         if (!closed.get()) {
-            String sessionID = "";
+            String sessionId = "";
             if (wire instanceof WireImpl) {
-                sessionID = Long.valueOf(((WireImpl) wire).sessionID()).toString();
+                sessionId = Long.valueOf(((WireImpl) wire).sessionId()).toString();
             }
-            String diagnosticInfo = "session " + sessionID + System.getProperty("line.separator");
+            String diagnosticInfo = "session " + sessionId + System.getProperty("line.separator");
 
             var serviceInfoAction = new ServiceInfoAction();
             services.forEach(serviceInfoAction);

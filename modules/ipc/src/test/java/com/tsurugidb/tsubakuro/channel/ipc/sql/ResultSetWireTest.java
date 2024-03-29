@@ -19,7 +19,7 @@ class ResultSetWireTest {
     private WireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
-    private final long sessionID = 1;
+    private final long sessionId = 1;
     private long serverResultSetWire;
     private int writeCount;
 
@@ -52,8 +52,8 @@ class ResultSetWireTest {
     @Test
     void readRecordsTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionID);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            server = new ServerWireImpl(dbName, sessionId);
+            client = new WireImpl(new IpcLink(dbName, sessionId));
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -82,8 +82,8 @@ class ResultSetWireTest {
     @Test
     void serverCrashDetectionTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionID, false);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            server = new ServerWireImpl(dbName, sessionId, false);
+            client = new WireImpl(new IpcLink(dbName, sessionId));
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -110,8 +110,8 @@ class ResultSetWireTest {
     @Test
     void closeWithRecordRemainTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionID);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            server = new ServerWireImpl(dbName, sessionId);
+            client = new WireImpl(new IpcLink(dbName, sessionId));
         } catch (Exception e) {
             fail("cought Exception");
         }

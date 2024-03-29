@@ -53,9 +53,13 @@ class Queues {
                     return;
                 }
                 var channelResponse = requestEntry.channelResponse();
-                slotEntry.channelResponse(channelResponse);
-                slotEntry.requestMessage(requestEntry.payload());
-                link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
+                if (channelResponse.assignSlot(slotEntry.slot())) {
+                    slotEntry.channelResponse(channelResponse);
+                    slotEntry.requestMessage(requestEntry.payload());
+                    link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
+                } else {
+                    channelResponse.cancelSuccessWithoutServerInteraction();
+                }
             }
         } finally {
             lock.unlock();

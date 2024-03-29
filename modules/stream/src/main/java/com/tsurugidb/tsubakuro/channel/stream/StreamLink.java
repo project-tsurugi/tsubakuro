@@ -46,6 +46,7 @@ public final class StreamLink extends Link {
     public static final byte RESPONSE_SESSION_BYE_OK = 8;
 
     private static final int TERMINATION_REQUEST = 0xffff;
+    private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
@@ -54,6 +55,15 @@ public final class StreamLink extends Link {
         this.socket.setTcpNoDelay(true);
         this.outStream = new BufferedOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
+        super.sessionId = SESSION_ID_IS_NOT_ASSIGNED;
+    }
+
+    public void setSessionId(long id) throws IOException {
+        if (sessionId == SESSION_ID_IS_NOT_ASSIGNED) {
+            this.sessionId = id;
+            return;
+        }
+        throw new IOException("session ID is already assigned");
     }
 
     @Override

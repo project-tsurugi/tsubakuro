@@ -68,18 +68,18 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                 }
                 if (!gotton.getAndSet(true)) {
                     WireImpl wireImpl = null;
-                    FutureResponse<Long> futureSessionID = null;
+                    FutureResponse<Long> futureSessionId = null;
                     try {
                         wireImpl = connector.getSessionWire(id);
-                        futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                        wireImpl.checkSessionID(futureSessionID.get());
+                        futureSessionId = wireImpl.handshake(clientInformation, wireInformation());
+                        wireImpl.checkSessionId(futureSessionId.get());
                         result.set(wireImpl);
                         return wireImpl;
                     } catch (IOException | ServerException | InterruptedException e) {
                         closed = true;
                         try {
-                            if (futureSessionID != null) {
-                                futureSessionID.close();
+                            if (futureSessionId != null) {
+                                futureSessionId.close();
                             }
                         } catch (Exception suppress) {
                             // the exception in closing wireImpl should be suppressed
@@ -124,18 +124,18 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                     }
                     if (!gotton.getAndSet(true)) {
                         WireImpl wireImpl = null;
-                        FutureResponse<Long> futureSessionID = null;
+                        FutureResponse<Long> futureSessionId = null;
                         try {
                             wireImpl = connector.getSessionWire(id, timeout, unit);
-                            futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                            wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
+                            futureSessionId = wireImpl.handshake(clientInformation, wireInformation());
+                            wireImpl.checkSessionId(futureSessionId.get(timeout, unit));
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
                             closed = true;
                             try {
-                                if (futureSessionID != null) {
-                                    futureSessionID.close();
+                                if (futureSessionId != null) {
+                                    futureSessionId.close();
                                 }
                             } catch (Exception suppress) {
                                 // the exception in closing wireImpl should be suppressed

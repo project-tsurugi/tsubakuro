@@ -85,4 +85,12 @@ public interface Response extends ServerResource {
             throws NoSuchElementException, IOException, ServerException, InterruptedException, TimeoutException {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Cancel the processing request to receive the result in this response.
+     * @throws IOException error occurred while sending the cancel request
+     */
+    default void cancel() throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }
