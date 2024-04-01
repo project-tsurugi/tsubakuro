@@ -70,8 +70,9 @@ tsubakuroがサーバに実行要求を送信するときに作成され、サ�
 ### tsubakuroを使うアプリケーションの起動
 jvm（javaコマンド）の起動オプションに下記を加える。
 ```
--Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
+-Dtsubakuro.diagnostic -Dcom.sun.management.jmxremote.port=9999 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false
 ```
+`-Dtsubakuro.diagnostic` の指定により、tsubakuroでのJMX機能が有効化される。指定しない場合はJMX機能は有効化されない。
 
 ### 稼働情報の表示
 tsubakuro-examplesのcom.tsurugidb.tsubakuro.examples.diagnostics.JMXClientを実行する。
