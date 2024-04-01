@@ -42,7 +42,11 @@ public final class SessionBuilder {
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
-        this.sessionInfo = JMXAgent.sessionInfo();
+        if (System.getProperty("tsubakuro.diagnostic") != null) {
+            this.sessionInfo = JMXAgent.sessionInfo();
+        } else {
+            this.sessionInfo = null;
+        }
     }
 
     /**
@@ -179,7 +183,9 @@ public final class SessionBuilder {
         boolean green = false;
         try {
             session.connect(wire);
-            sessionInfo.addSession(session);
+            if (sessionInfo != null) {
+                sessionInfo.addSession(session);
+            }
             green = true;
             return session;
         } finally {
