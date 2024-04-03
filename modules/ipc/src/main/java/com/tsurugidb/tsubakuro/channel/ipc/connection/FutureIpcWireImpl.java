@@ -12,7 +12,6 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -58,15 +57,11 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                wire = connector.getSessionWire(id);
-                if (wire instanceof WireImpl) {
-                    var wireImpl = (WireImpl) wire;
-                    var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                    wireImpl.checkSessionID(futureSessionID.get());
-                    result.set(wireImpl);
-                    return wireImpl;
-                }
-                throw new IOException("FutureIpcWireImpl programing error");  // never occure
+                var wireImpl = connector.getSessionWire(id);
+                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+                wireImpl.checkSessionID(futureSessionID.get());
+                result.set(wireImpl);
+                return wireImpl;
             }
             if (closed) {
                 throw new IOException("FutureIpcWireImpl is already closed");
@@ -85,15 +80,11 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                wire = connector.getSessionWire(id, timeout, unit);
-                if (wire instanceof WireImpl) {
-                    var wireImpl = (WireImpl) wire;
-                    var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                    wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
-                    result.set(wireImpl);
-                    return wireImpl;
-                }
-                throw new IOException("FutureIpcWireImpl programing error");  // never occure
+                var wireImpl = connector.getSessionWire(id, timeout, unit);
+                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+                wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
+                result.set(wireImpl);
+                return wireImpl;
             }
             if (closed) {
                 throw new IOException("FutureIpcWireImpl is already closed");
