@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
@@ -23,8 +23,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
     private final ClientInformation clientInformation;
     private IpcConnectorImpl connector;
     private long id;
-    private final AtomicBoolean gotton = new AtomicBoolean();
+    private final AtomicReference<Wire> result = new AtomicReference<>();
     private final boolean connectException;
+    private boolean closed = false;
 
     FutureIpcWireImpl(IpcConnectorImpl connector, long id, @Nonnull ClientInformation clientInformation) {
         this.connector = connector;
@@ -45,54 +46,61 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
     }
 
     @Override
-    public Wire get() throws IOException, ServerException, InterruptedException {
+    public synchronized Wire get() throws IOException, ServerException, InterruptedException {
         if (connectException) {
             throw new ConnectException("the server has declined the connection request");
         }
-        if (!gotton.getAndSet(true)) {
-            var wire = connector.getSessionWire(id);
-            if (wire instanceof WireImpl) {
-                var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                wireImpl.checkSessionID(futureSessionID.get());
-                return wireImpl;
-            }
-            throw new IOException("FutureIpcWireImpl programing error");  // never occure
+        var wire = result.get();
+        if (wire != null) {
+            return wire;
         }
-        throw new IOException("FutureIpcWireImpl is already closed");
+        wire = connector.getSessionWire(id);
+        if (wire instanceof WireImpl) {
+            var wireImpl = (WireImpl) wire;
+            var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+            wireImpl.checkSessionID(futureSessionID.get());
+            result.set(wireImpl);
+            return wireImpl;
+        }
+        throw new IOException("FutureIpcWireImpl programing error");  // never occure
     }
 
     @Override
-    public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
+    public synchronized Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
         if (connectException) {
             throw new ConnectException("the server has declined the connection request");
         }
-        if (!gotton.getAndSet(true)) {
-            var wire = connector.getSessionWire(id, timeout, unit);
-            if (wire instanceof WireImpl) {
-                var wireImpl = (WireImpl) wire;
-                var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
-                return wireImpl;
-            }
-            throw new IOException("FutureIpcWireImpl programing error");  // never occure
+        var wire = result.get();
+        if (wire != null) {
+            return wire;
         }
-        throw new IOException("FutureIpcWireImpl is already closed");
+        wire = connector.getSessionWire(id, timeout, unit);
+        if (wire instanceof WireImpl) {
+            var wireImpl = (WireImpl) wire;
+            var futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+            wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
+            result.set(wireImpl);
+            return wireImpl;
+        }
+        throw new IOException("FutureIpcWireImpl programing error");  // never occure
     }
 
     @Override
     public boolean isDone() {
-        if (gotton.get()) {
+        if (result.get() != null) {
             return true;
         }
         return connector.checkConnection(id);
     }
 
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
-        if (!connectException && !gotton.getAndSet(true)) {
-            var wire = connector.getSessionWire(id);
-            wire.close();
+    public synchronized void close() throws IOException, ServerException, InterruptedException {
+        if (!closed) {
+            closed = true;
+            if (!connectException && result.get() == null) {
+                var wire = connector.getSessionWire(id);
+                wire.close();
+            }
         }
     }
 }

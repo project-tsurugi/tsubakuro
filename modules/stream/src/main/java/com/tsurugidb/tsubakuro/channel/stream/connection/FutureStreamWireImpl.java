@@ -3,7 +3,7 @@ package com.tsurugidb.tsubakuro.channel.stream.connection;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
@@ -19,7 +19,8 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     private final StreamLink streamLink;
     private final WireImpl wireImpl;
     private final FutureResponse<Long> futureSessionID;
-    private final AtomicBoolean gotton = new AtomicBoolean();
+    private final AtomicReference<Wire> result = new AtomicReference<>();
+    private boolean closed = false;
 
     FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionID) {
         this.streamLink = streamLink;
@@ -28,31 +29,25 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     }
 
     @Override
-    public Wire get() throws IOException, ServerException, InterruptedException {
-        if (!gotton.getAndSet(true)) {
-            try {
-                wireImpl.setSessionID(futureSessionID.get());
-                return wireImpl;
-            } catch (IOException | ServerException | InterruptedException e) {
-                gotton.set(false);
-                throw e;
-            }
+    public synchronized Wire get() throws IOException, ServerException, InterruptedException {
+        var wire = result.get();
+        if (wire != null) {
+            return wire;
         }
-        throw new IOException("FutureStreamWireImpl already closed.");
+        wireImpl.setSessionID(futureSessionID.get());
+        result.set(wireImpl);
+        return wireImpl;
     }
 
     @Override
-    public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
-        if (!gotton.getAndSet(true)) {
-            try {
-                wireImpl.setSessionID(futureSessionID.get(timeout, unit));
-                return wireImpl;
-            } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
-                gotton.set(false);
-                throw e;
-            }
+    public synchronized Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+        var wire = result.get();
+        if (wire != null) {
+            return wire;
         }
-        throw new IOException("FutureStreamWireImpl already closed.");
+        wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+        result.set(wireImpl);
+        return wireImpl;
     }
 
     @Override
@@ -62,11 +57,20 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     }
 
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
-        if (!gotton.getAndSet(true)) {
-            futureSessionID.close();
-            streamLink.closeWithoutGet();
-            wireImpl.closeWithoutGet();
+    public synchronized void close() throws IOException, ServerException, InterruptedException {
+        if (!closed) {
+            closed = true;
+            if (result.get() == null) {
+                try {
+                    futureSessionID.close();
+                } finally {
+                    try {
+                        streamLink.closeWithoutGet();
+                    } finally {
+                        wireImpl.closeWithoutGet();
+                    }
+                }
+            }
         }
     }
 }
