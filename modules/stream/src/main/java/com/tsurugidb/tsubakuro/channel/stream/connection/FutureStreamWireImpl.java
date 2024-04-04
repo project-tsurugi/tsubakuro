@@ -38,9 +38,14 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                wireImpl.setSessionID(futureSessionID.get());
-                result.set(wireImpl);
-                return wireImpl;
+                try {
+                    wireImpl.setSessionID(futureSessionID.get());
+                    result.set(wireImpl);
+                    return wireImpl;
+                } catch (IOException | ServerException | InterruptedException e) {
+                    closeInternal();
+                    throw e;
+                }
             }
             if (closed) {
                 throw new IOException("FutureStreamWireImpl is already closed");
@@ -49,16 +54,21 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     }
 
     @Override
-    public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+    public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
         while (true) {
             var wire = result.get();
             if (wire != null) {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                wireImpl.setSessionID(futureSessionID.get(timeout, unit));
-                result.set(wireImpl);
-                return wireImpl;
+                try {
+                    wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+                    result.set(wireImpl);
+                    return wireImpl;
+                } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
+                    closeInternal();
+                    throw e;
+                }
             }
             if (closed) {
                 throw new IOException("FutureStreamWireImpl is already closed");
@@ -75,17 +85,21 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            if (!closed) {
-                closed = true;
-                if (result.get() == null) {
+            closeInternal();
+        }
+    }
+
+    private void closeInternal() throws IOException, InterruptedException, ServerException {
+        if (!closed) {
+            closed = true;
+            if (result.get() == null) {
+                try {
+                    futureSessionID.close();
+                } finally {
                     try {
-                        futureSessionID.close();
+                        streamLink.closeWithoutGet();
                     } finally {
-                        try {
-                            streamLink.closeWithoutGet();
-                        } finally {
-                            wireImpl.closeWithoutGet();
-                        }
+                        wireImpl.closeWithoutGet();
                     }
                 }
             }
