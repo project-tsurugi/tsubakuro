@@ -427,18 +427,15 @@ private:
 
 // for response
 class unidirectional_response_wire : public simple_wire<response_header> {
-    constexpr static std::size_t watch_interval = 5;
 public:
+    constexpr static std::size_t watch_interval = 5;
+
     unidirectional_response_wire(boost::interprocess::managed_shared_memory* managed_shm_ptr, std::size_t capacity) : simple_wire<response_header>(managed_shm_ptr, capacity) {}
 
     /**
      * @brief wait for response arrival and return its header.
      */
-    response_header await(const char* base, std::int64_t timeout = 0) {
-        if (timeout == 0) {
-            timeout = watch_interval * 1000 * 1000;
-        }
-
+    response_header await(const char* base, std::int64_t timeout) {
         while (true) {
             if (closed_.load()) {
                 header_received_ = response_header(0, 0, 0);
