@@ -90,16 +90,46 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     }
 
     private void closeInternal() throws IOException, InterruptedException, ServerException {
+        Exception top = null;
         if (!closed) {
             closed = true;
             if (result.get() == null) {
                 try {
                     futureSessionID.close();
+                } catch (Exception e) {
+                    top = e;
                 } finally {
                     try {
                         streamLink.closeWithoutGet();
+                    } catch (Exception e) {
+                        if (top == null) {
+                            top = e;
+                        } else {
+                            top.addSuppressed(e);
+                        }
                     } finally {
-                        wireImpl.closeWithoutGet();
+                        try {
+                            wireImpl.closeWithoutGet();
+                        } catch (Exception e) {
+                            if (top == null) {
+                                top = e;
+                            } else {
+                                top.addSuppressed(e);
+                            }
+                        } finally {
+                            if (top != null) {
+                                if (top instanceof IOException) {
+                                    throw (IOException) top;
+                                }
+                                if (top instanceof InterruptedException) {
+                                    throw (InterruptedException) top;
+                                }
+                                if (top instanceof ServerException) {
+                                    throw (ServerException) top;
+                                }
+                                throw new AssertionError(top);
+                            }
+                        }
                     }
                 }
             }

@@ -74,7 +74,12 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                         }
                     } finally {
                         if (wireImpl != null) {
-                            wireImpl.close();
+                            try {
+                                wireImpl.close();
+                            } catch (Exception suppress) {
+                                // the exception in closing wireImpl should be suppressed
+                                e.addSuppressed(suppress);
+                            }
                         }
                     }
                     throw e;
@@ -113,7 +118,12 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                         }
                     } finally {
                         if (wireImpl != null) {
-                            wireImpl.close();
+                            try {
+                                wireImpl.close();
+                            } catch (Exception suppress) {
+                                // the exception in closing wireImpl should be suppressed
+                                e.addSuppressed(suppress);
+                            }
                         }
                     }
                     throw e;
