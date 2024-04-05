@@ -6,6 +6,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nonnull;
 
@@ -26,6 +29,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
     private long id;
     private final AtomicBoolean gotton = new AtomicBoolean();
     private final AtomicReference<Wire> result = new AtomicReference<>();
+    private final AtomicBoolean doingGet = new AtomicBoolean();
+    private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
     private final boolean connectException;
     private boolean closed = false;
 
@@ -58,31 +64,54 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                WireImpl wireImpl = null;
-                FutureResponse<Long> futureSessionID = null;
-                try {
-                    wireImpl = connector.getSessionWire(id);
-                    futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                    wireImpl.checkSessionID(futureSessionID.get());
-                    result.set(wireImpl);
-                    return wireImpl;
-                } catch (IOException | ServerException | InterruptedException e) {
-                    closed = true;
+                if (!doingGet.getAndSet(true)) {
+                    WireImpl wireImpl = null;
+                    FutureResponse<Long> futureSessionID = null;
                     try {
-                        if (futureSessionID != null) {
-                            futureSessionID.close();
-                        }
-                    } finally {
-                        if (wireImpl != null) {
-                            try {
-                                wireImpl.close();
-                            } catch (Exception suppress) {
-                                // the exception in closing wireImpl should be suppressed
-                                e.addSuppressed(suppress);
+                        wireImpl = connector.getSessionWire(id);
+                        futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+                        wireImpl.checkSessionID(futureSessionID.get());
+                        result.set(wireImpl);
+                        return wireImpl;
+                    } catch (IOException | ServerException | InterruptedException e) {
+                        closed = true;
+                        try {
+                            if (futureSessionID != null) {
+                                futureSessionID.close();
+                            }
+                        } catch (Exception suppress) {
+                            // the exception in closing wireImpl should be suppressed
+                            e.addSuppressed(suppress);
+                        } finally {
+                            if (wireImpl != null) {
+                                try {
+                                    wireImpl.close();
+                                } catch (Exception suppress) {
+                                    // the exception in closing wireImpl should be suppressed
+                                    e.addSuppressed(suppress);
+                                }
                             }
                         }
+                        throw e;
+                    } finally {
+                        lock.lock();
+                        try {
+                            doingGet.set(false);
+                            condition.signalAll();
+                        } finally {
+                            lock.unlock();
+                        }
                     }
-                    throw e;
+                } else {
+                    lock.lock();
+                    try {
+                        if (!doingGet.get()) {
+                            continue;
+                        }
+                        condition.await();
+                    } finally {
+                        lock.unlock();
+                    }
                 }
             }
             if (closed) {
@@ -102,31 +131,56 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (!gotton.getAndSet(true)) {
-                WireImpl wireImpl = null;
-                FutureResponse<Long> futureSessionID = null;
-                try {
-                    wireImpl = connector.getSessionWire(id, timeout, unit);
-                    futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
-                    wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
-                    result.set(wireImpl);
-                    return wireImpl;
-                } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
-                    closed = true;
+                if (!doingGet.getAndSet(true)) {
+                    WireImpl wireImpl = null;
+                    FutureResponse<Long> futureSessionID = null;
                     try {
-                        if (futureSessionID != null) {
-                            futureSessionID.close();
-                        }
-                    } finally {
-                        if (wireImpl != null) {
-                            try {
-                                wireImpl.close();
-                            } catch (Exception suppress) {
-                                // the exception in closing wireImpl should be suppressed
-                                e.addSuppressed(suppress);
+                        wireImpl = connector.getSessionWire(id, timeout, unit);
+                        futureSessionID = wireImpl.handshake(clientInformation, wireInformation());
+                        wireImpl.checkSessionID(futureSessionID.get(timeout, unit));
+                        result.set(wireImpl);
+                        return wireImpl;
+                    } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
+                        closed = true;
+                        try {
+                            if (futureSessionID != null) {
+                                futureSessionID.close();
+                            }
+                        } catch (Exception suppress) {
+                            // the exception in closing wireImpl should be suppressed
+                            e.addSuppressed(suppress);
+                        } finally {
+                            if (wireImpl != null) {
+                                try {
+                                    wireImpl.close();
+                                } catch (Exception suppress) {
+                                    // the exception in closing wireImpl should be suppressed
+                                    e.addSuppressed(suppress);
+                                }
                             }
                         }
+                        throw e;
+                    } finally {
+                        lock.lock();
+                        try {
+                            doingGet.set(false);
+                            condition.signalAll();
+                        } finally {
+                            lock.unlock();
+                        }
                     }
-                    throw e;
+                }
+            } else {
+                lock.lock();
+                try {
+                    if (!doingGet.get()) {
+                        continue;
+                    }
+                    if (!condition.await(timeout, unit)) {
+                        throw new TimeoutException("get() by another thread has not returned within the specifined time");
+                    }
+                } finally {
+                    lock.unlock();
                 }
             }
             if (closed) {
