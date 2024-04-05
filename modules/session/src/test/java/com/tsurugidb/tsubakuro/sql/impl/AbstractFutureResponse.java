@@ -24,6 +24,10 @@ abstract class AbstractFutureResponse<V> implements FutureResponse<V> {
             }
             lock.lock();
             try {
+                result = getInternalResult.get();
+                if (result != null) {
+                    return result;
+                }
                 getInternalResult.set(getInternal());
             } finally {
                 lock.unlock();
@@ -40,6 +44,10 @@ abstract class AbstractFutureResponse<V> implements FutureResponse<V> {
                 return result;
             }
             if (lock.tryLock(timeout, unit)) {
+                result = getInternalResult.get();
+                if (result != null) {
+                    return result;
+                }
                 try {
                     getInternalResult.set(getInternal(timeout, unit));
                 } finally {

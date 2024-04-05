@@ -62,6 +62,10 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             }
             lock.lock();
             try {
+                wire = result.get();
+                if (wire != null) {
+                    return wire;
+                }
                 if (!gotton.getAndSet(true)) {
                     WireImpl wireImpl = null;
                     FutureResponse<Long> futureSessionID = null;
@@ -114,6 +118,10 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             }
             if (lock.tryLock(timeout, unit)) {
                 try {
+                    wire = result.get();
+                    if (wire != null) {
+                        return wire;
+                    }
                     if (!gotton.getAndSet(true)) {
                         WireImpl wireImpl = null;
                         FutureResponse<Long> futureSessionID = null;
