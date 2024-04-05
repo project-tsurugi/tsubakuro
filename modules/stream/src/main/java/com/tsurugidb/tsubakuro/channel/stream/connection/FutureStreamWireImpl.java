@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -25,9 +24,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     private final FutureResponse<Long> futureSessionID;
     private final AtomicBoolean gotton = new AtomicBoolean();
     private final AtomicReference<Wire> result = new AtomicReference<>();
-    private final AtomicBoolean doingGet = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
-    private final Condition condition = lock.newCondition();
     private boolean closed = false;
 
     FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionID) {
@@ -43,8 +40,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             if (wire != null) {
                 return wire;
             }
-            if (!gotton.getAndSet(true)) {
-                if (!doingGet.getAndSet(true)) {
+            lock.lock();
+            try {
+                if (!gotton.getAndSet(true)) {
                     try {
                         wireImpl.setSessionID(futureSessionID.get());
                         result.set(wireImpl);
@@ -52,26 +50,10 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                     } catch (IOException | ServerException | InterruptedException e) {
                         closeInternal();
                         throw e;
-                    } finally {
-                        lock.lock();
-                        try {
-                            doingGet.set(false);
-                            condition.signalAll();
-                        } finally {
-                            lock.unlock();
-                        }
-                    }
-                } else {
-                    lock.lock();
-                    try {
-                        if (!doingGet.get()) {
-                            continue;
-                        }
-                        condition.await();
-                    } finally {
-                        lock.unlock();
                     }
                 }
+            } finally {
+                lock.unlock();
             }
             if (closed) {
                 throw new IOException("FutureStreamWireImpl is already closed");
@@ -86,37 +68,23 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             if (wire != null) {
                 return wire;
             }
-            if (!gotton.getAndSet(true)) {
-                if (!doingGet.getAndSet(true)) {
-                    try {
-                        wireImpl.setSessionID(futureSessionID.get(timeout, unit));
-                        result.set(wireImpl);
-                        return wireImpl;
-                    } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
-                        closeInternal();
-                        throw e;
-                    } finally {
-                        lock.lock();
+            if (lock.tryLock(timeout, unit)) {
+                try {
+                    if (!gotton.getAndSet(true)) {
                         try {
-                            doingGet.set(false);
-                            condition.signalAll();
-                        } finally {
-                            lock.unlock();
+                            wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+                            result.set(wireImpl);
+                            return wireImpl;
+                        } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
+                            closeInternal();
+                            throw e;
                         }
                     }
-                } else {
-                    lock.lock();
-                    try {
-                        if (!doingGet.get()) {
-                            continue;
-                        }
-                        if (!condition.await(timeout, unit)) {
-                            throw new TimeoutException("get() by another thread has not returned within the specifined time");
-                        }
-                    } finally {
-                        lock.unlock();
-                    }
+                } finally {
+                    lock.unlock();
                 }
+            } else {
+                throw new TimeoutException("get() by another thread has not returned within the specifined time");
             }
             if (closed) {
                 throw new IOException("FutureStreamWireImpl is already closed");
