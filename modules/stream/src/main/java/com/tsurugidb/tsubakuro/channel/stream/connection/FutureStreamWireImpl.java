@@ -52,7 +52,12 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                         result.set(wireImpl);
                         return wireImpl;
                     } catch (IOException | ServerException | InterruptedException e) {
-                        closeInternal();
+                        try {
+                            closeInternal();
+                        } catch (Exception suppress) {
+                            // the exception in closeInternal should be suppressed
+                            e.addSuppressed(suppress);
+                        }
                         throw e;
                     }
                 }
@@ -84,7 +89,12 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
-                            closeInternal();
+                            try {
+                                closeInternal();
+                            } catch (Exception suppress) {
+                                // the exception in closeInternal should be suppressed
+                                e.addSuppressed(suppress);
+                            }
                             throw e;
                         }
                     }
@@ -149,6 +159,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                                 }
                                 if (top instanceof ServerException) {
                                     throw (ServerException) top;
+                                }
+                                if (top instanceof RuntimeException) {
+                                    throw (RuntimeException) top;
                                 }
                                 throw new AssertionError(top);
                             }
