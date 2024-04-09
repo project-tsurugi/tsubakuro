@@ -78,11 +78,11 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                 return wire;
             }
             if (lock.tryLock(timeout, unit)) {
-                wire = result.get();
-                if (wire != null) {
-                    return wire;
-                }
                 try {
+                    wire = result.get();
+                    if (wire != null) {
+                        return wire;
+                    }
                     if (!gotton.getAndSet(true)) {
                         try {
                             wireImpl.setSessionID(futureSessionID.get(timeout, unit));
