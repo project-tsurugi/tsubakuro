@@ -21,8 +21,11 @@ message Request {
     oneof command {
         // handshake operation.
         Handshake handshake = 11;
+
+        // cancel operation.
+        Cancel cancel = 12;
     }
-    reserved 12 to 99;
+    reserved 13 to 99;
 }
 
 // handshake operation.
@@ -72,4 +75,9 @@ message WireInformation {
         // the maximum concurrent result sets
         uint64 maximum_concurrent_result_sets = 1;
     }
+}
+
+// cancel operation.
+message Cancel {
+    // no special properties.
 }

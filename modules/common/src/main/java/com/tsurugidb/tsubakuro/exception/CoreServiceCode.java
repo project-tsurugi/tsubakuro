@@ -117,12 +117,6 @@ public enum CoreServiceCode implements DiagnosticCode {
     SERVICE_NOT_FOUND(4_01, Diagnostics.Code.SERVICE_NOT_FOUND),
 
     /**
-     * operation was canceled by user or system.
-     */
-    @Doc("operation was canceled by user or system.")
-    OPERATION_CANCELED(4_02, Diagnostics.Code.OPERATION_CANCELED),
-
-    /**
      * the destination service was not found.
      */
     @Doc(
@@ -133,6 +127,12 @@ public enum CoreServiceCode implements DiagnosticCode {
                     + "#service-not-registered",
             })
     SERVICE_UNAVAILABLE(4_02, Diagnostics.Code.SERVICE_UNAVAILABLE),
+
+    /**
+     * operation was canceled by user or system.
+     */
+    @Doc("operation was canceled by user or system.")
+    OPERATION_CANCELED(4_03, Diagnostics.Code.OPERATION_CANCELED),
 
     /**
      * request payload is not valid.
