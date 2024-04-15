@@ -15,6 +15,7 @@
  */
 
 #include <jni.h>
+#include <stdint.h>
 #include "com_tsurugidb_tsubakuro_channel_ipc_IpcLink.h"
 #include "com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl.h"
 #include "udf_wires.h"
@@ -73,15 +74,19 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
   (JNIEnv *env, jclass, jlong handle, jlong timeout) {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
 
+    jlong timeout_remain = (timeout > 0) ? timeout : INT64_MAX;  // in microseconds.
     while (true) {
         try {
-            auto header = swc->get_response_wire().await(timeout);
+            auto watch_interval = static_cast<jlong>(unidirectional_response_wire::watch_interval * 1000000);
+            jlong timeout_this_time = (timeout_remain > watch_interval) ? watch_interval : timeout_remain;
+            timeout_remain -= timeout_this_time;
+            auto header = swc->get_response_wire().await(timeout_this_time);
             if (header.get_type() != 0) {
                 return header.get_idx();
             }
             return -1;
         } catch (std::runtime_error &e) {
-            if (timeout > 0) {
+            if (timeout_remain == 0) {
                 jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
                 if (classj == nullptr) { std::abort(); }
                 env->ThrowNew(classj, e.what());

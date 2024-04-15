@@ -109,8 +109,8 @@ class SessionWireTest {
     }
 
     @Test
-    void serverCrashDetectionTest() throws Exception {
-        server = new ServerWireImpl(dbName, sessionID, false);
+    void serverCrashDetectionTestWithoutTimeout() throws Exception {
+        server = new ServerWireImpl(dbName, sessionID);
         client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
         client.handshake(new ClientInformation(), null);
 
@@ -124,13 +124,46 @@ class SessionWireTest {
         // RESPONSE test begin
         // server side does not send Response
 
+        var start = System.currentTimeMillis();
+        // client side receive Response, ends up with server crashed error
         Throwable exception = assertThrows(IOException.class, () -> {
             var response = futureResponse.get();
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
         });
-
         // FIXME: check error code instead of message
         assertEquals("Server crashed", exception.getMessage());
+        var duration = System.currentTimeMillis() - start;
+        assertTrue((4000 < duration) && (duration < 11000));
+        client.close();
+        server.close();
+    }
+
+    @Test
+    void serverCrashDetectionTestWithTimeout() throws Exception {
+        server = new ServerWireImpl(dbName, sessionID);
+        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        client.handshake(new ClientInformation(), null);
+
+        // REQUEST test begin
+        // client side send Request
+        var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
+        // server side receive Request
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+        // REQUEST test end
+
+        // RESPONSE test begin
+        // server side does not send Response
+
+        var start = System.currentTimeMillis();
+        // client side receive Response, ends up with server crashed error
+        Throwable exception = assertThrows(IOException.class, () -> {
+            var response = futureResponse.get();
+            var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(60, TimeUnit.SECONDS)));
+        });
+        // FIXME: check error code instead of message
+        assertEquals("Server crashed", exception.getMessage());
+        var duration = System.currentTimeMillis() - start;
+        assertTrue((4000 < duration) && (duration < 11000));
         client.close();
         server.close();
     }
