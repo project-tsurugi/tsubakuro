@@ -71,4 +71,26 @@ class ConnectionTest {
         //        assertEquals("cannot find a database with the specified name: tsubakuro", exception.getMessage());
         assertTrue(exception.getMessage().contains("cannot find a database with the specified name: tsubakuro"));
     }
+
+    @Test
+    void getTwice() throws Exception {
+        ServerConnectionImpl serverConnection;
+        ServerWireImpl server;
+
+        serverConnection = new ServerConnectionImpl(dbName);
+
+        var connector = new IpcConnectorImpl(dbName);
+        var future = connector.connect();
+        var id = serverConnection.listen();
+        assertEquals(id, 1);
+        server = serverConnection.accept(id);
+
+        var client1 = future.get();
+        var client2 = future.get();
+        assertEquals(client1, client2);
+
+        client1.close();
+        serverConnection.close();
+        server.close();
+    }
 }

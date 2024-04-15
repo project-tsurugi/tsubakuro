@@ -3,33 +3,65 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 abstract class AbstractFutureResponse<V> implements FutureResponse<V> {
 
-    private final AtomicBoolean isDone = new AtomicBoolean(false);
+    private final AtomicReference<V> getInternalResult = new AtomicReference<>();
+    private final Lock lock = new ReentrantLock();
 
     @Override
     public V get() throws IOException, ServerException, InterruptedException {
-        var result = getInternal();
-        isDone.set(true);
-        return result;
+        while (true) {
+            var result = getInternalResult.get();
+            if (result != null) {
+                return result;
+            }
+            lock.lock();
+            try {
+                result = getInternalResult.get();
+                if (result != null) {
+                    return result;
+                }
+                getInternalResult.set(getInternal());
+            } finally {
+                lock.unlock();
+            }
+        }
     }
 
     @Override
     public V get(long timeout, TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
-        var result = getInternal(timeout, unit);
-        isDone.set(true);
-        return result;
+        while (true) {
+            var result = getInternalResult.get();
+            if (result != null) {
+                return result;
+            }
+            if (lock.tryLock(timeout, unit)) {
+                result = getInternalResult.get();
+                if (result != null) {
+                    return result;
+                }
+                try {
+                    getInternalResult.set(getInternal(timeout, unit));
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                throw new TimeoutException("getInternal() by another thread has not returned within the specifined time");
+            }
+        }
     }
 
     @Override
     public boolean isDone() {
-        return isDone.get();
+        return getInternalResult.get() != null;
     }
 
     protected abstract V getInternal() throws IOException, ServerException, InterruptedException;

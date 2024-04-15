@@ -65,12 +65,12 @@ public final class IpcConnectorImpl implements Connector {
         }
     }
 
-    public Wire getSessionWire(long id) throws IOException {
+    public WireImpl getSessionWire(long id) throws IOException {
         long sessionId = waitNative(handle, id);
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
-    public Wire getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    public WireImpl getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
         var timeoutNano = unit.toNanos(timeout);
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");

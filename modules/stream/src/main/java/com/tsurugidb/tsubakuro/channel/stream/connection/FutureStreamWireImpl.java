@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
@@ -20,6 +23,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     private final WireImpl wireImpl;
     private final FutureResponse<Long> futureSessionID;
     private final AtomicBoolean gotton = new AtomicBoolean();
+    private final AtomicReference<Wire> result = new AtomicReference<>();
+    private final Lock lock = new ReentrantLock();
+    private boolean closed = false;
 
     FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionID) {
         this.streamLink = streamLink;
@@ -29,44 +35,140 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
-        if (!gotton.getAndSet(true)) {
+        while (true) {
+            var wire = result.get();
+            if (wire != null) {
+                return wire;
+            }
+            lock.lock();
             try {
-                wireImpl.setSessionID(futureSessionID.get());
-                return wireImpl;
-            } catch (IOException | ServerException | InterruptedException e) {
-                gotton.set(false);
-                throw e;
+                wire = result.get();
+                if (wire != null) {
+                    return wire;
+                }
+                if (!gotton.getAndSet(true)) {
+                    try {
+                        wireImpl.setSessionID(futureSessionID.get());
+                        result.set(wireImpl);
+                        return wireImpl;
+                    } catch (IOException | ServerException | InterruptedException e) {
+                        try {
+                            closeInternal();
+                        } catch (Exception suppress) {
+                            // the exception in closeInternal should be suppressed
+                            e.addSuppressed(suppress);
+                        }
+                        throw e;
+                    }
+                }
+            } finally {
+                lock.unlock();
+            }
+            if (closed) {
+                throw new IOException("FutureStreamWireImpl is already closed");
             }
         }
-        throw new IOException("FutureStreamWireImpl already closed.");
     }
 
     @Override
-    public Wire get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
-        if (!gotton.getAndSet(true)) {
-            try {
-                wireImpl.setSessionID(futureSessionID.get(timeout, unit));
-                return wireImpl;
-            } catch (IOException | ServerException | InterruptedException | TimeoutException e) {
-                gotton.set(false);
-                throw e;
+    public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
+        while (true) {
+            var wire = result.get();
+            if (wire != null) {
+                return wire;
+            }
+            if (lock.tryLock(timeout, unit)) {
+                try {
+                    wire = result.get();
+                    if (wire != null) {
+                        return wire;
+                    }
+                    if (!gotton.getAndSet(true)) {
+                        try {
+                            wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+                            result.set(wireImpl);
+                            return wireImpl;
+                        } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
+                            try {
+                                closeInternal();
+                            } catch (Exception suppress) {
+                                // the exception in closeInternal should be suppressed
+                                e.addSuppressed(suppress);
+                            }
+                            throw e;
+                        }
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+                throw new TimeoutException("get() by another thread has not returned within the specifined time");
+            }
+            if (closed) {
+                throw new IOException("FutureStreamWireImpl is already closed");
             }
         }
-        throw new IOException("FutureStreamWireImpl already closed.");
     }
 
     @Override
     public boolean isDone() {
-        // FIXME: return status
-        return false;
+        return result.get() != null;
     }
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (!gotton.getAndSet(true)) {
-            futureSessionID.close();
-            streamLink.closeWithoutGet();
-            wireImpl.closeWithoutGet();
+            closeInternal();
+        }
+    }
+
+    private void closeInternal() throws IOException, InterruptedException, ServerException {
+        Exception top = null;
+        if (!closed) {
+            closed = true;
+            if (result.get() == null) {
+                try {
+                    futureSessionID.close();
+                } catch (Exception e) {
+                    top = e;
+                } finally {
+                    try {
+                        streamLink.closeWithoutGet();
+                    } catch (Exception e) {
+                        if (top == null) {
+                            top = e;
+                        } else {
+                            top.addSuppressed(e);
+                        }
+                    } finally {
+                        try {
+                            wireImpl.closeWithoutGet();
+                        } catch (Exception e) {
+                            if (top == null) {
+                                top = e;
+                            } else {
+                                top.addSuppressed(e);
+                            }
+                        } finally {
+                            if (top != null) {
+                                if (top instanceof IOException) {
+                                    throw (IOException) top;
+                                }
+                                if (top instanceof InterruptedException) {
+                                    throw (InterruptedException) top;
+                                }
+                                if (top instanceof ServerException) {
+                                    throw (ServerException) top;
+                                }
+                                if (top instanceof RuntimeException) {
+                                    throw (RuntimeException) top;
+                                }
+                                throw new AssertionError(top);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

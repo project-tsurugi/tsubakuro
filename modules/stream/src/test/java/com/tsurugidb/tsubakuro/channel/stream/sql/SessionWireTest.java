@@ -24,7 +24,6 @@ class SessionWireTest {
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
 
-    private final String dbName = "tsubakuro";
     private final long sessionID = 1;
 
     @Test
