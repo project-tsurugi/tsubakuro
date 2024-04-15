@@ -30,7 +30,6 @@ public class ServerWireImpl implements Closeable {
     private final boolean takeSendAction;
     private final ReceiveWorker receiver;
     private SqlRequest.Request sqlRequest;
-    private final AtomicBoolean closed = new AtomicBoolean();
     private final CyclicBarrier barrier = new CyclicBarrier(2);
 
     private static native long createNative(String name);
@@ -69,7 +68,6 @@ public class ServerWireImpl implements Closeable {
                     try {
                         var byteArrayInputStream = new ByteArrayInputStream(getNative(wireHandle));
                         if (byteArrayInputStream.available() == 0) {
-                            close();
                             return;
                         }
                         var header = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
@@ -103,7 +101,7 @@ public class ServerWireImpl implements Closeable {
         receiver.start();
         try {
             barrier.await();
-            } catch (InterruptedException | BrokenBarrierException e) {
+        } catch (InterruptedException | BrokenBarrierException e) {
             throw new IOException(e);
         }
     }
@@ -113,9 +111,12 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void close() throws IOException {
-        if (!closed.getAndSet(true)) {
+        try {
+            receiver.join();
             closeNative(wireHandle);
-        }
+        } catch (InterruptedException e) {
+            throw new IOException(e);
+        } 
     }
 
     public long getSessionID() {

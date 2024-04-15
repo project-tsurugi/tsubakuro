@@ -19,7 +19,7 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireI
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ServerWireImpl_getNative
-(JNIEnv *env, [[maybe_unused]] jclass thisObj, jlong handle)
+(JNIEnv *env, jclass, jlong handle)
 {
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
@@ -27,22 +27,18 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_Server
     message_header h = wire.peep();
     std::size_t length = h.get_length();
     jbyteArray dstj = env->NewByteArray(length);
-    if (dstj == nullptr) {
-        wire.dispose();
-        return nullptr;
+    if (dstj != nullptr) {
+        jbyte* dst = env->GetByteArrayElements(dstj, nullptr);
+        if (dst != nullptr) {
+            if (length > 0) {
+                memcpy(dst, wire.payload().data(), length);
+                wire.dispose();
+            }
+            env->ReleaseByteArrayElements(dstj, dst, 0);
+            return dstj;
+        }
     }
-    jbyte* dst = env->GetByteArrayElements(dstj, nullptr);
-    if (dst == nullptr) {
-        wire.dispose();
-        return nullptr;
-    }
-
-    if (length > 0) {
-        memcpy(dst, wire.payload().data(), length);
-    }
-    env->ReleaseByteArrayElements(dstj, dst, 0);
-    wire.dispose();
-    return dstj;
+    return nullptr;
 }
 
 static const unsigned char RESPONSE_PAYLOAD = 1;
