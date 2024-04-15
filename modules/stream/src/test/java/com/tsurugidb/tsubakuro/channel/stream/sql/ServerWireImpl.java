@@ -6,7 +6,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 // import java.text.MessageFormat;
-// import java.util.Objects;
 import java.util.ArrayDeque;
 
 import org.slf4j.Logger;
@@ -14,6 +13,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.stream.ServerStreamLink;
@@ -23,6 +24,8 @@ import com.tsurugidb.tsubakuro.channel.stream.ServerStreamLink;
  */
 public class ServerWireImpl implements Closeable {
     static final FrameworkResponse.Header.Builder HEADER_BUILDER = FrameworkResponse.Header.newBuilder();
+    static final int SERVICE_ID_ENDPOINT_BROKER = 1;
+    static final int SERVICE_ID_SQL = 3;
 
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
@@ -46,10 +49,12 @@ public class ServerWireImpl implements Closeable {
 
     private class ReceiveWorker extends Thread {
         private final int port;
+        private final boolean doHandshake;
         ServerSocket serverSocket;
 
-        ReceiveWorker(int port) throws IOException {
+        ReceiveWorker(int port, boolean doHandshake) throws IOException {
             this.port = port;
+            this.doHandshake = doHandshake;
             serverSocket = new ServerSocket(port);
         }
         @Override
@@ -58,6 +63,12 @@ public class ServerWireImpl implements Closeable {
                 LOG.info("start listen TCP/IP port: {}", port);
                 serverStreamLink = new ServerStreamLink(serverSocket.accept());
                 LOG.info("accept client: {}", port);
+                if (doHandshake) {
+                    if (!handshake()) {
+                        System.err.println("error in handshake");
+                        return;
+                    }
+                }
                 while (serverStreamLink.receive()) {
                     LOG.debug("received: ", serverStreamLink.getInfo());
                     slot = serverStreamLink.getSlot();
@@ -79,6 +90,39 @@ public class ServerWireImpl implements Closeable {
         }
         void close() throws IOException {
             serverSocket.close();
+        }
+        boolean handshake() {
+            try {
+                serverStreamLink.receive();
+                LOG.debug("received: ", serverStreamLink.getInfo());
+                slot = serverStreamLink.getSlot();
+                switch (serverStreamLink.getInfo()) {
+                    case 2: // StreamLink.REQUEST_SESSION_PAYLOAD
+                        break;
+                    default:
+                        return false;
+                }
+                var ba = serverStreamLink.getBytes();
+                var byteArrayInputStream = new ByteArrayInputStream(ba);
+                var reqHeader = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
+                var request = EndpointRequest.Request.parseDelimitedFrom(byteArrayInputStream);
+
+                var resHeader = FrameworkResponse.Header.newBuilder().build();
+                var response = EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder().setSessionId(1))  // who assign this sessionId?
+                    .build();
+
+                var buffer = new ByteArrayOutputStream();
+                resHeader.writeDelimitedTo(buffer);
+                response.writeDelimitedTo(buffer);
+                var bytes = buffer.toByteArray();
+                serverStreamLink.sendResponse(slot, bytes);
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.err.println(e);
+                return false;
+            }
         }
     }
 
@@ -122,13 +166,17 @@ public class ServerWireImpl implements Closeable {
         }
     }
 
-    public ServerWireImpl(int port, long sessionID) throws IOException {
+    public ServerWireImpl(int port, long sessionID, boolean doHandshake) throws IOException {
         this.sessionID = sessionID;
         this.receiveQueue = new ArrayDeque<Message>();
         this.sendQueue = new ArrayDeque<Message>();
-        this.receiver = new ReceiveWorker(port);
+        this.receiver = new ReceiveWorker(port, doHandshake);
         this.slot = 0;
         receiver.start();
+    }
+
+    public ServerWireImpl(int port, long sessionID) throws IOException {
+        this(port, sessionID, false);
     }
 
     @Override
@@ -150,7 +198,10 @@ public class ServerWireImpl implements Closeable {
                 if (!receiveQueue.isEmpty()) {
                     var ba = receiveQueue.poll().getBytes();
                     var byteArrayInputStream = new ByteArrayInputStream(ba);
-                    FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
+                    var reqHeader = FrameworkRequest.Header.parseDelimitedFrom(byteArrayInputStream);
+                    if (reqHeader.getServiceId() != SERVICE_ID_SQL) {
+                        throw new IOException("error: request error");
+                    }
                     return SqlRequest.Request.parseDelimitedFrom(byteArrayInputStream);
                 }
                 try {

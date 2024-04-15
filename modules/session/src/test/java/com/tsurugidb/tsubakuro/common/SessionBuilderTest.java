@@ -102,4 +102,24 @@ class SessionBuilderTest {
         }
     }
 
+    @Test
+    void createAsyncGetTwice() throws Exception {
+        try (var wire = new MockWire()) {
+            var creds = new RememberMeCredential("testing");
+            var builder = SessionBuilder.connect(new Connector() {
+                @Override
+                public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                    assertSame(clientInformation.getCredential(), creds);
+                    return FutureResponse.wrap(Owner.of(wire));
+                }
+            })
+                    .withCredential(creds);
+            try (
+                    var fSession = builder.createAsync();
+                    var session1 = fSession.get(10, TimeUnit.SECONDS);
+                    var session2 = fSession.get(10, TimeUnit.SECONDS)) {
+                assertEquals(session1, session2);
+            }
+        }
+    }
 }
