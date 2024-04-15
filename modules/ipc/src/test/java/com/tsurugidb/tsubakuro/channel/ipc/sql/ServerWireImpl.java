@@ -7,6 +7,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
 import java.io.Closeable;
 import java.io.IOException;
 
@@ -29,6 +31,7 @@ public class ServerWireImpl implements Closeable {
     private final ReceiveWorker receiver;
     private SqlRequest.Request sqlRequest;
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final CyclicBarrier barrier = new CyclicBarrier(2);
 
     private static native long createNative(String name);
     private static native byte[] getNative(long handle);
@@ -60,6 +63,7 @@ public class ServerWireImpl implements Closeable {
         @Override
         public void run() {
             try {
+                barrier.await();
                 handshake();
                 while (true) {
                     try {
@@ -78,7 +82,8 @@ public class ServerWireImpl implements Closeable {
                         fail("error: ServerWireImpl.get()");
                     }
                 }
-            } catch (IOException e) {
+                
+            } catch (IOException | InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
                 System.err.println(e);
                 fail(e);
@@ -96,6 +101,11 @@ public class ServerWireImpl implements Closeable {
         }
         this.receiver = new ReceiveWorker();
         receiver.start();
+        try {
+            barrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+            throw new IOException(e);
+        }
     }
     
     public ServerWireImpl(String dbName, long sessionID) throws IOException {
