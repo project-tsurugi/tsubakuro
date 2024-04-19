@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
@@ -43,6 +44,16 @@ public class WireImpl implements Wire {
      * The minor service message version for FrameworkRequest.Header.
      */
     private static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
+
+    /**
+     * The major service message version for EndpointRequest.
+     */
+    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+
+    /**
+     * The minor service message version for EndpointRequest.
+     */
+    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * The service id for endpoint broker.
@@ -145,8 +156,8 @@ public class WireImpl implements Wire {
 
     private static EndpointRequest.Request.Builder newRequest() {
         return EndpointRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR);
+                .setServiceMessageVersionMajor(ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR);
     }
 
     static class HandshakeProcessor implements MainResponseProcessor<Long> {
@@ -205,14 +216,7 @@ public class WireImpl implements Wire {
         }
     }
 
-    byte[] toDelimitedByteArray(FrameworkRequest.Header request) throws IOException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            request.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        }
-    }
-
-    byte[] toDelimitedByteArray(EndpointRequest.Request request) throws IOException {
+    static byte[] toDelimitedByteArray(Message request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

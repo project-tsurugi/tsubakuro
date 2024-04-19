@@ -11,6 +11,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
@@ -125,6 +126,47 @@ public interface Session extends ServerResource {
         }
         return wire.isAlive();
     }
+
+    /**
+     * Request to shutdown the current session and wait for the running requests were finished.
+     * <p>
+     * Note that, this only send a shutdown request to the server, and some resources underlying this object may
+     * be still living (e.g. JMX resources).
+     * Please invoke {@link #close()} after this operation to dispose such the resources.
+     * </p>
+     * @param type the shutdown type
+     * @return the future response of the request;
+     *     it will raise {@link CoreServiceException} if request was failure
+     * @throws IOException if I/O error was occurred while sending request
+     * @see #close()
+     */
+    default FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Disposes the current session.
+     * <p>
+     * This may not wait for complete the ongoing requests, and it may cause the requests may still be in progress
+     * after disconnected from the session.
+     * You can use {@link #shutdown(ShutdownType)} to safely close this session
+     * with waiting for complete the ongoing requests, if any.
+     * </p>
+     * <p>
+     * After this operation, you cannot send any requests via this session,
+     * including service clients attached to this session.
+     * </p>
+     * <p>
+     * If this session is already disposed, this only cleanup the client-side resources corresponding to this session,
+     * and never send any requests to the server.
+     * </p>
+     * @throws ServerException if error was occurred while disposing this session
+     * @throws IOException if I/O error was occurred while disposing this session
+     * @throws InterruptedException if interrupted while disposing this session
+     * @see #shutdown(ShutdownType)
+     */
+    @Override
+    void close() throws ServerException, IOException, InterruptedException;
 
     /**
      * Put a {@link ServerResource} to this.

@@ -24,8 +24,11 @@ message Request {
 
         // cancel operation.
         Cancel cancel = 12;
+
+        // shutdown operation.
+        Shutdown shutdown = 13;
     }
-    reserved 13 to 99;
+    reserved 14 to 99;
 }
 
 // handshake operation.
@@ -80,4 +83,24 @@ message WireInformation {
 // cancel operation.
 message Cancel {
     // no special properties.
+}
+
+// kind of shutdown type.
+enum ShutdownType {
+
+    // The default shutdown type.
+    SHUTDOWN_TYPE_NOT_SET = 0;
+
+    // Waits for the ongoing requests and safely shutdown the session.
+    GRACEFUL = 1;
+
+    // Cancelling the ongoing requests and safely shutdown the session.
+    FORCEFUL = 2;
+}
+
+// request shutdown to the session.
+message Shutdown {
+
+    // the shutdown type.
+    ShutdownType type = 1;
 }

@@ -14,8 +14,11 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
@@ -24,6 +27,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.ShutdownType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -147,6 +151,43 @@ public class SessionImpl implements Session {
             new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
+    private static EndpointRequest.Request.Builder newRequest() {
+        return EndpointRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(Constants.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(Constants.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
+    static class ShutdownProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = EndpointResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            // No error checking is performed here,
+            // as only tateyama's core diagnostic is accepted for shutdown response.
+            return null;
+        }
+    }
+
+    public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        var shutdownMessageBuilder = EndpointRequest.Shutdown.newBuilder();
+
+        return send(
+            Constants.SERVICE_ID_ENDPOINT_BROKER,
+                toDelimitedByteArray(newRequest()
+                    .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                    .build()),
+            new ShutdownProcessor().asResponseProcessor());
+    }
+
+    static CoreServiceException newUnknown(@Nonnull EndpointResponse.Error message) {
+        assert message != null;
+        return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
+    }
+
+    static CoreServiceException newUnknown() {
+        return new CoreServiceException(CoreServiceCode.UNKNOWN);
+    }
+
     @Override
     public void setCloseTimeout(Timeout timeout) {
         closeTimeout = timeout;
@@ -213,7 +254,7 @@ public class SessionImpl implements Session {
         return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
     }
 
-    private byte[] toDelimitedByteArray(CoreRequest.Request request) throws IOException {
+    static byte[] toDelimitedByteArray(Message request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();

@@ -39,3 +39,8 @@ message Handshake {
         uint64 session_id = 11;
     }
 }
+
+// shutdown operation.
+message Shutdown {
+    // no special message
+}
