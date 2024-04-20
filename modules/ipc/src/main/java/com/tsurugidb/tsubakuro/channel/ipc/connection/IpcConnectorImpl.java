@@ -2,6 +2,7 @@ package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
 import java.lang.ref.Cleaner;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -31,6 +32,7 @@ public final class IpcConnectorImpl implements Connector {
     private static native long waitNative(long handle, long id, long timeout) throws TimeoutException;
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
+    private static HashMap<String, Long> handleMap;
 
     private final String name;
     private static final Cleaner CLEANER = Cleaner.create();
@@ -40,6 +42,7 @@ public final class IpcConnectorImpl implements Connector {
 
     static {
         NativeLibrary.load();
+        handleMap = new HashMap<>();
     }
 
     public IpcConnectorImpl(String name) {
@@ -55,7 +58,15 @@ public final class IpcConnectorImpl implements Connector {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
         if (handle == 0) {
-            handle = getConnectorNative(name);
+            synchronized (handleMap) {
+                var value = handleMap.get(name);
+                if (value == null) {
+                    handle = getConnectorNative(name);
+                    handleMap.put(name, handle);
+                } else {
+                    handle = value;
+                }
+            }
         }
         try {
             long id = requestNative(handle);

@@ -23,10 +23,10 @@ class ConnectionTest {
         ServerConnectionImpl serverConnection;
         ServerWireImpl server;
 
-        serverConnection = new ServerConnectionImpl(dbName);
+        serverConnection = new ServerConnectionImpl(dbName + "-connect");
 //        assertEquals(serverConnection.listen(), 0);
 
-        var connector = new IpcConnectorImpl(dbName);
+        var connector = new IpcConnectorImpl(dbName + "-connect");
         var future = connector.connect();
         var id = serverConnection.listen();
         assertEquals(id, 1);
@@ -42,10 +42,10 @@ class ConnectionTest {
 
     @Test
     void timeout() throws Exception {
-        try (var serverConnection = new ServerConnectionImpl(dbName)) {
+        try (var serverConnection = new ServerConnectionImpl(dbName + "-timeout")) {
 //            assertEquals(serverConnection.listen(), 0);
 
-            var connector = new IpcConnectorImpl(dbName);
+            var connector = new IpcConnectorImpl(dbName + "-timeout");
             var future = connector.connect();
             var id = serverConnection.listen();
             assertEquals(id, 1);
@@ -62,7 +62,7 @@ class ConnectionTest {
 
     @Test
     void notExist() {
-        var connector = new IpcConnectorImpl(dbName);
+        var connector = new IpcConnectorImpl(dbName + "notExist");
 
         Throwable exception = assertThrows(IOException.class, () -> {
             var future = connector.connect();
@@ -77,9 +77,9 @@ class ConnectionTest {
         ServerConnectionImpl serverConnection;
         ServerWireImpl server;
 
-        serverConnection = new ServerConnectionImpl(dbName);
+        serverConnection = new ServerConnectionImpl(dbName + "getTwice");
 
-        var connector = new IpcConnectorImpl(dbName);
+        var connector = new IpcConnectorImpl(dbName + "getTwice");
         var future = connector.connect();
         var id = serverConnection.listen();
         assertEquals(id, 1);

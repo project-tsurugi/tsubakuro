@@ -183,6 +183,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_destroyN
     if (swc != nullptr) {
         if (swc->is_deletable()) {
             swc->get_request_wire().disconnect();
+            swc->delete_shared_memory();
             delete swc;
         }
     }
