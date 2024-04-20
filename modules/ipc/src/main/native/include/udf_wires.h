@@ -168,9 +168,6 @@ public:
         }
         return false;
     }
-    void delete_shared_memory() {
-        boost::interprocess::shared_memory_object::remove(db_name_.c_str());
-    }
 
     /**
      * @brief Copy and move constructers are deleted.
@@ -234,7 +231,6 @@ public:
                 throw std::runtime_error(msg.c_str());
         }
     }
-    ~connection_container() = default;
 
     /**
      * @brief Copy and move constructers are deleted.

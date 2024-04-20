@@ -1,8 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
-import java.lang.ref.Cleaner;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -32,41 +30,28 @@ public final class IpcConnectorImpl implements Connector {
     private static native long waitNative(long handle, long id, long timeout) throws TimeoutException;
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
-    private static HashMap<String, Long> handleMap;
 
     private final String name;
-    private static final Cleaner CLEANER = Cleaner.create();
-    private final CloseRunnable closeRunnable;
-    private final Cleaner.Cleanable cleanable;
     private long handle;
+    private int useCount;
 
     static {
         NativeLibrary.load();
-        handleMap = new HashMap<>();
     }
 
     public IpcConnectorImpl(String name) {
         this.name = name;
-
-        // for GC
-        this.closeRunnable = new CloseRunnable();
-        this.cleanable = CLEANER.register(this, closeRunnable);
     }
 
     @Override
     public FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
 
-        if (handle == 0) {
-            synchronized (handleMap) {
-                var value = handleMap.get(name);
-                if (value == null) {
-                    handle = getConnectorNative(name);
-                    handleMap.put(name, handle);
-                } else {
-                    handle = value;
-                }
+        synchronized (this) {
+            if (handle == 0) {
+                handle = getConnectorNative(name);
             }
+            useCount++;
         }
         try {
             long id = requestNative(handle);
@@ -78,6 +63,7 @@ public final class IpcConnectorImpl implements Connector {
 
     public WireImpl getSessionWire(long id) throws IOException {
         long sessionId = waitNative(handle, id);
+        close();
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
@@ -87,6 +73,7 @@ public final class IpcConnectorImpl implements Connector {
             throw new IOException("timeout duration overflow");
         }
         long sessionId = waitNative(handle, id, timeoutNano);
+        close();
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
@@ -94,11 +81,13 @@ public final class IpcConnectorImpl implements Connector {
         return checkNative(handle, id);
     }
 
-    private class CloseRunnable implements Runnable {
-        CloseRunnable() {
-        }
-        public void run() {
-            closeConnectorNative(handle);
+    private void close() {
+        synchronized (this) {
+            useCount--;
+            if (useCount == 0) {
+                closeConnectorNative(handle);
+                handle = 0;
+            }
         }
     }
 }
