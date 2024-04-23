@@ -42,6 +42,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final AtomicBoolean gotton = new AtomicBoolean();
 
+    private Timeout closeTimeout = null;
+
     /**
      * Creates a new instance.
      * @param delegate the decoration target
@@ -139,17 +141,32 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     @Override
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
+        closeTimeout = timeout;
+    }
+
+    @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         try {
             if (!gotton.getAndSet(true)) {
                 delegate.get().cancel();
                 var obj = get();
                 if (obj instanceof ServerResource) {
+                    if (closeTimeout != null) {
+                        ((ServerResource) obj).setCloseTimeout(closeTimeout);
+                    }
                     ((ServerResource) obj).close();
                 }
             }
         } finally {
+            var up = unprocessed.getAndSet(null);
+            if (closeTimeout != null && up != null) {
+                up.setCloseTimeout(closeTimeout);
+            }
             Owner.close(unprocessed.getAndSet(null));
+            if (closeTimeout != null) {
+                delegate.setCloseTimeout(closeTimeout);
+            }
             delegate.close();
             closed.set(true);
         }
