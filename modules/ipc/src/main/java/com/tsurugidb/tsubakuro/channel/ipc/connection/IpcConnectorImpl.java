@@ -44,15 +44,12 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     @Override
-    public FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
+    public synchronized FutureResponse<Wire> connect(@Nonnull ClientInformation clientInformation) throws IOException {
         LOG.trace("will connect to {}", name); //$NON-NLS-1$
-
-        synchronized (this) {
-            if (handle == 0) {
-                handle = getConnectorNative(name);
-            }
-            useCount++;
+        if (handle == 0) {
+            handle = getConnectorNative(name);
         }
+        useCount++;
         try {
             long id = requestNative(handle);
             return new FutureIpcWireImpl(this, id, clientInformation);
@@ -61,13 +58,13 @@ public final class IpcConnectorImpl implements Connector {
         }
     }
 
-    public WireImpl getSessionWire(long id) throws IOException {
+    synchronized WireImpl getSessionWire(long id) throws IOException {
         long sessionId = waitNative(handle, id);
         close();
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
-    public WireImpl getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
+    synchronized WireImpl getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
         var timeoutNano = unit.toNanos(timeout);
         if (timeoutNano == Long.MIN_VALUE) {
             throw new IOException("timeout duration overflow");
@@ -77,17 +74,18 @@ public final class IpcConnectorImpl implements Connector {
         return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
     }
 
-    boolean checkConnection(long id) {
+    synchronized boolean checkConnection(long id) {
+        if (handle == 0) {
+            return true;
+        }
         return checkNative(handle, id);
     }
 
     private void close() {
-        synchronized (this) {
-            useCount--;
-            if (useCount == 0) {
-                closeConnectorNative(handle);
-                handle = 0;
-            }
+        useCount--;
+        if (useCount == 0) {
+            closeConnectorNative(handle);
+            handle = 0;
         }
     }
 }
