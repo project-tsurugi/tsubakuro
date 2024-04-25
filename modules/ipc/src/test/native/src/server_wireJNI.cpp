@@ -24,7 +24,15 @@ JNIEXPORT jbyteArray JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_Server
     server_wire_container* container = reinterpret_cast<server_wire_container*>(static_cast<std::uintptr_t>(handle));
 
     auto& wire = container->get_request_wire();
-    message_header h = wire.peep();
+    message_header h{};
+    while (true) {
+        try {
+            h = wire.peep();
+            break;
+        } catch (std::runtime_error&) {
+            continue;
+        }
+    }
     std::size_t length = h.get_length();
     jbyteArray dstj = env->NewByteArray(length);
     if (dstj != nullptr) {

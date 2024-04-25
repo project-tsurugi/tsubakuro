@@ -42,7 +42,7 @@ class message_header {
 public:
     using length_type = std::uint32_t;
     using index_type = std::uint16_t;
-    static constexpr index_type null_request = 0xffff;
+    static constexpr index_type terminate_request = 0xffff;
 
     static constexpr std::size_t size = sizeof(length_type) + sizeof(index_type);
 
@@ -376,8 +376,9 @@ public:
 
     /**
      * @brief wait a request message arives and peep the current header.
-     * @returnm the essage_header if request message has been received,
-     *  otherwise, say timeout or termination requested, dummy request message whose length is 0 and index is message_header::null_request.
+     * @returnm the essage_header if request message has been received, for normal reception of request message.
+     *  otherwise, dummy request message whose length is 0 and index is message_header::termination_request for termination request,
+     *  and dummy request message whose length is 0 and index is message_header::timeout for timeout.
      */
     message_header peep(const char* base) {
         while (true) {
@@ -385,9 +386,13 @@ public:
                 copy_header(base);
                 return header_received_;
             }
-            if (termination_requested_.load() || onetime_notification_.load()) {
+            if (termination_requested_.load()) {
+                termination_requested_.store(false);
+                return {message_header::terminate_request, 0};
+            }
+            if (onetime_notification_.load()) {
                 onetime_notification_.store(false);
-                return {message_header::null_request, 0};
+                return {message_header::terminate_request, 0};
             }
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_read_ = true;
@@ -396,18 +401,10 @@ public:
                                      boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                      [this](){ return (stored() >= message_header::size) || termination_requested_.load() || onetime_notification_.load(); })) {
                 wait_for_read_ = false;
-                header_received_ = message_header(message_header::null_request, 0);
-                return header_received_;
+                throw std::runtime_error("request has not been received within the specified time");
             }
             wait_for_read_ = false;
         }
-    }
-    /**
-     * @brief check if an termination request has been made
-     * @retrun true if terminate request has been made
-     */
-    [[nodiscard]] bool terminate_requested() {
-        return termination_requested_.load();
     }
     /**
      * @brief wake up the worker immediately.
@@ -470,7 +467,11 @@ public:
     /**
      * @brief wait for response arrival and return its header.
      */
-    response_header await(const char* base, std::int64_t timeout) {
+    response_header await(const char* base, std::int64_t timeout = 0) {
+        if (timeout == 0) {
+            timeout = watch_interval * 1000 * 1000;
+        }
+
         while (true) {
             if (closed_.load()) {
                 header_received_ = response_header(0, 0, 0);
