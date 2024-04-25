@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,7 +142,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     @Override
-    public void setCloseTimeout(@Nonnull Timeout timeout) {
+    public void setCloseTimeout(@Nullable Timeout timeout) {
         closeTimeout = timeout;
     }
 
@@ -152,10 +153,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 delegate.get().cancel();
                 var obj = get();
                 if (obj instanceof ServerResource) {
+                    var sr = (ServerResource) obj;
                     if (closeTimeout != null) {
-                        ((ServerResource) obj).setCloseTimeout(closeTimeout);
+                        sr.setCloseTimeout(closeTimeout);
                     }
-                    ((ServerResource) obj).close();
+                    sr.close();
                 }
             }
         } finally {
@@ -163,7 +165,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             if (closeTimeout != null && up != null) {
                 up.setCloseTimeout(closeTimeout);
             }
-            Owner.close(unprocessed.getAndSet(null));
+            Owner.close(up);
             if (closeTimeout != null) {
                 delegate.setCloseTimeout(closeTimeout);
             }
