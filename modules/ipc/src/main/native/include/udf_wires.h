@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mutex>
+#include <set>
 
 #include "wire.h"
 
