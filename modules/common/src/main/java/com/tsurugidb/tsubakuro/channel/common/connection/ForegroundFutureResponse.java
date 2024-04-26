@@ -148,6 +148,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
+        Exception exception = null;
         try {
             if (!gotton.getAndSet(true)) {
                 if (closeTimeout != null) {
@@ -160,7 +161,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                             sr.close();
                         }
                     } catch (TimeoutException e) {
-                        throw new IOException(e);
+                        exception = new ResponseTimeoutException(e);
+                        throw (ResponseTimeoutException) exception;
                     }
                 } else {
                     var obj = get();
@@ -171,16 +173,53 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 }
             }
         } finally {
-            var up = unprocessed.getAndSet(null);
-            if (closeTimeout != null && up != null) {
-                up.setCloseTimeout(closeTimeout);
+            try {
+                var up = unprocessed.getAndSet(null);
+                if (closeTimeout != null && up != null) {
+                    up.setCloseTimeout(closeTimeout);
+                }
+                Owner.close(up);
+            } catch (IOException | ServerException | InterruptedException e) {
+                if (exception == null) {
+                    exception = e;
+                } else {
+                    exception.addSuppressed(e);
+                }
+                throwException(exception);
+            } finally {
+                try {
+                    if (closeTimeout != null) {
+                        delegate.setCloseTimeout(closeTimeout);
+                    }
+                    delegate.close();
+                    closed.set(true);
+                } catch (IOException | ServerException | InterruptedException e) {
+                    if (exception == null) {
+                        exception = e;
+                    } else {
+                        exception.addSuppressed(e);
+                    }
+                    throwException(exception);
+                }
             }
-            Owner.close(up);
-            if (closeTimeout != null) {
-                delegate.setCloseTimeout(closeTimeout);
+        }
+    }
+
+    private void throwException(Exception e) throws IOException, ServerException, InterruptedException {
+        if (e != null) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
             }
-            delegate.close();
-            closed.set(true);
+            if (e instanceof InterruptedException) {
+                throw (InterruptedException) e;
+            }
+            if (e instanceof ServerException) {
+                throw (ServerException) e;
+            }
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
+            throw new AssertionError(e);
         }
     }
 
