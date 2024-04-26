@@ -150,14 +150,24 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         try {
             if (!gotton.getAndSet(true)) {
-                delegate.get().cancel();
-                var obj = get();
-                if (obj instanceof ServerResource) {
-                    var sr = (ServerResource) obj;
-                    if (closeTimeout != null) {
-                        sr.setCloseTimeout(closeTimeout);
+                if (closeTimeout != null) {
+                    try {
+                        delegate.get().cancel();
+                        var obj = get(closeTimeout.value(), closeTimeout.unit());
+                        if (obj instanceof ServerResource) {
+                            var sr = (ServerResource) obj;
+                            sr.setCloseTimeout(closeTimeout);
+                            sr.close();
+                        }
+                    } catch (TimeoutException e) {
+                        throw new IOException(e);
                     }
-                    sr.close();
+                } else {
+                    var obj = get();
+                    if (obj instanceof ServerResource) {
+                        var sr = (ServerResource) obj;
+                        sr.close();
+                    }
                 }
             }
         } finally {
