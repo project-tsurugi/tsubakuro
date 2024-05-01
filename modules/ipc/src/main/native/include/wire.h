@@ -376,9 +376,9 @@ public:
 
     /**
      * @brief wait a request message arives and peep the current header.
-     * @returnm the essage_header if request message has been received, for normal reception of request message.
-     *  otherwise, dummy request message whose length is 0 and index is message_header::termination_request for termination request,
-     *  and dummy request message whose length is 0 and index is message_header::timeout for timeout.
+     * @return the essage_header if request message has been received, for normal reception of request message.
+     *  otherwise, dummy request message whose length is 0 and index is message_header::termination_request for termination request
+     * @throws std::runtime_error when timeout occures.
      */
     message_header peep(const char* base) {
         while (true) {

@@ -295,7 +295,14 @@ public final class StreamLink extends Link {
         if (closed.get()) {
             return false;
         }
-        return !socket.isClosed();
+        synchronized (outStream) {
+            try {
+                socket.sendUrgentData(0);
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        return !socket.isClosed();  // Practically the same as return true
     }
 
     @Override

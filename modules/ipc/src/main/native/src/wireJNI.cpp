@@ -160,6 +160,9 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAl
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    if (swc->get_response_wire().check_shutdown()) {
+        return false;
+    }
     return swc->get_status_provider().is_alive().empty();
 }
 
