@@ -17,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import com.google.protobuf.Message;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
-import com.tsurugidb.endpoint.proto.EndpointRequest;
-import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
@@ -46,7 +44,7 @@ public class SessionImpl implements Session {
     /**
      * The Core service ID.
      */
-    public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
+    public static final int SERVICE_ID = Constants.SERVICE_ID_ROUTING;
 
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -113,6 +111,12 @@ public class SessionImpl implements Session {
         return new ForegroundFutureResponse<>(response, processor);
     }
 
+    private static CoreRequest.Request.Builder newRequest() {
+        return CoreRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
     @Override
     public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
@@ -142,25 +146,17 @@ public class SessionImpl implements Session {
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
         return send(
             SERVICE_ID,
-            toDelimitedByteArray(CoreRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR)
+            toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
                     .setExpirationTime(u.toMillis(t)))
                 .build()),
             new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
-    private static EndpointRequest.Request.Builder newRequest() {
-        return EndpointRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(Constants.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(Constants.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR);
-    }
-
     static class ShutdownProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = EndpointResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             // No error checking is performed here,
             // as only tateyama's core diagnostic is accepted for shutdown response.
@@ -169,19 +165,14 @@ public class SessionImpl implements Session {
     }
 
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
-        var shutdownMessageBuilder = EndpointRequest.Shutdown.newBuilder();
+        var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
 
         return send(
-            Constants.SERVICE_ID_ENDPOINT_BROKER,
+            SERVICE_ID,
                 toDelimitedByteArray(newRequest()
                     .setShutdown(shutdownMessageBuilder.setType(type.type()))
                     .build()),
             new ShutdownProcessor().asResponseProcessor());
-    }
-
-    static CoreServiceException newUnknown(@Nonnull EndpointResponse.Error message) {
-        assert message != null;
-        return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
     }
 
     static CoreServiceException newUnknown() {

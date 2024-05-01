@@ -19,9 +19,13 @@ message Request {
 
     // the request command.
     oneof command {
+        // update session expiration time operation.
         UpdateExpirationTime update_expiration_time = 11;
+
+        // shutdown operation.
+        Shutdown shutdown = 12;
     }
-    reserved 12 to 99;
+    reserved 13 to 99;
 }
 
 // update session expiration time
@@ -29,4 +33,24 @@ message UpdateExpirationTime {
 
     // the expiration time (milliseconds from now) to be set
     uint64 expiration_time = 1;
+}
+
+// kind of shutdown type.
+enum ShutdownType {
+
+    // The default shutdown type.
+    SHUTDOWN_TYPE_NOT_SET = 0;
+
+    // Waits for the ongoing requests and safely shutdown the session.
+    GRACEFUL = 1;
+
+    // Cancelling the ongoing requests and safely shutdown the session.
+    FORCEFUL = 2;
+}
+
+// request shutdown to the session.
+message Shutdown {
+
+    // the shutdown type.
+    ShutdownType type = 1;
 }

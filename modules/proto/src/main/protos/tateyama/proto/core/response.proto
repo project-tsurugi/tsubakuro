@@ -28,3 +28,8 @@ message UpdateExpirationTime {
         UnknownError unknown_error = 12;
     }
 }
+
+// shutdown operation.
+message Shutdown {
+    // no special message
+}

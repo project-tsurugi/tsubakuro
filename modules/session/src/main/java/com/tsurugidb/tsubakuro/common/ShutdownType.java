@@ -1,6 +1,6 @@
 package com.tsurugidb.tsubakuro.common;
 
-import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.core.proto.CoreRequest;
 
 public enum ShutdownType {
     /**
@@ -9,7 +9,7 @@ public enum ShutdownType {
      * This may wait for complete the current running requests, and then shutdown this session.
      * </p>
      */
-    GRACEFUL(EndpointRequest.ShutdownType.GRACEFUL),
+    GRACEFUL(CoreRequest.ShutdownType.GRACEFUL),
 
     /**
      * Cancelling the ongoing requests and safely shutdown the session.
@@ -19,15 +19,15 @@ public enum ShutdownType {
      * Finally, this operation may wait for complete or cancel the requests, and then shutdown this session.
      * </p>
      */
-    FORCEFUL(EndpointRequest.ShutdownType.FORCEFUL);
+    FORCEFUL(CoreRequest.ShutdownType.FORCEFUL);
 
-    private final EndpointRequest.ShutdownType type;
+    private final CoreRequest.ShutdownType type;
 
-    ShutdownType(EndpointRequest.ShutdownType type) {
+    ShutdownType(CoreRequest.ShutdownType type) {
         this.type = type;
     }
 
-    public EndpointRequest.ShutdownType type() {
+    public CoreRequest.ShutdownType type() {
         return type;
     }
 }
