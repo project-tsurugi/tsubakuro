@@ -24,7 +24,6 @@ import com.tsurugidb.tsubakuro.util.Timeout;
 /**
  * A {@link FutureResponse} that converts {@link Response} into specific type in foreground.
  * @param <V> the specified response type
- * @see BackgroundFutureResponse
  */
 public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXME remove public
     private static final int POLL_INTERVAL = 1000; // in mS

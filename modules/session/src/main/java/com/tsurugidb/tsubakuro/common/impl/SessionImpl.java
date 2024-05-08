@@ -5,12 +5,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
@@ -20,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.BackgroundFutureResponse;  // FIXME same
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
@@ -54,38 +49,20 @@ public class SessionImpl implements Session {
     private Wire wire;
     private Timeout closeTimeout;
 
-    private final ExecutorService executor;
-    private static final ThreadFactory THREAD_FACTORY = new ThreadFactory() {
-
-        private final AtomicInteger serial = new AtomicInteger();
-
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = new Thread(r);
-            t.setName(String.format("tsubakuro-worker-%04d", serial.incrementAndGet())); //$NON-NLS-1$
-            t.setDaemon(true);
-            return t;
-        }
-    };
-
     /**
      * Creates a new instance.
      * @param wire the underlying wire
      */
     public SessionImpl(@Nonnull Wire wire) {
-        this(wire, Executors.newCachedThreadPool(THREAD_FACTORY));
+        Objects.requireNonNull(wire);
+        this.wire = wire;
     }
 
     /**
-     * Creates a new instance.
-     * @param wire the underlying wire
-     * @param executor worker threads to process responses
+     * Creates a new instance, exist for SessionBuilder.
      */
-    public SessionImpl(@Nonnull Wire wire, @Nonnull ExecutorService executor) {
-        Objects.requireNonNull(wire);
-        Objects.requireNonNull(executor);
-        this.wire = wire;
-        this.executor = executor;
+    public SessionImpl() {
+        this.wire = null;
     }
 
     /**
@@ -106,37 +83,29 @@ public class SessionImpl implements Session {
     public <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
-        return convert(future, processor, background);
+        return convert(future, processor);
     }
 
     @Override
     public <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
-        return convert(future, processor, background);
+        return convert(future, processor);
     }
 
     private <R> FutureResponse<R> convert(
             @Nonnull FutureResponse<? extends Response> response,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) {
+            @Nonnull ResponseProcessor<R> processor) {
         assert response != null;
         assert processor != null;
-        if (background) {
-            var f = new BackgroundFutureResponse<>(response, processor);
-            executor.execute(f); // process in background thread
-            return f;
-        }
         return new ForegroundFutureResponse<>(response, processor);
     }
 
@@ -208,9 +177,6 @@ public class SessionImpl implements Session {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            if (executor != null) {
-                executor.shutdownNow();
-            }
             // take care of the serviceStubs
             try {
                 services.forEach(new CloseAction());
@@ -225,14 +191,6 @@ public class SessionImpl implements Session {
                 wire.close();
             }
         }
-    }
-
-    /**
-     * Creates a new instance, exist for SessionImpl.
-     */
-    public SessionImpl() {
-        wire = null;
-        executor = null;
     }
 
     @Override

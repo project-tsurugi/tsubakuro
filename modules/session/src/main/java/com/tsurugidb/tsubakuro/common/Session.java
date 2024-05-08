@@ -36,32 +36,14 @@ public interface Session extends ServerResource {
      * @param <R> the result value type
      * @param serviceId the destination service ID
      * @param payload the message payload
-     * @param processor the future response processor
-     * @param background whether or not process responses in back ground
+     * @param processor the response processor
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
      */
     <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException;
-
-    /**
-     * Sends a message to the destination server.
-     * @param <R> the result value type
-     * @param serviceId the destination service ID
-     * @param payload the message payload
-     * @param processor the future response processor
-     * @param background whether or not process responses in back ground
-     * @return the future of response
-     * @throws IOException if I/O error was occurred while requesting
-     */
-    <R> FutureResponse<R> send(
-            int serviceId,
-            @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException;
+            @Nonnull ResponseProcessor<R> processor) throws IOException;
 
     /**
      * Sends a message to the destination server.
@@ -72,28 +54,10 @@ public interface Session extends ServerResource {
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
      */
-    default <R> FutureResponse<R> send(
-            int serviceId,
-            @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor) throws IOException {
-        return send(serviceId, payload, processor, false);
-    }
-
-    /**
-     * Sends a message to the destination server.
-     * @param <R> the result value type
-     * @param serviceId the destination service ID
-     * @param payload the message payload
-     * @param processor the response processor
-     * @return the future of response
-     * @throws IOException if I/O error was occurred while requesting
-     */
-    default <R> FutureResponse<R> send(
+    <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor) throws IOException {
-        return send(serviceId, payload, processor, false);
-    }
+            @Nonnull ResponseProcessor<R> processor) throws IOException;
 
     /**
      * updates credential information of this session, and retries authenticate it.
@@ -171,4 +135,42 @@ public interface Session extends ServerResource {
      * @param resource the resource related to the Session to be removed
      */
     void remove(@Nonnull ServerResource resource);
+
+    /**
+     * Sends a message to the destination server.
+     * @param <R> the result value type
+     * @param serviceId the destination service ID
+     * @param payload the message payload
+     * @param processor the future response processor
+     * @param background whether or not process responses in back ground
+     * @return the future of response
+     * @throws IOException if I/O error was occurred while requesting
+     * @deprecated As BackgroudFutureResponse has been removed
+     */
+    @Deprecated default <R> FutureResponse<R> send(
+            int serviceId,
+            @Nonnull byte[] payload,
+            @Nonnull ResponseProcessor<R> processor,
+            boolean background) throws IOException {
+                return send(serviceId, payload, processor);
+            }
+
+    /**
+     * Sends a message to the destination server.
+     * @param <R> the result value type
+     * @param serviceId the destination service ID
+     * @param payload the message payload
+     * @param processor the future response processor
+     * @param background whether or not process responses in back ground
+     * @return the future of response
+     * @throws IOException if I/O error was occurred while requesting
+     * @deprecated As BackgroudFutureResponse has been removed
+     */
+    @Deprecated default <R> FutureResponse<R> send(
+            int serviceId,
+            @Nonnull ByteBuffer payload,
+            @Nonnull ResponseProcessor<R> processor,
+            boolean background) throws IOException {
+                return send(serviceId, payload, processor);
+            }
 }
