@@ -83,8 +83,7 @@ public class SessionImpl implements Session {
     public <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
@@ -95,8 +94,7 @@ public class SessionImpl implements Session {
     public <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
         Objects.requireNonNull(payload);
         Objects.requireNonNull(processor);
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
