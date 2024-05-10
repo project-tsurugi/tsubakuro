@@ -40,10 +40,12 @@ public interface Session extends ServerResource {
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
      */
-    <R> FutureResponse<R> send(
+    default <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor) throws IOException;
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
+        return send(serviceId, payload, processor, false);
+    }
 
     /**
      * Sends a message to the destination server.
@@ -54,10 +56,12 @@ public interface Session extends ServerResource {
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
      */
-    <R> FutureResponse<R> send(
+    default <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor) throws IOException;
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
+        return send(serviceId, payload, processor, false);
+    }
 
     /**
      * updates credential information of this session, and retries authenticate it.
@@ -147,13 +151,11 @@ public interface Session extends ServerResource {
      * @throws IOException if I/O error was occurred while requesting
      * @deprecated As BackgroudFutureResponse has been removed
      */
-    @Deprecated default <R> FutureResponse<R> send(
+    @Deprecated <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
             @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
-                return send(serviceId, payload, processor);
-            }
+            boolean background) throws IOException;
 
     /**
      * Sends a message to the destination server.
@@ -166,11 +168,9 @@ public interface Session extends ServerResource {
      * @throws IOException if I/O error was occurred while requesting
      * @deprecated As BackgroudFutureResponse has been removed
      */
-    @Deprecated default <R> FutureResponse<R> send(
+    @Deprecated <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
             @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
-                return send(serviceId, payload, processor);
-            }
+            boolean background) throws IOException;
 }
