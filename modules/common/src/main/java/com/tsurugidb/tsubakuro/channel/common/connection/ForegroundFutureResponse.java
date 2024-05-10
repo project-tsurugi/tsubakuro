@@ -152,17 +152,12 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         try {
             if (!gotton.getAndSet(true)) {
                 if (closeTimeout != null) {
-                    try {
-                        delegate.get().cancel();
-                        var obj = get(closeTimeout.value(), closeTimeout.unit());
-                        if (obj instanceof ServerResource) {
-                            var sr = (ServerResource) obj;
-                            sr.setCloseTimeout(closeTimeout);
-                            sr.close();
-                        }
-                    } catch (TimeoutException e) {
-                        exception = new ResponseTimeoutException(e);
-                        throw (ResponseTimeoutException) exception;
+                    delegate.get().cancel();
+                    var obj = get(closeTimeout.value(), closeTimeout.unit());
+                    if (obj instanceof ServerResource) {
+                        var sr = (ServerResource) obj;
+                        sr.setCloseTimeout(closeTimeout);
+                        sr.close();
                     }
                 } else {
                     var obj = get();
@@ -171,7 +166,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                         sr.close();
                     }
                 }
-            }
+            } 
+        } catch (TimeoutException e) {
+            exception = new ResponseTimeoutException(e);
+        } catch (Exception e) {
+            exception = e;
         } finally {
             try {
                 var up = unprocessed.getAndSet(null);
@@ -179,13 +178,12 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     up.setCloseTimeout(closeTimeout);
                 }
                 Owner.close(up);
-            } catch (IOException | ServerException | InterruptedException e) {
+            } catch (Exception e) {
                 if (exception == null) {
                     exception = e;
                 } else {
                     exception.addSuppressed(e);
                 }
-                throwException(exception);
             } finally {
                 try {
                     if (closeTimeout != null) {
@@ -193,12 +191,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                     delegate.close();
                     closed.set(true);
-                } catch (IOException | ServerException | InterruptedException e) {
+                } catch (Exception e) {
                     if (exception == null) {
                         exception = e;
                     } else {
                         exception.addSuppressed(e);
                     }
+                }
+                if (exception != null) {
                     throwException(exception);
                 }
             }
