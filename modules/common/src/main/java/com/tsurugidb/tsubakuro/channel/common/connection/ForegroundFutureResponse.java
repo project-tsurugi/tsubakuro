@@ -197,9 +197,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     } else {
                         exception.addSuppressed(e);
                     }
-                }
-                if (exception != null) {
-                    throwException(exception);
+                } finally {
+                    if (exception != null) {
+                        throwException(exception);
+                    }
                 }
             }
         }
