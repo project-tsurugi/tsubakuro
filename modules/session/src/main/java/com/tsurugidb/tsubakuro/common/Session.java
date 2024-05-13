@@ -44,7 +44,7 @@ public interface Session extends ServerResource {
             int serviceId,
             @Nonnull byte[] payload,
             @Nonnull ResponseProcessor<R> processor) throws IOException {
-        return send(serviceId, payload, processor, false);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -60,7 +60,7 @@ public interface Session extends ServerResource {
             int serviceId,
             @Nonnull ByteBuffer payload,
             @Nonnull ResponseProcessor<R> processor) throws IOException {
-        return send(serviceId, payload, processor, false);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -151,11 +151,17 @@ public interface Session extends ServerResource {
      * @throws IOException if I/O error was occurred while requesting
      * @deprecated As BackgroudFutureResponse has been removed
      */
-    @Deprecated <R> FutureResponse<R> send(
+    @Deprecated 
+    default <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull byte[] payload,
             @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException;
+            boolean background) throws IOException {
+        if (background) {
+            throw new UnsupportedOperationException();
+        }
+        return send(serviceId, payload, processor);
+    }
 
     /**
      * Sends a message to the destination server.
@@ -168,9 +174,15 @@ public interface Session extends ServerResource {
      * @throws IOException if I/O error was occurred while requesting
      * @deprecated As BackgroudFutureResponse has been removed
      */
-    @Deprecated <R> FutureResponse<R> send(
+    @Deprecated 
+    default <R> FutureResponse<R> send(
             int serviceId,
             @Nonnull ByteBuffer payload,
             @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException;
+            boolean background) throws IOException {
+        if (background) {
+            throw new UnsupportedOperationException();
+        }
+        return send(serviceId, payload, processor);
+    }
 }
