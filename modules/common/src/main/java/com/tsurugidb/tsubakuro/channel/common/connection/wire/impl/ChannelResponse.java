@@ -147,11 +147,14 @@ public class ChannelResponse implements Response {
             var expected = cancelStatus.get();
             if (expected >= 0) {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUESTING)) {
-                    cancelThreadId = Thread.currentThread().getId();
-                    link.send(cancelStatus.get(), CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
-                    cancelThreadId = 0;
-                    cancelStatus.set(CANCEL_STATUS_REQUESTED);
-                    return;
+                    try {
+                        cancelThreadId = Thread.currentThread().getId();
+                        link.send(expected, CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
+                    } finally {
+                        cancelThreadId = 0;
+                        cancelStatus.set(CANCEL_STATUS_REQUESTED);
+                        return;
+                    }
                 }
                 continue;
             }
