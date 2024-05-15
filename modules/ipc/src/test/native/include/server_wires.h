@@ -62,7 +62,7 @@ public:
             : wire_(wire), bip_buffer_(bip_buffer), envelope_(envelope) {
         }
         message_header peep() {
-            auto rv = wire_->peep(bip_buffer_, true);
+            auto rv = wire_->peep(bip_buffer_);
             envelope_->slot(rv.get_idx());
             return rv;
         }

@@ -21,16 +21,16 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
     private final StreamLink streamLink;
     private final WireImpl wireImpl;
-    private final FutureResponse<Long> futureSessionID;
+    private final FutureResponse<Long> futureSessionId;
     private final AtomicBoolean gotton = new AtomicBoolean();
     private final AtomicReference<Wire> result = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
     private boolean closed = false;
 
-    FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionID) {
+    FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionId) {
         this.streamLink = streamLink;
         this.wireImpl = wireImpl;
-        this.futureSessionID = futureSessionID;
+        this.futureSessionId = futureSessionId;
     }
 
     @Override
@@ -48,8 +48,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                 }
                 if (!gotton.getAndSet(true)) {
                     try {
-                        wireImpl.setSessionID(futureSessionID.get());
-                        result.set(wireImpl);
+                        streamLink.setSessionId(futureSessionId.get());
                         return wireImpl;
                     } catch (IOException | ServerException | InterruptedException e) {
                         try {
@@ -85,7 +84,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                     }
                     if (!gotton.getAndSet(true)) {
                         try {
-                            wireImpl.setSessionID(futureSessionID.get(timeout, unit));
+                            streamLink.setSessionId(futureSessionId.get(timeout, unit));
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
@@ -128,7 +127,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             closed = true;
             if (result.get() == null) {
                 try {
-                    futureSessionID.close();
+                    futureSessionId.close();
                 } catch (Exception e) {
                     top = e;
                 } finally {

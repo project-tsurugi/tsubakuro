@@ -73,6 +73,7 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_sendNati
 JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNative
   (JNIEnv *env, jclass, jlong handle, jlong timeout) {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    auto& response_wire = swc->get_response_wire();
 
     jlong timeout_remain = (timeout > 0) ? timeout : INT64_MAX;  // in microseconds.
     while (true) {
@@ -80,7 +81,7 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
             auto watch_interval = static_cast<jlong>(unidirectional_response_wire::watch_interval * 1000000);
             jlong timeout_this_time = (timeout_remain > watch_interval) ? watch_interval : timeout_remain;
             timeout_remain -= timeout_this_time;
-            auto header = swc->get_response_wire().await(timeout_this_time);
+            auto header = response_wire.await(timeout_this_time);
             if (header.get_type() != 0) {
                 return header.get_idx();
             }
@@ -90,6 +91,13 @@ JNIEXPORT jint JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_awaitNat
                 jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
                 if (classj == nullptr) { std::abort(); }
                 env->ThrowNew(classj, e.what());
+                env->DeleteLocalRef(classj);
+                return 0;
+            }
+            if (response_wire.check_shutdown()) {
+                jclass classj = env->FindClass("Ljava/io/IOException;");
+                if (classj == nullptr) { std::abort(); }
+                env->ThrowNew(classj, ("Session has been shutdown"));;
                 env->DeleteLocalRef(classj);
                 return 0;
             }
@@ -152,6 +160,9 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAl
 (JNIEnv *, jclass, jlong handle)
 {
     session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    if (swc->get_response_wire().check_shutdown()) {
+        return false;
+    }
     return swc->get_status_provider().is_alive().empty();
 }
 

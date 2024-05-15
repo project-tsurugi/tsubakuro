@@ -470,7 +470,7 @@ public final class ProtosForTest {
         }
     }
     
-    static long sessionID = 123;
+    static long sessionId = 123;
     
     /**
      * Check of Request level message
@@ -496,7 +496,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -524,7 +524,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -551,7 +551,7 @@ public final class ProtosForTest {
 
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -578,7 +578,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -606,7 +606,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -634,7 +634,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -662,7 +662,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -690,7 +690,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -718,7 +718,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }
@@ -746,7 +746,7 @@ public final class ProtosForTest {
         
         void test() {
             try {
-                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionID).build().toByteArray()), sessionID));
+                assertTrue(check(SqlRequest.Request.parseFrom(builder(sessionId).build().toByteArray()), sessionId));
             } catch (com.google.protobuf.InvalidProtocolBufferException e) {
                 fail("cought com.google.protobuf.InvalidProtocolBufferException");
             }

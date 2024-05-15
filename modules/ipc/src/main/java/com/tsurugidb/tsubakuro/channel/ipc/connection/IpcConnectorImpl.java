@@ -61,7 +61,7 @@ public final class IpcConnectorImpl implements Connector {
     synchronized WireImpl getSessionWire(long id) throws IOException {
         long sessionId = waitNative(handle, id);
         close();
-        return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
+        return new WireImpl(new IpcLink(name, sessionId));
     }
 
     synchronized WireImpl getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
@@ -71,7 +71,7 @@ public final class IpcConnectorImpl implements Connector {
         }
         long sessionId = waitNative(handle, id, timeoutNano);
         close();
-        return new WireImpl(new IpcLink(name + "-" + String.valueOf(sessionId)), sessionId);
+        return new WireImpl(new IpcLink(name, sessionId));
     }
 
     synchronized boolean checkConnection(long id) {

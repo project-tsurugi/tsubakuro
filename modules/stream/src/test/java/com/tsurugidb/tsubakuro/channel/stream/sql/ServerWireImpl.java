@@ -34,7 +34,7 @@ public class ServerWireImpl implements Closeable {
     private final ReceiveWorker receiver;
     private final ArrayDeque<Message> sendQueue;
     private SendWorker sender;
-    private final long sessionID;
+    private final long sessionId;
     private int slot;
 
     private static class Message {
@@ -166,8 +166,8 @@ public class ServerWireImpl implements Closeable {
         }
     }
 
-    public ServerWireImpl(int port, long sessionID, boolean doHandshake) throws IOException {
-        this.sessionID = sessionID;
+    public ServerWireImpl(int port, long sessionId, boolean doHandshake) throws IOException {
+        this.sessionId = sessionId;
         this.receiveQueue = new ArrayDeque<Message>();
         this.sendQueue = new ArrayDeque<Message>();
         this.receiver = new ReceiveWorker(port, doHandshake);
@@ -175,8 +175,8 @@ public class ServerWireImpl implements Closeable {
         receiver.start();
     }
 
-    public ServerWireImpl(int port, long sessionID) throws IOException {
-        this(port, sessionID, false);
+    public ServerWireImpl(int port, long sessionId) throws IOException {
+        this(port, sessionId, false);
     }
 
     @Override
@@ -184,8 +184,8 @@ public class ServerWireImpl implements Closeable {
         receiver.close();
     }
 
-    public long getSessionID() {
-        return sessionID;
+    public long getSessionId() {
+        return sessionId;
     }
 
     /**

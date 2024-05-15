@@ -21,7 +21,7 @@ public final class CommunicationChecker {
         // client side send Request
         var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
         // server side receive Request
-        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), server.getSessionID()));
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), server.getSessionId()));
         // REQUEST test end
 
         // RESPONSE test begin

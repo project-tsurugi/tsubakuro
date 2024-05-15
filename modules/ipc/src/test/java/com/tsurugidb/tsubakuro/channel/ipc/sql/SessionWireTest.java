@@ -26,13 +26,13 @@ class SessionWireTest {
     private WireImpl client;
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
-    private final long sessionID = 1;
+    private final long sessionId = 1;
 
     @Test
     void requestBegin() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionID);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            server = new ServerWireImpl(dbName, sessionId);
+            client = new WireImpl(new IpcLink(dbName, sessionId));
             client.handshake(new ClientInformation(), null);
         } catch (Exception e) {
             fail("cought Exception");
@@ -51,15 +51,15 @@ class SessionWireTest {
     @Test
     void inconsistentResponse() {
         try {
-            server = new ServerWireImpl(dbName, sessionID);
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+            server = new ServerWireImpl(dbName, sessionId);
+            client = new WireImpl(new IpcLink(dbName, sessionId));
             client.handshake(new ClientInformation(), null);
 
             // REQUEST test begin
             // client side send Request
             var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
             // server side receive Request
-            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
             // REQUEST test end
     
             // RESPONSE test begin
@@ -80,15 +80,15 @@ class SessionWireTest {
 
     @Test
     void timeout() throws Exception {
-        server = new ServerWireImpl(dbName, sessionID);
-        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        server = new ServerWireImpl(dbName, sessionId);
+        client = new WireImpl(new IpcLink(dbName, sessionId));
         client.handshake(new ClientInformation(), null);
 
         // REQUEST test begin
         // client side send Request
         var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
         // server side receive Request
-        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
         // REQUEST test end
 
         // RESPONSE test begin
@@ -110,15 +110,15 @@ class SessionWireTest {
 
     @Test
     void serverCrashDetectionTestWithoutTimeout() throws Exception {
-        server = new ServerWireImpl(dbName, sessionID);
-        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        server = new ServerWireImpl(dbName, sessionId, false);
+        client = new WireImpl(new IpcLink(dbName, sessionId));
         client.handshake(new ClientInformation(), null);
 
         // REQUEST test begin
         // client side send Request
         var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
         // server side receive Request
-        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
         // REQUEST test end
 
         // RESPONSE test begin
@@ -140,15 +140,15 @@ class SessionWireTest {
 
     @Test
     void serverCrashDetectionTestWithTimeout() throws Exception {
-        server = new ServerWireImpl(dbName, sessionID);
-        client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID);
+        server = new ServerWireImpl(dbName, sessionId);
+        client = new WireImpl(new IpcLink(dbName, sessionId));
         client.handshake(new ClientInformation(), null);
 
         // REQUEST test begin
         // client side send Request
         var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
         // server side receive Request
-        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+        assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
         // REQUEST test end
 
         // RESPONSE test begin
@@ -171,7 +171,7 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            client = new WireImpl(new IpcLink(dbName + "-" + String.valueOf(sessionID)), sessionID); // not exist
+            client = new WireImpl(new IpcLink(dbName, sessionId)); // not exist
         });
         // FIXME: check error code instead of message
         assertEquals("cannot find a session with the specified name", exception.getMessage());

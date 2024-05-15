@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
@@ -28,6 +29,12 @@ public class ChannelResponse implements Response {
     public static final String METADATA_CHANNEL_ID = "metadata";
     public static final String RELATION_CHANNEL_ID = "relation";
 
+    public static final int CANCEL_STATUS_NO_SLOT = -1;
+    public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
+    public static final int CANCEL_STATUS_REQUESTING = -3;
+    public static final int CANCEL_STATUS_REQUESTED = -4;
+    private final AtomicInteger cancelStatus =  new AtomicInteger();
+
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
     private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
@@ -40,9 +47,20 @@ public class ChannelResponse implements Response {
     /**
      * Creates a new instance
      * @param link the link object by which this ChannelResponse pulls a message from the SQL server
+     * @param slot the slot number in the responseBox
+     */
+    public ChannelResponse(Link link, int slot) {
+        this.link = link;
+        this.cancelStatus.set(slot);
+    }
+
+    /**
+     * Creates a new instance that is not associated with a slot in the responseBox
+     * @param link the link object by which this ChannelResponse pulls a message from the SQL server
      */
     public ChannelResponse(Link link) {
         this.link = link;
+        this.cancelStatus.set(CANCEL_STATUS_NO_SLOT);
     }
 
     @Override
@@ -103,6 +121,73 @@ public class ChannelResponse implements Response {
         closed.set(true);
     }
 
+    /**
+     * Assign slot number in the responseBox to this object.
+     * @param slot the slot number in the responseBox
+     * @return false when cancel has already took place
+     */
+    public boolean assignSlot(int slot) {
+        while (true) {
+            var expected = cancelStatus.get();
+            if (expected == CANCEL_STATUS_NO_SLOT) {
+                if (cancelStatus.compareAndSet(expected, slot)) {
+                    return true;
+                }
+            }
+            if (expected == CANCEL_STATUS_REQUESTED) {
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public void cancel() throws IOException {
+        while (true) {
+            var expected = cancelStatus.get();
+            if (expected >= 0) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUESTING)) {
+                    link.send(cancelStatus.get(), CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
+                    cancelStatus.set(CANCEL_STATUS_REQUESTED);
+                    return;
+                }
+                continue;
+            }
+            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_REQUESTED)) {
+                return;  // cancel before request send
+            }
+            if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
+                return;  // response has already arrived
+            }
+            if (expected == CANCEL_STATUS_REQUESTED) {
+                return;  // cancel twice
+            }
+        }
+    }
+
+    public void cancelSuccessWithoutServerInteraction() {
+        setMainResponse(new IOException("cancel has been conducted within tsubakuro"));
+    }
+
+    private void responseArrive() {
+        while (true) {
+            var expected = cancelStatus.get();
+            if (expected >= 0) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
+                    return;
+                }
+                continue;
+            }
+            if (expected == CANCEL_STATUS_REQUESTED) {
+                cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED);
+                return;  // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
+            }
+            if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
+                return;  // response arrives twice, implies some error.
+            }
+            // try again if status is CANCEL_STATUS_REQUESTING.
+        }
+    }
+
     private InputStream relationChannel() throws IOException, InterruptedException {
         if (resultSet.get() != null) {
             return resultSet.get().getByteBufferBackedInput();
@@ -151,6 +236,7 @@ public class ChannelResponse implements Response {
     // get call from a thread that has received the response
     void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
+        responseArrive();
         try {
             main.set(skipFrameworkHeader(response));
         } catch (IOException | ServerException e) {
@@ -159,6 +245,7 @@ public class ChannelResponse implements Response {
     }
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
+        responseArrive();
         exceptionMain.set(exception);
     }
 

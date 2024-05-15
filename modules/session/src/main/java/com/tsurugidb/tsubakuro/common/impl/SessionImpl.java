@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
@@ -24,6 +25,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.ShutdownType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -42,7 +44,7 @@ public class SessionImpl implements Session {
     /**
      * The Core service ID.
      */
-    public static final int SERVICE_ID = Constants.SERVICE_ID_CORE;
+    public static final int SERVICE_ID = Constants.SERVICE_ID_ROUTING;
 
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -109,6 +111,12 @@ public class SessionImpl implements Session {
         return new ForegroundFutureResponse<>(response, processor);
     }
 
+    private static CoreRequest.Request.Builder newRequest() {
+        return CoreRequest.Request.newBuilder()
+                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
     @Override
     public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
@@ -138,13 +146,37 @@ public class SessionImpl implements Session {
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
         return send(
             SERVICE_ID,
-            toDelimitedByteArray(CoreRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR)
+            toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
                     .setExpirationTime(u.toMillis(t)))
                 .build()),
             new UpdateExpirationTimeProcessor().asResponseProcessor());
+    }
+
+    static class ShutdownProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            // No error checking is performed here,
+            // as only tateyama's core diagnostic is accepted for shutdown response.
+            return null;
+        }
+    }
+
+    public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
+
+        return send(
+            SERVICE_ID,
+                toDelimitedByteArray(newRequest()
+                    .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                    .build()),
+            new ShutdownProcessor().asResponseProcessor());
+    }
+
+    static CoreServiceException newUnknown() {
+        return new CoreServiceException(CoreServiceCode.UNKNOWN);
     }
 
     @Override
@@ -213,7 +245,7 @@ public class SessionImpl implements Session {
         return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
     }
 
-    private byte[] toDelimitedByteArray(CoreRequest.Request request) throws IOException {
+    static byte[] toDelimitedByteArray(Message request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
@@ -236,11 +268,11 @@ public class SessionImpl implements Session {
     }
     public String diagnosticInfo() {
         if (!closed.get()) {
-            String sessionID = "";
+            String sessionId = "";
             if (wire instanceof WireImpl) {
-                sessionID = Long.valueOf(((WireImpl) wire).sessionID()).toString();
+                sessionId = Long.valueOf(((WireImpl) wire).sessionId()).toString();
             }
-            String diagnosticInfo = "session " + sessionID + System.getProperty("line.separator");
+            String diagnosticInfo = "session " + sessionId + System.getProperty("line.separator");
 
             var serviceInfoAction = new ServiceInfoAction();
             services.forEach(serviceInfoAction);

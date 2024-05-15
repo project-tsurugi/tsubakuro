@@ -22,7 +22,7 @@ import com.tsurugidb.tsubakuro.channel.ipc.sql.ResultSetWireImpl;
  * IpcLink type.
  */
 public final class IpcLink extends Link {
-    private long wireHandle = 0;  // for c++
+    private final long wireHandle;  // for c++
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -51,10 +51,12 @@ public final class IpcLink extends Link {
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param name the name of shared memory for this IpcLink through which the SQL server is connected
+     * @param sessionId the id of this session obtained by the connector requesting a connection to the SQL server
      * @throws IOException error occurred in openNative()
      */
-    public IpcLink(@Nonnull String name) throws IOException {
-        this.wireHandle = openNative(name);
+    public IpcLink(@Nonnull String name, long sessionId) throws IOException {
+        super.sessionId = sessionId;
+        this.wireHandle = openNative(name + "-" + String.valueOf(sessionId));
         LOG.trace("begin Session via shared memory, name = {}", name);
     }
 

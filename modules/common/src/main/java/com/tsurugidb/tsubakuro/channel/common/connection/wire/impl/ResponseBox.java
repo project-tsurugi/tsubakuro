@@ -30,17 +30,18 @@ public class ResponseBox {
     }
 
     public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
-        var channelResponse = new ChannelResponse(link);
         var slotEntry = queues.pollSlot();
         if (slotEntry != null) {
+            var channelResponse = new ChannelResponse(link, slotEntry.slot());
             slotEntry.channelResponse(channelResponse);
             slotEntry.requestMessage(payload);
             link.send(slotEntry.slot(), header, payload, channelResponse);
-        } else {
-            queues.addRequest(new RequestEntry(channelResponse, header, payload));
-            if (!queues.isSlotEmpty()) {
-                queues.pairAnnihilation();
-            }
+            return channelResponse;
+        }
+        var channelResponse = new ChannelResponse(link);
+        queues.addRequest(new RequestEntry(channelResponse, header, payload));
+        if (!queues.isSlotEmpty()) {
+            queues.pairAnnihilation();
         }
         return channelResponse;
     }
@@ -48,11 +49,21 @@ public class ResponseBox {
     public void push(int slot, byte[] payload) {
         var slotEntry = boxes[slot];
         slotEntry.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
+        returnEntryToQueue(slotEntry);
+    }
+
+    public void push(int slot, IOException e) {
+        var slotEntry = boxes[slot];
+        slotEntry.channelResponse().setMainResponse(e);
+        returnEntryToQueue(slotEntry);
+    }
+
+    private void returnEntryToQueue(SlotEntry slotEntry) {
         var queuedRequest = queues.pollRequest();
         if (queuedRequest != null) {
             slotEntry.channelResponse(queuedRequest.channelResponse());
             slotEntry.requestMessage(queuedRequest.payload());
-            link.send(slot, queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
+            link.send(slotEntry.slot(), queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
         } else {
             queues.addSlot(slotEntry);
             if (queues.isRequestEmpty()) {
@@ -60,10 +71,6 @@ public class ResponseBox {
             }
             queues.pairAnnihilation();
         }
-    }
-
-    public void push(int slot, IOException e) {
-        boxes[slot].channelResponse().setMainResponse(e);
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {

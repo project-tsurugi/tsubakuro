@@ -24,14 +24,16 @@ class SessionWireTest {
     private static final String HOST = "localhost";
     private static final int PORT = 12344;
 
-    private final long sessionID = 1;
+    private final long sessionId = 1;
 
     @Test
     void requestBegin() {
         try (
-            ServerWireImpl server = new ServerWireImpl(PORT, sessionID);
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT), sessionID);
+            ServerWireImpl server = new ServerWireImpl(PORT, sessionId);
+            var link = new StreamLink(HOST, PORT);
+            WireImpl client = new WireImpl(link);
         ) {
+            link.setSessionId(sessionId);
             CommunicationChecker.check(server, client);
         } catch (Exception e) {
             e.printStackTrace();
@@ -43,15 +45,17 @@ class SessionWireTest {
     @Test
     void inconsistentResponse() {
         try (
-            ServerWireImpl server = new ServerWireImpl(PORT - 1, sessionID);
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 1), sessionID);
+            ServerWireImpl server = new ServerWireImpl(PORT - 1, sessionId);
+            var link = new StreamLink(HOST, PORT - 1);
+            WireImpl client = new WireImpl(link);
         ) {
+            link.setSessionId(sessionId);
 
             // REQUEST test begin
             // client side send Request
             var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
             // server side receive Request
-            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
             // REQUEST test end
 
             // RESPONSE test begin
@@ -72,15 +76,17 @@ class SessionWireTest {
     @Test
     void timeout() {
         try (
-            ServerWireImpl server = new ServerWireImpl(PORT - 2, sessionID);
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 2), sessionID);
+            ServerWireImpl server = new ServerWireImpl(PORT - 2, sessionId);
+            var link = new StreamLink(HOST, PORT - 2);
+            WireImpl client = new WireImpl(link);
         ) {
+            link.setSessionId(sessionId);
 
             // REQUEST test begin
             // client side send Request
             var futureResponse = client.send(SERVICE_ID_SQL, DelimitedConverter.toByteArray(ProtosForTest.BeginRequestChecker.builder().build()));
             // server side receive Request
-            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionID));
+            assertTrue(ProtosForTest.BeginRequestChecker.check(server.get(), sessionId));
             // REQUEST test end
 
             // RESPONSE test begin
@@ -105,7 +111,9 @@ class SessionWireTest {
     @Test
     void notExist() {
         Throwable exception = assertThrows(IOException.class, () -> {
-            WireImpl client = new WireImpl(new StreamLink(HOST, PORT - 3), sessionID);
+            var link = new StreamLink(HOST, PORT - 3);
+            link.setSessionId(sessionId);
+            WireImpl client = new WireImpl(link);
         });
         assertTrue(exception.getMessage().contains("Connection refused"));
     }
