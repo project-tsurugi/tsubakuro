@@ -34,6 +34,7 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_REQUESTING = -3;
     public static final int CANCEL_STATUS_REQUESTED = -4;
     private final AtomicInteger cancelStatus =  new AtomicInteger();
+    private long cancelThreadId = 0;
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
@@ -146,7 +147,9 @@ public class ChannelResponse implements Response {
             var expected = cancelStatus.get();
             if (expected >= 0) {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUESTING)) {
+                    cancelThreadId = Thread.currentThread().getId();
                     link.send(cancelStatus.get(), CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
+                    cancelThreadId = 0;
                     cancelStatus.set(CANCEL_STATUS_REQUESTED);
                     return;
                 }
@@ -169,6 +172,9 @@ public class ChannelResponse implements Response {
     }
 
     private void responseArrive() {
+        if (cancelThreadId == Thread.currentThread().getId()) {
+            return;
+        }
         while (true) {
             var expected = cancelStatus.get();
             if (expected >= 0) {
