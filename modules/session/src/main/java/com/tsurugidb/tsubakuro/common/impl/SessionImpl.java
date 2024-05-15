@@ -280,22 +280,4 @@ public class SessionImpl implements Session {
         }
         return "";
     }
-
-    @Override
-    @Deprecated public <R> FutureResponse<R> send(
-            int serviceId,
-            @Nonnull byte[] payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
-        return send(serviceId, payload, processor);
-    }
-
-    @Override
-    @Deprecated public <R> FutureResponse<R> send(
-            int serviceId,
-            @Nonnull ByteBuffer payload,
-            @Nonnull ResponseProcessor<R> processor,
-            boolean background) throws IOException {
-        return send(serviceId, payload, processor);
-    }
 }
