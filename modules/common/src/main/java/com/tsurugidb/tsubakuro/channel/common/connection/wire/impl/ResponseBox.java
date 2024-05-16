@@ -61,16 +61,21 @@ public class ResponseBox {
     private void returnEntryToQueue(SlotEntry slotEntry) {
         var queuedRequest = queues.pollRequest();
         if (queuedRequest != null) {
-            slotEntry.channelResponse(queuedRequest.channelResponse());
-            slotEntry.requestMessage(queuedRequest.payload());
-            link.send(slotEntry.slot(), queuedRequest.header(), queuedRequest.payload(), queuedRequest.channelResponse());
-        } else {
-            queues.addSlot(slotEntry);
-            if (queues.isRequestEmpty()) {
+            var channelResponse = queuedRequest.channelResponse();
+            var slot = slotEntry.slot();
+            if (channelResponse.assignSlot(slot)) {
+                slotEntry.channelResponse(channelResponse);
+                var payload = queuedRequest.payload();
+                slotEntry.requestMessage(payload);
+                link.send(slot, queuedRequest.header(), payload, channelResponse);
                 return;
             }
-            queues.pairAnnihilation();
         }
+        queues.addSlot(slotEntry);
+        if (queues.isRequestEmpty()) {
+            return;
+        }
+        queues.pairAnnihilation();
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
