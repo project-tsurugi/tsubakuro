@@ -149,48 +149,34 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         Exception exception = null;
-        try {
-            if (!gotton.getAndSet(true)) {
-                if (closeTimeout != null) {
-                    delegate.get().cancel();
-                    var obj = get(closeTimeout.value(), closeTimeout.unit());
-                    if (obj instanceof ServerResource) {
-                        var sr = (ServerResource) obj;
-                        sr.setCloseTimeout(closeTimeout);
-                        sr.close();
-                    }
-                } else {
-                    var obj = get();
-                    if (obj instanceof ServerResource) {
-                        var sr = (ServerResource) obj;
-                        sr.close();
-                    }
-                }
-            } 
-        } catch (TimeoutException e) {
-            exception = new ResponseTimeoutException(e);
-        } catch (Exception e) {
-            exception = e;
-        } finally {
+
+        if (!gotton.getAndSet(true)) {
             try {
-                var up = unprocessed.getAndSet(null);
-                if (closeTimeout != null && up != null) {
-                    up.setCloseTimeout(closeTimeout);
-                }
-                Owner.close(up);
+                delegate.get().cancel();
             } catch (Exception e) {
-                if (exception == null) {
-                    exception = e;
-                } else {
-                    exception.addSuppressed(e);
-                }
+                exception = e;
             } finally {
+                ServerResource sr = null;
                 try {
                     if (closeTimeout != null) {
-                        delegate.setCloseTimeout(closeTimeout);
+                        var obj = get(closeTimeout.value(), closeTimeout.unit());
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                            sr.setCloseTimeout(closeTimeout);
+                        }
+                    } else {
+                        var obj = get();
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                        }
                     }
-                    delegate.close();
-                    closed.set(true);
+                } catch (TimeoutException e) {
+                    var ne = new ResponseTimeoutException(e);
+                    if (exception == null) {
+                        exception = ne;
+                    } else {
+                        exception.addSuppressed(ne);
+                    }
                 } catch (Exception e) {
                     if (exception == null) {
                         exception = e;
@@ -198,29 +184,63 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                         exception.addSuppressed(e);
                     }
                 } finally {
-                    if (exception != null) {
-                        throwException(exception);
+                    try {
+                        if (sr != null) {
+                            sr.close();
+                        }
+                    } catch (Exception e) {
+                        if (exception == null) {
+                            exception = e;
+                        } else {
+                            exception.addSuppressed(e);
+                        }
+                    } finally {
+                        try {
+                            var up = unprocessed.getAndSet(null);
+                            if (closeTimeout != null && up != null) {
+                                up.setCloseTimeout(closeTimeout);
+                            }
+                            Owner.close(up);
+                        } catch (Exception e) {
+                            if (exception == null) {
+                                exception = e;
+                            } else {
+                                exception.addSuppressed(e);
+                            }
+                        } finally {
+                            try {
+                                if (closeTimeout != null) {
+                                    delegate.setCloseTimeout(closeTimeout);
+                                }
+                                delegate.close();
+                                closed.set(true);
+                            } catch (Exception e) {
+                                if (exception == null) {
+                                    exception = e;
+                                } else {
+                                    exception.addSuppressed(e);
+                                }
+                            } finally {
+                                if (exception != null) {
+                                    if (exception instanceof IOException) {
+                                        throw (IOException) exception;
+                                    }
+                                    if (exception instanceof InterruptedException) {
+                                        throw (InterruptedException) exception;
+                                    }
+                                    if (exception instanceof ServerException) {
+                                        throw (ServerException) exception;
+                                    }
+                                    if (exception instanceof RuntimeException) {
+                                        throw (RuntimeException) exception;
+                                    }
+                                    throw new AssertionError(exception);
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-
-    private void throwException(Exception e) throws IOException, ServerException, InterruptedException {
-        if (e != null) {
-            if (e instanceof IOException) {
-                throw (IOException) e;
-            }
-            if (e instanceof InterruptedException) {
-                throw (InterruptedException) e;
-            }
-            if (e instanceof ServerException) {
-                throw (ServerException) e;
-            }
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            }
-            throw new AssertionError(e);
         }
     }
 
