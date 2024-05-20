@@ -245,6 +245,7 @@ public class ChannelResponse implements Response {
     // get call from a thread that has received the response
     void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
+        responseArrive();
         try {
             main.set(skipFrameworkHeader(response));
         } catch (IOException | ServerException e) {
@@ -253,6 +254,7 @@ public class ChannelResponse implements Response {
     }
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
+        responseArrive();
         exceptionMain.set(exception);
     }
 
