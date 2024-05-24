@@ -391,8 +391,7 @@ public:
                 return {message_header::terminate_request, 0};
             }
             if (onetime_notification_.load()) {
-                onetime_notification_.store(false);
-                return {message_header::terminate_request, 0};
+                throw std::runtime_error("received shutdown request from outside the communication partner");
             }
             boost::interprocess::scoped_lock lock(m_mutex_);
             wait_for_read_ = true;
@@ -473,7 +472,7 @@ public:
         }
 
         while (true) {
-            if (closed_.load()) {
+            if (closed_.load() || shutdown_.load()) {
                 header_received_ = response_header(0, 0, 0);
                 return header_received_;
             }
@@ -485,7 +484,7 @@ public:
                 wait_for_read_ = true;
                 std::atomic_thread_fence(std::memory_order_acq_rel);
 
-                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))), [this](){ return (stored() >= response_header::size) || closed_.load(); })) {
+                if (!c_empty_.timed_wait(lock, boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))), [this](){ return (stored() >= response_header::size) || closed_.load() || shutdown_.load(); })) {
                     wait_for_read_ = false;
                     throw std::runtime_error("response has not been received within the specified time");
                 }
@@ -521,6 +520,10 @@ public:
         std::atomic_thread_fence(std::memory_order_acq_rel);
         if (wait_for_write_) {
             boost::interprocess::scoped_lock lock(m_mutex_);
+            c_full_.notify_one();
+        }
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
             c_empty_.notify_one();
         }
     }
@@ -544,8 +547,12 @@ public:
     /**
      * @brief notify client of the client of the shutdown
      */
-    void notify_shutdown() noexcept {
+    void notify_shutdown() {
         shutdown_.store(true);
+        if (wait_for_read_) {
+            boost::interprocess::scoped_lock lock(m_mutex_);
+            c_empty_.notify_one();
+        }
     }
 
 private:
