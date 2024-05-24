@@ -21,8 +21,8 @@ import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_INT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_OCTET;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_ROW;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY;
-import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY_WITH_TIME_ZONE;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT_WITH_TIME_ZONE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_EMBED_ARRAY_SIZE;
@@ -48,10 +48,11 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -269,7 +270,7 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     public void writeTimePoint(@Nonnull LocalDateTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT);
-        var offsetSecond = 24 * 3600 * value.toLocalDate().toEpochDay() + value.toLocalTime().toSecondOfDay();
+        var offsetSecond = value.toEpochSecond(ZoneOffset.UTC);
         var offsetNano = value.getNano();
         Base128Variant.writeSigned(offsetSecond, output);
         Base128Variant.writeUnsigned(offsetNano, output);
@@ -290,9 +291,8 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
     public void writeTimePointWithTimeZone(@Nonnull OffsetDateTime value) throws IOException {
         Objects.requireNonNull(value);
         output.write(HEADER_TIME_POINT_WITH_TIME_ZONE);
-        var localDateTime = value.toLocalDateTime();
-        var offsetSecond = 24 * 3600 * localDateTime.toLocalDate().toEpochDay() + localDateTime.toLocalTime().toSecondOfDay();
-        var offsetNano = value.getNano();
+        var offsetSecond = value.toLocalDateTime().toEpochSecond(ZoneOffset.UTC);
+        var offsetNano = value.toLocalDateTime().getNano();
         var timeZoneOffset = value.getOffset().getTotalSeconds() / 60;
         Base128Variant.writeSigned(offsetSecond, output);
         Base128Variant.writeUnsigned(offsetNano, output);

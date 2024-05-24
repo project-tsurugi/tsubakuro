@@ -2,10 +2,11 @@ package com.tsurugidb.tsubakuro.sql;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
@@ -247,7 +248,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointValue(SqlCommon.TimePoint.newBuilder()
-                        .setOffsetSeconds((value.toLocalDate().toEpochDay() * 24 * 3600) + (60 * (60 * value.getHour() + value.getMinute()) + value.getSecond()))
+                        .setOffsetSeconds(value.toEpochSecond(ZoneOffset.UTC))
                         .setNanoAdjustment(value.getNano()))
                 .build();
     }
@@ -279,7 +280,7 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimeOfDayWithTimeZoneValue(SqlCommon.TimeOfDayWithTimeZone.newBuilder()
-                        .setOffsetNanoseconds(1000000000L * (60L * (60L * value.getHour() + value.getMinute()) + value.getSecond()) + value.getNano())
+                        .setOffsetNanoseconds(value.toLocalTime().toNanoOfDay())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();
     }
@@ -308,12 +309,11 @@ public final class Parameters {
     public static SqlRequest.Parameter of(@Nonnull String name, @Nonnull OffsetDateTime value) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(value);
-        var localDateTime = value.toLocalDateTime();
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(SqlCommon.TimePointWithTimeZone.newBuilder()
-                        .setOffsetSeconds((localDateTime.toLocalDate().toEpochDay() * 24 * 3600) + (60 * (60 * localDateTime.getHour() + localDateTime.getMinute()) + localDateTime.getSecond()))
-                        .setNanoAdjustment(value.getNano())
+                        .setOffsetSeconds(value.toLocalDateTime().toEpochSecond(ZoneOffset.UTC))
+                        .setNanoAdjustment(value.toLocalDateTime().getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();
     }
