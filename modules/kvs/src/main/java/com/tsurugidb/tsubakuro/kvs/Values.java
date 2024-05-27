@@ -232,7 +232,7 @@ public final class Values {
                 LocalDateTime.ofEpochSecond(
                         value.getOffsetSeconds(),
                         value.getNanoAdjustment(),
-                        zone),
+                        ZoneOffset.UTC),
                 zone);
     }
 
@@ -505,8 +505,8 @@ public final class Values {
         Objects.requireNonNull(value);
         return KvsData.Value.newBuilder()
                 .setTimePointWithTimeZoneValue(KvsData.TimePointWithTimeZone.newBuilder()
-                        .setOffsetSeconds(value.toEpochSecond())
-                        .setNanoAdjustment(value.getNano())
+                        .setOffsetSeconds(value.toLocalDateTime().toEpochSecond(ZoneOffset.UTC))
+                        .setNanoAdjustment(value.toLocalDateTime().getNano())
                         .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60))
                 .build();
     }

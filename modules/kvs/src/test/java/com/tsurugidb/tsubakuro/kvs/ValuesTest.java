@@ -165,8 +165,10 @@ class ValuesTest {
             list.add(OffsetDateTime.of(time, zone));
         }
         for (final var value : list) {
-            var timeWithZone = KvsData.TimePointWithTimeZone.newBuilder().setOffsetSeconds(value.toEpochSecond())
-                    .setNanoAdjustment(value.getNano()).setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60).build();
+            var timeWithZone = KvsData.TimePointWithTimeZone.newBuilder()
+                    .setOffsetSeconds(value.toLocalDateTime().toEpochSecond(ZoneOffset.UTC))
+                    .setNanoAdjustment(value.toLocalDateTime().getNano())
+                    .setTimeZoneOffset(value.getOffset().getTotalSeconds() / 60).build();
             assertEquals(value, Values.toObject(builder.setTimePointWithTimeZoneValue(timeWithZone).build()));
         }
     }

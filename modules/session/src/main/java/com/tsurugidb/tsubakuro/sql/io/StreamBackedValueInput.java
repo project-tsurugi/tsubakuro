@@ -38,10 +38,10 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
 
@@ -478,9 +478,8 @@ public class StreamBackedValueInput implements ValueInput {
         require(EntryType.TIME_POINT);
         clearHeaderInfo();
         var seconds = Base128Variant.readSigned(input);
-        long nanos = Base128Variant.readUnsigned(input);
-        var days = seconds / (24 * 3600);
-        return LocalDateTime.of(LocalDate.ofEpochDay(days), LocalTime.ofNanoOfDay(1000_000_000L * (seconds - (24 * 3600 * days)) + nanos));
+        var nanos = (int) Base128Variant.readUnsigned(input);
+        return LocalDateTime.ofEpochSecond(seconds, nanos, ZoneOffset.UTC);
     }
 
     @Override
@@ -497,10 +496,9 @@ public class StreamBackedValueInput implements ValueInput {
         require(EntryType.TIME_POINT_WITH_TIME_ZONE);
         clearHeaderInfo();
         var seconds = Base128Variant.readSigned(input);
-        long nanos = Base128Variant.readUnsigned(input);
+        var nanos = (int) Base128Variant.readUnsigned(input);
         var timeZoneOffsetInMinites = (int) Base128Variant.readSigned(input);
-        var days = seconds / (24 * 3600);
-        return OffsetDateTime.of(LocalDate.ofEpochDay(days), LocalTime.ofNanoOfDay(1000_000_000L * (seconds - (24 * 3600 * days)) + nanos), ZoneOffset.ofTotalSeconds(timeZoneOffsetInMinites * 60));
+        return OffsetDateTime.of(LocalDateTime.ofEpochSecond(seconds, nanos, ZoneOffset.UTC), ZoneOffset.ofTotalSeconds(timeZoneOffsetInMinites * 60));
     }
 
     @Override
