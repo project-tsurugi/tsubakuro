@@ -68,8 +68,8 @@ public class ResponseBox {
                 var payload = queuedRequest.payload();
                 slotEntry.requestMessage(payload);
                 link.send(slot, queuedRequest.header(), payload, channelResponse);
-                return;
             }
+            return;
         }
         queues.addSlot(slotEntry);
         if (queues.isRequestEmpty()) {
