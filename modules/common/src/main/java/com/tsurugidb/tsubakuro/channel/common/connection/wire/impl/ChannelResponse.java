@@ -127,7 +127,7 @@ public class ChannelResponse implements Response {
      * @param slot the slot number in the responseBox
      * @return false when cancel has already took place
      */
-    public boolean assignSlot(int slot) {
+    boolean assignSlot(int slot) {
         while (true) {
             var expected = cancelStatus.get();
             if (expected == CANCEL_STATUS_NO_SLOT) {
