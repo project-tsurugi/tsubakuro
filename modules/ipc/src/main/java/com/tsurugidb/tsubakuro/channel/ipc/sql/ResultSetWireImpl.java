@@ -49,21 +49,11 @@ public class ResultSetWireImpl implements ResultSetWire {
         public void close() throws IOException {
             if (!closed.getAndSet(true)) {
                 synchronized (this) {
-                    discardRemainingResultSet();
                     super.close();
                     closeNative(wireHandle);
                     link.remove(ResultSetWireImpl.this);
                     wireHandle = 0;
                 }
-            }
-        }
-
-        private void discardRemainingResultSet() {
-            while (source != null) {
-                if (source.capacity() > 0) {
-                    disposeUsedDataNative(wireHandle, source.capacity());
-                }
-                source = getChunkNative(wireHandle);
             }
         }
     }
