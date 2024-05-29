@@ -168,6 +168,18 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAl
 
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    isShutdownNative
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isShutdownNative
+(JNIEnv *, jclass, jlong handle)
+{
+    session_wire_container* swc = reinterpret_cast<session_wire_container*>(static_cast<std::uintptr_t>(handle));
+    return swc->get_response_wire().check_shutdown();
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    closeNative
  * Signature: (J)V
  */

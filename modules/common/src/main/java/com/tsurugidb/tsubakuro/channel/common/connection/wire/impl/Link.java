@@ -55,7 +55,7 @@ public abstract class Link implements ServerResource {
                 }
                 try {
                     if (!doPull(t, u)) {
-                        throw new IOException("Server crashed");
+                        throw new IOException(linkLostMessage());
                     }
                     receivedMessageNumber++;
                 } finally {
@@ -139,9 +139,15 @@ public abstract class Link implements ServerResource {
 
     /**
      * Provide dead/alive information of this link
-     * @return true when the server is alive
+     * @return true when the link is alive
      */
     public abstract boolean isAlive();
+
+    /**
+     * Provide error message for link disconnection.
+     * @return a String describing the situation of link disconnection
+     */
+    public abstract String linkLostMessage();
 
     ResponseBox getResponseBox() {
         return responseBox;
