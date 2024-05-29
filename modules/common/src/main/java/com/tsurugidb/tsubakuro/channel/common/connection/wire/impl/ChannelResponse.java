@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
@@ -136,6 +137,7 @@ public class ChannelResponse implements Response {
                 }
             }
             if (expected == CANCEL_STATUS_REQUESTED) {
+                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
                 return false;
             }
         }
