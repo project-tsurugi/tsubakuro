@@ -39,6 +39,7 @@ public final class IpcLink extends Link {
     private static native int getInfoNative(long wireHandle);
     private static native byte[] receiveNative(long wireHandle);
     private static native boolean isAliveNative(long wireHandle);
+    private static native boolean isShutdownNative(long wireHandle);
     private static native void closeNative(long wireHandle);
     private static native void destroyNative(long wireHandle);
 
@@ -166,6 +167,11 @@ public final class IpcLink extends Link {
             return false;
         }
         return isAliveNative(wireHandle);
+    }
+
+    @Override
+    public String linkLostMessage() {
+        return isShutdownNative(wireHandle) ? "Session already shutdown" : "Server crashed";
     }
 
     @Override

@@ -472,12 +472,12 @@ public:
         }
 
         while (true) {
+            if(stored() >= response_header::size) {
+                break;
+            }
             if (closed_.load() || shutdown_.load()) {
                 header_received_ = response_header(0, 0, 0);
                 return header_received_;
-            }
-            if(stored() >= response_header::size) {
-                break;
             }
             {
                 boost::interprocess::scoped_lock lock(m_mutex_);

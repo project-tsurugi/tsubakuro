@@ -65,6 +65,14 @@ JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isAl
 
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
+ * Method:    isShutdownNative
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_IpcLink_isShutdownNative
+  (JNIEnv *, jclass, jlong);
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    closeNative
  * Signature: (J)V
  */
