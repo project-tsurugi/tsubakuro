@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 
 import javax.annotation.Nonnull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -14,6 +17,8 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
  */
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
+
+    static final Logger LOG = LoggerFactory.getLogger(ResponseBox.class);
 
     private final Link link;
     private final Queues queues;
@@ -48,8 +53,14 @@ public class ResponseBox {
 
     public void push(int slot, byte[] payload) {
         var slotEntry = boxes[slot];
-        slotEntry.channelResponse().setMainResponse(ByteBuffer.wrap(payload));
-        returnEntryToQueue(slotEntry);
+        var channelResponse = slotEntry.channelResponse();
+        if (channelResponse != null) {
+            channelResponse.setMainResponse(ByteBuffer.wrap(payload));
+            returnEntryToQueue(slotEntry);
+            return;
+        }
+        LOG.error("invalid slotEntry is used: slot={}, payload={}", slot, payload);
+        throw new AssertionError("invalid slotEntry is used");
     }
 
     public void push(int slot, IOException e) {
