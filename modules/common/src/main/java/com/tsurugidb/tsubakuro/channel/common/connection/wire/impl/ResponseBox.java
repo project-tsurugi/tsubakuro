@@ -105,7 +105,7 @@ public class ResponseBox {
                 if (intentionalClose) {
                     response.setMainResponse(new IOException("The wire was closed before receiving a response to this request"));
                 } else {
-                    response.setMainResponse(new IOException("Server crashed"));
+                    response.setMainResponse(new IOException(link.linkLostMessage()));
                 }
             }
         }
