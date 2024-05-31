@@ -127,9 +127,9 @@ public class ResultSetBox {
         for (ResultSetWireImpl e : boxes) {
             if (e != null) {
                 if (intentionalClose) {
-                    e.endOfRecords(new IOException("The wire was closed before closing this resultSet"));
+                    e.endOfRecords(new IOException("The wire has been closed before closing this resultSet"));
                 } else {
-                    e.endOfRecords(new IOException("Server crashed"));
+                    e.endOfRecords(new IOException(e.linkLostMessage()));
                 }
             }
         }

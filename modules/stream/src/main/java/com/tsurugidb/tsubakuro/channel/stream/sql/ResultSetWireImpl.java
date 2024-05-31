@@ -142,11 +142,15 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
     }
 
-    public void endOfRecords() {
+    void endOfRecords() {
         eor = true;
     }
 
-    public void endOfRecords(IOException e) {
+    void endOfRecords(IOException e) {
         exception = e;
+    }
+
+    String linkLostMessage() {
+        return streamLink.linkLostMessage();
     }
 }
