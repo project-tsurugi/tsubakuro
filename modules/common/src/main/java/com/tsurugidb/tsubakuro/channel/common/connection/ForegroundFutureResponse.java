@@ -152,7 +152,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
         if (!gotton.getAndSet(true)) {
             try {
-                delegate.get().cancel();
+                if (closeTimeout != null) {
+                    delegate.get(closeTimeout.value(), closeTimeout.unit()).cancel();
+                } else {
+                    delegate.get().cancel();
+                }
             } catch (Exception e) {
                 exception = e;
             } finally {
