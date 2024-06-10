@@ -181,7 +181,10 @@ public:
     connection_queue& get_connection_queue() {
         return *connection_queue_;
     }
-    
+
+    // Dealing with connection_queue specification changes in a way that is limited to tests that use only one session.
+    std::size_t slot_{};
+
 private:
     std::string name_;
     std::unique_ptr<boost::interprocess::managed_shared_memory> managed_shared_memory_{};

@@ -1031,8 +1031,13 @@ public:
                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                          [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
         }
-        [[nodiscard]] std::size_t pop() {
-            return queue_.at(index(poped_.fetch_add(1)));
+        // thread unsafe (assume single listener thread)
+        void pop() {
+            poped_.fetch_add(1);
+        }
+        // thread unsafe (assume single listener thread)
+        [[nodiscard]] std::size_t front() {
+            return queue_.at(index(poped_.load()));
         }
         void notify() {
             condition_.notify_one();
@@ -1153,14 +1158,16 @@ public:
         return 0;
     }
     std::size_t slot() {
-        std::size_t sid = q_requested_.pop();
-        return sid;
+        return q_requested_.front();
     }
+    // either accept() or reject() must be called
     void accept(std::size_t sid, std::size_t session_id) {
-        auto& request = v_requested_.at(sid);
-        request.accept(session_id);
+        q_requested_.pop();
+        v_requested_.at(sid).accept(session_id);
     }
+    // either accept() or reject() must be called
     void reject(std::size_t sid) {
+        q_requested_.pop();
         q_free_.push(sid);
     }
     void disconnect(std::size_t rid) {
