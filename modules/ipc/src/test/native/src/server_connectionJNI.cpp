@@ -34,6 +34,7 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_Serv
 (JNIEnv *, jclass, jlong handle)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+    container->slot_ = container->get_connection_queue().slot();
     return container->get_connection_queue().listen();
 }
 
@@ -46,7 +47,8 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_Serve
 (JNIEnv *, jclass, jlong handle, jlong id)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
-    container->get_connection_queue().accept(id);
+
+    container->get_connection_queue().accept(container->get_connection_queue().slot(), id);
 }
 
 /*

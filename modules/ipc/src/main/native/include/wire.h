@@ -1031,8 +1031,13 @@ public:
                                          boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(watch_interval * 1000 * 1000))),
                                          [this, &terminate](){ return (pushed_.load() > poped_.load()) || terminate.load(); });
         }
-        [[nodiscard]] std::size_t pop() {
-            return queue_.at(index(poped_.fetch_add(1)));
+        // thread unsafe (assume single listener thread)
+        void pop() {
+            poped_.fetch_add(1);
+        }
+        // thread unsafe (assume single listener thread)
+        [[nodiscard]] std::size_t front() {
+            return queue_.at(index(poped_.load()));
         }
         void notify() {
             condition_.notify_one();
@@ -1074,6 +1079,9 @@ public:
                 boost::interprocess::scoped_lock lock(m_accepted_);
                 c_accepted_.notify_one();
             }
+        }
+        void reject() {
+            // FIXMEt implement
         }
         [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -1131,9 +1139,14 @@ public:
     }
     std::size_t wait(std::size_t rid, std::int64_t timeout = 0) {
         auto& entry = v_requested_.at(rid);
-        auto rtnv = entry.wait(timeout);
-        entry.reuse();
-        return rtnv;
+        try {
+            auto rtnv = entry.wait(timeout);
+            entry.reuse();
+            return rtnv;
+        } catch (std::runtime_error &ex) {
+            entry.reuse();
+            throw ex;
+        }
     }
     bool check(std::size_t rid) {
         return v_requested_.at(rid).check();
@@ -1144,11 +1157,18 @@ public:
         }
         return 0;
     }
-    std::size_t accept(std::size_t session_id) {
-        std::size_t sid = q_requested_.pop();
-        auto& request = v_requested_.at(sid);
-        request.accept(session_id);
-        return sid;
+    std::size_t slot() {
+        return q_requested_.front();
+    }
+    // either accept() or reject() must be called
+    void accept(std::size_t sid, std::size_t session_id) {
+        q_requested_.pop();
+        v_requested_.at(sid).accept(session_id);
+    }
+    // either accept() or reject() must be called
+    void reject(std::size_t sid) {
+        q_requested_.pop();
+        q_free_.push(sid);
     }
     void disconnect(std::size_t rid) {
         q_free_.push(rid);
