@@ -1075,6 +1075,9 @@ public:
                 c_accepted_.notify_one();
             }
         }
+        void reject() {
+            // FIXMEt implement
+        }
         [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
             if (timeout <= 0) {
@@ -1131,9 +1134,14 @@ public:
     }
     std::size_t wait(std::size_t rid, std::int64_t timeout = 0) {
         auto& entry = v_requested_.at(rid);
-        auto rtnv = entry.wait(timeout);
-        entry.reuse();
-        return rtnv;
+        try {
+            auto rtnv = entry.wait(timeout);
+            entry.reuse();
+            return rtnv;
+        } catch (std::runtime_error &ex) {
+            entry.reuse();
+            throw ex;
+        }
     }
     bool check(std::size_t rid) {
         return v_requested_.at(rid).check();
@@ -1144,11 +1152,16 @@ public:
         }
         return 0;
     }
-    std::size_t accept(std::size_t session_id) {
+    std::size_t slot() {
         std::size_t sid = q_requested_.pop();
+        return sid;
+    }
+    void accept(std::size_t sid, std::size_t session_id) {
         auto& request = v_requested_.at(sid);
         request.accept(session_id);
-        return sid;
+    }
+    void reject(std::size_t sid) {
+        q_free_.push(sid);
     }
     void disconnect(std::size_t rid) {
         q_free_.push(rid);
