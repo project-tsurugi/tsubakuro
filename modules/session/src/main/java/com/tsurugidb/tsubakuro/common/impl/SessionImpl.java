@@ -162,6 +162,7 @@ public class SessionImpl implements Session {
             // No error checking is performed here,
             // as only tateyama's core diagnostic is accepted for shutdown response.
             shutdownCompleted.set(true);
+            wireClose();
             return null;
         }
     }
@@ -224,18 +225,22 @@ public class SessionImpl implements Session {
             } catch (UncheckedIOException e) {
                 throw e.getCause();
             }
-            // take care of the wire
-            if (wire != null) {
-                if (closeTimeout != null) {
-                    wire.setCloseTimeout(closeTimeout);
-                }
-                try {
-                    wire.close();
-                } catch (ServerException | IOException | InterruptedException e) {
-                    // if shutdown has been completed, it is OK to ignore this exception.
-                    if (!shutdownCompleted.get()) {
-                        throw e;
-                    }
+            wireClose();
+        }
+    }
+
+    private void wireClose()  throws ServerException, IOException, InterruptedException {
+        // take care of the wire
+        if (wire != null) {
+            if (closeTimeout != null) {
+                wire.setCloseTimeout(closeTimeout);
+            }
+            try {
+                wire.close();
+            } catch (ServerException | IOException | InterruptedException e) {
+                // if shutdown has been completed, it is OK to ignore this exception.
+                if (!shutdownCompleted.get()) {
+                    throw e;
                 }
             }
         }
