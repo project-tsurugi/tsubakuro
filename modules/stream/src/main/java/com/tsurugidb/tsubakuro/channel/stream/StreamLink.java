@@ -298,6 +298,7 @@ public final class StreamLink extends Link {
         synchronized (outStream) {
             try {
                 socket.sendUrgentData(0);
+                socket.sendUrgentData(0);  // send twice to ensure generate exception when tcp/ip disconnection
             } catch (IOException e) {
                 return false;
             }

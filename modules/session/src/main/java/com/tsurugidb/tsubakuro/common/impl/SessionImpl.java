@@ -48,6 +48,7 @@ public class SessionImpl implements Session {
 
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -153,26 +154,34 @@ public class SessionImpl implements Session {
             new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
-    static class ShutdownProcessor implements MainResponseProcessor<Void> {
+    class ShutdownProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             // No error checking is performed here,
             // as only tateyama's core diagnostic is accepted for shutdown response.
+            shutdownCompleted.set(true);
             return null;
         }
     }
 
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-
-        return send(
-            SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                    .build()),
-            new ShutdownProcessor().asResponseProcessor());
+        try {
+            return send(
+                SERVICE_ID,
+                    toDelimitedByteArray(newRequest()
+                        .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                        .build()),
+                new ShutdownProcessor().asResponseProcessor());
+        } catch (IOException e) {
+            // if shutdown has been completed, it is OK to ignore this exception.
+            if (!shutdownCompleted.get()) {
+                throw e;
+            }
+            return FutureResponse.returns(null);
+        }
     }
 
     static CoreServiceException newUnknown() {
@@ -220,7 +229,14 @@ public class SessionImpl implements Session {
                 if (closeTimeout != null) {
                     wire.setCloseTimeout(closeTimeout);
                 }
-                wire.close();
+                try {
+                    wire.close();
+                } catch (ServerException | IOException | InterruptedException e) {
+                    // if shutdown has been completed, it is OK to ignore this exception.
+                    if (!shutdownCompleted.get()) {
+                        throw e;
+                    }
+                }
             }
         }
     }
