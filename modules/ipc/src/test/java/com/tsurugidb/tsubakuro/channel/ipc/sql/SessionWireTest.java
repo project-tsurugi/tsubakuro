@@ -27,6 +27,7 @@ class SessionWireTest {
     private ServerWireImpl server;
     private final String dbName = "tsubakuro";
     private final long sessionId = 1;
+    private final String linkLostMessage = "IPC connection failure";
 
     @Test
     void requestBegin() throws Exception {
@@ -131,7 +132,7 @@ class SessionWireTest {
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse()));
         });
         // FIXME: check error code instead of message
-        assertEquals("Server crashed", exception.getMessage());
+        assertEquals(linkLostMessage, exception.getMessage());
         var duration = System.currentTimeMillis() - start;
         assertTrue((4000 < duration) && (duration < 11000));
         client.close();
@@ -161,7 +162,7 @@ class SessionWireTest {
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(60, TimeUnit.SECONDS)));
         });
         // FIXME: check error code instead of message
-        assertEquals("Server crashed", exception.getMessage());
+        assertEquals(linkLostMessage, exception.getMessage());
         var duration = System.currentTimeMillis() - start;
         assertTrue((4000 < duration) && (duration < 11000));
         client.close();
