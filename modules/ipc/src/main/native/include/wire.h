@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#include <cstdint>
 #include <sys/file.h>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_condition.hpp>
@@ -1074,14 +1075,11 @@ public:
 
         void accept(std::size_t session_id) {
             session_id_ = session_id;
-            std::atomic_thread_fence(std::memory_order_acq_rel);
-            {
-                boost::interprocess::scoped_lock lock(m_accepted_);
-                c_accepted_.notify_one();
-            }
+            notify();
         }
         void reject() {
-            // FIXMEt implement
+            session_id_ = session_id_indicating_error;
+            notify();
         }
         [[nodiscard]] std::size_t wait(std::int64_t timeout = 0) {
             std::atomic_thread_fence(std::memory_order_acq_rel);
@@ -1112,9 +1110,18 @@ public:
         boost::interprocess::interprocess_mutex m_accepted_{};
         boost::interprocess::interprocess_condition c_accepted_{};
         std::size_t session_id_{};
+
+        void notify() {
+            std::atomic_thread_fence(std::memory_order_acq_rel);
+            {
+                boost::interprocess::scoped_lock lock(m_accepted_);
+                c_accepted_.notify_one();
+            }
+        }
     };
 
     using element_allocator = boost::interprocess::allocator<element, boost::interprocess::managed_shared_memory::segment_manager>;
+    constexpr static std::size_t session_id_indicating_error = UINT64_MAX;
 
     /**
      * @brief Construct a new object.
@@ -1168,6 +1175,7 @@ public:
     // either accept() or reject() must be called
     void reject(std::size_t sid) {
         q_requested_.pop();
+        v_requested_.at(sid).reject();
         q_free_.push(sid);
     }
     void disconnect(std::size_t rid) {
