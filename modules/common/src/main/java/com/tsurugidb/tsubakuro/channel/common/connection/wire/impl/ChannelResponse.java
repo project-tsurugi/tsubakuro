@@ -155,8 +155,8 @@ public class ChannelResponse implements Response {
                     } finally {
                         cancelThreadId = 0;
                         cancelStatus.set(CANCEL_STATUS_REQUESTED);
-                        return;
                     }
+                    return;
                 }
                 continue;
             }

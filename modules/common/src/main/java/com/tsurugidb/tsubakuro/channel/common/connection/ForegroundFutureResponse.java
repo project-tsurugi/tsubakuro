@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     private final AtomicBoolean closed = new AtomicBoolean();
 
     private final AtomicBoolean gotton = new AtomicBoolean();
+
+    private Timeout closeTimeout = null;
 
     /**
      * Creates a new instance.
@@ -139,19 +142,109 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     @Override
+    public void setCloseTimeout(@Nullable Timeout timeout) {
+        closeTimeout = timeout;
+    }
+
+    @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
-        try {
-            if (!gotton.getAndSet(true)) {
-                delegate.get().cancel();
-                var obj = get();
-                if (obj instanceof ServerResource) {
-                    ((ServerResource) obj).close();
+        Exception exception = null;
+
+        if (!gotton.getAndSet(true)) {
+            try {
+                if (closeTimeout != null) {
+                    delegate.get(closeTimeout.value(), closeTimeout.unit()).cancel();
+                } else {
+                    delegate.get().cancel();
+                }
+            } catch (Exception e) {
+                exception = e;
+            } finally {
+                ServerResource sr = null;
+                try {
+                    if (closeTimeout != null) {
+                        var obj = get(closeTimeout.value(), closeTimeout.unit());
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                            sr.setCloseTimeout(closeTimeout);
+                        }
+                    } else {
+                        var obj = get();
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                        }
+                    }
+                } catch (TimeoutException e) {
+                    var ne = new ResponseTimeoutException(e);
+                    if (exception == null) {
+                        exception = ne;
+                    } else {
+                        exception.addSuppressed(ne);
+                    }
+                } catch (Exception e) {
+                    if (exception == null) {
+                        exception = e;
+                    } else {
+                        exception.addSuppressed(e);
+                    }
+                } finally {
+                    try {
+                        if (sr != null) {
+                            sr.close();
+                        }
+                    } catch (Exception e) {
+                        if (exception == null) {
+                            exception = e;
+                        } else {
+                            exception.addSuppressed(e);
+                        }
+                    } finally {
+                        try {
+                            var up = unprocessed.getAndSet(null);
+                            if (closeTimeout != null && up != null) {
+                                up.setCloseTimeout(closeTimeout);
+                            }
+                            Owner.close(up);
+                        } catch (Exception e) {
+                            if (exception == null) {
+                                exception = e;
+                            } else {
+                                exception.addSuppressed(e);
+                            }
+                        } finally {
+                            try {
+                                if (closeTimeout != null) {
+                                    delegate.setCloseTimeout(closeTimeout);
+                                }
+                                delegate.close();
+                                closed.set(true);
+                            } catch (Exception e) {
+                                if (exception == null) {
+                                    exception = e;
+                                } else {
+                                    exception.addSuppressed(e);
+                                }
+                            } finally {
+                                if (exception != null) {
+                                    if (exception instanceof IOException) {
+                                        throw (IOException) exception;
+                                    }
+                                    if (exception instanceof InterruptedException) {
+                                        throw (InterruptedException) exception;
+                                    }
+                                    if (exception instanceof ServerException) {
+                                        throw (ServerException) exception;
+                                    }
+                                    if (exception instanceof RuntimeException) {
+                                        throw (RuntimeException) exception;
+                                    }
+                                    throw new AssertionError(exception);
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        } finally {
-            Owner.close(unprocessed.getAndSet(null));
-            delegate.close();
-            closed.set(true);
         }
     }
 
