@@ -171,7 +171,7 @@ public final class IpcLink extends Link {
 
     @Override
     public String linkLostMessage() {
-        return isShutdownNative(wireHandle) ? "Session already shutdown" : "Server crashed";
+        return isShutdownNative(wireHandle) ? "Session already shutdown" : "IPC connection failure";
     }
 
     @Override

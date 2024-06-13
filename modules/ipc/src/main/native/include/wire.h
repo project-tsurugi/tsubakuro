@@ -974,7 +974,7 @@ public:
             flock(fd, LOCK_UN);
             close(fd);
             std::stringstream ss{};
-            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server crash";
+            ss << "the lock file (" << mutex_file_.c_str() << ") is not locked, possibly due to server process lost";
             return ss.str();
         }
         close(fd);
