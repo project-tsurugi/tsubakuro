@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.ipc.sql;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -89,7 +90,10 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public InputStream getByteBufferBackedInput() {
-        return byteBufferBackedInput;
+        if (byteBufferBackedInput != null) {
+            return byteBufferBackedInput;
+        }
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     /**
