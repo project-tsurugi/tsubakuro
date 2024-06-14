@@ -1,5 +1,6 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -207,7 +208,7 @@ public class ChannelResponse implements Response {
             var e = exceptionResultSet.get();
             throw new IOException(e.getMessage(), e);
         }
-        return null;
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     private InputStream metadataChannel() throws IOException, InterruptedException {
@@ -219,7 +220,7 @@ public class ChannelResponse implements Response {
             var e = exceptionResultSet.get();
             throw new IOException(e.getMessage(), e);
         }
-        return null;
+        return new ByteArrayInputStream(new byte[0]);
     }
 
     private void waitForResultSetOrMainResponse() throws IOException, InterruptedException {
