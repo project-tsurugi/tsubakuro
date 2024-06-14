@@ -163,15 +163,28 @@ public final class IpcLink extends Link {
 
     @Override
     public boolean isAlive() {
-        if (closed.get() || (wireHandle == 0)) {
-            return false;
+        rwl.readLock().lock();
+        try {
+            if (closed.get() || (wireHandle == 0)) {
+                return false;
+            }
+            return isAliveNative(wireHandle);
+        } finally {
+            rwl.readLock().unlock();
         }
-        return isAliveNative(wireHandle);
     }
 
     @Override
     public String linkLostMessage() {
-        return isShutdownNative(wireHandle) ? "Session already shutdown" : "IPC connection failure";
+        rwl.readLock().lock();
+        try {
+            if (closed.get() || (wireHandle == 0)) {
+                return "IPC link already closed";
+            }
+            return isShutdownNative(wireHandle) ? "Session already shutdown" : "IPC connection failure";
+        } finally {
+            rwl.readLock().unlock();
+        }
     }
 
     @Override
