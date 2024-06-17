@@ -4,7 +4,11 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   Build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
     permissions:
       checks: write
     timeout-minutes: 30
