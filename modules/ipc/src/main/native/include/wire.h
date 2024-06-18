@@ -896,7 +896,10 @@ public:
      *  used by client
      */
     [[nodiscard]] bool is_eor() const {
-        return eor_;
+        if (!eor_) {
+            return false;
+        }
+        return std::all_of(unidirectional_simple_wires_.begin(), unidirectional_simple_wires_.end(), [](const unidirectional_simple_wire& wire) { return !wire.has_record(); });
     }
 
 private:
