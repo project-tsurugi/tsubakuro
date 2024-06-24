@@ -12,6 +12,7 @@ public class ServerConnectionImpl implements Closeable {
     private static native long createNative(String name);
     private static native long listenNative(long handle);
     private static native void acceptNative(long handle, long id);
+    private static native void rejectNative(long handle);
     private static native void closeNative(long handle);
 
     static {
@@ -34,6 +35,10 @@ public class ServerConnectionImpl implements Closeable {
         var rv = new ServerWireImpl(name, id);
         acceptNative(handle, id);
         return rv;
+    }
+
+    public void reject() throws IOException {
+        rejectNative(handle);
     }
 
     public void close() throws IOException {

@@ -53,6 +53,19 @@ JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_Serve
 
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_ServerConnectionImpl
+ * Method:    rejectNative
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_ServerConnectionImpl_rejectNative
+  (JNIEnv *, jclass, jlong handle)
+{
+    connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
+
+    container->get_connection_queue().reject(container->get_connection_queue().slot());
+}
+
+/*
+ * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_ServerConnectionImpl
  * Method:    closeNative
  * Signature: (J)V
  */
