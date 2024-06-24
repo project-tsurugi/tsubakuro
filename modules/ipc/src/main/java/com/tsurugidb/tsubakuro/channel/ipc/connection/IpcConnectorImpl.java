@@ -1,6 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -26,8 +27,8 @@ public final class IpcConnectorImpl implements Connector {
 
     private static native long getConnectorNative(String name) throws IOException;
     private static native long requestNative(long handle) throws IOException;
-    private static native long waitNative(long handle, long id);
-    private static native long waitNative(long handle, long id, long timeout) throws TimeoutException;
+    private static native long waitNative(long handle, long id) throws ConnectException;
+    private static native long waitNative(long handle, long id, long timeout) throws ConnectException, TimeoutException;
     private static native boolean checkNative(long handle, long id);
     private static native void closeConnectorNative(long handle);
 

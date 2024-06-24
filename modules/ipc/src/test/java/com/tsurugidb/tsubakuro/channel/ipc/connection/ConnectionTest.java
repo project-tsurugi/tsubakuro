@@ -1,5 +1,7 @@
 package com.tsurugidb.tsubakuro.channel.ipc.connection;
 
+import java.net.ConnectException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,6 +43,48 @@ class ConnectionTest {
     }
 
     @Test
+    void reject() throws Exception {
+        ServerConnectionImpl serverConnection;
+
+        serverConnection = new ServerConnectionImpl(dbName);
+//        assertEquals(serverConnection.listen(), 0);
+
+        var connector = new IpcConnectorImpl(dbName);
+        var future = connector.connect();
+        var id = serverConnection.listen();
+        assertEquals(id, 1);
+        serverConnection.reject();
+
+        Throwable exception = assertThrows(ConnectException.class, () -> {
+            future.get();
+        });
+        assertEquals("IPC connection establishment failure", exception.getMessage());
+
+        serverConnection.close();
+    }
+
+    @Test
+    void reject_timeout() throws Exception {
+        ServerConnectionImpl serverConnection;
+
+        serverConnection = new ServerConnectionImpl(dbName);
+//        assertEquals(serverConnection.listen(), 0);
+
+        var connector = new IpcConnectorImpl(dbName);
+        var future = connector.connect();
+        var id = serverConnection.listen();
+        assertEquals(id, 1);
+        serverConnection.reject();
+
+        Throwable exception = assertThrows(ConnectException.class, () -> {
+            future.get(1, TimeUnit.SECONDS);
+        });
+        assertEquals("IPC connection establishment failure", exception.getMessage());
+
+        serverConnection.close();
+    }
+
+    @Test
     void timeout() throws Exception {
         try (var serverConnection = new ServerConnectionImpl(dbName)) {
 //            assertEquals(serverConnection.listen(), 0);
@@ -52,7 +96,7 @@ class ConnectionTest {
 
             var start = System.currentTimeMillis();
             Throwable exception = assertThrows(TimeoutException.class, () -> {
-                var client = (WireImpl) future.get(1, TimeUnit.SECONDS);
+                future.get(1, TimeUnit.SECONDS);
             });
             assertEquals("connection response has not been accepted within the specified time", exception.getMessage());
             var duration = System.currentTimeMillis() - start;

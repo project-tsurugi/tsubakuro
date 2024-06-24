@@ -57,14 +57,7 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
     try {
-        if (auto session_id = container->get_connection_queue().request(); session_id != tateyama::common::wire::connection_queue::session_id_indicating_error) {
-            return session_id;
-        }
-        jclass classj = env->FindClass("Ljava/net/ConnectException;");
-        if (classj == nullptr) { std::abort(); }
-        env->ThrowNew(classj, "IPC connection establishment failure");
-        env->DeleteLocalRef(classj);
-        return 0;
+        return container->get_connection_queue().request();
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/io/IOException;");
         if (classj == nullptr) { std::abort(); }
@@ -80,10 +73,17 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_waitNative__JJ
-(JNIEnv *, jclass, jlong handle, jlong id)
+(JNIEnv *env, jclass, jlong handle, jlong id)
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
-    return container->get_connection_queue().wait(id);
+    if (auto session_id = container->get_connection_queue().wait(id); session_id != tateyama::common::wire::connection_queue::session_id_indicating_error) {
+        return session_id;
+    }
+    jclass classj = env->FindClass("Ljava/net/ConnectException;");
+    if (classj == nullptr) { std::abort(); }
+    env->ThrowNew(classj, "IPC connection establishment failure");
+    env->DeleteLocalRef(classj);
+    return 0;
 }
 
 /*
@@ -96,7 +96,14 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_connection_IpcC
 {
     connection_container* container = reinterpret_cast<connection_container*>(static_cast<std::uintptr_t>(handle));
     try {
-        return container->get_connection_queue().wait(id, timeout / 1000);
+        if (auto session_id = container->get_connection_queue().wait(id, timeout / 1000); session_id != tateyama::common::wire::connection_queue::session_id_indicating_error) {
+            return session_id;
+        }
+        jclass classj = env->FindClass("Ljava/net/ConnectException;");
+        if (classj == nullptr) { std::abort(); }
+        env->ThrowNew(classj, "IPC connection establishment failure");
+        env->DeleteLocalRef(classj);
+        return 0;
     } catch (std::runtime_error &e) {
         jclass classj = env->FindClass("Ljava/util/concurrent/TimeoutException;");
         if (classj == nullptr) { std::abort(); }
