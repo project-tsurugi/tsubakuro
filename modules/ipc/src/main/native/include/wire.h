@@ -1010,9 +1010,9 @@ public:
             }
             pushed_.store(capacity_ - admin_slots);
         }
-        void push(std::size_t len) {
+        void push(std::size_t sid, std::size_t admin_slots = 0) {
             boost::interprocess::scoped_lock lock(mutex_);
-            queue_.at(index(pushed_.load())) = len;
+            queue_.at(index(pushed_.load() + admin_slots)) = sid;
             pushed_.fetch_add(1);
             std::atomic_thread_fence(std::memory_order_acq_rel);
             condition_.notify_one();
@@ -1155,17 +1155,17 @@ public:
     connection_queue& operator = (connection_queue&&) = delete;
 
     std::size_t request() {
-        auto rid = q_free_.try_pop();
-        q_requested_.push(rid);
-        return rid;
+        auto sid = q_free_.try_pop();
+        q_requested_.push(sid);
+        return sid;
     }
     std::size_t request_admin() {
-        auto rid = q_free_.try_pop(admin_slots_);
-        q_requested_.push(rid);
-        return rid;
+        auto sid = q_free_.try_pop(admin_slots_);
+        q_requested_.push(sid);
+        return sid;
     }
-    std::size_t wait(std::size_t rid, std::int64_t timeout = 0) {
-        auto& entry = v_requested_.at(rid);
+    std::size_t wait(std::size_t sid, std::int64_t timeout = 0) {
+        auto& entry = v_requested_.at(sid);
         try {
             auto rtnv = entry.wait(timeout);
             entry.reuse();
@@ -1175,8 +1175,8 @@ public:
             throw ex;
         }
     }
-    bool check(std::size_t rid) {
-        return v_requested_.at(rid).check();
+    bool check(std::size_t sid) {
+        return v_requested_.at(sid).check();
     }
     std::size_t listen() {
         if (q_requested_.wait(terminate_)) {
@@ -1196,10 +1196,10 @@ public:
     void reject(std::size_t sid) {
         q_requested_.pop();
         v_requested_.at(sid).reject();
-        q_free_.push(sid);
+        q_free_.push(sid, admin_slots_);
     }
-    void disconnect(std::size_t rid) {
-        q_free_.push(rid);
+    void disconnect(std::size_t sid) {
+        q_free_.push(sid, admin_slots_);
     }
 
     // for terminate
