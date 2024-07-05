@@ -383,15 +383,18 @@ public:
      */
     message_header peep(const char* base) {
         while (true) {
+            bool termination_requested = termination_requested_.load();
+            bool onetime_notification = onetime_notification_.load();
+            std::atomic_thread_fence(std::memory_order_acq_rel);
             if(stored() >= message_header::size) {
                 copy_header(base);
                 return header_received_;
             }
-            if (termination_requested_.load()) {
+            if (termination_requested) {
                 termination_requested_.store(false);
                 return {message_header::terminate_request, 0};
             }
-            if (onetime_notification_.load()) {
+            if (onetime_notification) {
                 throw std::runtime_error("received shutdown request from outside the communication partner");
             }
             boost::interprocess::scoped_lock lock(m_mutex_);
@@ -473,10 +476,12 @@ public:
         }
 
         while (true) {
+            bool closed_shutdown = closed_.load() || shutdown_.load();
+            std::atomic_thread_fence(std::memory_order_acq_rel);
             if(stored() >= response_header::size) {
                 break;
             }
-            if (closed_.load() || shutdown_.load()) {
+            if (closed_shutdown) {
                 header_received_ = response_header(0, 0, 0);
                 return header_received_;
             }
@@ -841,13 +846,15 @@ public:
                                           boost::get_system_time() + boost::posix_time::microseconds(u_cap(u_round(timeout))),
 #endif
                                           [this, &active_wire](){
+                                              bool eor = is_eor();
+                                              std::atomic_thread_fence(std::memory_order_acq_rel);
                                               for (auto&& wire: unidirectional_simple_wires_) {
                                                   if (wire.has_record()) {
                                                       active_wire = &wire;
                                                       return true;
                                                   }
                                               }
-                                              return is_eor();
+                                              return eor;
                                           })) {
                     wait_for_record_ = false;
                     throw std::runtime_error("record has not been received within the specified time");
@@ -896,10 +903,7 @@ public:
      *  used by client
      */
     [[nodiscard]] bool is_eor() const {
-        if (!eor_) {
-            return false;
-        }
-        return std::all_of(unidirectional_simple_wires_.begin(), unidirectional_simple_wires_.end(), [](const unidirectional_simple_wire& wire) { return !wire.has_record(); });
+        return eor_;
     }
 
 private:
