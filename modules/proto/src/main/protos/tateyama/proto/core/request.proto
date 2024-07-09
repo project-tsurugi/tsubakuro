@@ -31,8 +31,11 @@ message Request {
 // update session expiration time
 message UpdateExpirationTime {
 
-    // the expiration time (milliseconds from now) to be set
-    uint64 expiration_time = 1;
+    // the extending expiration time, or empty for the default duration to extend.
+    oneof expiration_time_opt {
+        // the expiration time (milliseconds from now) to be set
+        uint64 expiration_time = 1;
+    }
 }
 
 // kind of shutdown type.

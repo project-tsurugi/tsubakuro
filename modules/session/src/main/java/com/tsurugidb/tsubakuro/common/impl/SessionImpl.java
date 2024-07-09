@@ -2,12 +2,13 @@ package com.tsurugidb.tsubakuro.common.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.annotation.Nonnull;
 
@@ -53,6 +54,33 @@ public class SessionImpl implements Session {
     private Timeout closeTimeout;
 
     /**
+     * The keep alive interval in milliseconds.
+     */
+    public static final int KEEP_ALIVE_INTERVAL = 60000;
+    private final Timer timer = new Timer();
+    private boolean doKeepAlive = false;
+
+    private class KeepAliveTask extends TimerTask {
+        final Timer timer;
+
+        KeepAliveTask(Timer timer) {
+            this.timer = timer;
+        }
+
+        public void run() {
+            try {
+                if (!closed.get()) {
+                    updateExpirationTime().get();
+                } else {
+                    timer.cancel();
+                }
+            } catch (Exception ex) {
+                timer.cancel();
+            }
+        }
+    }
+
+    /**
      * Creates a new instance.
      * @param wire the underlying wire
      */
@@ -63,9 +91,19 @@ public class SessionImpl implements Session {
 
     /**
      * Creates a new instance, exist for SessionBuilder.
+     * @param doKeepAlive activate keep alive chore when doKeepAlive is true
+     */
+    public SessionImpl(boolean doKeepAlive) {
+        this.wire = null;
+        this.doKeepAlive = doKeepAlive;
+    }
+
+    /**
+     * Creates a new instance with doKeepAlive is false, exist for tests.
      */
     public SessionImpl() {
         this.wire = null;
+        this.doKeepAlive = false;
     }
 
     /**
@@ -80,6 +118,9 @@ public class SessionImpl implements Session {
     public void connect(@Nonnull Wire w) {
         Objects.requireNonNull(w);
         wire = w;
+        if (doKeepAlive) {
+            timer.scheduleAtFixedRate(new KeepAliveTask(timer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
+        }
     }
 
     @Override
@@ -144,6 +185,16 @@ public class SessionImpl implements Session {
     }
 
     @Override
+    public FutureResponse<Void> updateExpirationTime() throws IOException {
+        return send(
+            SERVICE_ID,
+            toDelimitedByteArray(newRequest()
+                .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder())
+                .build()),
+            new UpdateExpirationTimeProcessor().asResponseProcessor());
+    }
+
+    @Override
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
         return send(
             SERVICE_ID,
@@ -200,32 +251,57 @@ public class SessionImpl implements Session {
         return closeTimeout;
     }
 
-    static class CloseAction implements Consumer<ServerResource> {
-        @Override
-        public void accept(ServerResource r)  {
-            try {
-                r.close();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (ServerException | InterruptedException e) {
-                throw new UncheckedIOException(new IOException(e));
-            }
-        }
-    }
-
     /**
      * Close the Session
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
+            timer.cancel();  // does not throw any exception
+
+            Exception exception = null;
             // take care of the serviceStubs
-            try {
-                services.forEach(new CloseAction());
-            } catch (UncheckedIOException e) {
-                throw e.getCause();
+            if (closeTimeout != null) {
+                services.setCloseTimeout(closeTimeout);
             }
-            wireClose();
+            for (var e : services.entries()) {
+                try {
+                    e.close();
+                } catch (ServerException | IOException | InterruptedException fe) {
+                    if (exception == null) {
+                        exception = fe;
+                    } else {
+                        exception.addSuppressed(fe);
+                    }
+                }
+            }
+
+            try {
+                wireClose();
+            } catch (ServerException | IOException | InterruptedException se) {
+                if (exception == null) {
+                    exception = se;
+                } else {
+                    exception.addSuppressed(se);
+                }
+            }
+
+            if (exception != null) {
+                if (exception instanceof IOException) {
+                    throw (IOException) exception;
+                }
+                if (exception instanceof InterruptedException) {
+                    throw (InterruptedException) exception;
+                }
+                if (exception instanceof ServerException) {
+                    throw (ServerException) exception;
+                }
+                if (exception instanceof RuntimeException) {
+                    throw (RuntimeException) exception;
+                }
+                throw new AssertionError(exception);
+            }
+
         }
     }
 
