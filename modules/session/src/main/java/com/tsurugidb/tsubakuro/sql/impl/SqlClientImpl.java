@@ -74,6 +74,14 @@ public class SqlClientImpl implements SqlClient {
     }
 
     @Override
+    public FutureResponse<StatementMetadata> explain(@Nonnull String source) throws IOException {
+        var resuest = SqlRequest.ExplainByText.newBuilder()
+                .setSql(source)
+                .build();
+        return service.send(resuest);
+    }
+
+    @Override
     public FutureResponse<StatementMetadata> explain(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
