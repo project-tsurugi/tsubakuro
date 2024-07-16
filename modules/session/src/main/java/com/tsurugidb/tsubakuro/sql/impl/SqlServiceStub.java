@@ -405,6 +405,19 @@ public class SqlServiceStub implements SqlService {
                 new DescribeStatementProcessor().asResponseProcessor());
     }
 
+    @Override
+    public FutureResponse<StatementMetadata> send(
+            @Nonnull SqlRequest.ExplainByText request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (explain): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(newRequest()
+                    .setExplainByText(request)
+                    .build()),
+                new DescribeStatementProcessor().asResponseProcessor());
+    }
+
     class DescribeTableProcessor implements MainResponseProcessor<TableMetadata> {
         private final AtomicReference<SqlResponse.DescribeTable> detailResponseCache = new AtomicReference<>();
 

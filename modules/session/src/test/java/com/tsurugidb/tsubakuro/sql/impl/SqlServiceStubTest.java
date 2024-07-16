@@ -513,6 +513,79 @@ class SqlServiceStubTest {
     }
 
     @Test
+    void sendExplainByTextSuccess() throws Exception {
+        var columns = List.of(
+                Types.column("a", Types.of(BigDecimal.class)),
+                Types.column("b", Types.of(String.class)),
+                Types.column("c", Types.of(double.class)));
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN_BY_TEXT,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setSuccess(SqlResponse.Explain.Success.newBuilder()
+                                .setFormatId("T")
+                                .setFormatVersion(123)
+                                .setContents("TESTING")
+                                .addAllColumns(columns))
+                        .build())));
+
+        var message = SqlRequest.ExplainByText.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            assertEquals("T", result.getFormatId());
+            assertEquals(123, result.getFormatVersion());
+            assertEquals("TESTING", result.getContents());
+            assertEquals(columns, result.getColumns());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendExplainByTextOutput() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN_BY_TEXT,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setOutput("TESTING")
+                        .build())));
+
+        var message = SqlRequest.ExplainByText.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var result = future.get();
+            assertEquals(SqlServiceStub.FORMAT_ID_LEGACY_EXPLAIN, result.getFormatId());
+            assertEquals(SqlServiceStub.FORMAT_VERSION_LEGACY_EXPLAIN, result.getFormatVersion());
+            assertEquals("TESTING", result.getContents());
+            assertEquals(List.of(), result.getColumns());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendExplainByTextError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN_BY_TEXT,
+                RequestHandler.returns(SqlResponse.Explain.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.ExplainByText.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            assertThrows(SqlServiceException.class, () -> future.get());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
     void sendExplainSuccess() throws Exception {
         var columns = List.of(
                 Types.column("a", Types.of(BigDecimal.class)),
