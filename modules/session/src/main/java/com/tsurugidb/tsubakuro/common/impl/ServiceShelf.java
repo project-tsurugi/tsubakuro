@@ -49,10 +49,6 @@ class ServiceShelf {
         }
     }
 
-    LinkedHashSet<ServerResource> entries() {
-        return entries;
-    }
-
     void forEach(java.util.function.Consumer<ServerResource> f) {
         for (var e : entries) {
             f.accept(e);

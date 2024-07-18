@@ -77,23 +77,6 @@ public interface Session extends ServerResource {
     FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException;
 
     /**
-     * Requests to extend the session expiration time by the server default value.
-     * <p>
-     * The resources underlying this session will be disposed after this session was expired.
-     * To extend the expiration time, clients should continue to send requests in this session, or update expiration time explicitly by using this method.
-     * </p>
-     * <p>
-     * If the session expiration is disabled, this does nothing.
-     * </p>
-     * @return the future response of the request;
-     *     it will raise {@link CoreServiceException} if request was failure
-     * @throws IOException if I/O error was occurred while sending request
-     */
-    default FutureResponse<Void> updateExpirationTime() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
      * Requests to update the session expiration time.
      * <p>
      * The resources underlying this session will be disposed after this session was expired.
@@ -101,10 +84,6 @@ public interface Session extends ServerResource {
      * </p>
      * <p>
      * If the specified expiration time is too long, the server will automatically shorten it to its limit.
-     * Or, if the time is too short or less than zero, the server sometimes omits the request.
-     * </p>
-     * <p>
-     * If the session expiration is disabled, this does nothing.
      * </p>
      * @param time the expiration time from now
      * @param unit the time unit of expiration time
@@ -112,9 +91,7 @@ public interface Session extends ServerResource {
      *     it will raise {@link CoreServiceException} if request was failure
      * @throws IOException if I/O error was occurred while sending request
      */
-    default FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException {
-        throw new UnsupportedOperationException();
-    }
+    FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException;
 
     /**
      * Connect this session to the SQL server.
