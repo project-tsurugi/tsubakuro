@@ -39,8 +39,6 @@ public final class SessionBuilder {
 
     private String userName;
 
-    private boolean doKeepAlive = true;
-
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
@@ -117,16 +115,6 @@ public final class SessionBuilder {
     }
 
     /**
-     * Enables or disables session keep-alive.
-     * @param enabled {@code true} to enable session keep-alive, or {@code false} to disable it
-     * @return this
-     */
-    public SessionBuilder withKeepAlive(boolean enabled) {
-        doKeepAlive = enabled;
-        return this;
-    }
-
-    /**
      * Establishes a connection to the Tsurugi server.
      * This operation will block until the connection was established,
      * please consider to use {@link #create(long, TimeUnit)}.
@@ -191,7 +179,7 @@ public final class SessionBuilder {
 
     private Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
-        var session = new SessionImpl(doKeepAlive);
+        var session = new SessionImpl();
         boolean green = false;
         try {
             session.connect(wire);
