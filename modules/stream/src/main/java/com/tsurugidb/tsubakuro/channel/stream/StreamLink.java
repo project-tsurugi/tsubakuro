@@ -20,7 +20,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.LinkMessage;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 
 public final class StreamLink extends Link {
@@ -35,7 +34,6 @@ public final class StreamLink extends Link {
     // 1 is nolonger used
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
-    private static final byte REQUEST_SESSION_BYE = 4;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -43,9 +41,7 @@ public final class StreamLink extends Link {
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
     public static final byte RESPONSE_SESSION_BODYHEAD = 7;
-    public static final byte RESPONSE_SESSION_BYE_OK = 8;
 
-    private static final int TERMINATION_REQUEST = 0xffff;
     private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
@@ -143,11 +139,6 @@ public final class StreamLink extends Link {
             }
             resultSetBox.pushBye(slot);
             return true;
-
-        case RESPONSE_SESSION_BYE_OK:
-            LOG.trace("receive RESPONSE_SESSION_BYE_OK");
-            closeBoxes(true);
-            return false;
 
         default:
             if (throwException) {
@@ -314,14 +305,8 @@ public final class StreamLink extends Link {
     public void close() throws IOException, ServerException {
         if (!closed.getAndSet(true) && !socketError.get()) {
             try (var c1 = socket; var c2 = inStream; var c3 = outStream) {
-                send(REQUEST_SESSION_BYE, TERMINATION_REQUEST);
-                while (!socketClosed.get()) {
-                    doPull(closeTimeout, closeTimeUnit);
-                }
-            } catch (TimeoutException e) {
-                socketError.set(true);
-                closeBoxes(false);
-                throw new ResponseTimeoutException("close timeout in StreamLink", e);
+                c1.close();
+                closeBoxes(true);
             } catch (Exception e) {
                 socketError.set(true);
                 closeBoxes(false);
