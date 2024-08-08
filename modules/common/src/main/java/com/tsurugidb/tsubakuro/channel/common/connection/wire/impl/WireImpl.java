@@ -112,6 +112,38 @@ public class WireImpl implements Wire {
     }
 
     /**
+     * Send an Urgent Request to the server via the native wire.
+     * @param serviceId the destination service ID
+     * @param payload the Request message in byte[]
+     * @return a Future response message corresponding the request
+     * @throws IOException error occurred in ByteBuffer variant of send()
+     */
+    public FutureResponse<? extends Response> sendUrgent(int serviceId, @Nonnull byte[] payload) throws IOException {
+        if (closed.get()) {
+            throw new IOException("already closed");
+        }
+        var header = FrameworkRequest.Header.newBuilder()
+            .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
+            .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR)
+            .setServiceId(serviceId)
+            .setSessionId(sessionId())
+            .build();
+        var response = responseBox.registerUrgent(toDelimitedByteArray(header), payload);
+        return FutureResponse.wrap(Owner.of(response));
+    }
+
+    /**
+     * Send an Urgent Request to the server via the native wire.
+     * @param serviceId the destination service ID
+     * @param payload the Request message in ByteBuffer
+     * @return a Future response message corresponding the request
+     * @throws IOException error occurred in responseBox.register()
+     */
+    public FutureResponse<? extends Response> sendUrgent(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
+        return send(serviceId, payload.array());
+    }
+
+    /**
      * Create a ResultSetWire without a name, meaning that this wire is not connected
      * @return ResultSetWireImpl
     */

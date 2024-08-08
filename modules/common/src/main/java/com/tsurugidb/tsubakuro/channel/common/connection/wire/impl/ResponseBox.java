@@ -22,13 +22,13 @@ public class ResponseBox {
 
     private final Link link;
     private final Queues queues;
-    private SlotEntry[] boxes = new SlotEntry[SIZE];
+    private SlotEntry[] boxes = new SlotEntry[SIZE + 1];  // '+ 1' for urgent request
     private boolean intentionalClose = false;
 
     public ResponseBox(@Nonnull Link link) {
         this.link = link;
         this.queues = new Queues(link);
-        for (byte i = 0; i < SIZE; i++) {
+        for (int i = 0; i < SIZE + 1; i++) {
             boxes[i] = new SlotEntry(i);
             queues.addSlot(boxes[i]);
         }
@@ -51,12 +51,28 @@ public class ResponseBox {
         return channelResponse;
     }
 
+    ChannelResponse registerUrgent(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
+        var slotEntry = boxes[SIZE];
+        if (slotEntry.channelResponse() == null) {
+            var channelResponse = new ChannelResponse(link, slotEntry.slot());
+            slotEntry.channelResponse(channelResponse);
+            slotEntry.requestMessage(payload);
+            link.send(slotEntry.slot(), header, payload, channelResponse);
+            return channelResponse;
+        }
+        throw new IOException("urgent slot is in use");
+    }
+
     public void push(int slot, byte[] payload) {
         var slotEntry = boxes[slot];
         var channelResponse = slotEntry.channelResponse();
         if (channelResponse != null) {
             channelResponse.setMainResponse(ByteBuffer.wrap(payload));
-            returnEntryToQueue(slotEntry);
+            if (slot < SIZE) {
+                returnEntryToQueue(slotEntry);
+            } else {
+                slotEntry.resetChannelResponse();
+            }
             return;
         }
         LOG.error("invalid slotEntry is used: slot={}, payload={}", slot, payload);
@@ -66,7 +82,11 @@ public class ResponseBox {
     public void push(int slot, IOException e) {
         var slotEntry = boxes[slot];
         slotEntry.channelResponse().setMainResponse(e);
-        returnEntryToQueue(slotEntry);
+        if (slot < SIZE) {
+            returnEntryToQueue(slotEntry);
+        } else {
+            slotEntry.resetChannelResponse();
+        }
     }
 
     private void returnEntryToQueue(SlotEntry slotEntry) {
