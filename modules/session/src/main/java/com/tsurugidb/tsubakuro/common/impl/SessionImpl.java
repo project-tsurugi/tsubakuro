@@ -184,9 +184,23 @@ public class SessionImpl implements Session {
         }
     }
 
+    private <R> FutureResponse<R> sendUpdateExpirationTime(
+        int serviceId,
+        @Nonnull byte[] payload,
+        @Nonnull ResponseProcessor<R> processor) throws IOException {
+        Objects.requireNonNull(payload);
+        Objects.requireNonNull(processor);
+        if (wire instanceof WireImpl) {
+            FutureResponse<? extends Response> future = ((WireImpl) wire).sendUrgent(serviceId, payload);
+            return convert(future, processor);
+        }
+        FutureResponse<? extends Response> future = wire.send(serviceId, payload);
+        return convert(future, processor);
+    }
+
     @Override
     public FutureResponse<Void> updateExpirationTime() throws IOException {
-        return send(
+        return sendUpdateExpirationTime(
             SERVICE_ID,
             toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder())
@@ -196,7 +210,7 @@ public class SessionImpl implements Session {
 
     @Override
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
-        return send(
+        return sendUpdateExpirationTime(
             SERVICE_ID,
             toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
