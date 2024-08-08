@@ -88,13 +88,14 @@ public final class IpcLink extends Link {
     }
 
     @Override
-    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException {
+    public boolean doPull(long timeout, TimeUnit unit) throws TimeoutException, IOException {
         LinkMessage message = null;
         boolean intentionalClose = true;
         try {
             message = receive(timeout == 0 ? 0 : unit.toMicros(timeout));
         } catch (IOException e) {
             intentionalClose = false;
+            throw e;
         }
 
         if (message != null) {
