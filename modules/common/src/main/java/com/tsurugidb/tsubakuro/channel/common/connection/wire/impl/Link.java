@@ -58,6 +58,8 @@ public abstract class Link implements ServerResource {
                         throw new IOException(linkLostMessage());
                     }
                     receivedMessageNumber++;
+                } catch (IOException e) {
+                    throw e;
                 } finally {
                     useLink.set(false);
                 }
@@ -134,8 +136,9 @@ public abstract class Link implements ServerResource {
      * @return true if the pull is successful, otherwise false
      * @throws TimeoutException if Timeout error was occurred while pulling response message,
      *      which won't be occured when t is 0
+     * @throws IOException if I/O error was occurred while pulling response message
      */
-    public abstract boolean doPull(long t, TimeUnit u) throws TimeoutException;
+    public abstract boolean doPull(long t, TimeUnit u) throws TimeoutException, IOException;
 
     /**
      * Provide dead/alive information of this link
