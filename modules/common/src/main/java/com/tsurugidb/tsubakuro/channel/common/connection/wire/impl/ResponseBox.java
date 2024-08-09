@@ -17,25 +17,40 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
  */
 public class ResponseBox {
     private static final int SIZE = Byte.MAX_VALUE;
+    private static final int URGENT_SIZE = 2;
 
     static final Logger LOG = LoggerFactory.getLogger(ResponseBox.class);
 
     private final Link link;
     private final Queues queues;
-    private SlotEntry[] boxes = new SlotEntry[SIZE + 1];  // '+ 1' for urgent request
+    private final Queues urgentQueues;
+    private SlotEntry[] boxes = new SlotEntry[SIZE + URGENT_SIZE];
     private boolean intentionalClose = false;
 
     public ResponseBox(@Nonnull Link link) {
         this.link = link;
         this.queues = new Queues(link);
-        for (int i = 0; i < SIZE + 1; i++) {
+        this.urgentQueues = new Queues(link);
+        for (int i = 0; i < SIZE + URGENT_SIZE; i++) {
             boxes[i] = new SlotEntry(i);
-            queues.addSlot(boxes[i]);
+            if (i < SIZE) {
+                queues.addSlot(boxes[i]);
+            } else {
+                urgentQueues.addSlot(boxes[i]);
+            }
         }
     }
 
-    public ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
-        var slotEntry = queues.pollSlot();
+    ChannelResponse register(@Nonnull byte[] header, @Nonnull byte[] payload) {
+        return registerInternal(header, payload, queues);
+    }
+
+    ChannelResponse registerUrgent(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
+        return registerInternal(header, payload, urgentQueues);
+    }
+
+    private ChannelResponse registerInternal(@Nonnull byte[] header, @Nonnull byte[] payload, Queues q) {
+        var slotEntry = q.pollSlot();
         if (slotEntry != null) {
             var channelResponse = new ChannelResponse(link, slotEntry.slot());
             slotEntry.channelResponse(channelResponse);
@@ -44,23 +59,11 @@ public class ResponseBox {
             return channelResponse;
         }
         var channelResponse = new ChannelResponse(link);
-        queues.addRequest(new RequestEntry(channelResponse, header, payload));
+        q.addRequest(new RequestEntry(channelResponse, header, payload));
         if (!queues.isSlotEmpty()) {
-            queues.pairAnnihilation();
+            q.pairAnnihilation();
         }
         return channelResponse;
-    }
-
-    ChannelResponse registerUrgent(@Nonnull byte[] header, @Nonnull byte[] payload) throws IOException {
-        var slotEntry = boxes[SIZE];
-        if (slotEntry.channelResponse() == null) {
-            var channelResponse = new ChannelResponse(link, slotEntry.slot());
-            slotEntry.channelResponse(channelResponse);
-            slotEntry.requestMessage(payload);
-            link.send(slotEntry.slot(), header, payload, channelResponse);
-            return channelResponse;
-        }
-        throw new IOException("urgent slot is in use");
     }
 
     public void push(int slot, byte[] payload) {
@@ -69,9 +72,9 @@ public class ResponseBox {
         if (channelResponse != null) {
             channelResponse.setMainResponse(ByteBuffer.wrap(payload));
             if (slot < SIZE) {
-                returnEntryToQueue(slotEntry);
+                returnEntryToQueue(slotEntry, queues);
             } else {
-                slotEntry.resetChannelResponse();
+                returnEntryToQueue(slotEntry, urgentQueues);
             }
             return;
         }
@@ -81,16 +84,22 @@ public class ResponseBox {
 
     public void push(int slot, IOException e) {
         var slotEntry = boxes[slot];
-        slotEntry.channelResponse().setMainResponse(e);
-        if (slot < SIZE) {
-            returnEntryToQueue(slotEntry);
-        } else {
-            slotEntry.resetChannelResponse();
+        var channelResponse = slotEntry.channelResponse();
+        if (channelResponse != null) {
+            channelResponse.setMainResponse(e);
+            if (slot < SIZE) {
+                returnEntryToQueue(slotEntry, queues);
+            } else {
+                returnEntryToQueue(slotEntry, urgentQueues);
+            }
+            return;
         }
+        LOG.error("invalid slotEntry is used: slot={}, exception={}", slot, e);
+        throw new AssertionError("invalid slotEntry is used");
     }
 
-    private void returnEntryToQueue(SlotEntry slotEntry) {
-        var queuedRequest = queues.pollRequest();
+    private void returnEntryToQueue(SlotEntry slotEntry, Queues q) {
+        var queuedRequest = q.pollRequest();
         if (queuedRequest != null) {
             var channelResponse = queuedRequest.channelResponse();
             var slot = slotEntry.slot();
@@ -102,11 +111,11 @@ public class ResponseBox {
             }
             return;
         }
-        queues.addSlot(slotEntry);
-        if (queues.isRequestEmpty()) {
+        q.addSlot(slotEntry);
+        if (q.isRequestEmpty()) {
             return;
         }
-        queues.pairAnnihilation();
+        q.pairAnnihilation();
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
