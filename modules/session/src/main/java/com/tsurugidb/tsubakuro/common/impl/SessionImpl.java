@@ -184,7 +184,7 @@ public class SessionImpl implements Session {
         }
     }
 
-    private <R> FutureResponse<R> sendUpdateExpirationTime(
+    private <R> FutureResponse<R> sendUrgent(
         int serviceId,
         @Nonnull byte[] payload,
         @Nonnull ResponseProcessor<R> processor) throws IOException {
@@ -200,7 +200,7 @@ public class SessionImpl implements Session {
 
     @Override
     public FutureResponse<Void> updateExpirationTime() throws IOException {
-        return sendUpdateExpirationTime(
+        return sendUrgent(
             SERVICE_ID,
             toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder())
@@ -210,7 +210,7 @@ public class SessionImpl implements Session {
 
     @Override
     public FutureResponse<Void> updateExpirationTime(long t, @Nonnull TimeUnit u) throws IOException {
-        return sendUpdateExpirationTime(
+        return sendUrgent(
             SERVICE_ID,
             toDelimitedByteArray(newRequest()
                 .setUpdateExpirationTime(CoreRequest.UpdateExpirationTime.newBuilder()
@@ -235,7 +235,7 @@ public class SessionImpl implements Session {
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
         try {
-            return send(
+            return sendUrgent(
                 SERVICE_ID,
                     toDelimitedByteArray(newRequest()
                         .setShutdown(shutdownMessageBuilder.setType(type.type()))
