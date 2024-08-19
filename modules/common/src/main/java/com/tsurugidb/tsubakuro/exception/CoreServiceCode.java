@@ -45,7 +45,7 @@ public enum CoreServiceCode implements DiagnosticCode {
             value = "operation was requested in illegal or inappropriate time.",
             reference = {
                     "Issue: \"SCD-00102: handshake operation is required to establish sessions\""
-                    + "@https://github.com/project-tsurugi/tsurugidb/blob/doc-client-error-code/docs/upgrade-guide.md"
+                    + "upgrade-guide.md"
                     + "#handshake-required",
             })
     ILLEGAL_STATE(1_02, Diagnostics.Code.ILLEGAL_STATE),
@@ -123,7 +123,7 @@ public enum CoreServiceCode implements DiagnosticCode {
             value = "the destination service was not found.",
             reference = {
                     "Issue: \"SCD-00402: unsupported service message\""
-                    + "@https://github.com/project-tsurugi/tsurugidb/blob/doc-client-error-code/docs/upgrade-guide.md"
+                    + "upgrade-guide.md"
                     + "#service-not-registered",
             })
     SERVICE_UNAVAILABLE(4_02, Diagnostics.Code.SERVICE_UNAVAILABLE),
@@ -141,7 +141,7 @@ public enum CoreServiceCode implements DiagnosticCode {
             value = "the service received a request message with invalid payload.",
             reference = {
                     "Issue: \"SCD-00501: inconsistent service message version\""
-                    + "@https://github.com/project-tsurugi/tsurugidb/blob/doc-client-error-code/docs/upgrade-guide.md"
+                    + "upgrade-guide.md"
                     + "#inconsistent-message",
             })
     INVALID_REQUEST(5_01, Diagnostics.Code.INVALID_REQUEST),
