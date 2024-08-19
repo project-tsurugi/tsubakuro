@@ -803,6 +803,54 @@ class SqlServiceStubTest {
     }
 
 
+    @Test
+    void sendBatchSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.BATCH,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4)))
+                        .build())));
+
+        var message = SqlRequest.Batch.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.containsAll(List.of(CounterType.INSERTED_ROWS, CounterType.UPDATED_ROWS, CounterType.MERGED_ROWS, CounterType.DELETED_ROWS)));
+            var counters = executeResult.getCounters();
+            assertEquals(counters.get(CounterType.INSERTED_ROWS), 1);
+            assertEquals(counters.get(CounterType.UPDATED_ROWS), 2);
+            assertEquals(counters.get(CounterType.MERGED_ROWS), 3);
+            assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendBatchEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.BATCH,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.Batch.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
 
     @Test
     void sendQuerySuccess() throws Exception {

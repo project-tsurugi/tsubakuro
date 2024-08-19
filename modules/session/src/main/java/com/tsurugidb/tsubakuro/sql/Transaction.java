@@ -136,7 +136,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * @return a future response of the action
      * @throws IOException if I/O error was occurred while sending request, or the parameter table is too large
      */
-    default FutureResponse<Void> batch(
+    default FutureResponse<ExecuteResult> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {

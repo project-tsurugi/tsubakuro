@@ -133,7 +133,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<Void> batch(
+    public FutureResponse<ExecuteResult> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {
