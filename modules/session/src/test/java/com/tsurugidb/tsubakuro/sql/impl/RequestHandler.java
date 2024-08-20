@@ -104,11 +104,6 @@ public interface RequestHandler {
         var sqlResponse = SqlResponse.Response.newBuilder().setExecuteResult(response).build();
         return returns(toDelimitedByteArray(sqlResponse));
     }
-    static RequestHandler returns(SqlResponse.Batch response) {
-        Objects.requireNonNull(response);
-        var sqlResponse = SqlResponse.Response.newBuilder().setBatch(response).build();
-        return returns(toDelimitedByteArray(sqlResponse));
-    }
     static RequestHandler returns(SqlResponse.ListTables response) {
         Objects.requireNonNull(response);
         var sqlResponse = SqlResponse.Response.newBuilder().setListTables(response).build();

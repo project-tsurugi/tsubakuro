@@ -517,6 +517,19 @@ public class SqlServiceStub implements SqlService {
                 new ExecuteProcessor().asResponseProcessor());
     }
 
+    @Override
+    public FutureResponse<ExecuteResult> send(
+            @Nonnull SqlRequest.Batch request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (batch): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(newRequest()
+                    .setBatch(request)
+                    .build()),
+                new ExecuteProcessor().asResponseProcessor());
+    }
+
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
         Message request;
 
@@ -618,10 +631,6 @@ public class SqlServiceStub implements SqlService {
                     .setExecuteQuery(request)
                     .build()),
                     new QueryProcessor(request));
-// FIXME  use backgroundResponseProcessor
-//                new QueryProcessor(session.getWire()),
-//                true);
-
     }
 
     @Override
@@ -635,48 +644,6 @@ public class SqlServiceStub implements SqlService {
                     .setExecutePreparedQuery(request)
                     .build()),
                     new QueryProcessor(request));
-// FIXME  use backgroundResponseProcessor
-//                new QueryProcessor(session.getWire()),
-//                true);
-    }
-
-    class BatchProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.Batch> detailResponseCache = new AtomicReference<>();
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
-                throw new IOException("session already closed");
-            }
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.BATCH.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getBatch());
-            }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (batch): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.Batch.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
-            }
-            return null;
-        }
-    }
-
-    @Override
-    public FutureResponse<Void> send(
-            @Nonnull SqlRequest.Batch request) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (batch): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setBatch(request)
-                    .build()),
-                new BatchProcessor().asResponseProcessor());
     }
 
     @Override

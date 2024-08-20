@@ -144,7 +144,7 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<Void> send(@Nonnull SqlRequest.Batch request) throws IOException {
+    default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.Batch request) throws IOException {
         throw new UnsupportedOperationException();
     }
 
