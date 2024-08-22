@@ -230,8 +230,6 @@ public:
         catch(const boost::interprocess::interprocess_exception& ex) {
                 std::string msg("cannot find a database with the specified name: ");
                 msg += db_name;
-                msg += ", cause : ";  // FIXME remove this line
-                msg += ex.what();     // FIXME remove this line
                 throw std::runtime_error(msg.c_str());
         }
     }
