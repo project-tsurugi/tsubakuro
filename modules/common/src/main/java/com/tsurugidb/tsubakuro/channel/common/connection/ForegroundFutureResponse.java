@@ -17,6 +17,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -26,6 +27,8 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * @param <V> the specified response type
  */
 public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXME remove public
+    private static final int POLL_INTERVAL = 1000; // in mS
+
     static final Logger LOG = LoggerFactory.getLogger(ForegroundFutureResponse.class);
 
     private final FutureResponse<? extends Response> delegate;
@@ -157,12 +160,27 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             } catch (Exception e) {
                 exception = e;
             } finally {
-                try { 
-                    var up = unprocessed.getAndSet(null);
-                    if (closeTimeout != null && up != null) {
-                        up.setCloseTimeout(closeTimeout);
+                ServerResource sr = null;
+                try {
+                    if (closeTimeout != null) {
+                        var obj = get(closeTimeout.value(), closeTimeout.unit());
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                            sr.setCloseTimeout(closeTimeout);
+                        }
+                    } else {
+                        var obj = get();
+                        if (obj instanceof ServerResource) {
+                            sr = (ServerResource) obj;
+                        }
                     }
-                    Owner.close(up);
+                } catch (TimeoutException e) {
+                    var ne = new ResponseTimeoutException(e);
+                    if (exception == null) {
+                        exception = ne;
+                    } else {
+                        exception.addSuppressed(ne);
+                    }
                 } catch (Exception e) {
                     if (exception == null) {
                         exception = e;
@@ -171,11 +189,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                 } finally {
                     try {
-                        if (closeTimeout != null) {
-                            delegate.setCloseTimeout(closeTimeout);
+                        if (sr != null) {
+                            sr.close();
                         }
-                        delegate.close();
-                        closed.set(true);
                     } catch (Exception e) {
                         if (exception == null) {
                             exception = e;
@@ -183,20 +199,48 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                             exception.addSuppressed(e);
                         }
                     } finally {
-                        if (exception != null) {
-                            if (exception instanceof IOException) {
-                                throw (IOException) exception;
+                        try {
+                            var up = unprocessed.getAndSet(null);
+                            if (closeTimeout != null && up != null) {
+                                up.setCloseTimeout(closeTimeout);
                             }
-                            if (exception instanceof InterruptedException) {
-                                throw (InterruptedException) exception;
+                            Owner.close(up);
+                        } catch (Exception e) {
+                            if (exception == null) {
+                                exception = e;
+                            } else {
+                                exception.addSuppressed(e);
                             }
-                            if (exception instanceof ServerException) {
-                                throw (ServerException) exception;
+                        } finally {
+                            try {
+                                if (closeTimeout != null) {
+                                    delegate.setCloseTimeout(closeTimeout);
+                                }
+                                delegate.close();
+                                closed.set(true);
+                            } catch (Exception e) {
+                                if (exception == null) {
+                                    exception = e;
+                                } else {
+                                    exception.addSuppressed(e);
+                                }
+                            } finally {
+                                if (exception != null) {
+                                    if (exception instanceof IOException) {
+                                        throw (IOException) exception;
+                                    }
+                                    if (exception instanceof InterruptedException) {
+                                        throw (InterruptedException) exception;
+                                    }
+                                    if (exception instanceof ServerException) {
+                                        throw (ServerException) exception;
+                                    }
+                                    if (exception instanceof RuntimeException) {
+                                        throw (RuntimeException) exception;
+                                    }
+                                    throw new AssertionError(exception);
+                                }
                             }
-                            if (exception instanceof RuntimeException) {
-                                throw (RuntimeException) exception;
-                            }
-                            throw new AssertionError(exception);
                         }
                     }
                 }
