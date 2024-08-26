@@ -167,6 +167,7 @@ public final class Parameters {
     }
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Returns a new {@code BIT} parameter.
      * @param name the place-holder name
      * @param value the value
@@ -192,6 +193,7 @@ public final class Parameters {
     }
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Returns a new {@code BIT} parameter.
      * @param name the place-holder name
      * @param value the value

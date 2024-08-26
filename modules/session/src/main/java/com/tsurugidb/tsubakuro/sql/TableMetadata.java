@@ -8,12 +8,14 @@ import java.util.Optional;
 public interface TableMetadata extends RelationMetadata {
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Returns the database name where the table defined.
      * @return the database name, or empty if it is not set
      */
     Optional<String> getDatabaseName();
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Returns the schema name where the table defined.
      * @return the schema name, or empty if it is not set
      */

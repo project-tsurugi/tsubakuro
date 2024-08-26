@@ -123,6 +123,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
     }
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Executes a SQL statement with 2-dimension parameter table.
      * <p>
      * This operation may raise {@link IOException} if the 2-D parameter table is too large to send a request.
