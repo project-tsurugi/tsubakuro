@@ -107,9 +107,6 @@ message Explain {
     // request is successfully completed.
     Success success = 11;
 
-    // deprecated: The result output string of the explain.
-    string output = 1;
-
     Error error = 2;
   }
 }

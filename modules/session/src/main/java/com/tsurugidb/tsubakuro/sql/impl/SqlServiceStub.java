@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -370,14 +369,6 @@ public class SqlServiceStub implements SqlService {
             var detailResponse = detailResponseCache.get();
             LOG.trace("receive (explain): {}", detailResponse); //$NON-NLS-1$
             switch (detailResponse.getResultCase()) {
-            case OUTPUT:
-                LOG.warn("deprecated response: {}", detailResponse);
-                return new BasicStatementMetadata(
-                        FORMAT_ID_LEGACY_EXPLAIN,
-                        FORMAT_VERSION_LEGACY_EXPLAIN,
-                        detailResponse.getOutput(),
-                        List.of());
-
             case SUCCESS:
                 return new StatementMetadataAdapter(detailResponse.getSuccess());
 

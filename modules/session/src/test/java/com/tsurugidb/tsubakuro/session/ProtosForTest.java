@@ -890,13 +890,14 @@ public final class ProtosForTest {
         public static SqlResponse.Explain.Builder builder() {
             return
                 SqlResponse.Explain.newBuilder()
-                .setOutput(EXPLAIN);
+                .setSuccess(SqlResponse.Explain.Success.newBuilder()
+                    .setContents(EXPLAIN));
         }
         public static boolean check(SqlResponse.Explain dst) {
             return
-                dst.getOutput().equals(EXPLAIN);
+                dst.getSuccess().getContents().equals(EXPLAIN);
         }
-        
+
         void test() {
             try {
                 assertTrue(check(SqlResponse.Explain.parseFrom(builder().build().toByteArray())));
