@@ -547,8 +547,11 @@ class SqlServiceStubTest {
     void sendExplainByTextOutput() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN_BY_TEXT,
                 RequestHandler.returns(SqlResponse.Explain.newBuilder()
-                        .setOutput("TESTING")
-                        .build())));
+                    .setSuccess(SqlResponse.Explain.Success.newBuilder()
+                        .setFormatId(SqlServiceStub.FORMAT_ID_LEGACY_EXPLAIN)
+                        .setFormatVersion(SqlServiceStub.FORMAT_VERSION_LEGACY_EXPLAIN)
+                        .setContents("TESTING"))
+                    .build())));
 
         var message = SqlRequest.ExplainByText.newBuilder()
                 .setSql("SELECT 1")
@@ -620,8 +623,11 @@ class SqlServiceStubTest {
     void sendExplainOutput() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXPLAIN,
                 RequestHandler.returns(SqlResponse.Explain.newBuilder()
-                        .setOutput("TESTING")
-                        .build())));
+                    .setSuccess(SqlResponse.Explain.Success.newBuilder()
+                        .setFormatId(SqlServiceStub.FORMAT_ID_LEGACY_EXPLAIN)
+                        .setFormatVersion(SqlServiceStub.FORMAT_VERSION_LEGACY_EXPLAIN)
+                        .setContents("TESTING"))
+                    .build())));
 
         var message = SqlRequest.Explain.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.getDefaultInstance())
