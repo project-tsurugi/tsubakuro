@@ -3,6 +3,7 @@ plugins {
     id 'checkstyle'
 
     id 'com.github.spotbugs'
+    id 'com.github.hierynomus.license'
 }
 
 repositories {
@@ -90,4 +91,12 @@ tasks.named('test') {
         events 'started', 'skipped', 'passed', 'failed'
         exceptionFormat 'full'
     }
+}
+
+license {
+    def confDir = 'buildSrc/src/main/resources'
+    header rootProject.file("$confDir/source-header.txt")
+    mapping('java', 'SLASHSTAR_STYLE')
+    include('**/*.java')
+    ignoreFailures true
 }
