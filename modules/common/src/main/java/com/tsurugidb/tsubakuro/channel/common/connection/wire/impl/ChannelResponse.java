@@ -280,13 +280,17 @@ public class ChannelResponse implements Response {
         Objects.requireNonNull(response);
         Objects.requireNonNull(resultSetWire);
         try {
-            var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
-            var detailResponse = sqlResponse.getExecuteQuery();
-            resultSetName = detailResponse.getName();
-            resultSetWire.connect(resultSetName);
+            var res = skipFrameworkHeader(response);
+            if (cancelThreadId == 0 || res.hasRemaining()) {
+                var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(res));
+                var detailResponse = sqlResponse.getExecuteQuery();
+                resultSetName = detailResponse.getName();
+                resultSetWire.connect(resultSetName);
 
-            metadata.set(detailResponse);
-            resultSet.set(resultSetWire);
+                metadata.set(detailResponse);
+                resultSet.set(resultSetWire);
+            }
+            // if cancel has been requested && skipFrameworkHeader() returns exhausted ByteBuffer then we need not store exception here
         } catch (IOException | ServerException e) {
             exceptionResultSet.set(e);
         }
@@ -297,7 +301,10 @@ public class ChannelResponse implements Response {
         var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
-            throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
+            if (cancelThreadId == 0 || errorResponse.getCode() != com.tsurugidb.diagnostics.proto.Diagnostics.Code.OPERATION_CANCELED) {
+                throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
+            }
+            // if cancel has been requested && error is OPERATION_CANCELED then we need not throw exception here
         }
         return response;
     }
