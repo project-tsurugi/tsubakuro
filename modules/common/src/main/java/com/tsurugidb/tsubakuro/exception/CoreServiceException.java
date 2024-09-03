@@ -31,9 +31,10 @@ public class CoreServiceException extends ServerException {
 
     /**
      * Creates a new instance.
-     * @param code the diagnostic code
+     *
+     * @param code    the diagnostic code
      * @param message the error message
-     * @param cause the original cause
+     * @param cause   the original cause
      */
     public CoreServiceException(@Nonnull CoreServiceCode code, @Nullable String message, @Nullable Throwable cause) {
         super(buildMessage(code, message), cause);
@@ -50,6 +51,7 @@ public class CoreServiceException extends ServerException {
 
     /**
      * Creates a new instance.
+     *
      * @param code the diagnostic code
      */
     public CoreServiceException(@Nonnull CoreServiceCode code) {
@@ -58,7 +60,8 @@ public class CoreServiceException extends ServerException {
 
     /**
      * Creates a new instance.
-     * @param code the diagnostic code
+     *
+     * @param code    the diagnostic code
      * @param message the error message
      */
     public CoreServiceException(@Nonnull CoreServiceCode code, @Nullable String message) {
@@ -67,15 +70,31 @@ public class CoreServiceException extends ServerException {
 
     /**
      * Creates a new instance.
-     * @param code the diagnostic code
+     *
+     * @param code  the diagnostic code
      * @param cause the original cause
      */
     public CoreServiceException(@Nonnull CoreServiceCode code, @Nullable Throwable cause) {
         this(code, null, cause);
     }
 
+    private CoreServiceException(CoreServiceException cause) {
+        super(cause.getMessage(), cause);
+        this.code = cause.code;
+    }
+
     @Override
     public CoreServiceCode getDiagnosticCode() {
         return code;
+    }
+
+    /**
+     * Creates a new instance wrapped itself.
+     *
+     * @return exception wrapped itself
+     * @since 1.7.0
+     */
+    public CoreServiceException newException() {
+        return new CoreServiceException(this);
     }
 }

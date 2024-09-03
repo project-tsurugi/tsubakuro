@@ -36,6 +36,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
@@ -50,7 +51,7 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
     public static final int CANCEL_STATUS_REQUESTING = -3;
     public static final int CANCEL_STATUS_REQUESTED = -4;
-    private final AtomicInteger cancelStatus =  new AtomicInteger();
+    private final AtomicInteger cancelStatus = new AtomicInteger();
     private long cancelThreadId = 0;
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
@@ -60,10 +61,11 @@ public class ChannelResponse implements Response {
     private final AtomicReference<Exception> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Link link;
-    private String resultSetName = "";  // for diagnostic
+    private String resultSetName = ""; // for diagnostic
 
     /**
      * Creates a new instance
+     *
      * @param link the link object by which this ChannelResponse pulls a message from the SQL server
      * @param slot the slot number in the responseBox
      */
@@ -74,6 +76,7 @@ public class ChannelResponse implements Response {
 
     /**
      * Creates a new instance that is not associated with a slot in the responseBox
+     *
      * @param link the link object by which this ChannelResponse pulls a message from the SQL server
      */
     public ChannelResponse(Link link) {
@@ -87,31 +90,44 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public ByteBuffer waitForMainResponse() throws IOException {
+    public ByteBuffer waitForMainResponse() throws IOException, ServerException {
         try {
             return waitForMainResponse(0, null);
-        } catch (TimeoutException e) {  // TimeoutException won't be occuer when timeout is 0.
-            throw new IOException(e);
+        } catch (TimeoutException e) { // TimeoutException won't be occur when timeout is 0.
+            throw new ResponseTimeoutException(e.getMessage(), e);
         }
     }
 
     @Override
-    public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, TimeoutException {
+    public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException, ServerException, TimeoutException {
         while (true) {
             var n = link.messageNumber();
             if (main.get() != null) {
                 return main.get();
             }
-            if (exceptionMain.get() != null) {
-                var e = exceptionMain.get();
+            var e = exceptionMain.get();
+            if (e != null) {
+                wrapAndThrow(e);
                 throw new IOException(e.getMessage(), e);
             }
             link.pullMessage(n, timeout, unit);
         }
     }
 
+    void wrapAndThrow(Exception e) throws IOException, ServerException {
+        if (e instanceof CoreServiceException) {
+            throw ((CoreServiceException) e).newException();
+        }
+        if (e instanceof ServerException) {
+            throw new IOException(e.getMessage(), e); // TODO throw ServerException
+        }
+        if (e instanceof TimeoutException) {
+            throw new ResponseTimeoutException(e.getMessage(), e);
+        }
+    }
+
     @Override
-    public InputStream openSubResponse(String id) throws NoSuchElementException, IOException, InterruptedException {
+    public InputStream openSubResponse(String id) throws NoSuchElementException, IOException, InterruptedException, ServerException {
         if (id.equals(METADATA_CHANNEL_ID)) {
             waitForResultSetOrMainResponse();
             return metadataChannel();
@@ -123,7 +139,7 @@ public class ChannelResponse implements Response {
     }
 
     @Override
-    public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws NoSuchElementException, IOException, InterruptedException, TimeoutException {
+    public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws NoSuchElementException, IOException, InterruptedException, ServerException, TimeoutException {
         if (id.equals(METADATA_CHANNEL_ID)) {
             waitForResultSetOrMainResponse(timeout, unit);
             return metadataChannel();
@@ -141,6 +157,7 @@ public class ChannelResponse implements Response {
 
     /**
      * Assign slot number in the responseBox to this object.
+     *
      * @param slot the slot number in the responseBox
      * @return false when cancel has already took place
      */
@@ -177,13 +194,13 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_REQUESTED)) {
-                return;  // cancel before request send
+                return; // cancel before request send
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
-                return;  // response has already arrived
+                return; // response has already arrived
             }
             if (expected == CANCEL_STATUS_REQUESTED) {
-                return;  // cancel twice
+                return; // cancel twice
             }
         }
     }
@@ -206,33 +223,35 @@ public class ChannelResponse implements Response {
             }
             if (expected == CANCEL_STATUS_REQUESTED) {
                 cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED);
-                return;  // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
+                return; // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
-                return;  // response arrives twice, implies some error.
+                return; // response arrives twice, implies some error.
             }
             // try again if status is CANCEL_STATUS_REQUESTING.
         }
     }
 
-    private InputStream relationChannel() throws IOException, InterruptedException {
+    private InputStream relationChannel() throws IOException, InterruptedException, ServerException {
         if (resultSet.get() != null) {
             return resultSet.get().getByteBufferBackedInput();
         }
-        if (exceptionResultSet.get() != null) {
-            var e = exceptionResultSet.get();
+        var e = exceptionResultSet.get();
+        if (e != null) {
+            wrapAndThrow(e);
             throw new IOException(e.getMessage(), e);
         }
         return new ByteArrayInputStream(new byte[0]);
     }
 
-    private InputStream metadataChannel() throws IOException, InterruptedException {
+    private InputStream metadataChannel() throws IOException, InterruptedException, ServerException {
         if (metadata.get() != null) {
             var recordMeta = metadata.get().getRecordMeta();
             return new ByteBufferInputStream(ByteBuffer.wrap(recordMeta.toByteArray()));
         }
-        if (exceptionResultSet.get() != null) {
-            var e = exceptionResultSet.get();
+        var e = exceptionResultSet.get();
+        if (e != null) {
+            wrapAndThrow(e);
             throw new IOException(e.getMessage(), e);
         }
         return new ByteArrayInputStream(new byte[0]);
@@ -241,8 +260,8 @@ public class ChannelResponse implements Response {
     private void waitForResultSetOrMainResponse() throws IOException, InterruptedException {
         try {
             waitForResultSetOrMainResponse(0, null);
-        } catch (TimeoutException e) {  // TimeoutException won't be occuer when timeout is 0.
-            throw new IOException(e);
+        } catch (TimeoutException e) { // TimeoutException won't be occur when timeout is 0.
+            throw new ResponseTimeoutException(e.getMessage(), e);
         }
     }
 
@@ -270,6 +289,7 @@ public class ChannelResponse implements Response {
             exceptionMain.set(e);
         }
     }
+
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
         responseArrive();
