@@ -60,6 +60,7 @@ public class ChannelResponse implements Response {
     private final AtomicReference<Exception> exceptionMain = new AtomicReference<>();
     private final AtomicReference<Exception> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean canceled = new AtomicBoolean();
     private final Link link;
     private String resultSetName = ""; // for diagnostic
 
@@ -178,6 +179,7 @@ public class ChannelResponse implements Response {
 
     @Override
     public void cancel() throws IOException {
+        canceled.set(true);
         while (true) {
             var expected = cancelStatus.get();
             if (expected >= 0) {
@@ -301,7 +303,7 @@ public class ChannelResponse implements Response {
         Objects.requireNonNull(resultSetWire);
         try {
             var res = skipFrameworkHeader(response);
-            if (cancelThreadId == 0 || res.hasRemaining()) {
+            if (canceled.get() || res.hasRemaining()) {
                 var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(res));
                 var detailResponse = sqlResponse.getExecuteQuery();
                 resultSetName = detailResponse.getName();
@@ -321,7 +323,7 @@ public class ChannelResponse implements Response {
         var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
-            if (cancelThreadId == 0 || errorResponse.getCode() != com.tsurugidb.diagnostics.proto.Diagnostics.Code.OPERATION_CANCELED) {
+            if (canceled.get() || errorResponse.getCode() != com.tsurugidb.diagnostics.proto.Diagnostics.Code.OPERATION_CANCELED) {
                 throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
             }
             // if cancel has been requested && error is OPERATION_CANCELED then we need not throw exception here
