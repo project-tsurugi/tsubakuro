@@ -165,14 +165,16 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         Exception exception = null;
+        Response response = null;
 
         if (!gotton.getAndSet(true)) {
             try {
                 if (closeTimeout != null) {
-                    delegate.get(closeTimeout.value(), closeTimeout.unit()).cancel();
+                    response = delegate.get(closeTimeout.value(), closeTimeout.unit());
                 } else {
-                    delegate.get().cancel();
+                    response = delegate.get();
                 }
+                response.cancel();
             } catch (Exception e) {
                 exception = e;
             } finally {
@@ -205,6 +207,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                 } finally {
                     try {
+                        if (response != null && response instanceof ChannelResponse) {
+                            ((ChannelResponse) response).reportCancel();
+                        }
                         if (sr != null) {
                             sr.close();
                         }
