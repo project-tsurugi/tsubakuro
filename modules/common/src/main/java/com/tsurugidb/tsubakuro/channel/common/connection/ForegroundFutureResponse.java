@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -207,6 +208,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                         if (sr != null) {
                             sr.close();
                         }
+                    } catch (ChannelResponse.AlreadyCanceledException e) {
+                        // do nothing, as it is a result of cancel
                     } catch (Exception e) {
                         if (exception == null) {
                             exception = e;
