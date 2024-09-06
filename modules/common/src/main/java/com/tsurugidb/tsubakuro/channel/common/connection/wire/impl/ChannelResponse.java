@@ -62,6 +62,7 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean canceled = new AtomicBoolean();
     private final Link link;
+    private boolean reportCancel = false;
     private String resultSetName = ""; // for diagnostic
 
     public static class AlreadyCanceledException extends IOException {
@@ -116,7 +117,7 @@ public class ChannelResponse implements Response {
                 wrapAndThrow(e);
                 throw new IOException(e.getMessage(), e);
             }
-            if (canceled.get()) {
+            if (canceled.get() && reportCancel) {
                 throw new AlreadyCanceledException();
             }
             link.pullMessage(n, timeout, unit);
@@ -337,6 +338,10 @@ public class ChannelResponse implements Response {
             // if cancel has been requested && error is OPERATION_CANCELED then we need not throw exception here
         }
         return response;
+    }
+
+    public void reportCancel() {
+        reportCancel = true;
     }
 
     // for diagnostic
