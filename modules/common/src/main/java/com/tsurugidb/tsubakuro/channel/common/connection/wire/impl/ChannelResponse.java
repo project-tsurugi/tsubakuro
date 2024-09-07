@@ -62,7 +62,6 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean canceled = new AtomicBoolean();
     private final Link link;
-    private boolean reportCancel = false;
     private String resultSetName = ""; // for diagnostic
 
     public static class AlreadyCanceledException extends IOException {
@@ -114,11 +113,13 @@ public class ChannelResponse implements Response {
             }
             var e = exceptionMain.get();
             if (e != null) {
+                if (canceled.get() && e instanceof CoreServiceException) {
+                    if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
+                        throw new AlreadyCanceledException();
+                    }
+                }
                 wrapAndThrow(e);
                 throw new IOException(e.getMessage(), e);
-            }
-            if (canceled.get() && reportCancel) {
-                throw new AlreadyCanceledException();
             }
             link.pullMessage(n, timeout, unit);
         }
@@ -311,17 +312,13 @@ public class ChannelResponse implements Response {
         Objects.requireNonNull(response);
         Objects.requireNonNull(resultSetWire);
         try {
-            var res = skipFrameworkHeader(response);
-            if (!canceled.get() || res.hasRemaining()) {
-                var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(res));
-                var detailResponse = sqlResponse.getExecuteQuery();
-                resultSetName = detailResponse.getName();
-                resultSetWire.connect(resultSetName);
+            var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
+            var detailResponse = sqlResponse.getExecuteQuery();
+            resultSetName = detailResponse.getName();
+            resultSetWire.connect(resultSetName);
 
-                metadata.set(detailResponse);
-                resultSet.set(resultSetWire);
-            }
-            // if cancel has been requested && skipFrameworkHeader() returns exhausted ByteBuffer then we need not store exception here
+            metadata.set(detailResponse);
+            resultSet.set(resultSetWire);
         } catch (IOException | ServerException e) {
             exceptionResultSet.set(e);
         }
@@ -332,16 +329,9 @@ public class ChannelResponse implements Response {
         var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
-            if (!canceled.get() || errorResponse.getCode() != com.tsurugidb.diagnostics.proto.Diagnostics.Code.OPERATION_CANCELED) {
-                throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
-            }
-            // if cancel has been requested && error is OPERATION_CANCELED then we need not throw exception here
+            throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
         }
         return response;
-    }
-
-    public void reportCancel() {
-        reportCancel = true;
     }
 
     // for diagnostic
