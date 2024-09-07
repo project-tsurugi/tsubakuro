@@ -193,34 +193,20 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                         }
                     }
                 } catch (TimeoutException e) {
-                    var ne = new ResponseTimeoutException(e);
-                    if (exception == null) {
-                        exception = ne;
-                    } else {
-                        exception.addSuppressed(ne);
-                    }
+                    exception = addSuppressed(exception, new ResponseTimeoutException(e));
+                } catch (ChannelResponse.AlreadyCanceledException e) {
+                    // do nothing, as it is a result of cancel
                 } catch (Exception e) {
-                    if (exception == null) {
-                        exception = e;
-                    } else {
-                        exception.addSuppressed(e);
-                    }
+                    exception = addSuppressed(exception, e);
                 } finally {
                     try {
-                        if (response != null && response instanceof ChannelResponse) {
-                            ((ChannelResponse) response).reportCancel();
-                        }
                         if (sr != null) {
                             sr.close();
                         }
                     } catch (ChannelResponse.AlreadyCanceledException e) {
                         // do nothing, as it is a result of cancel
                     } catch (Exception e) {
-                        if (exception == null) {
-                            exception = e;
-                        } else {
-                            exception.addSuppressed(e);
-                        }
+                        exception = addSuppressed(exception, e);
                     } finally {
                         try {
                             var up = unprocessed.getAndSet(null);
@@ -229,11 +215,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                             }
                             Owner.close(up);
                         } catch (Exception e) {
-                            if (exception == null) {
-                                exception = e;
-                            } else {
-                                exception.addSuppressed(e);
-                            }
+                            exception = addSuppressed(exception, e);
                         } finally {
                             try {
                                 if (closeTimeout != null) {
@@ -242,32 +224,41 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                                 delegate.close();
                                 closed.set(true);
                             } catch (Exception e) {
-                                if (exception == null) {
-                                    exception = e;
-                                } else {
-                                    exception.addSuppressed(e);
-                                }
+                                exception = addSuppressed(exception, e);
                             } finally {
-                                if (exception != null) {
-                                    if (exception instanceof IOException) {
-                                        throw (IOException) exception;
-                                    }
-                                    if (exception instanceof InterruptedException) {
-                                        throw (InterruptedException) exception;
-                                    }
-                                    if (exception instanceof ServerException) {
-                                        throw (ServerException) exception;
-                                    }
-                                    if (exception instanceof RuntimeException) {
-                                        throw (RuntimeException) exception;
-                                    }
-                                    throw new AssertionError(exception);
-                                }
+                                throwException(exception);
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    private Exception addSuppressed(Exception exception, Exception e) {
+        if (exception == null) {
+            exception = e;
+        } else {
+            exception.addSuppressed(e);
+        }
+        return exception;
+    }
+
+    private void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
+        if (exception != null) {
+            if (exception instanceof IOException) {
+                throw (IOException) exception;
+            }
+            if (exception instanceof InterruptedException) {
+                throw (InterruptedException) exception;
+            }
+            if (exception instanceof ServerException) {
+                throw (ServerException) exception;
+            }
+            if (exception instanceof RuntimeException) {
+                throw (RuntimeException) exception;
+            }
+            throw new AssertionError(exception);
         }
     }
 
