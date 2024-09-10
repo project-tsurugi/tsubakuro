@@ -24,9 +24,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
-import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 
@@ -47,7 +47,7 @@ class ChannelResponseTest {
             }
             {
                 var e0 = new TestServerException(CoreServiceCode.SYSTEM_ERROR, "test");
-                var e = assertThrows(IOException.class, () -> {
+                var e = assertThrows(CoreServiceException.class, () -> {
                     target.wrapAndThrow(e0);
                 });
                 assertEquals(e0.getMessage(), e.getMessage());
@@ -70,17 +70,17 @@ class ChannelResponseTest {
     }
 
     @SuppressWarnings("serial")
-    private static class TestServerException extends ServerException {
+    private static class TestServerException extends CoreServiceException {
 
-        private final DiagnosticCode code;
+        private final CoreServiceCode code;
 
-        public TestServerException(DiagnosticCode code, String message) {
-            super(message);
+        public TestServerException(CoreServiceCode code, String message) {
+            super(CoreServiceCode.valueOf(Diagnostics.Code.SYSTEM_ERROR), message);
             this.code = code;
         }
 
         @Override
-        public DiagnosticCode getDiagnosticCode() {
+        public CoreServiceCode getDiagnosticCode() {
             return this.code;
         }
     }
