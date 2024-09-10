@@ -129,9 +129,6 @@ public class ChannelResponse implements Response {
         if (e instanceof CoreServiceException) {
             throw ((CoreServiceException) e).newException();
         }
-        if (e instanceof ServerException) {
-            throw new IOException(e.getMessage(), e); // TODO throw ServerException
-        }
         if (e instanceof TimeoutException) {
             throw new ResponseTimeoutException(e.getMessage(), e);
         }
@@ -297,7 +294,7 @@ public class ChannelResponse implements Response {
         responseArrive();
         try {
             main.set(skipFrameworkHeader(response));
-        } catch (IOException | ServerException e) {
+        } catch (IOException | CoreServiceException e) {
             exceptionMain.set(e);
         }
     }
@@ -319,12 +316,12 @@ public class ChannelResponse implements Response {
 
             metadata.set(detailResponse);
             resultSet.set(resultSetWire);
-        } catch (IOException | ServerException e) {
+        } catch (IOException | CoreServiceException e) {
             exceptionResultSet.set(e);
         }
     }
 
-    private ByteBuffer skipFrameworkHeader(ByteBuffer response) throws IOException, ServerException {
+    private ByteBuffer skipFrameworkHeader(ByteBuffer response) throws IOException, CoreServiceException {
         response.rewind();
         var header = FrameworkResponse.Header.parseDelimitedFrom(new ByteBufferInputStream(response));
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
