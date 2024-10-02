@@ -39,6 +39,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProces
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -143,7 +144,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -191,7 +192,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -223,7 +224,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setCommit(request)
                     .build()),
-                new TransactionCommitProcessor(transaction).asResponseProcessor());
+                new TransactionCommitProcessor(transaction).asResponseProcessor(false));
     }
 
     @Override
@@ -245,7 +246,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -275,7 +276,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setRollback(request)
                     .build()),
-                new TransactionRollbackProcessor().asResponseProcessor());
+                new TransactionRollbackProcessor().asResponseProcessor(false));
     }
 
     class StatementPrepareProcessor implements MainResponseProcessor<PreparedStatement> {
@@ -289,7 +290,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -332,7 +333,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -362,7 +363,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setDisposePreparedStatement(request)
                     .build()),
-                new StatementDisposeProcessor().asResponseProcessor());
+                new StatementDisposeProcessor().asResponseProcessor(false));
     }
 
     class DescribeStatementProcessor implements MainResponseProcessor<StatementMetadata> {
@@ -371,7 +372,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -421,7 +422,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setExplainByText(request)
                     .build()),
-                new DescribeStatementProcessor().asResponseProcessor());
+                new DescribeStatementProcessor().asResponseProcessor(false));
     }
 
     class DescribeTableProcessor implements MainResponseProcessor<TableMetadata> {
@@ -430,7 +431,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public TableMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -460,7 +461,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setDescribeTable(request)
                     .build()),
-                new DescribeTableProcessor().asResponseProcessor());
+                new DescribeTableProcessor().asResponseProcessor(false));
     }
 
     class ExecuteProcessor implements MainResponseProcessor<ExecuteResult> {
@@ -469,7 +470,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
                 responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
@@ -507,7 +508,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setExecuteStatement(request)
                     .build()),
-                new ExecuteProcessor().asResponseProcessor());
+                new ExecuteProcessor().asResponseProcessor(false));
     }
 
     @Override
@@ -568,7 +569,7 @@ public class SqlServiceStub implements SqlService {
         public ResultSet process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             try (
                 var owner = Owner.of(response);
@@ -671,7 +672,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
                 responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
@@ -709,7 +710,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setExecuteLoad(request)
                     .build()),
-                new LoadProcessor().asResponseProcessor());
+                new LoadProcessor().asResponseProcessor(false));
     }
 
     class ListTablesProcessor implements MainResponseProcessor<TableList> {
@@ -718,7 +719,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -748,7 +749,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setListTables(request)
                     .build()),
-                new ListTablesProcessor().asResponseProcessor());
+                new ListTablesProcessor().asResponseProcessor(false));
     }
 
     class GetSearchPathProcessor implements MainResponseProcessor<SearchPath> {
@@ -757,7 +758,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -787,7 +788,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setGetSearchPath(request)
                     .build()),
-                new GetSearchPathProcessor().asResponseProcessor());
+                new GetSearchPathProcessor().asResponseProcessor(false));
     }
 
     class GetErrorInfoProcessor implements MainResponseProcessor<SqlServiceException> {
@@ -796,7 +797,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -835,7 +836,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setGetErrorInfo(request)
                     .build()),
-                new GetErrorInfoProcessor().asResponseProcessor());
+                new GetErrorInfoProcessor().asResponseProcessor(false));
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
@@ -844,7 +845,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
                 responseCache.set(SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload)));
@@ -882,7 +883,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setDisposeTransaction(request)
                     .build()),
-                new DisposeTransactionProcessor().asResponseProcessor());
+                new DisposeTransactionProcessor().asResponseProcessor(false));
     }
 
     // for compatibility
@@ -892,7 +893,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (resourcesClosed) {
-                throw new IOException("session already closed");
+                throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));

@@ -65,4 +65,13 @@ public interface ResponseProcessor<T> {
     default T process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
         return process(response);
     }
+
+    /**
+     * Returns whether or not this returns ServerResource.
+     * In order to ensure fail safe nature, default method returns true.
+     * @return {@code true} if this returns ServerResource
+     */
+    default boolean isReturnsServerResource() {
+        return true;
+    }
 }

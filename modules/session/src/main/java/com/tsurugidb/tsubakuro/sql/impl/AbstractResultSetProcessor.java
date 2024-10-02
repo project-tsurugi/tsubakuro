@@ -52,6 +52,11 @@ abstract class AbstractResultSetProcessor<T extends Message>
         this.resources = resources;
     }
 
+    @Override
+    public boolean isReturnsServerResource() {
+        return true;
+    }
+
 //    private void validateMetadata(
 //            Response response) throws IOException, ServerException, InterruptedException {
 //        if (!response.getSubResponseIds().contains(metadataChannel)) {
