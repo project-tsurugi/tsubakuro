@@ -129,7 +129,11 @@ public interface FutureResponse<V> extends ServerResource {
     }
 
     /**
-     * Disposes the corresponding server resources if it is required.
+     * Disposes the corresponding server resources if the response has not been retrieved.
+     * <p>
+     * The server resource disposal is not immediate, but will eventually take place,
+     * which means that the server resource may not be disposed when it returns from close().
+     * </p>
      * @throws IOException if I/O error was occurred while disposing the corresponding server resources
      * @throws ServerException if error was occurred while disposing the corresponding server resource
      * @throws InterruptedException if interrupted from other threads while requesting cancel
