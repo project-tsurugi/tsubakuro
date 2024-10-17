@@ -47,10 +47,10 @@ message Request {
 
         // batch command.
         Batch batch = 31;
-       
-        // GetErrorInfo command. 
+
+        // GetErrorInfo command.
         GetErrorInfo get_error_info = 41;
-       
+
         // DisposeTransaction command.
         DisposeTransaction dispose_transaction = 42;
     }
@@ -61,7 +61,7 @@ message Index {
 
     // the index specifier.
     oneof specifier {
-        
+
         // the target table name.
         string table_name = 1;
     }
@@ -142,13 +142,13 @@ message Put {
 
         // = OVERWRITE (default behavior).
         PUT_TYPE_UNSPECIFIED = 0;
-    
+
         // Puts a table entry in any case.
         OVERWRITE = 1;
-    
+
         // Puts a table entry only if it is absent.
         IF_ABSENT = 2;
-    
+
         // Puts a table entry only if it is already exists.
         IF_PRESENT = 3;
     }
@@ -173,10 +173,10 @@ message Remove {
 
         // = COUNTING (default behavior).
         REMOVE_TYPE_UNSPECIFIED = 0;
-    
+
         // Remove table entries with counting the actually removed entries.
         COUNTING = 1;
-    
+
         // Remove table entries without counting the actually removed entries.
         INSTANT = 2;
     }
@@ -226,10 +226,10 @@ message Scan {
 
         // = FORWARD (default behavior).
         SCAN_TYPE_UNSPECIFIED = 0;
-    
+
         // Scans over the table from head to tail.
         FORWARD = 1;
-    
+
         // Scans over the table from tail to head.
         BACKWARD = 2;
     }
