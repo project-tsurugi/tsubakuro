@@ -45,6 +45,15 @@ public interface MainResponseProcessor<T> {
      * @return the corresponding {@link ResponseProcessor}
      */
     default ResponseProcessor<T> asResponseProcessor() {
+        return asResponseProcessor(true);
+    }
+
+    /**
+     * Returns {@link ResponseProcessor} view of this object.
+     * @param returnsServerResource true if this returns ServerResource
+     * @return the corresponding {@link ResponseProcessor}
+     */
+    default ResponseProcessor<T> asResponseProcessor(boolean returnsServerResource) {
         var self = this;
         return new ResponseProcessor<>() {
 
@@ -64,6 +73,11 @@ public interface MainResponseProcessor<T> {
             @Override
             public String toString() {
                 return String.valueOf(self);
+            }
+
+            @Override
+            public boolean isReturnsServerResource() {
+                return returnsServerResource;
             }
         };
     }

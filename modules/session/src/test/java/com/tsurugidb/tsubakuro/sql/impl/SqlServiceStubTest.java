@@ -41,6 +41,7 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlRequest.ExecuteStatement;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -196,6 +197,57 @@ class SqlServiceStubTest {
                     .setSuccess(SqlResponse.Void.newBuilder().build())
                     .build())));
             });
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendBeginCloseFutureResponse() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
+                RequestHandler.returns(SqlResponse.Begin.newBuilder()
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                            .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                .setHandle(100)))
+                        .build())));
+
+        var message = SqlRequest.Begin.newBuilder()
+                .setOption(SqlRequest.TransactionOption.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            // add handler for Rollback
+            wire.next((id, request) -> {
+                var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
+                assertTrue(req.hasRollback());
+                var rollback = req.getRollback();
+                assertEquals(100, rollback.getTransactionHandle().getHandle());
+                return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.ResultOnly.newBuilder()
+                    .setSuccess(newVoid())
+                    .build())));
+            });
+
+            // add handler for DisposeTransaction
+            wire.next((id, request) -> {
+                var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
+                assertTrue(req.hasDisposeTransaction());
+                var disposeTransaction = req.getDisposeTransaction();
+                assertEquals(100, disposeTransaction.getTransactionHandle().getHandle());
+                return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.DisposeTransaction.newBuilder()
+                    .setSuccess(SqlResponse.Void.newBuilder().build())
+                    .build())));
+            });
+
+            // close FutureResponse without invoking future.get()
+            future.close();
+
+            // Delay the session close,
+            // otherwise the disposer thread encounter the closed session
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
         }
         assertFalse(wire.hasRemaining());
     }
@@ -394,7 +446,7 @@ class SqlServiceStubTest {
         ) {
             assertEquals(100, ((PreparedStatementImpl) stmt).getHandle().getHandle());
 
-            // add handler for Rollback
+            // add handler for DisposePreparedStatement
             wire.next((id, request) -> {
                 var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
                 assertTrue(req.hasDisposePreparedStatement());
@@ -454,7 +506,7 @@ class SqlServiceStubTest {
             // don't close prepared statement
             // stmt.close();
 
-            // add handler for Rollback
+            // add handler for DisposePreparedStatement
             wire.next((id, request) -> {
                 var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
                 assertTrue(req.hasDisposePreparedStatement());
@@ -464,6 +516,44 @@ class SqlServiceStubTest {
                 .setSuccess(newVoid())
                 .build())));
             });
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendPrepareCloseFutureResponse() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.PREPARE,
+        RequestHandler.returns(SqlResponse.Prepare.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(100))
+                .build())));
+
+        var message = SqlRequest.Prepare.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            // add handler for DisposePreparedStatement
+            wire.next((id, request) -> {
+                var req = SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(request));
+                assertTrue(req.hasDisposePreparedStatement());
+                var dispose = req.getDisposePreparedStatement();
+                assertEquals(100, dispose.getPreparedStatementHandle().getHandle());
+                return new SimpleResponse(ByteBuffer.wrap(toDelimitedByteArray(SqlResponse.ResultOnly.newBuilder()
+                .setSuccess(newVoid())
+                .build())));
+            });
+
+            // close FutureResponse without invoking future.get()
+            future.close();
+
+            // Delay the session close,
+            // otherwise the disposer thread encounter the closed session
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+            }
         }
         assertFalse(wire.hasRemaining());
     }

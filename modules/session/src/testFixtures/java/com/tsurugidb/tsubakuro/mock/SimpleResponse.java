@@ -112,6 +112,10 @@ public class SimpleResponse implements Response {
     }
 
     @Override
+    public void cancel() throws IOException {
+    }
+
+    @Override
     public void close() throws IOException, InterruptedException {
         subs.clear();
         closed.set(true);
