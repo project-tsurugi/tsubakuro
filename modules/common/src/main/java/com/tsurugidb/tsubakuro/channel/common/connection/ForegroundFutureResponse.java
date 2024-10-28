@@ -87,6 +87,15 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         return processResult(getInternal(), Timeout.DISABLED);
     }
 
+    private synchronized V retrieve() throws InterruptedException, IOException, ServerException {
+        gotton.set(true);
+        var mapped = result.get();
+        if (mapped != null) {
+            return mapped;
+        }
+        return processResult(getInternal(), Timeout.DISABLED);
+    }
+
     @Override
     public synchronized V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
@@ -201,12 +210,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                                 delegate.setCloseTimeout(closeTimeout);
                             }
                             delegate.close();
-                            if (disposer == null) {
-                                closed.set(true);
-                            }
                         } catch (Exception e) {
                             exception = addSuppressed(exception, e);
                         } finally {
+                            closed.set(true);
                             throwException(exception);
                         }
                     }
@@ -268,7 +275,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                         continue;
                     }
                 }
-                var obj = get();
+                var obj = retrieve();
                 if (obj instanceof ServerResource) {
                     ((ServerResource) obj).close();
                 }
@@ -278,8 +285,6 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 throw new UncheckedIOException(e);
             } catch (ServerException | InterruptedException e) {
                 throw new UncheckedIOException(new IOException(e));
-            } finally {
-                closed.set(true);
             }
         }
     }
