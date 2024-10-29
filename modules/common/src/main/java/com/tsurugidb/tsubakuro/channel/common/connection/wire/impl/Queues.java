@@ -32,49 +32,54 @@ class Queues {
     }
 
     void addSlot(SlotEntry slotEntry) {
-        slotEntry.resetChannelResponse();
         slotQueue.add(slotEntry);
     }
-    SlotEntry pollSlot() {
-        return slotQueue.poll();
+
+    void returnSlot(SlotEntry slotEntry) {
+        slotEntry.resetChannelResponse();
+        pairAnnihilation(slotEntry);
     }
-    boolean isSlotEmpty() {
-        return slotQueue.isEmpty();
+
+    SlotEntry pollSlot() {
+        lock.lock();
+        try {
+            return slotQueue.poll();
+        } finally {
+            lock.unlock();
+        }
     }
 
     void addRequest(RequestEntry requestEntry) {
-        requestQueue.add(requestEntry);
-    }
-    RequestEntry pollRequest() {
-        return requestQueue.poll();
-    }
-    boolean isRequestEmpty() {
-        return requestQueue.isEmpty();
+        lock.lock();
+        try {
+            requestQueue.add(requestEntry);
+            if (!slotQueue.isEmpty()) {
+                pairAnnihilation(slotQueue.poll());
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
-    void pairAnnihilation() {
-        if (!lock.tryLock()) {
-            return;
-        }
+    void pairAnnihilation(SlotEntry slotEntry) {
+        lock.lock();
         try {
             while (true) {
-                var slotEntry = slotQueue.poll();
-                if (slotEntry == null) {
-                    return;
-                }
                 var requestEntry = requestQueue.poll();
                 if (requestEntry == null) {
                     slotQueue.add(slotEntry);
                     return;
-                }
-                var channelResponse = requestEntry.channelResponse();
-                if (channelResponse.assignSlot(slotEntry.slot())) {
-                    slotEntry.channelResponse(channelResponse);
-                    slotEntry.requestMessage(requestEntry.payload());
-                    link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
                 } else {
-                    channelResponse.cancelSuccessWithoutServerInteraction();
+                    var channelResponse = requestEntry.channelResponse();
+                    if (channelResponse.canAssignSlot()) {
+                        slotEntry.channelResponse(channelResponse);
+                        slotEntry.requestMessage(requestEntry.payload());
+                        link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
+                        channelResponse.finishAssignSlot(slotEntry.slot());
+                        return;
+                    }
                 }
+                // slot has not consumed, let's handle next queued request.
             }
         } finally {
             lock.unlock();

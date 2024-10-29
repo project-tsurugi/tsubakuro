@@ -75,9 +75,6 @@ public class ResponseBox {
         }
         var channelResponse = new ChannelResponse(link);
         q.addRequest(new RequestEntry(channelResponse, header, payload));
-        if (!queues.isSlotEmpty()) {
-            q.pairAnnihilation();
-        }
         return channelResponse;
     }
 
@@ -87,9 +84,9 @@ public class ResponseBox {
         if (channelResponse != null) {
             channelResponse.setMainResponse(ByteBuffer.wrap(payload));
             if (slot < SIZE) {
-                returnEntryToQueue(slotEntry, queues);
+                queues.returnSlot(slotEntry);
             } else {
-                returnEntryToQueue(slotEntry, urgentQueues);
+                urgentQueues.returnSlot(slotEntry);
             }
             return;
         }
@@ -103,34 +100,14 @@ public class ResponseBox {
         if (channelResponse != null) {
             channelResponse.setMainResponse(e);
             if (slot < SIZE) {
-                returnEntryToQueue(slotEntry, queues);
+                queues.returnSlot(slotEntry);
             } else {
-                returnEntryToQueue(slotEntry, urgentQueues);
+                urgentQueues.returnSlot(slotEntry);
             }
             return;
         }
         LOG.error("invalid slotEntry is used: slot={}, exception={}", slot, e);
         throw new AssertionError("invalid slotEntry is used");
-    }
-
-    private void returnEntryToQueue(SlotEntry slotEntry, Queues q) {
-        var queuedRequest = q.pollRequest();
-        if (queuedRequest != null) {
-            var channelResponse = queuedRequest.channelResponse();
-            var slot = slotEntry.slot();
-            if (channelResponse.assignSlot(slot)) {
-                slotEntry.channelResponse(channelResponse);
-                var payload = queuedRequest.payload();
-                slotEntry.requestMessage(payload);
-                link.send(slot, queuedRequest.header(), payload, channelResponse);
-            }
-            return;
-        }
-        q.addSlot(slotEntry);
-        if (q.isRequestEmpty()) {
-            return;
-        }
-        q.pairAnnihilation();
     }
 
     public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
