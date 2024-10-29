@@ -86,8 +86,6 @@ public class SqlServiceStub implements SqlService {
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
-    private boolean resourcesClosed = false;
-
     /**
      * Creates a new instance.
      * @param session the current session
@@ -143,7 +141,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -191,7 +189,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -245,7 +243,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -289,7 +287,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -332,7 +330,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -371,7 +369,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -430,7 +428,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public TableMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -469,7 +467,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
@@ -568,7 +566,7 @@ public class SqlServiceStub implements SqlService {
         @Override
         public ResultSet process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             try (
@@ -671,7 +669,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
@@ -718,7 +716,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -757,7 +755,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -796,7 +794,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -844,7 +842,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (responseCache.get() == null) {
@@ -892,7 +890,7 @@ public class SqlServiceStub implements SqlService {
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (resourcesClosed) {
+            if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
             if (detailResponseCache.get() == null) {
@@ -924,7 +922,6 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
         synchronized (resources) {
             resources.close();
-            resourcesClosed = true;
         }
         session.remove(this);
     }

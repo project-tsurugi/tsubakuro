@@ -34,6 +34,7 @@ import com.google.protobuf.Message;
 import com.tsurugidb.core.proto.CoreRequest;
 import com.tsurugidb.core.proto.CoreResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer; 
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;  // FIXME move Session.java to com.tsurugidb.tsubakuro.channel.common
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
@@ -65,6 +66,7 @@ public class SessionImpl implements Session {
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
+    private final Disposer disposer = new Disposer(this);
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -165,7 +167,7 @@ public class SessionImpl implements Session {
             @Nonnull ResponseProcessor<R> processor) {
         assert response != null;
         assert processor != null;
-        return new ForegroundFutureResponse<>(response, processor);
+        return new ForegroundFutureResponse<>(response, processor, disposer);
     }
 
     private static CoreRequest.Request.Builder newRequest() {
@@ -285,6 +287,10 @@ public class SessionImpl implements Session {
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
+        if (!disposer.prepareCloseAndIsEmpty()) {
+            return;
+        }
+
         if (!closed.getAndSet(true)) {
             timer.cancel();  // does not throw any exception
 
@@ -332,6 +338,20 @@ public class SessionImpl implements Session {
             }
 
         }
+    }
+
+    @Override
+    public boolean isClosed() {
+        return closed.get();
+    }
+
+    /**
+     * Wait until the release of the server resource corresponding to the response 
+     * closed without getting is completed.
+     * NOTE: This method is for testing only and is temporary
+     */
+    public void waitFinishDisposal() {
+        disposer.waitFinishDisposal();
     }
 
     private void wireClose()  throws ServerException, IOException, InterruptedException {
