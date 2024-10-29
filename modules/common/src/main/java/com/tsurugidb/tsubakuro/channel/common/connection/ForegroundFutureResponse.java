@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -45,6 +46,8 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  */
 public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXME remove public
     static final Logger LOG = LoggerFactory.getLogger(ForegroundFutureResponse.class);
+
+    private static final int POLL_INTERVAL = 1000; // in mS
 
     private final FutureResponse<? extends Response> delegate;
 
@@ -87,13 +90,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         return processResult(getInternal(), Timeout.DISABLED);
     }
 
-    private synchronized V retrieve() throws InterruptedException, IOException, ServerException {
+    private synchronized V retrieve()
+            throws InterruptedException, IOException, ServerException, TimeoutException {
         gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
             return mapped;
         }
-        return processResult(getInternal(), Timeout.DISABLED);
+        return processResult(getInternal(POLL_INTERVAL, TimeUnit.SECONDS), Timeout.DISABLED);
     }
 
     @Override
@@ -173,11 +177,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         Exception exception = null;
-        Response response = null;
-        Thread disposer = null;
 
         if (!gotton.getAndSet(true)) {
             try {
+                Response response = null;
                 if (closeTimeout != null) {
                     response = delegate.get(closeTimeout.value(), closeTimeout.unit());
                 } else {
@@ -189,7 +192,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             } finally {
                 try {
                     if (mapper.isReturnsServerResource()) {
-                        disposer = new Disposer(response);
+                        var disposer = new Disposer();
                         disposer.setDaemon(true);
                         disposer.start();
                     }
@@ -255,29 +258,28 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     private class Disposer extends Thread {
-        private static final int POLL_INTERVAL = 1000; // in mS
-        private Response response;
-
-        Disposer(Response response) {
-            this.response = response;
-        }
-
         public void run() {
             try {
                 while (true) {
-                    if (response.isMainResponseReady()) {
+                    try {
+                        var obj = retrieve();
+                        if (obj instanceof ServerResource) {
+                            try {
+                                ((ServerResource) obj).close();
+                            } catch (IOException e) {
+                                if (e.getMessage() != "already closed") {
+                                    throw e;
+                                }
+                            }
+                        }
+                        break;
+                    } catch (TimeoutException e) {
+                        // Let's try again;
+                        continue;
+                    } catch (ChannelResponse.AlreadyCanceledException e) {
+                        // Server resource has not created at the server.
                         break;
                     }
-                    try {
-                        Thread.sleep(POLL_INTERVAL);
-                    } catch (InterruptedException e) {
-                        // It's OK to catch InterruptedException in Thread.sleep(), let's continue;
-                        continue;
-                    }
-                }
-                var obj = retrieve();
-                if (obj instanceof ServerResource) {
-                    ((ServerResource) obj).close();
                 }
             } catch (SessionAlreadyClosedException e) {
                 // It's OK, the server resource is to be released with the reaction of the session close.

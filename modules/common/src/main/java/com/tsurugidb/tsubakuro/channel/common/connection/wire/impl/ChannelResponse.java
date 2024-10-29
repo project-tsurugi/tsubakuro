@@ -47,11 +47,21 @@ public class ChannelResponse implements Response {
     public static final String METADATA_CHANNEL_ID = "metadata";
     public static final String RELATION_CHANNEL_ID = "relation";
 
-    public static final int CANCEL_STATUS_NO_SLOT = -1;
-    public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
-    public static final int CANCEL_STATUS_REQUESTING = -3;
-    public static final int CANCEL_STATUS_REQUESTED = -4;
+    // cancelStatus >= 0 means the request has been sent to the server
+    // cancelStatus < 0 means the following state
     private final AtomicInteger cancelStatus = new AtomicInteger();
+
+    // the request is in the queue
+    public static final int CANCEL_STATUS_NO_SLOT = -1;
+    // the response for the requet including normal request has been alived
+    public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
+    // cancel request is sending now
+    public static final int CANCEL_STATUS_CANCEL_SENDING = -3;
+    // cancel request has been sent out
+    public static final int CANCEL_STATUS_CANCEL_SENT = -4;
+    // cancel request has been sent out
+    public static final int CANCEL_STATUS_REQUEST_SNEDING = -5;
+
     private long cancelThreadId = 0;
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
@@ -164,24 +174,34 @@ public class ChannelResponse implements Response {
     }
 
     /**
-     * Assign slot number in the responseBox to this object.
+     * Check if the request is ready to be sent.
      *
      * @param slot the slot number in the responseBox
      * @return false when cancel has already took place
      */
-    boolean assignSlot(int slot) {
+    boolean canAssignSlot() {
         while (true) {
             var expected = cancelStatus.get();
             if (expected == CANCEL_STATUS_NO_SLOT) {
-                if (cancelStatus.compareAndSet(expected, slot)) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_SNEDING)) {
                     return true;
                 }
             }
-            if (expected == CANCEL_STATUS_REQUESTED) {
+            if (expected == CANCEL_STATUS_CANCEL_SENT) {
                 exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
                 return false;
             }
         }
+    }
+
+    /**
+     * set cancelStatus to the slot number given.
+     * precondition: cancelStatus == CANCEL_STATUS_REQUEST_SNEDING
+     *
+     * @param slot the slot number in the responseBox
+     */
+    void finishAssignSlot(int slot) {
+        cancelStatus.set(slot);
     }
 
     @Override
@@ -190,32 +210,32 @@ public class ChannelResponse implements Response {
         while (true) {
             var expected = cancelStatus.get();
             if (expected >= 0) {
-                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUESTING)) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_CANCEL_SENDING)) {
                     try {
                         cancelThreadId = Thread.currentThread().getId();
                         link.send(expected, CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
                     } finally {
                         cancelThreadId = 0;
-                        cancelStatus.set(CANCEL_STATUS_REQUESTED);
+                        cancelStatus.set(CANCEL_STATUS_CANCEL_SENT);
                     }
                     return;
                 }
                 continue;
             }
-            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_REQUESTED)) {
+            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_CANCEL_SENT)) {
                 return; // cancel before request send
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
                 return; // response has already arrived
             }
-            if (expected == CANCEL_STATUS_REQUESTED) {
+            if (expected == CANCEL_STATUS_CANCEL_SENT) {
                 return; // cancel twice
             }
         }
     }
 
     public void cancelSuccessWithoutServerInteraction() {
-        setMainResponse(new IOException("cancel has been conducted within tsubakuro"));
+        exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
     }
 
     private void responseArrive() {
@@ -230,14 +250,14 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (expected == CANCEL_STATUS_REQUESTED) {
+            if (expected == CANCEL_STATUS_CANCEL_SENT) {
                 cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED);
                 return; // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
                 return; // response arrives twice, implies some error.
             }
-            // try again if status is CANCEL_STATUS_REQUESTING.
+            // try again if status is CANCEL_STATUS_CANCEL_SENDING.
         }
     }
 
