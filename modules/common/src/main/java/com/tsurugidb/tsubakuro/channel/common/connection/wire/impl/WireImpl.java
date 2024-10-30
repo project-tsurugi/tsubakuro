@@ -254,7 +254,7 @@ public class WireImpl implements Wire {
                     .setHandshake(handshakeMessageBuilder)
                     .build())
             );
-        return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor());
+        return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor(), null);
     }
 
     public void checkSessionId(long id) throws IOException {

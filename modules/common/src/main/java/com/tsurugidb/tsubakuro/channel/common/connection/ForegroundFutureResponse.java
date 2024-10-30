@@ -16,7 +16,6 @@
 package com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,11 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
-import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
-import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -63,18 +59,23 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private Timeout closeTimeout = null;
 
+    private final Disposer disposer;
+
     /**
      * Creates a new instance.
      * @param delegate the decoration target
      * @param mapper the response mapper
+     * @param disposer the disposer, can be null if mapper.isReturnsServerResource() == false
      */
     public ForegroundFutureResponse(
             @Nonnull FutureResponse<? extends Response> delegate,
-            @Nonnull ResponseProcessor<? extends V> mapper) {
+            @Nonnull ResponseProcessor<? extends V> mapper,
+            @Nullable Disposer disposer) {
         Objects.requireNonNull(delegate);
         Objects.requireNonNull(mapper);
         this.delegate = delegate;
         this.mapper = mapper;
+        this.disposer = disposer;
     }
 
     @Override
@@ -90,7 +91,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         return processResult(getInternal(), Timeout.DISABLED);
     }
 
-    private synchronized V retrieve()
+    synchronized V retrieve()
             throws InterruptedException, IOException, ServerException, TimeoutException {
         gotton.set(true);
         var mapped = result.get();
@@ -191,10 +192,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 exception = e;
             } finally {
                 try {
-                    if (mapper.isReturnsServerResource()) {
-                        var disposer = new Disposer();
-                        disposer.setDaemon(true);
-                        disposer.start();
+                    if (mapper.isReturnsServerResource() && disposer != null) {
+                        disposer.add(this);
                     }
                 } catch (Exception e) {
                     exception = addSuppressed(exception, e);
@@ -255,39 +254,5 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public String toString() {
         return String.valueOf(delegate);
-    }
-
-    private class Disposer extends Thread {
-        public void run() {
-            try {
-                while (true) {
-                    try {
-                        var obj = retrieve();
-                        if (obj instanceof ServerResource) {
-                            try {
-                                ((ServerResource) obj).close();
-                            } catch (IOException e) {
-                                if (e.getMessage() != "already closed") {
-                                    throw e;
-                                }
-                            }
-                        }
-                        break;
-                    } catch (TimeoutException e) {
-                        // Let's try again;
-                        continue;
-                    } catch (ChannelResponse.AlreadyCanceledException e) {
-                        // Server resource has not created at the server.
-                        break;
-                    }
-                }
-            } catch (SessionAlreadyClosedException e) {
-                // It's OK, the server resource is to be released with the reaction of the session close.
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            } catch (ServerException | InterruptedException e) {
-                throw new UncheckedIOException(new IOException(e));
-            }
-        }
     }
 }

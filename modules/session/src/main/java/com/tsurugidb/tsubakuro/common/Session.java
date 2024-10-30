@@ -207,6 +207,15 @@ public interface Session extends ServerResource {
     void close() throws ServerException, IOException, InterruptedException;
 
     /**
+     * Check if the Session is Closed
+     * used by various ServiceStubs only.
+     * @return true if the session is closed
+     */
+    default boolean isClosed() {
+        return true;
+    }
+
+    /**
      * Put a {@link ServerResource} to this.
      * The registered object will be closed in {@link ServerResourceHolder#close()}.
      * @param resource the resource related to the Session to be put
