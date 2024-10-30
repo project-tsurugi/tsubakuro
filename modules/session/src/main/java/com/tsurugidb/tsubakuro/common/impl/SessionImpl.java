@@ -287,9 +287,12 @@ public class SessionImpl implements Session {
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (!disposer.prepareCloseAndIsEmpty()) {
-            return;
-        }
+// FIXME Remove the following line when the server implementation improves.
+        disposer.prepareCloseAndIsEmpty();
+// FIXME Revive these lines when the server implementation improves.
+//        if (!disposer.prepareCloseAndIsEmpty()) {
+//           return;
+//        }
 
         if (!closed.getAndSet(true)) {
             timer.cancel();  // does not throw any exception
@@ -343,15 +346,6 @@ public class SessionImpl implements Session {
     @Override
     public boolean isClosed() {
         return closed.get();
-    }
-
-    /**
-     * Wait until the release of the server resource corresponding to the response 
-     * closed without getting is completed.
-     * NOTE: This method is for testing only and is temporary
-     */
-    public void waitFinishDisposal() {
-        disposer.waitFinishDisposal();
     }
 
     private void wireClose()  throws ServerException, IOException, InterruptedException {

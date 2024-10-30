@@ -41,8 +41,6 @@ public class Disposer extends Thread {
 
     private AtomicBoolean sessionClosed = new AtomicBoolean();
 
-    private AtomicBoolean queueIsEmpty = new AtomicBoolean(); // FIXME remove this line. Placed to avoid spot bugs wrongly pointed out.
-
     private Queue<ForegroundFutureResponse<?>> queue = new ArrayDeque<>();
 
     private ServerResource session;
@@ -89,8 +87,6 @@ public class Disposer extends Thread {
                     LOG.info(e.getMessage());
                     continue;
                 }
-            } else {                             // FIXME remove these lines
-                notifyQueueIsEmpty();            // 
             }
             if (!sessionClosed.get()) {
                 try {
@@ -100,11 +96,12 @@ public class Disposer extends Thread {
                 }
             }
         }
-        try {
-            session.close();
-        } catch (Exception e) {
-            LOG.error(e.getMessage());
-        }
+// FIXME Revive these lines when the server implementation improves.
+//        try {
+//            session.close();
+//        } catch (Exception e) {
+//            LOG.error(e.getMessage());
+//        }
     }
 
     /**
@@ -115,9 +112,25 @@ public class Disposer extends Thread {
      * as the queue that stores unhandled ForegroundFutureResponse is empty
      */
     public boolean prepareCloseAndIsEmpty() {
-        synchronized (queue) {
-            sessionClosed.set(true);
-            return queue.isEmpty();
+// FIXME Revive these lines when the server implementation improves.
+//        synchronized (queue) {
+//            sessionClosed.set(true);
+//            return queue.isEmpty();
+//        }
+
+// FIXME Remove these lines when the server implementation improves.
+        while (true) {
+            synchronized (queue) {
+                sessionClosed.set(true);
+                if (queue.isEmpty()) {
+                    return true;
+                }
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // No problem, it's OK
+            }
         }
     }
 
@@ -128,25 +141,5 @@ public class Disposer extends Thread {
         synchronized (queue) {
             queue.add(futureResponse);
         }
-    }
-
-    /**
-     * Wait until the release of the server resource corresponding to the response 
-     * closed without getting is completed.
-     * NOTE: This method is for testing only and is temporary
-     */
-    public synchronized void waitFinishDisposal() {
-        while (!queueIsEmpty.get()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                continue;
-            }
-        }
-    }
-
-    private synchronized void notifyQueueIsEmpty() {
-        queueIsEmpty.set(true);
-        notify();
     }
 }
