@@ -252,6 +252,7 @@ public class SessionImpl implements Session {
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
         try {
+            disposer.waitForFinishDisposal();
             return sendUrgent(
                 SERVICE_ID,
                     toDelimitedByteArray(newRequest()

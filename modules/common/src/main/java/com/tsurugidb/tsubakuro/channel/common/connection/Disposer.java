@@ -43,6 +43,8 @@ public class Disposer extends Thread {
 
     private Queue<ForegroundFutureResponse<?>> queue = new ArrayDeque<>();
 
+    private AtomicBoolean queueHasEntry = new AtomicBoolean();
+
     private ServerResource session;
 
     /**
@@ -87,6 +89,8 @@ public class Disposer extends Thread {
                     LOG.info(e.getMessage());
                     continue;
                 }
+            } else {
+                notifyQueueIsEmpty();
             }
             if (!sessionClosed.get()) {
                 try {
@@ -107,30 +111,16 @@ public class Disposer extends Thread {
     /**
      * Receive notification that the session is to be closed soon and 
      * let the caller know if the session can be closed immediately.
-     * Once this method is called, add() must not be called thereafter.
+     * NOTE: This method is assumed to be called from Session.close() only.
      * @return true if the session can be closed immediately
      * as the queue that stores unhandled ForegroundFutureResponse is empty
      */
     public boolean prepareCloseAndIsEmpty() {
-// FIXME Revive these lines when the server implementation improves.
-//        synchronized (queue) {
-//            sessionClosed.set(true);
-//            return queue.isEmpty();
-//        }
-
-// FIXME Remove these lines when the server implementation improves.
-        while (true) {
-            synchronized (queue) {
-                sessionClosed.set(true);
-                if (queue.isEmpty()) {
-                    return true;
-                }
-            }
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                // No problem, it's OK
-            }
+// FIXME Remove the following line when the server implementation improves.
+        waitForFinishDisposal();
+        synchronized (queue) {
+            sessionClosed.set(true);
+            return queue.isEmpty();
         }
     }
 
@@ -140,6 +130,27 @@ public class Disposer extends Thread {
         }
         synchronized (queue) {
             queue.add(futureResponse);
+            queueHasEntry.set(true);
         }
+    }
+
+    /**
+     * Wait until the release of the server resource corresponding to the response
+     * closed without getting is completed.
+     * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
+     */
+    public synchronized void waitForFinishDisposal() {
+        while (queueHasEntry.get()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                continue;
+            }
+        }
+    }
+
+    private synchronized void notifyQueueIsEmpty() {
+        queueHasEntry.set(false);
+        notify();
     }
 }
