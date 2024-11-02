@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 package com.tsurugidb.tsubakuro.channel.common.connection;
-
 import java.util.ArrayDeque;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
-// import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
@@ -39,21 +34,26 @@ public class Disposer extends Thread {
 
     private AtomicBoolean started = new AtomicBoolean();
 
-    private AtomicBoolean sessionClosed = new AtomicBoolean();
-
     private Queue<ForegroundFutureResponse<?>> queue = new ArrayDeque<>();
 
-    private AtomicBoolean queueHasEntry = new AtomicBoolean();
+    private AtomicBoolean finished = new AtomicBoolean();
 
-    private ServerResource session;
+    private CleanUp cleanUp;
+
+    /**
+     * Enclodure of delayed clean up procedure.
+     */
+    public interface CleanUp {
+        /**
+         * clean up procedure.
+         */
+        void cleanUp();
+    }
 
     /**
      * Creates a new instance.
-     * @param session the current session which this blongs to
      */
-    public Disposer(@Nonnull ServerResource session) {
-        Objects.requireNonNull(session);
-        this.session = session;
+    public Disposer() {
     }
 
     @Override
@@ -62,9 +62,6 @@ public class Disposer extends Thread {
             ForegroundFutureResponse<?> futureResponse;
             synchronized (queue) {
                 futureResponse = queue.poll();
-            }
-            if (sessionClosed.get() && futureResponse == null) {
-                break;
             }
             if (futureResponse != null) {
                 try {
@@ -90,38 +87,18 @@ public class Disposer extends Thread {
                     continue;
                 }
             } else {
-                notifyQueueIsEmpty();
-            }
-            if (!sessionClosed.get()) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    // No problem, it's OK
+                if (cleanUp != null) {
+                    break;
                 }
             }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // No problem, it's OK
+            }
         }
-// FIXME Revive these lines when the server implementation improves.
-//        try {
-//            session.close();
-//        } catch (Exception e) {
-//            LOG.error(e.getMessage());
-//        }
-    }
-
-    /**
-     * Receive notification that the session is to be closed soon and 
-     * let the caller know if the session can be closed immediately.
-     * NOTE: This method is assumed to be called from Session.close() only.
-     * @return true if the session can be closed immediately
-     * as the queue that stores unhandled ForegroundFutureResponse is empty
-     */
-    public boolean prepareCloseAndIsEmpty() {
-// FIXME Remove the following line when the server implementation improves.
-        waitForFinishDisposal();
-        synchronized (queue) {
-            sessionClosed.set(true);
-            return queue.isEmpty();
-        }
+        cleanUp.cleanUp();
+        notifyFinish();
     }
 
     void add(ForegroundFutureResponse<?> futureResponse) {
@@ -130,8 +107,19 @@ public class Disposer extends Thread {
         }
         synchronized (queue) {
             queue.add(futureResponse);
-            queueHasEntry.set(true);
         }
+    }
+
+    /**
+     * Register a clean up procesure.
+     * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
+     * @param c the clean up procesure to be registered
+     */
+    public void registerCleanUp(CleanUp c) {
+        if (cleanUp != null) {
+            throw new AssertionError("clean up is already registgered");
+        }
+        cleanUp = c;
     }
 
     /**
@@ -139,18 +127,24 @@ public class Disposer extends Thread {
      * closed without getting is completed.
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
-    public synchronized void waitForFinishDisposal() {
-        while (queueHasEntry.get()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                continue;
+    public synchronized void waitForFinish() {
+        if (started.get()) {
+            while (finished.get()) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    continue;
+                }
+            }
+        } else {
+            if (cleanUp != null) {
+                cleanUp.cleanUp();
             }
         }
     }
 
-    private synchronized void notifyQueueIsEmpty() {
-        queueHasEntry.set(false);
+    private synchronized void notifyFinish() {
+        finished.set(false);
         notify();
     }
 }

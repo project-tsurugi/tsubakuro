@@ -169,6 +169,7 @@ class SessionImplTest {
         var sqlClient = SqlClient.attach(session);
         sqlClient.close();
         session.close();
+        session.waitForCloseFinish();
 
         Throwable exception = assertThrows(IOException.class, () -> {
                 sqlClient.createTransaction();
