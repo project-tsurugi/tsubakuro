@@ -45,7 +45,7 @@ public interface Session extends ServerResource {
     /**
      * The minor service message version for routing service.
      */
-    int SERVICE_MESSAGE_VERSION_MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * Sends a message to the destination server.
