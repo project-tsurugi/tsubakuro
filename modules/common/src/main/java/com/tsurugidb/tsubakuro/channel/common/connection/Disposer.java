@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package com.tsurugidb.tsubakuro.channel.common.connection;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
@@ -25,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
@@ -47,8 +51,9 @@ public class Disposer extends Thread {
     public interface CleanUp {
         /**
          * clean up procedure.
+         * @throws IOException An error was occurred while cleanUP() is executed.
          */
-        void cleanUp();
+        void cleanUp() throws IOException;
     }
 
     /**
@@ -59,6 +64,8 @@ public class Disposer extends Thread {
 
     @Override
     public void run() {
+        Exception exception = null;
+
         while (true) {
             ForegroundFutureResponse<?> futureResponse;
             synchronized (queue) {
@@ -75,16 +82,22 @@ public class Disposer extends Thread {
                     // Server resource has not created at the server
                     continue;
                 } catch (SessionAlreadyClosedException e) {
-                    // Server resource has been disposed by the session close
-                    throw new AssertionError("SessionAlreadyClosedException should not occur in the current server implementation");  // FIXME remove this line
-                    // continue;
+                    if (exception == null) {
+                        exception = e;
+                    } else {
+                        exception.addSuppressed(e);
+                    }
+                    continue;
                 } catch (TimeoutException e) {
                     // Let's try again
                     queue.add(futureResponse);
                     continue;
-                } catch (Exception e) {
-                    // should not occur
-                    LOG.info(e.getMessage());
+                } catch (Exception e) {     // should not occur
+                    if (exception == null) {
+                        exception = e;
+                    } else {
+                        exception.addSuppressed(e);
+                    }
                     continue;
                 }
             } else {
@@ -98,8 +111,21 @@ public class Disposer extends Thread {
                 // No problem, it's OK
             }
         }
-        cleanUp.get().cleanUp();
-        notifyFinish();
+
+        try {
+            cleanUp.get().cleanUp();
+        } catch (IOException e) {
+            if (exception == null) {
+                exception = e;
+            } else {
+                exception.addSuppressed(e);
+            }
+        }
+
+        if (exception != null) {
+            LOG.info(exception.getMessage());
+            throw new UncheckedIOException(new IOException(exception));
+        }
     }
 
     void add(ForegroundFutureResponse<?> futureResponse) {
@@ -116,8 +142,9 @@ public class Disposer extends Thread {
      * If disposer thread has not started, cleanUp() is executed.
      * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
      * @param c the clean up procesure to be registered
+     * @throws IOException An error was occurred when CleanUP c has been immediately executed.
      */
-    public void registerCleanUp(CleanUp c) {
+    public void registerCleanUp(CleanUp c) throws IOException {
         if (!started.getAndSet(true)) {
             c.cleanUp();
             return;

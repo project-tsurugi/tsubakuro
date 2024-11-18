@@ -284,20 +284,15 @@ public class SessionImpl implements Session {
             }
             future.close();
         }
-        public synchronized void cleanUp() {
-            try {
-                if (future == dummyFuture) {
-                    var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-                    future = sendUrgent(
-                        SERVICE_ID,
-                            toDelimitedByteArray(newRequest()
-                                .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                                .build()),
-                        new ShutdownProcessor().asResponseProcessor());
-                }
-            } catch (Exception e) {
-                // FIXME how to handle exceptions occuered in background thread?
-                throw new AssertionError(e.getMessage());
+        public synchronized void cleanUp()  throws IOException {
+            if (future == dummyFuture) {
+                var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
+                future = sendUrgent(
+                    SERVICE_ID,
+                        toDelimitedByteArray(newRequest()
+                            .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                            .build()),
+                    new ShutdownProcessor().asResponseProcessor());
             }
         }
     }
@@ -324,12 +319,11 @@ public class SessionImpl implements Session {
     }
 
     class CloseCleanUp implements Disposer.CleanUp {
-        public void cleanUp() {
+        public void cleanUp() throws IOException {
             try {
                 doClose();
-            } catch (ServerException | IOException | InterruptedException e) {
-                // FIXME how to handle exceptions occuered in background thread?
-                throw new AssertionError(e.getMessage());
+            } catch (ServerException | InterruptedException e) {
+                throw new IOException(e);
             }
         }
     }
