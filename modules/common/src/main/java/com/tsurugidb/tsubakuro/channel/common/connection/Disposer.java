@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
