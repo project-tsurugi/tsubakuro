@@ -68,6 +68,7 @@ public class SessionImpl implements Session {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean();
+    private final AtomicBoolean finished = new AtomicBoolean();
     private final Disposer disposer = new Disposer();
     private Wire wire;
     private Timeout closeTimeout;
@@ -123,6 +124,11 @@ public class SessionImpl implements Session {
     public SessionImpl() {
         this.wire = null;
         this.doKeepAlive = false;
+    }
+
+    // for SqlServiceStubImpl only
+    public Disposer disposer() {  
+        return disposer;
     }
 
     /**
@@ -243,7 +249,7 @@ public class SessionImpl implements Session {
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
-            disposer.waitForFinish();
+            disposer.waitForEmpty();
             // No error checking is performed here,
             // as only tateyama's core diagnostic is accepted for shutdown response.
             shutdownCompleted.set(true);
@@ -252,7 +258,7 @@ public class SessionImpl implements Session {
         }
     }
 
-    class ShutdownCleanUp implements FutureResponse<Void>, Disposer.CleanUp {
+    class ShutdownCleanUp implements FutureResponse<Void>, Disposer.DelayedShutdown {
         ShutdownType type;
         private final FutureResponse<Void> dummyFuture = FutureResponse.returns(null);
         FutureResponse<Void> future = dummyFuture;  // to avoid spotbugs wrong warning
@@ -262,13 +268,13 @@ public class SessionImpl implements Session {
         }
         public Void get() throws IOException, ServerException, InterruptedException {
             if (future == dummyFuture) {
-                disposer.waitForFinish();
+                disposer.waitForEmpty();
             }
             return future.get();
         }
         public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
             if (future == dummyFuture) {
-                disposer.waitForFinish();
+                disposer.waitForEmpty();
             }
             return future.get(timeout, unit);
         }
@@ -280,11 +286,11 @@ public class SessionImpl implements Session {
         }
         public void close() throws IOException, ServerException, InterruptedException {
             if (future == dummyFuture) {
-                disposer.waitForFinish();
+                disposer.waitForEmpty();
             }
             future.close();
         }
-        public synchronized void cleanUp()  throws IOException {
+        public synchronized void shutdown()  throws IOException {
             if (future == dummyFuture) {
                 var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
                 future = sendUrgent(
@@ -299,7 +305,7 @@ public class SessionImpl implements Session {
 
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
-        disposer.registerCleanUp(shutdownCleanUp);
+        disposer.registerDelayedShutdown(shutdownCleanUp);
         return shutdownCleanUp;
     }
 
@@ -318,13 +324,9 @@ public class SessionImpl implements Session {
         return closeTimeout;
     }
 
-    class CloseCleanUp implements Disposer.CleanUp {
-        public void cleanUp() throws IOException {
-            try {
-                doClose();
-            } catch (ServerException | InterruptedException e) {
-                throw new IOException(e);
-            }
+    class CloseCleanUp implements Disposer.DelayedClose {
+        public void delayedClose() throws ServerException, IOException, InterruptedException {
+            doClose();
         }
     }
 
@@ -333,64 +335,64 @@ public class SessionImpl implements Session {
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        if (!shutdownCompleted.get()) {
-            if (!closeCleanUpRegistered.getAndSet(true)) {
-                disposer.registerCleanUp(new CloseCleanUp());
-            }
-            return;
+        Exception exception = null;
+
+        // take care of the serviceStubs
+        if (closeTimeout != null) {
+            services.setCloseTimeout(closeTimeout);
         }
-        doClose();
+        for (var e : services.entries()) {
+            try {
+                e.close();
+                services.remove(e);
+            } catch (ServerException | IOException | InterruptedException fe) {
+                if (exception == null) {
+                    exception = fe;
+                } else {
+                    exception.addSuppressed(fe);
+                }
+            }
+        }
+
+        try {
+            if (!shutdownCompleted.get()) {
+                if (!closeCleanUpRegistered.getAndSet(true)) {
+                    disposer.registerDelayedClose(new CloseCleanUp());
+                }
+                return;
+            }
+            doClose();
+        } catch (ServerException | IOException | InterruptedException fe) {
+            if (exception == null) {
+                exception = fe;
+            } else {
+                exception.addSuppressed(fe);
+            }
+        }
+
+        if (exception != null) {
+            if (exception instanceof IOException) {
+                throw (IOException) exception;
+            }
+            if (exception instanceof InterruptedException) {
+                throw (InterruptedException) exception;
+            }
+            if (exception instanceof ServerException) {
+                throw (ServerException) exception;
+            }
+            if (exception instanceof RuntimeException) {
+                throw (RuntimeException) exception;
+            }
+            throw new AssertionError(exception);
+        }
     }
 
     private void doClose() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
-            disposer.waitForFinish();
             timer.cancel();  // does not throw any exception
-
-            Exception exception = null;
-            // take care of the serviceStubs
-            if (closeTimeout != null) {
-                services.setCloseTimeout(closeTimeout);
-            }
-            for (var e : services.entries()) {
-                try {
-                    e.close();
-                } catch (ServerException | IOException | InterruptedException fe) {
-                    if (exception == null) {
-                        exception = fe;
-                    } else {
-                        exception.addSuppressed(fe);
-                    }
-                }
-            }
-
-            try {
-                wireClose();
-            } catch (ServerException | IOException | InterruptedException se) {
-                if (exception == null) {
-                    exception = se;
-                } else {
-                    exception.addSuppressed(se);
-                }
-            }
-
-            if (exception != null) {
-                if (exception instanceof IOException) {
-                    throw (IOException) exception;
-                }
-                if (exception instanceof InterruptedException) {
-                    throw (InterruptedException) exception;
-                }
-                if (exception instanceof ServerException) {
-                    throw (ServerException) exception;
-                }
-                if (exception instanceof RuntimeException) {
-                    throw (RuntimeException) exception;
-                }
-                throw new AssertionError(exception);
-            }
-
+            wireClose();
         }
+        notifyFinish();
     }
 
     @Override
@@ -416,11 +418,32 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Wait for asynchronously running close() to complete.
+     * Wait until there are no more ServerResources in the Disposer to process.
+     * It can be called even when the Session is not shutdown or closed. However, in that case,
+     * there may be a possibility that a ServerResource to be processed is added to the Disposer later.
      * NOTE: This method is provided for testing purposes only.
      */
-    public void waitForCloseFinish() {
-        disposer.waitForFinish();
+    public void waitForDisposerEmpty() {
+        disposer.waitForEmpty();
+    }
+
+    /**
+     * Wait for close to be completely finished.
+     * NOTE: This method is provided for testing purposes only.
+     */
+    public synchronized void waitForCloseFinish() {
+        while (!finished.get()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                continue;
+            }
+        }
+    }
+
+    private synchronized void notifyFinish() {
+        finished.set(true);
+        notify();
     }
 
     @Override
