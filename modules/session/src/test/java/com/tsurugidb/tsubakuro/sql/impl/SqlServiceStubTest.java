@@ -151,6 +151,12 @@ class SqlServiceStubTest {
             });
 
         }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
+        }
         assertFalse(wire.hasRemaining());
     }
 
@@ -197,6 +203,12 @@ class SqlServiceStubTest {
                     .setSuccess(SqlResponse.Void.newBuilder().build())
                     .build())));
             });
+        }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -332,7 +344,7 @@ class SqlServiceStubTest {
     static class TransactionImplTest extends TransactionImpl {
         private boolean notified = false;
         public TransactionImplTest(SqlService service) {
-            super(null, service, null);
+            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, null);
         }
         boolean isNotified() {
             return notified;
@@ -457,6 +469,12 @@ class SqlServiceStubTest {
                     .build())));
             });
         }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
+        }
         assertFalse(wire.hasRemaining());
     }
 
@@ -517,6 +535,13 @@ class SqlServiceStubTest {
                 .build())));
             });
         }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
+        }
+        assertFalse(wire.hasRemaining());
         assertFalse(wire.hasRemaining());
     }
 
