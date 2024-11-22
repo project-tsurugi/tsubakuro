@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
@@ -55,7 +54,6 @@ public class TransactionImpl implements Transaction {
 
     private final SqlResponse.Begin.Success transaction;
     private final AtomicBoolean cleanuped = new AtomicBoolean();
-    private final AtomicBoolean added = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
@@ -63,26 +61,21 @@ public class TransactionImpl implements Transaction {
     private final ServerResource.CloseHandler closeHandler;
     private final boolean autoDispose = false;
     private boolean needDispose = true;
-    private Disposer disposer = null;
 
     /**
      * Creates a new instance.
      * @param transaction the SqlResponse.Begin.Success
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
-     * @param disposer the Disposer in charge of its asynchronous close
      */
     public TransactionImpl(
-            @Nonnull SqlResponse.Begin.Success transaction,
+            SqlResponse.Begin.Success transaction,
             @Nonnull SqlService service,
-            @Nullable ServerResource.CloseHandler closeHandler,
-            @Nullable Disposer disposer) {
-        Objects.requireNonNull(transaction);
+            @Nullable ServerResource.CloseHandler closeHandler) {
         Objects.requireNonNull(service);
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
-        this.disposer = disposer;
         this.timeout = 0;
     }
 
@@ -286,24 +279,8 @@ public class TransactionImpl implements Transaction {
         return transaction.getTransactionId().getId();
     }
 
-    private class CloseCleanUp implements Disposer.DelayedClose {
-        public void delayedClose() throws ServerException, IOException, InterruptedException {
-            doClose();
-        }
-    }
-
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
-        if (disposer != null) {
-            if (!added.getAndSet(true)) {
-                disposer.add(new CloseCleanUp());
-            }
-            return;
-        }
-        doClose();
-    }
-
-    void doClose() throws IOException, ServerException, InterruptedException {
         if (!closed.getAndSet(true)) {
             try {
                 if (!cleanuped.getAndSet(true)) {

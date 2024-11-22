@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.Timer;
@@ -67,9 +66,7 @@ public class SessionImpl implements Session {
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
-    private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean();
-    private final AtomicBoolean finished = new AtomicBoolean();
-    private final Disposer disposer = new Disposer();
+    private final Disposer disposer = new Disposer(this);
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -124,11 +121,6 @@ public class SessionImpl implements Session {
     public SessionImpl() {
         this.wire = null;
         this.doKeepAlive = false;
-    }
-
-    // for SqlServiceStubImpl only
-    public Disposer disposer() {  
-        return disposer;
     }
 
     /**
@@ -249,7 +241,6 @@ public class SessionImpl implements Session {
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
-            disposer.waitForEmpty();
             // No error checking is performed here,
             // as only tateyama's core diagnostic is accepted for shutdown response.
             shutdownCompleted.set(true);
@@ -258,55 +249,23 @@ public class SessionImpl implements Session {
         }
     }
 
-    class ShutdownCleanUp implements FutureResponse<Void>, Disposer.DelayedShutdown {
-        ShutdownType type;
-        private final FutureResponse<Void> dummyFuture = FutureResponse.returns(null);
-        FutureResponse<Void> future = dummyFuture;  // to avoid spotbugs wrong warning
-
-        ShutdownCleanUp(ShutdownType type) {
-            this.type = type;
-        }
-        public Void get() throws IOException, ServerException, InterruptedException {
-            if (future == dummyFuture) {
-                disposer.waitForEmpty();
-            }
-            return future.get();
-        }
-        public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
-            if (future == dummyFuture) {
-                disposer.waitForEmpty();
-            }
-            return future.get(timeout, unit);
-        }
-        public boolean isDone() {
-            if (future == dummyFuture) {
-                return false;
-            }
-            return future.isDone();
-        }
-        public void close() throws IOException, ServerException, InterruptedException {
-            if (future == dummyFuture) {
-                disposer.waitForEmpty();
-            }
-            future.close();
-        }
-        public synchronized void shutdown()  throws IOException {
-            if (future == dummyFuture) {
-                var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-                future = sendUrgent(
-                    SERVICE_ID,
-                        toDelimitedByteArray(newRequest()
-                            .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                            .build()),
-                    new ShutdownProcessor().asResponseProcessor());
-            }
-        }
-    }
-
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
-        ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
-        disposer.registerDelayedShutdown(shutdownCleanUp);
-        return shutdownCleanUp;
+        var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
+        try {
+            disposer.waitForFinishDisposal();
+            return sendUrgent(
+                SERVICE_ID,
+                    toDelimitedByteArray(newRequest()
+                        .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                        .build()),
+                new ShutdownProcessor().asResponseProcessor());
+        } catch (IOException e) {
+            // if shutdown has been completed, it is OK to ignore this exception.
+            if (!shutdownCompleted.get()) {
+                throw e;
+            }
+            return FutureResponse.returns(null);
+        }
     }
 
     static CoreServiceException newUnknown() {
@@ -324,80 +283,70 @@ public class SessionImpl implements Session {
         return closeTimeout;
     }
 
-    class CloseCleanUp implements Disposer.DelayedClose {
-        public void delayedClose() throws ServerException, IOException, InterruptedException {
-            doClose();
-        }
-    }
-
     /**
      * Close the Session
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-        Exception exception = null;
+// FIXME Remove the following line when the server implementation improves.
+        disposer.prepareCloseAndIsEmpty();
+// FIXME Revive these lines when the server implementation improves.
+//        if (!disposer.prepareCloseAndIsEmpty()) {
+//           return;
+//        }
 
-        // take care of the serviceStubs
-        if (closeTimeout != null) {
-            services.setCloseTimeout(closeTimeout);
-        }
-        for (var e : services.entries()) {
-            try {
-                e.close();
-                services.remove(e);
-            } catch (ServerException | IOException | InterruptedException fe) {
-                if (exception == null) {
-                    exception = fe;
-                } else {
-                    exception.addSuppressed(fe);
-                }
-            }
-        }
-
-        try {
-            if (!shutdownCompleted.get()) {
-                if (!closeCleanUpRegistered.getAndSet(true)) {
-                    disposer.registerDelayedClose(new CloseCleanUp());
-                }
-                return;
-            }
-            doClose();
-        } catch (ServerException | IOException | InterruptedException fe) {
-            if (exception == null) {
-                exception = fe;
-            } else {
-                exception.addSuppressed(fe);
-            }
-        }
-
-        if (exception != null) {
-            if (exception instanceof IOException) {
-                throw (IOException) exception;
-            }
-            if (exception instanceof InterruptedException) {
-                throw (InterruptedException) exception;
-            }
-            if (exception instanceof ServerException) {
-                throw (ServerException) exception;
-            }
-            if (exception instanceof RuntimeException) {
-                throw (RuntimeException) exception;
-            }
-            throw new AssertionError(exception);
-        }
-    }
-
-    private void doClose() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
             timer.cancel();  // does not throw any exception
-            wireClose();
+
+            Exception exception = null;
+            // take care of the serviceStubs
+            if (closeTimeout != null) {
+                services.setCloseTimeout(closeTimeout);
+            }
+            for (var e : services.entries()) {
+                try {
+                    e.close();
+                } catch (ServerException | IOException | InterruptedException fe) {
+                    if (exception == null) {
+                        exception = fe;
+                    } else {
+                        exception.addSuppressed(fe);
+                    }
+                }
+            }
+
+            try {
+                wireClose();
+            } catch (ServerException | IOException | InterruptedException se) {
+                if (exception == null) {
+                    exception = se;
+                } else {
+                    exception.addSuppressed(se);
+                }
+            }
+
+            if (exception != null) {
+                if (exception instanceof IOException) {
+                    throw (IOException) exception;
+                }
+                if (exception instanceof InterruptedException) {
+                    throw (InterruptedException) exception;
+                }
+                if (exception instanceof ServerException) {
+                    throw (ServerException) exception;
+                }
+                if (exception instanceof RuntimeException) {
+                    throw (RuntimeException) exception;
+                }
+                throw new AssertionError(exception);
+            }
+
         }
-        notifyFinish();
     }
 
     @Override
     public boolean isClosed() {
-        return shutdownCompleted.get() || closed.get();
+        return closed.get();
     }
 
     private void wireClose()  throws ServerException, IOException, InterruptedException {
@@ -415,35 +364,6 @@ public class SessionImpl implements Session {
                 }
             }
         }
-    }
-
-    /**
-     * Wait until there are no more ServerResources in the Disposer to process.
-     * It can be called even when the Session is not shutdown or closed. However, in that case,
-     * there may be a possibility that a ServerResource to be processed is added to the Disposer later.
-     * NOTE: This method is provided for testing purposes only.
-     */
-    public void waitForDisposerEmpty() {
-        disposer.waitForEmpty();
-    }
-
-    /**
-     * Wait for close to be completely finished.
-     * NOTE: This method is provided for testing purposes only.
-     */
-    public synchronized void waitForCloseFinish() {
-        while (!finished.get()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                continue;
-            }
-        }
-    }
-
-    private synchronized void notifyFinish() {
-        finished.set(true);
-        notify();
     }
 
     @Override

@@ -169,7 +169,6 @@ class SessionImplTest {
         var sqlClient = SqlClient.attach(session);
         sqlClient.close();
         session.close();
-        session.waitForDisposerEmpty();
 
         Throwable exception = assertThrows(IOException.class, () -> {
                 sqlClient.createTransaction();
@@ -223,7 +222,6 @@ class SessionImplTest {
         t4.commit();
 
         sqlClient.close();
-        session.waitForDisposerEmpty();
 
         Throwable e1 = assertThrows(IOException.class, () -> {
                 t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
@@ -246,7 +244,6 @@ class SessionImplTest {
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
         var preparedStatement = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         preparedStatement.close();
-        session.waitForDisposerEmpty();
 
         var transaction = sqlClient.createTransaction().get();
 
@@ -275,7 +272,6 @@ class SessionImplTest {
         ps2.close();
         ps4.close();
         sqlClient.close();
-        session.waitForDisposerEmpty();
 
         Throwable e1 = assertThrows(IOException.class, () -> {
                 var handle = ((PreparedStatementImpl) ps1).getHandle();
