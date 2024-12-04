@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.Timer;
@@ -67,10 +68,12 @@ public class SessionImpl implements Session {
     public static final int SERVICE_ID = Constants.SERVICE_ID_ROUTING;
 
     private final ServiceShelf services = new ServiceShelf();
+    private final AtomicBoolean cleanUpFinished = new AtomicBoolean();
+    private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
-    private final Disposer disposer = new Disposer(this);
     private final BlobPathMapping blobPathMapping;
+    private final Disposer disposer = new Disposer();
+
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -132,6 +135,11 @@ public class SessionImpl implements Session {
         this.wire = wire;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
+    }
+
+    // for SqlServiceStubImpl only
+    public Disposer disposer() {  
+        return disposer;
     }
 
     /**
@@ -270,36 +278,123 @@ public class SessionImpl implements Session {
             new UpdateExpirationTimeProcessor().asResponseProcessor());
     }
 
-    class ShutdownProcessor implements MainResponseProcessor<Void> {
+    static class ShutdownProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            // No error checking is performed here,
+            // as only core diagnostic errors can occur for shutdown requests.
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
-            // No error checking is performed here,
-            // as only tateyama's core diagnostic is accepted for shutdown response.
-            shutdownCompleted.set(true);
-            wireClose();
             return null;
         }
     }
 
-    public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
-        var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-        try {
-            disposer.waitForFinishDisposal();
-            return sendUrgent(
-                SERVICE_ID,
-                    toDelimitedByteArray(newRequest()
-                        .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                        .build()),
-                new ShutdownProcessor().asResponseProcessor());
-        } catch (IOException e) {
-            // if shutdown has been completed, it is OK to ignore this exception.
-            if (!shutdownCompleted.get()) {
-                throw e;
-            }
-            return FutureResponse.returns(null);
+    class ShutdownCleanUp implements FutureResponse<Void>, Disposer.DelayedShutdown {
+        private final ShutdownType type;
+        private FutureResponse<Void> future = null;
+        private Exception exception = null;
+
+        ShutdownCleanUp(ShutdownType type) {
+            this.type = type;
         }
+        @Override
+        public synchronized void shutdown() throws IOException {
+            if (future == null) {
+                exception = cleanServiceStub();
+                disposer.waitForEmpty();
+                var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
+                future = sendUrgent(
+                    SERVICE_ID,
+                        toDelimitedByteArray(newRequest()
+                            .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                            .build()),
+                    new ShutdownProcessor().asResponseProcessor());
+            }
+        }
+        @Override
+        public Void get() throws IOException, ServerException, InterruptedException {
+            try {
+                return get(0, null);
+            } catch (TimeoutException e) {
+                throw new AssertionError(e);
+            }
+        }
+        @Override
+        public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+            if (future == null) {
+                try {
+                    shutdown();
+                } catch (IOException fe) {
+                    addSuppressed(fe);
+                }
+            }
+            try {
+                if (future != null) {
+                    if (timeout == 0 && unit == null) {
+                        future.get();
+                    } else {
+                        future.get(timeout, unit);
+                    }
+                }
+            } catch (IOException | ServerException | InterruptedException | TimeoutException fe) {
+                addSuppressed(fe);
+            }
+            try {
+                doClose();
+            } catch (IOException | ServerException | InterruptedException fe) {
+                addSuppressed(fe);
+            }
+            throwException();
+            return null;
+        }
+        @Override
+        public boolean isDone() {
+            if (future == null) {
+                return false;
+            }
+            return future.isDone();
+        }
+        @Override
+        public void close() throws IOException, ServerException, InterruptedException {
+            if (future == null) {
+                shutdown();
+            }
+            future.close();
+        }
+
+        private void addSuppressed(Exception exceptionNew) {
+            if (exception == null) {
+                exception = exceptionNew;
+            } else {
+                exception.addSuppressed(exceptionNew);
+            }
+        }
+        private void throwException() throws IOException, ServerException, InterruptedException, TimeoutException {
+            if (exception != null) {
+                if (exception instanceof IOException) {
+                    throw (IOException) exception;
+                }
+                if (exception instanceof ServerException) {
+                    throw (ServerException) exception;
+                }
+                if (exception instanceof TimeoutException) {
+                    throw (TimeoutException) exception;
+                }
+                if (exception instanceof InterruptedException) {
+                    throw (InterruptedException) exception;
+                }
+                if (exception instanceof RuntimeException) {
+                    throw (RuntimeException) exception;
+                }
+                throw new AssertionError(exception);
+            }
+        }
+    }
+
+    public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
+        disposer.registerDelayedShutdown(shutdownCleanUp);
+        return shutdownCleanUp;
     }
 
     static CoreServiceException newUnknown() {
@@ -317,22 +412,37 @@ public class SessionImpl implements Session {
         return closeTimeout;
     }
 
+    class CloseCleanUp implements Disposer.DelayedClose {
+        public void delayedClose() throws ServerException, IOException, InterruptedException {
+            var exception = cleanServiceStub();
+
+            try {
+                doClose();
+            } catch (ServerException | IOException | InterruptedException fe) {
+                if (exception == null) {
+                    exception = fe;
+                } else {
+                    exception.addSuppressed(fe);
+                }
+            }
+            throwException(exception);
+        }
+    }
+
     /**
      * Close the Session
      */
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
-// FIXME Remove the following line when the server implementation improves.
-        disposer.prepareCloseAndIsEmpty();
-// FIXME Revive these lines when the server implementation improves.
-//        if (!disposer.prepareCloseAndIsEmpty()) {
-//           return;
-//        }
+        if (!closeCleanUpRegistered.getAndSet(true)) {
+            disposer.registerDelayedClose(new CloseCleanUp());
+        }
+    }
 
-        if (!closed.getAndSet(true)) {
-            timer.cancel();  // does not throw any exception
-
+    private Exception cleanServiceStub() {
+        if (!cleanUpFinished.getAndSet(true)) {
             Exception exception = null;
+
             // take care of the serviceStubs
             if (closeTimeout != null) {
                 services.setCloseTimeout(closeTimeout);
@@ -340,6 +450,7 @@ public class SessionImpl implements Session {
             for (var e : services.entries()) {
                 try {
                     e.close();
+                    services.remove(e);
                 } catch (ServerException | IOException | InterruptedException fe) {
                     if (exception == null) {
                         exception = fe;
@@ -348,33 +459,34 @@ public class SessionImpl implements Session {
                     }
                 }
             }
+            return exception;
+        }
+        return null;
+    }
 
-            try {
-                wireClose();
-            } catch (ServerException | IOException | InterruptedException se) {
-                if (exception == null) {
-                    exception = se;
-                } else {
-                    exception.addSuppressed(se);
-                }
+    private void doClose() throws ServerException, IOException, InterruptedException {
+        waitForDisposerEmpty();
+        if (!closed.getAndSet(true)) {
+            timer.cancel();  // does not throw any exception
+            wireClose();
+        }
+    }
+
+    private static void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
+        if (exception != null) {
+            if (exception instanceof IOException) {
+                throw (IOException) exception;
             }
-
-            if (exception != null) {
-                if (exception instanceof IOException) {
-                    throw (IOException) exception;
-                }
-                if (exception instanceof InterruptedException) {
-                    throw (InterruptedException) exception;
-                }
-                if (exception instanceof ServerException) {
-                    throw (ServerException) exception;
-                }
-                if (exception instanceof RuntimeException) {
-                    throw (RuntimeException) exception;
-                }
-                throw new AssertionError(exception);
+            if (exception instanceof InterruptedException) {
+                throw (InterruptedException) exception;
             }
-
+            if (exception instanceof ServerException) {
+                throw (ServerException) exception;
+            }
+            if (exception instanceof RuntimeException) {
+                throw (RuntimeException) exception;
+            }
+            throw new AssertionError(exception);
         }
     }
 
@@ -389,15 +501,18 @@ public class SessionImpl implements Session {
             if (closeTimeout != null) {
                 wire.setCloseTimeout(closeTimeout);
             }
-            try {
-                wire.close();
-            } catch (ServerException | IOException | InterruptedException e) {
-                // if shutdown has been completed, it is OK to ignore this exception.
-                if (!shutdownCompleted.get()) {
-                    throw e;
-                }
-            }
+            wire.close();
         }
+    }
+
+    /**
+     * Wait until there are no more ServerResources in the Disposer to process.
+     * It can be called even when the Session is not shutdown or closed. However, in that case,
+     * there may be a possibility that a ServerResource to be processed is added to the Disposer later.
+     * NOTE: This method is provided for testing purposes only.
+     */
+    public void waitForDisposerEmpty() {
+        disposer.waitForEmpty();
     }
 
     @Override
