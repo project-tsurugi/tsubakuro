@@ -167,7 +167,15 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public boolean isDone() {
-        return delegate.isDone();
+        if (result.get() != null) {
+            return true;
+        }
+        try {
+            var response = delegate.get();  // usually delegate is created by FutureResponse.wrap()
+            return response.isMainResponseReady();
+        } catch (IOException | ServerException | InterruptedException e) {
+            return false;
+        }
     }
 
     @Override
@@ -224,7 +232,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         }
     }
 
-    private Exception addSuppressed(Exception exception, Exception e) {
+    private static Exception addSuppressed(Exception exception, Exception e) {
         if (exception == null) {
             exception = e;
         } else {
@@ -233,7 +241,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         return exception;
     }
 
-    private void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
+    private static void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
         if (exception != null) {
             if (exception instanceof IOException) {
                 throw (IOException) exception;
