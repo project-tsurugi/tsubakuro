@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
@@ -53,36 +54,56 @@ public class TransactionImpl implements Transaction {
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
     private final SqlResponse.Begin.Success transaction;
-    private final AtomicBoolean cleanuped = new AtomicBoolean();
-    private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final boolean autoDispose = false;
-    private boolean needDispose = true;
+    private FutureResponse<Void> commitResult = null;
+    private AtomicReference<State> state = new AtomicReference<>();
+    private Disposer disposer = null;
+
+    private enum State {
+                                    // | commitResult | commit    | rollback  | delayedClose | Transaction |
+                                    // |              | requested | requested | registerd    | closed      |
+                                    // ---------------------------------------------------------------------
+        INITIAL,                    // | null         | no        | no        | no           | no          |
+        COMMITTED,                  // | not null     | yes       | no        | no           | no          |
+        ROLLBACKED,                 // | null         | no        | yes       | no           | no          |
+        TO_BE_CLOSED,               // | null         | no        | no        | yes          | no          |
+        TO_BE_CLOSED_WITH_COMMIT,   // | not null     | yes       | no        | yes          | no          |
+        TO_BE_CLOSED_WITH_ROLLBACK, // | null         | no        | yes       | yes          | no          |
+        CLOSED                      // | -(don't care)| -         | -         | -            | yes         |
+    }
+    private boolean isCleanuped() {
+        return state.get() != State.INITIAL;
+    }
 
     /**
      * Creates a new instance.
      * @param transaction the SqlResponse.Begin.Success
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
+     * @param disposer the Disposer in charge of its asynchronous close
      */
     public TransactionImpl(
-            SqlResponse.Begin.Success transaction,
+            @Nonnull SqlResponse.Begin.Success transaction,
             @Nonnull SqlService service,
-            @Nullable ServerResource.CloseHandler closeHandler) {
+            @Nullable ServerResource.CloseHandler closeHandler,
+            @Nullable Disposer disposer) {
+        Objects.requireNonNull(transaction);
         Objects.requireNonNull(service);
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
+        this.disposer = disposer;
         this.timeout = 0;
+        state.set(State.INITIAL);
     }
 
     @Override
     public FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteStatement.newBuilder()
@@ -94,7 +115,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         return service.send(SqlRequest.ExecuteQuery.newBuilder()
@@ -109,7 +130,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
@@ -127,7 +148,7 @@ public class TransactionImpl implements Transaction {
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
@@ -154,7 +175,7 @@ public class TransactionImpl implements Transaction {
                     throws IOException {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameterTable);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         var request = SqlRequest.Batch.newBuilder()
@@ -190,7 +211,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(directory);
         Objects.requireNonNull(option);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteDump.newBuilder()
@@ -212,7 +233,7 @@ public class TransactionImpl implements Transaction {
         Objects.requireNonNull(statement);
         Objects.requireNonNull(parameters);
         Objects.requireNonNull(files);
-        if (cleanuped.get()) {
+        if (isCleanuped()) {
             throw new IOException("transaction already closed");
         }
         var pb = SqlRequest.ExecuteLoad.newBuilder()
@@ -228,47 +249,67 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
-        if (cleanuped.getAndSet(true)) {
-            throw new IOException("transaction already closed");
+
+        switch (state.get()) {
+            case INITIAL:
+                commitResult = service.send(SqlRequest.Commit.newBuilder()
+                                    .setTransactionHandle(transaction.getTransactionHandle())
+                                    .setNotificationType(status)
+                                    .setAutoDispose(true)
+                                    .build());
+                state.set(State.COMMITTED);
+                return commitResult;
+            case COMMITTED:
+                return commitResult;
+            case ROLLBACKED:
+                throw new IOException("transaction already rollbacked");
+            default:
+                throw new IOException("transaction already closed");
         }
-        if (autoDispose && (service instanceof SqlServiceStub)) {
-            return ((SqlServiceStub) service).send(SqlRequest.Commit.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle())
-                    .setNotificationType(status)
-                    .setAutoDispose(true)
-                    .build(), this);
-        }
-        return service.send(SqlRequest.Commit.newBuilder()
-                .setTransactionHandle(transaction.getTransactionHandle())
-                .setNotificationType(status)
-                .setAutoDispose(false)
-                .build());
     }
 
     @Override
     public FutureResponse<Void> rollback() throws IOException {
-        if (cleanuped.getAndSet(true)) {
-            return FutureResponse.returns(null);
+        synchronized (this) {
+            switch (state.get()) {
+                case INITIAL:
+                    state.set(State.ROLLBACKED);
+                    return submitRollback();
+                case COMMITTED:
+                    throw new IOException("transaction already committed");
+                case ROLLBACKED:
+                    return FutureResponse.returns(null);
+                default:
+                    throw new IOException("transaction already closed");
+            }
         }
-        return submitRollback();
     }
 
     @Override
-    public void setCloseTimeout(long t, TimeUnit u) {
+    public synchronized void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
     }
 
     @Override
-    public FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
-        if (closed.get()) {
+    public synchronized FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
+        if (state.get() == State.CLOSED) {
             throw new IOException("transaction already closed");
         }
-        if (!needDispose) {
-            return FutureResponse.returns(null);
+        var cr = commitResult;
+        if (cr != null && cr.isDone()) {
+            try {
+                cr.get();
+                return FutureResponse.returns(null);
+            } catch (IOException | ServerException | InterruptedException e) {
+                return sendAndGetSqlServiceException();
+            }
         }
+        return sendAndGetSqlServiceException();
+    }
+    private FutureResponse<SqlServiceException> sendAndGetSqlServiceException() throws IOException {
         return service.send(SqlRequest.GetErrorInfo.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
@@ -280,43 +321,108 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
-        if (!closed.getAndSet(true)) {
+    public synchronized void close() throws IOException, ServerException, InterruptedException {
+        switch (state.get()) {
+            case INITIAL:
+            case ROLLBACKED:
+                break;
+            case COMMITTED:
+                if (commitResult.isDone()) {
+                    doClose();
+                    return;
+                }
+                break;
+            case TO_BE_CLOSED:
+            case TO_BE_CLOSED_WITH_COMMIT:
+            case TO_BE_CLOSED_WITH_ROLLBACK:
+            case CLOSED:
+                return;
+        }
+        if (disposer != null) {
+            disposer.add(new Disposer.DelayedClose() {
+                @Override
+                public void delayedClose() throws ServerException, IOException, InterruptedException {
+                    doClose();
+                }
+            });
+            state.set(toBeClosed(state.get()));
+            return;
+        }
+        doClose();
+    }
+
+    private State toBeClosed(State s) {
+        switch (s) {
+        case INITIAL:
+            return State.TO_BE_CLOSED;
+        case COMMITTED:
+            return State.TO_BE_CLOSED_WITH_COMMIT;
+        case ROLLBACKED:
+            return State.TO_BE_CLOSED_WITH_ROLLBACK;
+        default:
+            throw new AssertionError("inproper state given");
+        }
+    }
+
+    private synchronized void doClose() throws IOException, ServerException, InterruptedException {
+        boolean needDispose = true;
+        boolean needRollback = false;
+
+        switch (state.get()) {
+        case INITIAL:
+        case TO_BE_CLOSED:
+            needRollback = true;
+            break;
+        case COMMITTED:
+        case TO_BE_CLOSED_WITH_COMMIT:
             try {
-                if (!cleanuped.getAndSet(true)) {
-                    // FIXME need to consider rollback is suitable here
-                    try (var rollback = submitRollback()) {
-                        if (timeout == 0) {
-                            rollback.get();
-                        } else {
-                            rollback.get(timeout, unit);
-                        }
-                    } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction rollback", e);
-                        throw new ResponseTimeoutException(e.getMessage(), e);
+                commitResult.get();
+                needDispose = false;
+            } catch (IOException | ServerException | InterruptedException e) {
+                needDispose = true;
+            }
+            break;
+        case ROLLBACKED:
+        case TO_BE_CLOSED_WITH_ROLLBACK:
+            break;
+        case CLOSED:
+            return;
+        }
+        try {
+            if (needRollback) {
+                // FIXME need to consider rollback is suitable here
+                try (var rollback = submitRollback()) {
+                    if (timeout == 0) {
+                        rollback.get();
+                    } else {
+                        rollback.get(timeout, unit);
                     }
-                }
-            } finally {
-                if (closeHandler != null) {
-                    Lang.suppress(
-                            e -> LOG.warn("error occurred while collecting garbage", e),
-                            () -> closeHandler.onClosed(this));
-                }
-                if (needDispose) {
-                    try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                            .setTransactionHandle(transaction.getTransactionHandle())
-                            .build())) {
-                        if (timeout == 0) {
-                            futureResponse.get();
-                        } else {
-                            futureResponse.get(timeout, unit);
-                        }
-                    } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction disposal", e);
-                        throw new ResponseTimeoutException(e.getMessage(), e);
-                    }
+                } catch (TimeoutException e) {
+                    LOG.warn("timeout occurred in the transaction rollback", e);
+                    throw new ResponseTimeoutException(e.getMessage(), e);
                 }
             }
+        } finally {
+            if (closeHandler != null) {
+                Lang.suppress(
+                        e -> LOG.warn("error occurred while collecting garbage", e),
+                        () -> closeHandler.onClosed(this));
+            }
+            if (needDispose) {
+                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                        .setTransactionHandle(transaction.getTransactionHandle())
+                        .build())) {
+                    if (timeout == 0) {
+                        futureResponse.get();
+                    } else {
+                        futureResponse.get(timeout, unit);
+                    }
+                } catch (TimeoutException e) {
+                    LOG.warn("timeout occurred in the transaction disposal", e);
+                    throw new ResponseTimeoutException(e.getMessage(), e);
+                }
+            }
+            state.set(State.CLOSED);
         }
     }
 
@@ -338,13 +444,9 @@ public class TransactionImpl implements Transaction {
                 .build());
     }
 
-    void notifyCommitSuccess() {
-        needDispose = false;
-    }
-
     // for diagnostic
     String diagnosticInfo() {
-        if (!closed.get()) {
+        if (state.get() != State.CLOSED) {
             return " +Transaction (universal ID = " + transaction.getTransactionId().getId() + ", handle = " + transaction.getTransactionHandle().getHandle() + ")" + System.getProperty("line.separator");
         }
         return "";

@@ -1,0 +1,23 @@
+# Transactionのauto_disposeについて
+2024.11.28
+NT horikawa
+
+## 前提
+* SQL実行エンジンに対するTransactionからのcommit要求が、SQL実行エンジンにおいてエラーなく終了しなかった場合、そのTransactionはgetSqlServiceException()によりエラー情報を取得できる。
+* これに備え、SQL実行エンジンはTransactionからのcommit要求の処理がエラーなく終了しなかった場合、そのTransactionに対応するトランザクションリソースを解放せずに残しておく。
+* 上記SQL実行エンジンが確保しているトランザクションリソースはTransactionからのdispose要求により解放される。
+* Transactionからのrollback要求は、commit失敗時と同等の扱いとなる。
+
+### 実装における要注意点
+* DisposeTransactionメッセージ内のtransaction_handle（https://github.com/project-tsurugi/tsubakuro/blob/712a02a98329338b744d8a63289793374c461d46/modules/proto/src/main/protos/jogasaki/proto/sql/request.proto#L435 ）はSQL実行エンジンにおいて一意ではなく、あるTransactionに対応するトランザクションリソースが解放されると、そのTransactionのものと同じ値のtransaction_handleが再利用される可能性がある。
+* 上記のため、あるTransactionからのauto_dispose（https://github.com/project-tsurugi/tsubakuro/blob/712a02a98329338b744d8a63289793374c461d46/modules/proto/src/main/protos/jogasaki/proto/sql/request.proto#L384 ）をtrueとしたcommit要求が成功し、SQL実行エンジンがTransactionに対応するトランザクションリソースを解放した後は、そのTransactionのものと同じ値のtransaction_handleが再利用される可能がある。
+
+### Transactionに必要な制約
+「実装における要注意点」に示したSQLエンジン挙動のため、Transactionは下記制約を充足する必要がある。
+* あるTransactionからのauto_disposeをtrueとしたcommit要求をSQL実行エンジンが受け付け、それが成功した場合、以降、そのTransactionからSQL実行エンジンに対してgetSqlServiceException()やdispose要求を行ってはならない。
+* なぜなら、SQL実行エンジンがtransaction_handleを再利用した場合、最初のTransactionが保有するtransaction_handleは既に別のTransactionと対応しているため、最初のTransactionからgetSqlServiceException()やdispose要求を行ってはならない、特にdispose要求の場合はSQL実行エンジンの誤動作を引き起こすことになるからである。
+
+## TsubakuroのTrancacionImplクラスにおける制約の充足方法
+「Transactionに必要な制約」を充足するため、TransactionImplは下記の制御を行う。
+* auto_disposeをtrueとしたTransaction.commit()が実行された際は、戻り値であるFutureResponse<Void>をTransaction内に格納する。
+* TransactionのgetSqlServiceException()やclose()が実行された際、前記FutureResponse<Void>が格納されていると、それをget()してcommitが成功したか否かを調べ、commitが失敗していた場合にのみSQL実行エンジンにgetSqlServiceExceptionやdispose要求を送る。これにより、auto_disposeをtrueとしたcommitが成功した場合、そのTransactionからgetSqlServiceExceptionやdispose要求をSQL実行エンジンに送らないように制御する。

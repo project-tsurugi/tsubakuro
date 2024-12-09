@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,10 +34,12 @@ import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -86,6 +87,8 @@ public class SqlServiceStub implements SqlService {
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
+    private Disposer disposer = null;
+
     /**
      * Creates a new instance.
      * @param session the current session
@@ -93,6 +96,9 @@ public class SqlServiceStub implements SqlService {
     public SqlServiceStub(@Nonnull Session session) {
         Objects.requireNonNull(session);
         this.session = session;
+        if (session instanceof SessionImpl) {
+            this.disposer = ((SessionImpl) session).disposer();
+        }
         this.closeTimeout = session.getCloseTimeout();
     }
 
@@ -158,7 +164,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
-            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources);
+            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources, disposer);
             transactionImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
                 return resources.register(transactionImpl);
@@ -181,11 +187,6 @@ public class SqlServiceStub implements SqlService {
 
     class TransactionCommitProcessor implements MainResponseProcessor<Void> {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
-        private final TransactionImpl transaction;
-
-        TransactionCommitProcessor(@Nullable TransactionImpl transaction) {
-            this.transaction = transaction;
-        }
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -206,23 +207,8 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
-            if (transaction != null) {
-                transaction.notifyCommitSuccess();
-            }
             return null;
         }
-    }
-
-    FutureResponse<Void> send(
-            @Nonnull SqlRequest.Commit request, @Nonnull TransactionImpl transaction) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (commit): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setCommit(request)
-                    .build()),
-                new TransactionCommitProcessor(transaction).asResponseProcessor(false));
     }
 
     @Override
@@ -235,7 +221,7 @@ public class SqlServiceStub implements SqlService {
                 toDelimitedByteArray(newRequest()
                     .setCommit(request)
                     .build()),
-                new TransactionCommitProcessor(null).asResponseProcessor());
+                new TransactionCommitProcessor().asResponseProcessor());
     }
 
     class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
@@ -304,7 +290,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
-            var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request);
+            var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request, disposer);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
                 return resources.register(preparedStatementImpl);
