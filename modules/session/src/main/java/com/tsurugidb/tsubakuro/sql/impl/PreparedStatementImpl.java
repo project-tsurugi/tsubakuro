@@ -44,7 +44,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final AtomicBoolean added = new AtomicBoolean();
+    private final AtomicBoolean addedToDisposer = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
@@ -101,7 +101,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (disposer != null) {
-            if (!added.getAndSet(true)) {
+            if (!addedToDisposer.getAndSet(true)) {
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
                     public void delayedClose() throws ServerException, IOException, InterruptedException {
