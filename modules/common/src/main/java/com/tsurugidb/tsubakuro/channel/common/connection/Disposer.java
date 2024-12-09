@@ -17,8 +17,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayDeque;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,13 +38,13 @@ public class Disposer extends Thread {
 
     private AtomicBoolean started = new AtomicBoolean();
 
-    private Queue<ForegroundFutureResponse<?>> futureResponseQueue = new ArrayDeque<>();
+    private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
-    private Queue<DelayedClose> serverResourceQueue = new ArrayDeque<>();
+    private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
     private AtomicBoolean empty = new AtomicBoolean();
 
-    private final AtomicReference<DelayedShutdown> shutdown = new AtomicReference<>();
+    private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
@@ -85,10 +84,7 @@ public class Disposer extends Thread {
         boolean shutdownProcessed = false;
 
         while (true) {
-            ForegroundFutureResponse<?> futureResponse;
-            synchronized (futureResponseQueue) {
-                futureResponse = futureResponseQueue.poll();
-            }
+            var futureResponse = futureResponseQueue.poll();
             if (futureResponse != null) {
                 try {
                     var obj = futureResponse.retrieve();
@@ -115,10 +111,7 @@ public class Disposer extends Thread {
                     continue;
                 }
             }
-            DelayedClose serverResource;
-            synchronized (serverResourceQueue) {
-                serverResource = serverResourceQueue.poll();
-            }
+            var serverResource = serverResourceQueue.poll();
             if (serverResource != null) {
                 try {
                     serverResource.delayedClose();
@@ -130,18 +123,17 @@ public class Disposer extends Thread {
             notifyEmpty();
             if (!shutdownProcessed) {
                 try {
-                    var sh = shutdown.get();
-                    if (sh != null) {
-                        sh.shutdown();
-                        shutdownProcessed = true;
+                    while (!shutdownQueue.isEmpty()) {
+                        shutdownQueue.poll().shutdown();
                     }
+                    shutdownProcessed = true;
                 } catch (IOException e) {
                     exception = addSuppressed(exception, e);
                 }
             }
             var cl = close.get();
             if (cl != null) {
-                if (shutdownProcessed || shutdown.get() == null) {
+                if (shutdownProcessed || shutdownQueue.isEmpty()) {
                     try {
                         cl.delayedClose();
                     } catch (ServerException | IOException | InterruptedException e) {
@@ -158,8 +150,13 @@ public class Disposer extends Thread {
         }
 
         if (exception != null) {
-            LOG.info(exception.getMessage());
-            throw new UncheckedIOException(new IOException(exception));
+            LOG.error(exception.getMessage());
+            exception.printStackTrace();
+            if (exception instanceof IOException) {
+                throw new UncheckedIOException((IOException) exception);
+            } else {
+                throw new UncheckedIOException(new IOException(exception));
+            }
         }
     }
 
@@ -173,12 +170,10 @@ public class Disposer extends Thread {
     }
 
     synchronized void add(ForegroundFutureResponse<?> futureResponse) {
-        if (close.get() != null) {
+        if (close.get() != null || !shutdownQueue.isEmpty()) {
             throw new AssertionError("Session already closed");
         }
-        synchronized (futureResponseQueue) {
-            futureResponseQueue.add(futureResponse);
-        }
+        futureResponseQueue.add(futureResponse);
         if (!started.getAndSet(true)) {
             this.start();
         }
@@ -190,12 +185,10 @@ public class Disposer extends Thread {
      * @param resource the DelayedClose to be added
      */
     public synchronized void add(DelayedClose resource) {
-        if (close.get() != null) {
+        if (close.get() != null || !shutdownQueue.isEmpty()) {
             throw new AssertionError("Session already closed");
         }
-        synchronized (serverResourceQueue) {
-            serverResourceQueue.add(resource);
-        }
+        serverResourceQueue.add(resource);
         if (!started.getAndSet(true)) {
             this.start();
         }
@@ -208,13 +201,15 @@ public class Disposer extends Thread {
      * @param c the clean up procesure to be registered
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
-    public synchronized void registerDelayedShutdown(DelayedShutdown c) throws IOException {
-        if (!started.getAndSet(true)) {
-            empty.set(true);
-            c.shutdown();
-            return;
+    public void registerDelayedShutdown(DelayedShutdown c) throws IOException {
+        synchronized (this) {
+            if (started.getAndSet(true)) {
+                shutdownQueue.add(c);
+                return;
+            }
         }
-        shutdown.set(c);
+        empty.set(true);
+        c.shutdown();
     }
 
     /**
@@ -227,22 +222,22 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public synchronized void registerDelayedClose(DelayedClose c) throws ServerException, IOException, InterruptedException {
-        if (!started.getAndSet(true)) {
-            empty.set(true);
-            c.delayedClose();
-            return;
-        }
-        if (futureResponseQueue.isEmpty() && serverResourceQueue.isEmpty()) {
-            c.delayedClose();
-            close.set(new DelayedClose() {
-                @Override
-                public void  delayedClose() {
-                    // do nothing
+        synchronized (this) {
+            if (started.getAndSet(true)) {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    close.set(c);
+                    return;
                 }
-            });
-            return;
+                close.set(new DelayedClose() {
+                    @Override
+                    public void  delayedClose() {
+                        // do nothing
+                    }
+                });
+            }
         }
-        close.set(c);
+        empty.set(true);
+        c.delayedClose();
     }
 
     /**
