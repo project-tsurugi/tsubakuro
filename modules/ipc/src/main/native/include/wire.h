@@ -836,7 +836,8 @@ public:
             }
             {
                 boost::interprocess::scoped_lock lock(m_record_);
-                wait_for_record_.store(true, std::memory_order_release);
+                wait_for_record_ = true;
+                std::atomic_thread_fence(std::memory_order_acq_rel);
                 unidirectional_simple_wire* active_wire = nullptr;
                 if (!c_record_.timed_wait(lock,
 #ifdef BOOST_DATE_TIME_HAS_NANOSECONDS
@@ -846,6 +847,7 @@ public:
 #endif
                                           [this, &active_wire](){
                                               bool eor = is_eor();
+                                              std::atomic_thread_fence(std::memory_order_acq_rel);
                                               for (auto&& wire: unidirectional_simple_wires_) {
                                                   if (wire.has_record()) {
                                                       active_wire = &wire;
@@ -854,10 +856,10 @@ public:
                                               }
                                               return eor;
                                           })) {
-                    wait_for_record_.store(false);
+                    wait_for_record_ = false;
                     throw std::runtime_error("record has not been received within the specified time");
                 }
-                wait_for_record_.store(false);
+                wait_for_record_ = false;
                 if (active_wire != nullptr) {
                     return active_wire;
                 }
@@ -889,16 +891,19 @@ public:
      *  used by server
      */
     void set_eor() {
-        eor_.store(true, std::memory_order_release);
-        boost::interprocess::scoped_lock lock(m_record_);
-        c_record_.notify_one();
+        eor_ = true;
+        std::atomic_thread_fence(std::memory_order_acq_rel);
+        {
+            boost::interprocess::scoped_lock lock(m_record_);
+            c_record_.notify_one();
+        }
     }
     /**
      * @brief returns that the server has marked the end of the result set
      *  used by client
      */
     [[nodiscard]] bool is_eor() const {
-        return eor_.load(std::memory_order_acquire);
+        return eor_;
     }
 
 private:
