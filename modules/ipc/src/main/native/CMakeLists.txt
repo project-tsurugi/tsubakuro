@@ -9,7 +9,17 @@ option(BUILD_SHARED_LIBS "build shared libraries instead of static" ON)
 
 include(GNUInstallDirs)
 
-find_package(JNI REQUIRED)
+# find JNI, but AWT is not required
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    # no components are required, so give dummy optional-components
+    find_package(JNI OPTIONAL_COMPONENTS JVM REQUIRED)
+else()
+    # hack: if the cache vars for AWT are filled, findJNI will not search AWT
+    set(JAVA_AWT_LIBRARY NotNeeded)
+    set(JAVA_AWT_INCLUDE_PATH NotNeeded)
+    find_package(JNI REQUIRED)
+endif()
+
 include_directories(${JNI_INCLUDE_DIRS})
 
 set(CMAKE_CXX_STANDARD 17)
