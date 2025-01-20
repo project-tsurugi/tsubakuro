@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package tateyama.proto.framework.common;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.framework.proto";
+option java_outer_classname = "FrameworkCommon";
+
+// Blob info.
+message BlobInfo {
+
+    // the channel name.
+    string channel_name = 1;
+
+    // the file path.
+    string path = 2;
+
+    // whether file is temporary.
+    bool temporary = 3;
+}
+
+message RepeatedBlobInfo {
+    repeated BlobInfo blobs = 1;
+}
