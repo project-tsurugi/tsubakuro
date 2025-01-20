@@ -5,6 +5,8 @@ package tateyama.proto.framework.response;
 option java_package = "com.tsurugidb.framework.proto";
 option java_outer_classname = "FrameworkResponse";
 
+import "tateyama/proto/framework/common.proto";
+
 // common response header for client to receive
 message Header {
   // reserved for system use
@@ -27,4 +29,10 @@ message Header {
 
   // the response payload type.
   PayloadType payload_type = 12;
+
+  // the blob info
+  // valid only if payload_type is SERVICE_RESULT
+  oneof blob_opt {
+    common.RepeatedBlobInfo blobs = 13;
+  }
 }

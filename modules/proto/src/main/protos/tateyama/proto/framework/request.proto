@@ -5,6 +5,8 @@ package tateyama.proto.framework.request;
 option java_package = "com.tsurugidb.framework.proto";
 option java_outer_classname = "FrameworkRequest";
 
+import "tateyama/proto/framework/common.proto";
+
 // common request header for clients to set and send to tateyama.
 message Header {
   // service message version (major)
@@ -21,4 +23,9 @@ message Header {
 
   // session ID.
   uint64 session_id = 12;
+
+  // the blob info
+  oneof blob_opt {
+    common.RepeatedBlobInfo blobs = 13;
+  }
 }
