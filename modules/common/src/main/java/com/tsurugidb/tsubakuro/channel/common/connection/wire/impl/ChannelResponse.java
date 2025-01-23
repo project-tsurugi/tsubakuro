@@ -16,11 +16,13 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +41,7 @@ import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.util.Pair;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -73,6 +76,7 @@ public class ChannelResponse implements Response {
     private final AtomicBoolean canceled = new AtomicBoolean();
     private final Link link;
     private String resultSetName = ""; // for diagnostic
+    private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
 
     public static class AlreadyCanceledException extends IOException {
         AlreadyCanceledException() {
@@ -164,6 +168,11 @@ public class ChannelResponse implements Response {
         } else if (id.equals(RELATION_CHANNEL_ID)) {
             waitForResultSetOrMainResponse(timeout, unit);
             return relationChannel();
+        } else {
+            var path = blobs.get(id).getLeft();
+            if (path != null) {
+                return new FileInputStream(path);
+            }
         }
         throw new NoSuchElementException("illegal SubResponse id");
     }
@@ -347,6 +356,11 @@ public class ChannelResponse implements Response {
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
             throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
+        }
+        if (header.hasBlobs()) {
+            for (var e : header.getBlobs().getBlobsList()) {
+                blobs.put(e.getChannelName(), Pair.of(e.getPath(), e.getTemporary()));
+            }
         }
         return response;
     }

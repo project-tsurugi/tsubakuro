@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -23,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nonnull;
 
@@ -34,6 +36,8 @@ import com.tsurugidb.sql.proto.SqlRequest;
  * Utilities of {@link com.tsurugidb.sql.proto.SqlRequest.Parameter Parameter}.
  */
 public final class Parameters {
+    private static AtomicLong blobNumber = new AtomicLong();
+    private static AtomicLong clobNumber = new AtomicLong();
 
     /**
      * Returns a new {@code NULL} parameter.
@@ -347,6 +351,48 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(value)
+                .build();
+    }
+
+    /**
+     * Returns a new {@code CLOB} parameter.
+     * @param name the place-holder name
+     * @param path the path of the clob file
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull Path path) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(path);
+        String channelName = "ClobChannel-";
+        channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+        channelName += "-";
+        channelName += Long.valueOf(clobNumber.getAndIncrement() + 1).toString();
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setClob(SqlCommon.Clob.newBuilder()
+                        .setChannelName(channelName)
+                        .setLocalPath(path.toString()))
+                .build();
+    }
+
+    /**
+     * Returns a new {@code BLOB} parameter.
+     * @param name the place-holder name
+     * @param path the path of the clob file
+     * @return the created place-holder
+     */
+    public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull Path path) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(path);
+        String channelName = "BlobChannel-";
+        channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+        channelName += "-";
+        channelName += Long.valueOf(blobNumber.getAndIncrement() + 1).toString();
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setBlob(SqlCommon.Blob.newBuilder()
+                        .setChannelName(channelName)
+                        .setLocalPath(path.toString()))
                 .build();
     }
 

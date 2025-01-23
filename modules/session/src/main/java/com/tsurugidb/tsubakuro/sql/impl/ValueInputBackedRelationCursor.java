@@ -32,6 +32,8 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.io.BrokenRelationException;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
@@ -273,6 +275,22 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     public DateTimeInterval fetchDateTimeIntervalValue() throws IOException, InterruptedException {
         requireColumnType(EntryType.DATETIME_INTERVAL);
         var value = input.readDateTimeInterval();
+        columnConsumed();
+        return value;
+    }
+
+    @Override
+    public BlobReference fetchBlob() throws IOException, InterruptedException {
+        requireColumnType(EntryType.BLOB);
+        var value = new BlobReferenceForSql(input.readBlob());
+        columnConsumed();
+        return value;
+    }
+
+    @Override
+    public ClobReference fetchClob() throws IOException, InterruptedException {
+        requireColumnType(EntryType.CLOB);
+        var value = new ClobReferenceForSql(input.readClob());
         columnConsumed();
         return value;
     }

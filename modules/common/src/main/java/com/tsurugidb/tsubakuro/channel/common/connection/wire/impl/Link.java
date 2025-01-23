@@ -113,6 +113,7 @@ public abstract class Link implements ServerResource {
 
     /**
      * Send request message via this link to the server.
+     * An exception raised here is to be stored in the channelResponse.
      * @param s the slot number for the responseBox
      * @param frameHeader the frameHeader of the request
      * @param payload the payload of the request

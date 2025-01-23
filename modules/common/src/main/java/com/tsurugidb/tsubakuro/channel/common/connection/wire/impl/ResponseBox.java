@@ -110,7 +110,7 @@ public class ResponseBox {
         throw new AssertionError("invalid slotEntry is used");
     }
 
-    public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) throws IOException {
+    public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) {
         boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
     }
 

@@ -25,7 +25,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -44,6 +46,7 @@ import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -913,6 +916,41 @@ class SqlServiceStubTest {
         assertFalse(wire.hasRemaining());
     }
 
+    @Test
+    void sendExecutePreparedStatementWithLobSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_PREPARED_STATEMENT,
+                RequestHandler.returns(SqlResponse.ExecuteResult.newBuilder()
+                        .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4)))
+                        .build())));
+
+        var message = SqlRequest.ExecutePreparedStatement.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
+                .build();
+        var lobs = new LinkedList<FileBlobInfo>();
+        lobs.add(new FileBlobInfo("blobChannel", Path.of("/somewhere/blobChannel.data")));
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message, lobs);
+        ) {
+            var executeResult = future.get();
+            var counterTypes = executeResult.getCounterTypes();
+            assertTrue(counterTypes.containsAll(List.of(CounterType.INSERTED_ROWS, CounterType.UPDATED_ROWS, CounterType.MERGED_ROWS, CounterType.DELETED_ROWS)));
+            var counters = executeResult.getCounters();
+            assertEquals(counters.get(CounterType.INSERTED_ROWS), 1);
+            assertEquals(counters.get(CounterType.UPDATED_ROWS), 2);
+            assertEquals(counters.get(CounterType.MERGED_ROWS), 3);
+            assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
+
+            var lob = wire.blobs().get(0);
+            assertEquals(lob.getChannelName(), "blobChannel");
+            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
+        }
+        assertFalse(wire.hasRemaining());
+    }
 
     @Test
     void sendBatchSuccess() throws Exception {
@@ -1001,6 +1039,54 @@ class SqlServiceStubTest {
 
             assertFalse(rs.nextColumn());
             assertFalse(rs.nextRow());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendPreparedQuerySuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_PREPARED_QUERY,
+                RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
+                        toResultSetMetadata(
+                            Types.column("a", Types.of(BigDecimal.class)),
+                            Types.column("b", Types.of(String.class)),
+                            Types.column("c", Types.of(double.class))).toByteArray(),
+                        Relation.of(new Object[][] {
+                            {
+                                new BigDecimal("3.14"),
+                                "Hello, world!",
+                                1.25,
+                            },
+                        }))));
+
+        var message = SqlRequest.ExecutePreparedQuery.newBuilder()
+                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
+                .build();
+        var lobs = new LinkedList<FileBlobInfo>();
+        lobs.add(new FileBlobInfo("blobChannel", Path.of("/somewhere/blobChannel.data")));
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message, lobs);
+            var rs = future.await();
+        ) {
+            assertTrue(rs.nextRow());
+
+            assertTrue(rs.nextColumn());
+            assertEquals(new BigDecimal("3.14"), rs.fetchDecimalValue());
+
+            assertTrue(rs.nextColumn());
+            assertEquals("Hello, world!", rs.fetchCharacterValue());
+
+            assertTrue(rs.nextColumn());
+            assertEquals(1.25d, rs.fetchFloat8Value());
+
+            assertFalse(rs.nextColumn());
+            assertFalse(rs.nextRow());
+
+            var lob = wire.blobs().get(0);
+            assertEquals(lob.getChannelName(), "blobChannel");
+            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
         }
         assertFalse(wire.hasRemaining());
     }
