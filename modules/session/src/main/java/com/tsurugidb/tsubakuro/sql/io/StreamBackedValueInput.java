@@ -66,6 +66,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
+import com.tsurugidb.tsubakuro.sql.impl.ClobReferenceForSql;
+
 /**
  * {@link ValueInput} from {@link InputStream}.
  * @see StreamBackedValueOutput
@@ -535,17 +540,21 @@ public class StreamBackedValueInput implements ValueInput {
     }
 
     @Override
-    public long readBlob() throws IOException {
+    public BlobReference readBlob() throws IOException {
         require(EntryType.BLOB);
         clearHeaderInfo();
-        return readIntBody();
+        var provider = read8();
+        var objectId = read8();
+        return new BlobReferenceForSql(provider, objectId);
     }
 
     @Override
-    public long readClob() throws IOException {
+    public ClobReference readClob() throws IOException {
         require(EntryType.CLOB);
         clearHeaderInfo();
-        return readIntBody();
+        var provider = read8();
+        var objectId = read8();
+        return new ClobReferenceForSql(provider, objectId);
     }
 
     @Override

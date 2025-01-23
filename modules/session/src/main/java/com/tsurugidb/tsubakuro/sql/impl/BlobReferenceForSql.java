@@ -26,9 +26,9 @@ public final class BlobReferenceForSql implements BlobReference {
     final SqlCommon.LargeObjectReference largeObjectReference;
     Response response;
 
-    public BlobReferenceForSql(long objectId) {
+    public BlobReferenceForSql(long provider, long objectId) {
         largeObjectReference = SqlCommon.LargeObjectReference.newBuilder()
-        .setProvider(SqlCommon.LargeObjectProvider.SQL)
+        .setProvider(SqlCommon.LargeObjectProvider.forNumber((int) provider))
         .setObjectId(objectId)
         .build();
         this.response = null;

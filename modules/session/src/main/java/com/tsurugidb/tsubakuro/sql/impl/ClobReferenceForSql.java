@@ -26,9 +26,9 @@ public final class ClobReferenceForSql implements ClobReference {
     final SqlCommon.LargeObjectReference largeObjectReference;
     Response response;
 
-    public ClobReferenceForSql(long objectId) {
+    public ClobReferenceForSql(long provider, long objectId) {
         largeObjectReference = SqlCommon.LargeObjectReference.newBuilder()
-        .setProvider(SqlCommon.LargeObjectProvider.SQL)
+        .setProvider(SqlCommon.LargeObjectProvider.forNumber((int) provider))
         .setObjectId(objectId)
         .build();
         this.response = null;

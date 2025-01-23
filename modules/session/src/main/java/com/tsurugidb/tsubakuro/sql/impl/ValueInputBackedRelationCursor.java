@@ -282,7 +282,7 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     @Override
     public BlobReference fetchBlob() throws IOException, InterruptedException {
         requireColumnType(EntryType.BLOB);
-        var value = new BlobReferenceForSql(input.readBlob());
+        var value = input.readBlob();
         columnConsumed();
         return value;
     }
@@ -290,7 +290,7 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     @Override
     public ClobReference fetchClob() throws IOException, InterruptedException {
         requireColumnType(EntryType.CLOB);
-        var value = new ClobReferenceForSql(input.readClob());
+        var value = input.readClob();
         columnConsumed();
         return value;
     }
