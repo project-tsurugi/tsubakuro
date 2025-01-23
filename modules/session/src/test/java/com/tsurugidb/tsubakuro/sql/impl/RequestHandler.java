@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 // import java.util.Map;
 import java.util.Objects;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -168,7 +169,7 @@ public interface RequestHandler {
         };
     }
 
-    private static byte[] toDelimitedByteArray(SqlResponse.Response response) {
+    private static byte[] toDelimitedByteArray(Message response) {
         try (var buffer = new ByteArrayOutputStream()) {
             response.writeDelimitedTo(buffer);
             return buffer.toByteArray();

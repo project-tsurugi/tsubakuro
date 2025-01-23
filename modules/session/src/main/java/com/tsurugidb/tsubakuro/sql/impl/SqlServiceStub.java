@@ -15,7 +15,6 @@
  */
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -46,7 +45,6 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
@@ -56,6 +54,7 @@ import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
+import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
@@ -130,12 +129,6 @@ public class SqlServiceStub implements SqlService {
                 kind));
     }
 
-    private static SqlRequest.Request.Builder newRequest() {
-        return SqlRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(SqlClient.SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(SqlClient.SERVICE_MESSAGE_VERSION_MINOR);
-    }
-
     class TransactionBeginProcessor implements MainResponseProcessor<Transaction> {
         private final AtomicReference<SqlResponse.Begin> detailResponseCache = new AtomicReference<>();
 
@@ -173,9 +166,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (Begin): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setBegin(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionBeginProcessor().asResponseProcessor());
     }
 
@@ -219,9 +210,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (commit): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setCommit(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionCommitProcessor(transaction).asResponseProcessor(false));
     }
 
@@ -232,9 +221,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (commit): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setCommit(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionCommitProcessor(null).asResponseProcessor());
     }
 
@@ -271,9 +258,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (rollback): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setRollback(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionRollbackProcessor().asResponseProcessor(false));
     }
 
@@ -319,9 +304,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setPrepare(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new StatementPrepareProcessor(request).asResponseProcessor());
     }
 
@@ -358,9 +341,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (dispose prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDisposePreparedStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new StatementDisposeProcessor().asResponseProcessor(false));
     }
 
@@ -404,9 +385,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (explain): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExplain(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeStatementProcessor().asResponseProcessor());
     }
 
@@ -417,9 +396,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (explain): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExplainByText(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeStatementProcessor().asResponseProcessor(false));
     }
 
@@ -456,9 +433,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (describe table): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDescribeTable(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeTableProcessor().asResponseProcessor(false));
     }
 
@@ -503,9 +478,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ExecuteProcessor().asResponseProcessor(false));
     }
 
@@ -516,9 +489,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecutePreparedStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ExecuteProcessor().asResponseProcessor());
     }
 
@@ -529,9 +500,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (batch): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setBatch(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ExecuteProcessor().asResponseProcessor());
     }
 
@@ -632,10 +601,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteQuery(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
     }
 
     @Override
@@ -645,10 +612,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecutePreparedQuery(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
     }
 
     @Override
@@ -658,10 +623,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteDump(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
     }
 
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
@@ -705,9 +668,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute load): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteLoad(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new LoadProcessor().asResponseProcessor(false));
     }
 
@@ -744,9 +705,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (ListTables): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setListTables(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ListTablesProcessor().asResponseProcessor(false));
     }
 
@@ -783,9 +742,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (getSearchPath): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setGetSearchPath(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetSearchPathProcessor().asResponseProcessor(false));
     }
 
@@ -831,9 +788,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (GetErrorInfo): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setGetErrorInfo(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetErrorInfoProcessor().asResponseProcessor(false));
     }
 
@@ -878,9 +833,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (DisposeTransaction): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDisposeTransaction(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DisposeTransactionProcessor().asResponseProcessor(false));
     }
 
@@ -924,13 +877,6 @@ public class SqlServiceStub implements SqlService {
             resources.close();
         }
         session.remove(this);
-    }
-
-    private byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            request.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        }
     }
 
     // for diagnostic
