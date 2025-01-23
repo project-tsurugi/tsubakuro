@@ -237,7 +237,29 @@ public interface ValueInput extends AutoCloseable {
      */
     DateTimeInterval readDateTimeInterval() throws IOException, InterruptedException;
 
-    // FIXME blob, clob
+    /**
+     * Reads the next {@link EntryType#DATETIME_INTERVAL} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     */
+    default long readBlob() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Reads the next {@link EntryType#DATETIME_INTERVAL} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     */
+    default long readClob() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Reads the next {@link EntryType#ROW} entry.

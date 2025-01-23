@@ -17,11 +17,13 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -72,6 +74,47 @@ public interface Wire extends ServerResource {
     default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
         Objects.requireNonNull(payload);
         return send(serviceId, ByteBuffer.wrap(payload));
+    }
+
+    /**
+     * send a message to the destination server.
+     * <p>
+     * The returned future will raise {@link CoreServiceException} on calling {@link FutureResponse#get()}.
+     * This is because the server returned an erroneous response (e.g. the destination service is not found).
+     * </p>
+     * <p>
+     * Otherwise, you can retrieve {@link Response} and its {@link Response#waitForMainResponse() main response}
+     * contains reply message from the destination service specified by {@code serviceId}.
+     * </p>
+     * @param serviceId the destination service ID
+     * @param payload the request payload
+     * @param blobs the blobs to send
+     * @return a future of the response
+     * @throws IOException if I/O error was occurred while sending message
+     */
+    default FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * send a message to the destination server.
+     * <p>
+     * The returned future will raise {@link CoreServiceException} on calling {@link FutureResponse#get()}.
+     * This is because the server returned an erroneous response (e.g. the destination service is not found).
+     * </p>
+     * <p>
+     * Otherwise, you can retrieve {@link Response} and its {@link Response#waitForMainResponse() main response}
+     * contains reply message from the destination service specified by {@code serviceId}.
+     * </p>
+     * @param serviceId the destination service ID
+     * @param payload the request payload
+     * @param blobs the blobs to send
+     * @return a future of the response
+     * @throws IOException if I/O error was occurred while sending message
+     */
+    default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        Objects.requireNonNull(payload);
+        return send(serviceId, ByteBuffer.wrap(payload), blobs);
     }
 
     /**

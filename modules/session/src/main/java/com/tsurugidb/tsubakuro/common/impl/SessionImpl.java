@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.common.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +42,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
@@ -161,6 +163,26 @@ public class SessionImpl implements Session {
         FutureResponse<? extends Response> future = wire.send(serviceId, payload);
         return convert(future, processor);
     }
+
+    @Override
+    public <R> FutureResponse<R> send(
+        int serviceId,
+        @Nonnull byte[] payload,
+        @Nonnull List<? extends BlobInfo> blobs,
+        @Nonnull ResponseProcessor<R> processor) throws IOException {
+            FutureResponse<? extends Response> future = wire.send(serviceId, payload, blobs);
+            return convert(future, processor);
+    }
+
+    @Override
+    public <R> FutureResponse<R> send(
+        int serviceId,
+        @Nonnull ByteBuffer payload,
+        @Nonnull List<? extends BlobInfo> blobs,
+        @Nonnull ResponseProcessor<R> processor) throws IOException {
+            FutureResponse<? extends Response> future = wire.send(serviceId, payload, blobs);
+            return convert(future, processor);
+        }
 
     private <R> FutureResponse<R> convert(
             @Nonnull FutureResponse<? extends Response> response,

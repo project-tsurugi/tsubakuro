@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
@@ -115,10 +118,16 @@ public class TransactionImpl implements Transaction {
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
             .setTransactionHandle(transaction.getTransactionHandle())
             .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
+        var lobs = new LinkedList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
+            addLob(e, lobs);
         }
-        return service.send(pb.build());
+        if (lobs.isEmpty()) {
+            return service.send(pb.build());
+        } else {
+            return service.send(pb.build(), lobs);
+        }
     }
 
     @Override
@@ -133,10 +142,43 @@ public class TransactionImpl implements Transaction {
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
         .setTransactionHandle(transaction.getTransactionHandle())
         .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
+        var lobs = new LinkedList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
+            addLob(e, lobs);
         }
-        return service.send(pb.build());
+        if (lobs.isEmpty()) {
+            return service.send(pb.build());
+        } else {
+            return service.send(pb.build(), lobs);
+        }
+    }
+
+    private void addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) {
+        if (e.getValueCase() == SqlRequest.Parameter.ValueCase.CLOB) {
+            var v = e.getClob();
+            switch (v.getDataCase()) {
+                case LOCAL_PATH:
+                    if (!lobs.add(new FileBlobInfo(v.getChannelName(), Path.of(v.getLocalPath())))) {
+                        throw new IllegalArgumentException();
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
+        if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
+            var v = e.getBlob();
+            switch (v.getDataCase()) {
+                case LOCAL_PATH:
+                    if (!lobs.add(new FileBlobInfo(v.getChannelName(), Path.of(v.getLocalPath())))) {
+                        throw new IllegalArgumentException();
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
     }
 
     @Override

@@ -119,9 +119,9 @@ public class StreamBackedValueInput implements ValueInput {
             // 0xf9
             EntryType.ARRAY,
             // 0xfa
-            null, // EntryType.CLOB,
+            EntryType.CLOB,
             // 0xfb
-            null, // EntryType.BLOB,
+            EntryType.BLOB,
             // 0xfc
             null,
             // 0xfd
@@ -277,6 +277,13 @@ public class StreamBackedValueInput implements ValueInput {
             return true;
         case DATETIME_INTERVAL:
             readDateTimeInterval();
+            return true;
+
+        case BLOB:
+            readBlob();
+            return true;
+        case CLOB:
+            readClob();
             return true;
 
         case ROW: {
@@ -525,6 +532,20 @@ public class StreamBackedValueInput implements ValueInput {
         var day = readSignedInt32();
         var nanos = Base128Variant.readSigned(input);
         return new DateTimeInterval(year, month, day, nanos);
+    }
+
+    @Override
+    public long readBlob() throws IOException {
+        require(EntryType.BLOB);
+        clearHeaderInfo();
+        return readIntBody();
+    }
+
+    @Override
+    public long readClob() throws IOException {
+        require(EntryType.CLOB);
+        clearHeaderInfo();
+        return readIntBody();
     }
 
     @Override

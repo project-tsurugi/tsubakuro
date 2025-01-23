@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +38,7 @@ import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
@@ -495,6 +497,18 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<ExecuteResult> send(
+            @Nonnull SqlRequest.ExecutePreparedStatement request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                blobs,
+                new ExecuteProcessor().asResponseProcessor());
+    }
+
+    @Override
+    public FutureResponse<ExecuteResult> send(
             @Nonnull SqlRequest.Batch request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (batch): {}", request); //$NON-NLS-1$
@@ -613,6 +627,18 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
+    }
+
+    @Override
+    public FutureResponse<ResultSet> send(
+            @Nonnull SqlRequest.ExecutePreparedQuery request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                blobs,
                 new QueryProcessor(request));
     }
 
@@ -790,6 +816,49 @@ public class SqlServiceStub implements SqlService {
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetErrorInfoProcessor().asResponseProcessor(false));
+    }
+
+    class GetLargeObjectDataProcessor implements MainResponseProcessor<InputStream> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+        Response correspondingResponse;
+
+        GetLargeObjectDataProcessor(Response response) {
+            this.correspondingResponse = response;
+        }
+
+        @Override
+        public InputStream process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            if (detailResponseCache.get() == null) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getGetLargeObjectData());
+            }
+            var detailResponse = detailResponseCache.get();
+            LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+            }
+            var channelName = detailResponse.getSuccess().getChannelName();
+            return correspondingResponse.openSubResponse(channelName);
+        }
+    }
+
+    @Override
+    public FutureResponse<InputStream> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Response response) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetLargeObjectDataProcessor(response).asResponseProcessor(false));
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {

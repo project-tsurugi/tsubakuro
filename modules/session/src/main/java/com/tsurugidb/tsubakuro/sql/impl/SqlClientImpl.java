@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
@@ -34,6 +35,8 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -145,6 +148,28 @@ public class SqlClientImpl implements SqlClient {
     public FutureResponse<SearchPath> getSearchPath() throws IOException {
         var pb = SqlRequest.GetSearchPath.newBuilder();
         return service.send(pb.build());
+    }
+
+    @Override
+    public FutureResponse<InputStream> openInputStream(BlobReference blobReference) throws IOException {
+        if (blobReference instanceof BlobReferenceForSql) {
+            var blobReferenceForSql = (BlobReferenceForSql) blobReference;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+            .setReference(blobReferenceForSql.blobReference());
+            return service.send(pb.build(), blobReferenceForSql.response());
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public FutureResponse<InputStream> openInputStream(ClobReference clobReference) throws IOException {
+        if (clobReference instanceof ClobReferenceForSql) {
+            var clobReferenceForSql = (ClobReferenceForSql) clobReference;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+            .setReference(clobReferenceForSql.clobReference());
+            return service.send(pb.build(), clobReferenceForSql.response());
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

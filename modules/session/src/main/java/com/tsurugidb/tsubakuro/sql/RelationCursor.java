@@ -389,5 +389,39 @@ public interface RelationCursor extends ServerResource {
      */
     void endRowValue() throws IOException, ServerException, InterruptedException;
 
-    // FIXME impl clob, blob
+    /**
+     * Retrieves a {@code BLOB} reference on the column of the cursor position.
+     * <p>
+     * You can only take once to retrieve the value on the column.
+     * </p>
+     * @return the reference value
+     * @throws IllegalStateException if the value has been already fetched
+     * @throws IllegalStateException if this cursor does not point to any columns
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#BLOB
+     */
+    default BlobReference fetchBlob() throws IOException, ServerException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Retrieves a {@code CLOB} reference on the column of the cursor position.
+     * <p>
+     * You can only take once to retrieve the value on the column.
+     * </p>
+     * @return the reference value
+     * @throws IllegalStateException if the value has been already fetched
+     * @throws IllegalStateException if this cursor does not point to any columns
+     * @throws IOException if I/O error was occurred while extracting the column data
+     * @throws IOException if the value type is not matched
+     * @throws ServerException if server error was occurred while retrieving this relation
+     * @throws InterruptedException if interrupted while extracting the column data
+     * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#CLOB
+     */
+    default ClobReference fetchClob() throws IOException, ServerException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
 }

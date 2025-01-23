@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -226,6 +227,26 @@ public interface SqlClient extends ServerResource, ServiceClient {
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<SearchPath> getSearchPath() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns an input stream for the blob.
+     * @return a future response of an input stream for the blob
+     * @param ref the blob reference
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<InputStream> openInputStream(BlobReference ref) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns an input stream for the clob.
+     * @return a future response of an input stream for the clob
+     * @param ref the clob reference
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<InputStream> openInputStream(ClobReference ref) throws IOException {
         throw new UnsupportedOperationException();
     }
 

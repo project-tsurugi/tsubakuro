@@ -16,10 +16,14 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -138,6 +142,18 @@ public interface SqlService extends ServerResource {
     }
 
     /**
+     * Requests {@code ExecuteStatement} to SQL service.
+     * @param request the request
+     * @param blobs the blobs to send
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecutePreparedStatement request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Requests {@code Query} to SQL service.
      * @param request the request
      * @return the future response of the request,
@@ -149,6 +165,19 @@ public interface SqlService extends ServerResource {
         throw new UnsupportedOperationException();
     }
     default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecutePreparedQuery request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code Query} to SQL service.
+     * @param request the request
+     * @param blobs the blobs to send
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     *      If the request was succeeded, future will returns a result set object which includes query results.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecutePreparedQuery request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -216,6 +245,18 @@ public interface SqlService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<SqlServiceException> send(@Nonnull SqlRequest.GetErrorInfo request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code GetLargeObjectData} to SQL service.
+     * @param request the request
+     * @param response the response to which the large object channel belongs
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<InputStream> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Response response) throws IOException {
         throw new UnsupportedOperationException();
     }
 

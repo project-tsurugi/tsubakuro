@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
@@ -30,8 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
 import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
@@ -58,7 +61,7 @@ public class WireImpl implements Wire {
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    private static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
+    private static final int SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * The major service message version for EndpointRequest.
@@ -92,13 +95,6 @@ public class WireImpl implements Wire {
         LOG.trace("begin Session");
     }
 
-    /**
-     * Send a Request to the server via the native wire.
-     * @param serviceId the destination service ID
-     * @param payload the Request message in byte[]
-     * @return a Future response message corresponding the request
-     * @throws IOException error occurred in ByteBuffer variant of send()
-     */
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload) throws IOException {
         if (closed.get()) {
@@ -124,6 +120,38 @@ public class WireImpl implements Wire {
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
         return send(serviceId, payload.array());
+    }
+
+    @Override
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        if (closed.get()) {
+            throw new IOException("already closed");
+        }
+        var header = FrameworkRequest.Header.newBuilder()
+            .setServiceMessageVersionMajor(SERVICE_MESSAGE_VERSION_MAJOR)
+            .setServiceMessageVersionMinor(SERVICE_MESSAGE_VERSION_MINOR)
+            .setServiceId(serviceId)
+            .setSessionId(sessionId());
+        if (!blobs.isEmpty()) {
+            var repeatedBlobInfo = FrameworkCommon.RepeatedBlobInfo.newBuilder();
+            for (var e: blobs) {
+                var blobInfo = FrameworkCommon.BlobInfo.newBuilder()
+                .setChannelName(e.getChannelName());
+                if (e.getPath().isPresent() && e.isFile()) {
+                    blobInfo.setPath(e.getPath().get().toString());
+                }
+                repeatedBlobInfo.addBlobs(blobInfo.build());
+            }
+            header.setBlobs(repeatedBlobInfo);
+        }
+        var response = responseBox.register(toDelimitedByteArray(header.build()), payload);
+        return FutureResponse.wrap(Owner.of(response));
+    }
+
+
+    @Override
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        return send(serviceId, payload.array(), blobs);
     }
 
     /**

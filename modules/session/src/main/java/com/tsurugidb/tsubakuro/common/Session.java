@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
@@ -31,7 +32,6 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 import com.tsurugidb.tsubakuro.util.Timeout;
-
 /**
  * Represents a connection to Tsurugi server.
  */
@@ -78,6 +78,42 @@ public interface Session extends ServerResource {
             @Nonnull ResponseProcessor<R> processor) throws IOException {
         throw new UnsupportedOperationException();
     }
+
+        /**
+     * Sends a message to the destination server.
+     * @param <R> the result value type
+     * @param serviceId the destination service ID
+     * @param payload the message payload
+     * @param blobs the blobs to send
+     * @param processor the response processor
+     * @return the future of response
+     * @throws IOException if I/O error was occurred while requesting
+     */
+    default <R> FutureResponse<R> send(
+        int serviceId,
+        @Nonnull byte[] payload,
+        @Nonnull List<? extends BlobInfo> blobs,
+        @Nonnull ResponseProcessor<R> processor) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Sends a message to the destination server.
+     * @param <R> the result value type
+     * @param serviceId the destination service ID
+     * @param payload the message payload
+     * @param blobs the blobs to send
+     * @param processor the response processor
+     * @return the future of response
+     * @throws IOException if I/O error was occurred while requesting
+     */
+    default <R> FutureResponse<R> send(
+        int serviceId,
+        @Nonnull ByteBuffer payload,
+        @Nonnull List<? extends BlobInfo> blobs,
+        @Nonnull ResponseProcessor<R> processor) throws IOException {
+            throw new UnsupportedOperationException();
+        }
 
     /**
      * updates credential information of this session, and retries authenticate it.
