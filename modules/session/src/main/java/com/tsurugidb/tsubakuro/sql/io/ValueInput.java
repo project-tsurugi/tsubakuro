@@ -25,6 +25,9 @@ import java.time.OffsetDateTime;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+
 /**
  * Retrieves SQL values.
  */
@@ -245,7 +248,7 @@ public interface ValueInput extends AutoCloseable {
      * @throws IllegalStateException if the next entry is inconsistent value type
      * @see #peekType()
      */
-    default long readBlob() throws IOException, InterruptedException {
+    default BlobReference readBlob() throws IOException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 
@@ -257,7 +260,7 @@ public interface ValueInput extends AutoCloseable {
      * @throws IllegalStateException if the next entry is inconsistent value type
      * @see #peekType()
      */
-    default long readClob() throws IOException, InterruptedException {
+    default ClobReference readClob() throws IOException, InterruptedException {
         throw new UnsupportedOperationException();
     }
 
