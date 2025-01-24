@@ -66,6 +66,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
@@ -543,7 +544,10 @@ public class StreamBackedValueInput implements ValueInput {
     public BlobReference readBlob() throws IOException {
         require(EntryType.BLOB);
         clearHeaderInfo();
-        var provider = read8();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal blob provider");
+        }
         var objectId = read8();
         return new BlobReferenceForSql(provider, objectId);
     }
@@ -552,7 +556,10 @@ public class StreamBackedValueInput implements ValueInput {
     public ClobReference readClob() throws IOException {
         require(EntryType.CLOB);
         clearHeaderInfo();
-        var provider = read8();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal clob provider");
+        }
         var objectId = read8();
         return new ClobReferenceForSql(provider, objectId);
     }
