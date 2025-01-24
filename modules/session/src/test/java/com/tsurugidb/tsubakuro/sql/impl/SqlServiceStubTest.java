@@ -40,10 +40,8 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
-import com.tsurugidb.sql.proto.SqlRequest.ExecuteStatement;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
-import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
@@ -58,7 +56,6 @@ import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.Types;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
-import com.tsurugidb.tsubakuro.util.ServerResource;
 
 class SqlServiceStubTest {
     private static final String RS_RD = "relation"; //$NON-NLS-1$
