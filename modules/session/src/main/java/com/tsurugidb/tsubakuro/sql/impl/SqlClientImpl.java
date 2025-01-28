@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
@@ -155,19 +156,19 @@ public class SqlClientImpl implements SqlClient {
         if (blobReference instanceof BlobReferenceForSql) {
             var blobReferenceForSql = (BlobReferenceForSql) blobReference;
             var pb = SqlRequest.GetLargeObjectData.newBuilder()
-            .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build(), blobReferenceForSql.response());
+                        .setReference(blobReferenceForSql.blobReference());
+            return service.send(pb.build(), blobReferenceForSql);
         }
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public FutureResponse<InputStream> openInputStream(ClobReference clobReference) throws IOException {
+    public FutureResponse<Reader> openReader(ClobReference clobReference) throws IOException {
         if (clobReference instanceof ClobReferenceForSql) {
             var clobReferenceForSql = (ClobReferenceForSql) clobReference;
             var pb = SqlRequest.GetLargeObjectData.newBuilder()
-            .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build(), clobReferenceForSql.response());
+                        .setReference(clobReferenceForSql.clobReference());
+            return service.send(pb.build(), clobReferenceForSql);
         }
         throw new UnsupportedOperationException();
     }

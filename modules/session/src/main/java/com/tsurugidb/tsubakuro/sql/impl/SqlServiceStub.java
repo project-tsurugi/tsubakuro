@@ -17,6 +17,8 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.List;
@@ -44,6 +46,9 @@ import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
@@ -54,7 +59,6 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -818,11 +822,11 @@ public class SqlServiceStub implements SqlService {
                 new GetErrorInfoProcessor().asResponseProcessor(false));
     }
 
-    class GetLargeObjectDataProcessor implements MainResponseProcessor<InputStream> {
+    class GetBlobProcessor implements MainResponseProcessor<InputStream> {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
         Response correspondingResponse;
 
-        GetLargeObjectDataProcessor(Response response) {
+        GetBlobProcessor(Response response) {
             this.correspondingResponse = response;
         }
 
@@ -852,13 +856,62 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<InputStream> send(
-            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Response response) throws IOException {
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull BlobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new GetLargeObjectDataProcessor(response).asResponseProcessor(false));
+        if (reference instanceof BlobReferenceForSql) {
+            return session.send(
+                    SERVICE_ID,
+                    SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                    new GetBlobProcessor(((BlobReferenceForSql) reference).response()).asResponseProcessor(false));
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    class GetClobProcessor implements MainResponseProcessor<Reader> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+        Response correspondingResponse;
+
+        GetClobProcessor(Response response) {
+            this.correspondingResponse = response;
+        }
+
+        @Override
+        public Reader process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            if (detailResponseCache.get() == null) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getGetLargeObjectData());
+            }
+            var detailResponse = detailResponseCache.get();
+            LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+            }
+            var channelName = detailResponse.getSuccess().getChannelName();
+            return new InputStreamReader(correspondingResponse.openSubResponse(channelName), "UTF-8");
+        }
+    }
+
+    @Override
+    public FutureResponse<Reader> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull ClobReference reference) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        if (reference instanceof ClobReferenceForSql) {
+            return session.send(
+                    SERVICE_ID,
+                    SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                    new GetClobProcessor(((ClobReferenceForSql) reference).response()).asResponseProcessor(false));
+        }
+        throw new UnsupportedOperationException();
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
