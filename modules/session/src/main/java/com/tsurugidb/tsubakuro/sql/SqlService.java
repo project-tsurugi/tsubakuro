@@ -17,12 +17,12 @@ package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.sql.proto.SqlRequest;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -251,12 +251,24 @@ public interface SqlService extends ServerResource {
     /**
      * Requests {@code GetLargeObjectData} to SQL service.
      * @param request the request
-     * @param response the response to which the large object channel belongs
+     * @param reference the blob reference
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
      */
-    default FutureResponse<InputStream> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Response response) throws IOException {
+    default FutureResponse<InputStream> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull BlobReference reference) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code GetLargeObjectData} to SQL service.
+     * @param request the request
+     * @param reference the clob reference
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<Reader> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull ClobReference reference) throws IOException {
         throw new UnsupportedOperationException();
     }
 
