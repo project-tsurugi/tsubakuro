@@ -156,6 +156,11 @@ public class ChannelResponse implements Response {
         } else if (id.equals(RELATION_CHANNEL_ID)) {
             waitForResultSetOrMainResponse();
             return relationChannel();
+        } else {
+            var path = blobs.get(id).getLeft();
+            if (path != null) {
+                return new FileInputStream(path);
+            }
         }
         throw new NoSuchElementException("illegal SubResponse id");
     }
