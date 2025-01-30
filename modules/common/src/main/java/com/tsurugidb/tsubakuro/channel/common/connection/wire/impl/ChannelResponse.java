@@ -157,9 +157,13 @@ public class ChannelResponse implements Response {
             waitForResultSetOrMainResponse();
             return relationChannel();
         } else {
-            var path = blobs.get(id).getLeft();
-            if (path != null) {
-                return new FileInputStream(path);
+            waitForMainResponse();
+            var entry = blobs.get(id);
+            if (entry != null) {
+                var path = entry.getLeft();
+                if (path != null) {
+                    return new FileInputStream(path);
+                }
             }
         }
         throw new NoSuchElementException("illegal SubResponse id");
@@ -174,9 +178,13 @@ public class ChannelResponse implements Response {
             waitForResultSetOrMainResponse(timeout, unit);
             return relationChannel();
         } else {
-            var path = blobs.get(id).getLeft();
-            if (path != null) {
-                return new FileInputStream(path);
+            waitForMainResponse(timeout, unit);
+            var entry = blobs.get(id);
+            if (entry != null) {
+                var path = entry.getLeft();
+                if (path != null) {
+                    return new FileInputStream(path);
+                }
             }
         }
         throw new NoSuchElementException("illegal SubResponse id");
