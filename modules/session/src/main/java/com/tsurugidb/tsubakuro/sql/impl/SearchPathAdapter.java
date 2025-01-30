@@ -45,13 +45,8 @@ public class SearchPathAdapter implements SearchPath {
     public List<String> getSchemaNames() {
         var rv = new ArrayList<String>();
         for (var e : proto.getSearchPathsList()) {
-            var l = e.getIdentifiersList();
-            if (l.size() > 0) {
-                String name = l.get(0).getLabel();
-                for (int i = 1; i < l.size(); i++) {
-                    name += ".";
-                    name += l.get(i).getLabel();
-                }
+            var name = TableListAdapter.getTableName(e);
+            if (!name.isEmpty()) {
                 rv.add(name);
             }
         }
