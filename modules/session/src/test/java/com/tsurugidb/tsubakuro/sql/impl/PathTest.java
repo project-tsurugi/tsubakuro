@@ -47,6 +47,16 @@ class PathTest {
                                 .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("table2Name")))
             .build();
 
+    private final SqlResponse.GetSearchPath.Success searchPath =
+        SqlResponse.GetSearchPath.Success.newBuilder()
+            .addSearchPaths(SqlResponse.Name.newBuilder()
+                            .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("databaseName"))
+                            .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1Name")))
+            .addSearchPaths(SqlResponse.Name.newBuilder()
+                            .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("databaseName"))
+                            .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema3Name")))
+            .build();
+
     @Test
     void tableListAdapter() {
         HashSet expected = new HashSet<String>();
@@ -65,17 +75,24 @@ class PathTest {
     @Test
     void searchPathAdapter() {
         HashSet expected = new HashSet<String>();
+        expected.add("databaseName.schema1Name");
+        expected.add("databaseName.schema3Name");
+
+        var searchPathAdapter = new SearchPathAdapter(searchPath);
+        for (var e: searchPathAdapter.getSchemaNames()) {
+            assertTrue(expected.remove(e));
+        }
+        assertEquals(expected.size(), 0);
+    }
+
+    @Test
+    void tableListAdapterWithsearchPathAdapter() {
+        HashSet expected = new HashSet<String>();
         expected.add("databaseName.schema1Name.table1Name");
         expected.add("databaseName.schema1Name.table2Name");
 
-        SearchPathAdapter searchPathAdapter = new SearchPathAdapter(
-            SqlResponse.GetSearchPath.Success.newBuilder()
-                .addSearchPaths(SqlResponse.Name.newBuilder()
-                                .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("databaseName"))
-                                .addIdentifiers(SqlResponse.Identifier.newBuilder().setLabel("schema1Name")))
-                .build());
-
         var tableListAdapter = new TableListAdapter(listTables);
+        var searchPathAdapter = new SearchPathAdapter(searchPath);
         for (var e: tableListAdapter.getSimpleNames(searchPathAdapter)) {
             assertTrue(expected.remove(e));
         }
