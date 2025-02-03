@@ -157,7 +157,7 @@ public class SqlClientImpl implements SqlClient {
             var blobReferenceForSql = (BlobReferenceForSql) blobReference;
             var pb = SqlRequest.GetLargeObjectData.newBuilder()
                         .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build(), blobReferenceForSql);
+            return service.send(pb.build(), blobReference);
         }
         throw new UnsupportedOperationException();
     }
@@ -168,7 +168,7 @@ public class SqlClientImpl implements SqlClient {
             var clobReferenceForSql = (ClobReferenceForSql) clobReference;
             var pb = SqlRequest.GetLargeObjectData.newBuilder()
                         .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build(), clobReferenceForSql);
+            return service.send(pb.build(), clobReference);
         }
         throw new UnsupportedOperationException();
     }
