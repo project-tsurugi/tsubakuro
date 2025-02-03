@@ -350,11 +350,7 @@ public class ResultSetImpl implements ResultSet {
     public synchronized BlobReference fetchBlob() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
-            var value = cursor.fetchBlob();
-            if (value instanceof BlobReferenceForSql) {
-                return ((BlobReferenceForSql) value).setResponse(response);
-            }
-            throw new UnsupportedOperationException();
+            return cursor.fetchBlob();
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;
@@ -365,11 +361,7 @@ public class ResultSetImpl implements ResultSet {
     public synchronized ClobReference fetchClob() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
-            var value = cursor.fetchClob();
-            if (value instanceof ClobReferenceForSql) {
-                return ((ClobReferenceForSql) value).setResponse(response);
-            }
-            throw new UnsupportedOperationException();
+            return cursor.fetchClob();
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;

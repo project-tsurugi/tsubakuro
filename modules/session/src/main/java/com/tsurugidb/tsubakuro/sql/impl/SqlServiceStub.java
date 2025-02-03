@@ -39,6 +39,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
@@ -822,94 +823,111 @@ public class SqlServiceStub implements SqlService {
                 new GetErrorInfoProcessor().asResponseProcessor(false));
     }
 
-    class GetBlobProcessor implements MainResponseProcessor<InputStream> {
+    class GetBlobProcessor implements ResponseProcessor<InputStream> {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
-        Response correspondingResponse;
 
-        GetBlobProcessor(Response response) {
-            this.correspondingResponse = response;
+        @Override
+        public InputStream process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public InputStream process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public InputStream process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
                 }
-                detailResponseCache.set(response.getGetLargeObjectData());
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                var channelName = detailResponse.getSuccess().getChannelName();
+                return response.openSubResponse(channelName);
             }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
-            }
-            var channelName = detailResponse.getSuccess().getChannelName();
-            return correspondingResponse.openSubResponse(channelName);
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
         }
     }
 
     @Override
     public FutureResponse<InputStream> send(
-            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull BlobReference reference) throws IOException {
+            @Nonnull SqlRequest.GetLargeObjectData request, BlobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
-        if (reference instanceof BlobReferenceForSql) {
-            return session.send(
-                    SERVICE_ID,
-                    SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                    new GetBlobProcessor(((BlobReferenceForSql) reference).response()).asResponseProcessor(false));
-        }
-        throw new UnsupportedOperationException();
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetBlobProcessor());
     }
 
-    class GetClobProcessor implements MainResponseProcessor<Reader> {
+    class GetClobProcessor implements ResponseProcessor<Reader> {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
-        Response correspondingResponse;
 
-        GetClobProcessor(Response response) {
-            this.correspondingResponse = response;
+        @Override
+        public Reader process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public Reader process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Reader process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
                 }
-                detailResponseCache.set(response.getGetLargeObjectData());
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                var channelName = detailResponse.getSuccess().getChannelName();
+                return new InputStreamReader(response.openSubResponse(channelName), "UTF-8");
             }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
-            }
-            var channelName = detailResponse.getSuccess().getChannelName();
-            return new InputStreamReader(correspondingResponse.openSubResponse(channelName), "UTF-8");
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
         }
     }
 
     @Override
     public FutureResponse<Reader> send(
-            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull ClobReference reference) throws IOException {
+            @Nonnull SqlRequest.GetLargeObjectData request, ClobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
         if (reference instanceof ClobReferenceForSql) {
             return session.send(
                     SERVICE_ID,
                     SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                    new GetClobProcessor(((ClobReferenceForSql) reference).response()).asResponseProcessor(false));
+                    new GetClobProcessor());
         }
         throw new UnsupportedOperationException();
     }
