@@ -252,6 +252,26 @@ public interface SqlClient extends ServerResource, ServiceClient {
     }
 
     /**
+     * Returns an object cache for the blob.
+     * @return a future response of a LargeObjectCache
+     * @param ref the blob reference
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<LargeObjectCache> getLargeObjectCache(BlobReference ref) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns an object cache for the clob.
+     * @return a future response of a LargeObjectCache
+     * @param ref the clob reference
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<LargeObjectCache> getLargeObjectCache(ClobReference ref) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Disposes the underlying server resources.
      * Note that, this never closes the underlying {@link Session}.
      */
