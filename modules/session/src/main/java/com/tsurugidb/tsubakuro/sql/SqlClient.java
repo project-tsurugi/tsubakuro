@@ -242,8 +242,8 @@ public interface SqlClient extends ServerResource, ServiceClient {
     }
 
     /**
-     * Returns an input stream for the clob.
-     * @return a future response of an input stream for the clob
+     * Returns a reader for the clob.
+     * @return a future response of a reader for the clob
      * @param ref the clob reference
      * @throws IOException if I/O error was occurred while sending request
      */
