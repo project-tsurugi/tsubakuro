@@ -22,7 +22,7 @@ import java.util.Optional;
 /**
  * Represents large object cache.
  */
-public interface LargeObjectCache {
+public interface LargeObjectCache extends AutoCloseable {
 
     /**
      * Returns the path of the file that represents the large object, only if it exists.
@@ -36,11 +36,13 @@ public interface LargeObjectCache {
      * Files created by this method are not affected by close() of this object. 
      * @param destination the path of the destination file
      * @throws IOException if I/O error was occurred while copying the large object to the file
+     * @throws IllegalStateException encountering a situation where find() returns an empty Optional
      */
     void copyTo(Path destination) throws IOException;
 
     /**
      * Closes the object cache. The file whose Path has been returned by find() may be deleted.
      */
+    @Override
     void close();
 }
