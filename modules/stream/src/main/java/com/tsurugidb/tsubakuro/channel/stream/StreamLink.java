@@ -46,6 +46,8 @@ public final class StreamLink extends Link {
     private final AtomicBoolean socketError = new AtomicBoolean();
     private final AtomicBoolean socketClosed = new AtomicBoolean();
 
+    public static final int STREAM_HEADER_SIZE = 7;
+
     // 1 is nolonger used
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
@@ -190,8 +192,8 @@ public final class StreamLink extends Link {
         return resultSetBox;
     }
 
-    private void send(byte i, int s) throws IOException {  // REQUEST_SESSION_BYE, RESULT_SET_BYE_OK
-        byte[] header = new byte[7];
+    private void send(byte i, int s) throws IOException {  // RESULT_SET_BYE_OK
+        byte[] header = new byte[STREAM_HEADER_SIZE];
 
         header[0] = i;  // info
         header[1] = strip(s);       // slot
@@ -213,16 +215,20 @@ public final class StreamLink extends Link {
 
     @Override
     public void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {  // SESSION_PAYLOAD
-        byte[] header = new byte[7];
-        int length = frameHeader.length + payload.length;
+        var headerLength = frameHeader.length;
+        var payloadLength = payload.length;
+        int length = headerLength + payloadLength;
+        byte[] whole = new byte[STREAM_HEADER_SIZE + length];
 
-        header[0] = REQUEST_SESSION_PAYLOAD;
-        header[1] = strip(s);       // slot
-        header[2] = strip(s >> 8);  // slot
-        header[3] = strip(length);
-        header[4] = strip(length >> 8);
-        header[5] = strip(length >> 16);
-        header[6] = strip(length >> 24);
+        whole[0] = REQUEST_SESSION_PAYLOAD;
+        whole[1] = strip(s);       // slot
+        whole[2] = strip(s >> 8);  // slot
+        whole[3] = strip(length);
+        whole[4] = strip(length >> 8);
+        whole[5] = strip(length >> 16);
+        whole[6] = strip(length >> 24);
+        System.arraycopy(frameHeader, 0, whole, STREAM_HEADER_SIZE, headerLength);
+        System.arraycopy(payload, 0, whole, STREAM_HEADER_SIZE +  headerLength, payloadLength);
 
         synchronized (outStream) {
             if (socket.isClosed()) {
@@ -230,12 +236,7 @@ public final class StreamLink extends Link {
                 return;
             }
             try {
-                outStream.write(header, 0, header.length);
-                if (length > 0) {
-                    // payload送信
-                    outStream.write(frameHeader, 0, frameHeader.length);
-                    outStream.write(payload, 0, payload.length);
-                }
+                outStream.write(whole, 0, whole.length);
                 outStream.flush();
             } catch (IOException e) {
                 channelResponse.setMainResponse(e);
@@ -245,11 +246,11 @@ public final class StreamLink extends Link {
         LOG.trace("send SESSION_PAYLOAD, length = {}, slot = {}", length, s);
     }
 
-    byte strip(int i) {
+    private byte strip(int i) {
         return (byte) (i & 0xff);
     }
 
-    public LinkMessage receive() throws IOException, SocketTimeoutException {
+    private LinkMessage receive() throws IOException, SocketTimeoutException {
         synchronized (inStream) {
             try {
                 byte[] bytes;
