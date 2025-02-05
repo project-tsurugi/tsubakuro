@@ -36,7 +36,7 @@ public interface LargeObjectCache extends AutoCloseable {
      * Files created by this method are not affected by close() of this object. 
      * @param destination the path of the destination file
      * @throws IOException if I/O error was occurred while copying the large object to the file
-     * @throws IllegalStateException encountering a situation where find() returns an empty Optional
+     *                     or it encounters a situation where find() returns an empty Optional
      */
     void copyTo(Path destination) throws IOException;
 
