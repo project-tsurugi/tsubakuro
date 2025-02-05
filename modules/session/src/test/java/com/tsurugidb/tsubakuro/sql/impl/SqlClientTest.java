@@ -1,0 +1,177 @@
+/*
+ * Copyright 2023-2024 Project Tsurugi.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.tsurugidb.tsubakuro.sql.impl;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.Types;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.util.Owner;
+import com.tsurugidb.tsubakuro.util.Timeout;
+import com.tsurugidb.tsubakuro.session.ProtosForTest;
+
+class SqlClientImplTest {
+
+    private final String CHANNEL_NAME_FOR_TEST = "ChannelNameForTest";
+    private final int RESPONSE_MESSAGE_SIZE = 26;
+
+    SqlResponse.Response nextResponse;
+
+    class ChannelResponseMock implements Response {
+        @Override
+        public boolean isMainResponseReady() {
+            return true;
+        }
+        @Override
+        public ByteBuffer waitForMainResponse() throws IOException {
+            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
+        }
+        @Override
+        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
+            return waitForMainResponse();
+        }
+        @Override
+        public InputStream openSubResponse(String id) throws IOException {
+            if (id.equals(CHANNEL_NAME_FOR_TEST)) {
+                byte[] response = new byte[RESPONSE_MESSAGE_SIZE];
+                for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
+                    response[i] = (byte) ('a' + i);
+                }
+                return new ByteArrayInputStream(response);
+            }
+            throw new IOException("illegal channel name: " + id);
+        }
+        public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws IOException {
+            return openSubResponse(id);
+        }
+        @Override
+        public void close() throws IOException, InterruptedException {
+        }
+    }
+
+    class SessionWireMock implements Wire {
+        private boolean closed = false;
+
+        @Override
+        public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
+            if (closed) {
+                throw new IOException("link is already closed");
+            }
+
+            var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
+            switch (request.getRequestCase()) {
+                case GET_LARGE_OBJECT_DATA:
+                    nextResponse = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                       .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder().setChannelName(CHANNEL_NAME_FOR_TEST)))
+                        .build();
+                        break;
+                default:
+                    System.out.println("falls default case%n" + request);
+                    return null;  // dummy as it is test for session
+            }
+            return FutureResponse.wrap(Owner.of(new ChannelResponseMock()));
+        }
+
+        @Override
+        public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) throws IOException {
+            return send(serviceID, request.array());
+        }
+
+        @Override
+        public void close() throws IOException {
+            closed = true;
+        }
+    }
+
+    @Test
+    void openInputStream_success() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var sqlClient = SqlClient.attach(session);
+
+        var blobReference = new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
+        var stream = sqlClient.openInputStream(blobReference).await();
+        for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
+            assertEquals('a' + i, stream.read());
+        }
+    }
+
+    class BlobReferenceForTest implements BlobReference {
+    }
+
+    @Test
+    void openInputStream_exception() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var sqlClient = SqlClient.attach(session);
+
+        Throwable exception = assertThrows(IllegalStateException.class, () -> {
+            sqlClient.openInputStream(new BlobReferenceForTest());
+        });
+    }
+
+    @Test
+    void openReader_success() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var sqlClient = SqlClient.attach(session);
+
+        var clobReference = new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
+        var reader = sqlClient.openReader(clobReference).await();
+        for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
+            assertEquals('a' + i, reader.read());
+        }
+    }
+
+    class ClobReferenceForTest implements ClobReference {
+    }
+
+    @Test
+    void openReader_exception() throws Exception {
+        var session = new SessionImpl();
+        session.connect(new SessionWireMock());
+        var sqlClient = SqlClient.attach(session);
+
+        Throwable exception = assertThrows(IllegalStateException.class, () -> {
+            sqlClient.openReader(new ClobReferenceForTest());
+        });
+    }
+}

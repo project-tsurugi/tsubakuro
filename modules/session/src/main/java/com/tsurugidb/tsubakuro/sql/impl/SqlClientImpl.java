@@ -159,7 +159,7 @@ public class SqlClientImpl implements SqlClient {
                         .setReference(blobReferenceForSql.blobReference());
             return service.send(pb.build(), blobReference);
         }
-        throw new UnsupportedOperationException();
+        throw new IllegalStateException(blobReference.getClass().getName() + "is unsupported.");
     }
 
     @Override
@@ -170,7 +170,7 @@ public class SqlClientImpl implements SqlClient {
                         .setReference(clobReferenceForSql.clobReference());
             return service.send(pb.build(), clobReference);
         }
-        throw new UnsupportedOperationException();
+        throw new IllegalStateException(clobReference.getClass().getName() + "is unsupported.");
     }
 
     @Override
