@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -134,7 +135,11 @@ public class WireImpl implements Wire {
             .setSessionId(sessionId());
         if (!blobs.isEmpty()) {
             var repeatedBlobInfo = FrameworkCommon.RepeatedBlobInfo.newBuilder();
+            HashSet<String> dupCheck = new HashSet<>();
             for (var e: blobs) {
+                if (!dupCheck.add(e.getChannelName())) {
+                    throw new IllegalArgumentException("duplicate channel name: " + e.getChannelName());
+                }
                 var blobInfo = FrameworkCommon.BlobInfo.newBuilder()
                 .setChannelName(e.getChannelName());
                 if (e.getPath().isPresent() && e.isFile()) {
