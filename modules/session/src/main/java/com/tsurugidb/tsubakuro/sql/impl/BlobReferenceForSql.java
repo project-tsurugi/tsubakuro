@@ -17,33 +17,21 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 
 /**
  * Represents a reference to BLOB data and corresponding Response.
  */
 public final class BlobReferenceForSql implements BlobReference {
     final SqlCommon.LargeObjectReference largeObjectReference;
-    Response response;
 
     public BlobReferenceForSql(SqlCommon.LargeObjectProvider provider, long objectId) {
         largeObjectReference = SqlCommon.LargeObjectReference.newBuilder()
                                 .setProvider(provider)
                                 .setObjectId(objectId)
                                 .build();
-        this.response = null;
-    }
-
-    public BlobReferenceForSql setResponse(Response res) {
-        response = res;
-        return this;
     }
 
     SqlCommon.LargeObjectReference blobReference() {
         return largeObjectReference;
-    }
-
-    Response response() {
-        return response;
     }
 }
