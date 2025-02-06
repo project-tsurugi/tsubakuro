@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
@@ -120,8 +121,7 @@ public class TransactionImpl implements Transaction {
             .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
         var lobs = new LinkedList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
-            pb.addParameters(e);
-            addLob(e, lobs);
+            pb.addParameters(addLob(e, lobs));
         }
         if (lobs.isEmpty()) {
             return service.send(pb.build());
@@ -144,8 +144,7 @@ public class TransactionImpl implements Transaction {
         .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
         var lobs = new LinkedList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
-            pb.addParameters(e);
-            addLob(e, lobs);
+            pb.addParameters(addLob(e, lobs));
         }
         if (lobs.isEmpty()) {
             return service.send(pb.build());
@@ -154,7 +153,7 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private void addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) {
+    private SqlRequest.Parameter addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) {
         if (e.getValueCase() == SqlRequest.Parameter.ValueCase.CLOB) {
             var v = e.getClob();
             switch (v.getDataCase()) {
@@ -166,6 +165,11 @@ public class TransactionImpl implements Transaction {
                 default:
                     throw new UnsupportedOperationException();
             }
+            return SqlRequest.Parameter.newBuilder()
+                    .setClob(SqlCommon.Clob.newBuilder()
+                            .setChannelName(v.getChannelName())
+                            .build())
+                    .build();
         }
         if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
             var v = e.getBlob();
@@ -178,7 +182,13 @@ public class TransactionImpl implements Transaction {
                 default:
                     throw new UnsupportedOperationException();
             }
+            return SqlRequest.Parameter.newBuilder()
+                    .setBlob(SqlCommon.Blob.newBuilder()
+                            .setChannelName(v.getChannelName())
+                            .build())
+                    .build();
         }
+        return e;
     }
 
     @Override
