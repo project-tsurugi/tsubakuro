@@ -24,6 +24,7 @@ import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -66,6 +67,9 @@ public class TransactionImpl implements Transaction {
     private final boolean autoDispose = false;
     private boolean needDispose = true;
 
+    private static AtomicLong blobNumber = new AtomicLong();
+    private static AtomicLong clobNumber = new AtomicLong();
+
     /**
      * Creates a new instance.
      * @param transaction the SqlResponse.Begin.Success
@@ -80,7 +84,6 @@ public class TransactionImpl implements Transaction {
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
-        this.timeout = 0;
     }
 
     @Override
@@ -158,35 +161,42 @@ public class TransactionImpl implements Transaction {
             var v = e.getClob();
             switch (v.getDataCase()) {
                 case LOCAL_PATH:
-                    if (!lobs.add(new FileBlobInfo(v.getChannelName(), Path.of(v.getLocalPath())))) {
+                    String channelName = "ClobChannel-";
+                    channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+                    channelName += "-";
+                    channelName += Long.valueOf(clobNumber.getAndIncrement() + 1).toString();
+                    if (!lobs.add(new FileBlobInfo(channelName, Path.of(v.getLocalPath())))) {
                         throw new IllegalArgumentException();
                     }
-                    break;
+                    return SqlRequest.Parameter.newBuilder()
+                    .setClob(SqlCommon.Clob.newBuilder()
+                            .setChannelName(channelName)
+                            .build())
+                    .build();
                 default:
                     throw new UnsupportedOperationException();
             }
-            return SqlRequest.Parameter.newBuilder()
-                    .setClob(SqlCommon.Clob.newBuilder()
-                            .setChannelName(v.getChannelName())
-                            .build())
-                    .build();
+
         }
         if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
             var v = e.getBlob();
             switch (v.getDataCase()) {
                 case LOCAL_PATH:
-                    if (!lobs.add(new FileBlobInfo(v.getChannelName(), Path.of(v.getLocalPath())))) {
+                    String channelName = "BlobChannel-";
+                    channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+                    channelName += "-";
+                    channelName += Long.valueOf(blobNumber.getAndIncrement() + 1).toString();
+                    if (!lobs.add(new FileBlobInfo(channelName, Path.of(v.getLocalPath())))) {
                         throw new IllegalArgumentException();
                     }
-                    break;
+                    return SqlRequest.Parameter.newBuilder()
+                    .setBlob(SqlCommon.Blob.newBuilder()
+                            .setChannelName(channelName)
+                            .build())
+                    .build();
                 default:
                     throw new UnsupportedOperationException();
             }
-            return SqlRequest.Parameter.newBuilder()
-                    .setBlob(SqlCommon.Blob.newBuilder()
-                            .setChannelName(v.getChannelName())
-                            .build())
-                    .build();
         }
         return e;
     }
