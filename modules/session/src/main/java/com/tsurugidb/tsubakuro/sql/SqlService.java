@@ -273,6 +273,17 @@ public interface SqlService extends ServerResource {
     }
 
     /**
+     * Requests {@code GetLargeObjectData} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<LargeObjectCache> send(@Nonnull SqlRequest.GetLargeObjectData request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Requests {@code DisposeTransaction} to SQL service.
      * @param request the request
      * @return the future response of the request,

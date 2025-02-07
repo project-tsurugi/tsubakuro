@@ -21,11 +21,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
@@ -37,7 +39,9 @@ import javax.annotation.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
@@ -51,6 +55,7 @@ import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 
 class SqlServiceStubLobTest {
@@ -61,11 +66,14 @@ class SqlServiceStubLobTest {
 
     private Session session = null;
 
+    private SqlClient client = null;
+
     SqlServiceStubLobTest() {
         try {
             wire = new WireImpl(link);
             session = new SessionImpl(wire);
-        } catch (IOException e) {
+            client = SqlClient.attach(session);
+     } catch (IOException e) {
             System.err.println(e);
             fail("fail to create WireImpl");
         }
@@ -179,6 +187,79 @@ class SqlServiceStubLobTest {
                     fail("unexpected channel name " + channelName);
                 }
             }
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void getLargeObjectCache_find(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = tempDir.resolve("lob.data");
+        Files.write(file, data);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(file.toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+
+        var largeObjectCache = client.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+        var pathOpt = largeObjectCache.find();
+        assertTrue(pathOpt.isPresent());
+        var obtainedData = Files.readAllBytes(pathOpt.get());
+        assertEquals(data.length, obtainedData.length);
+        for (int i = 0; i < data.length; i++) {
+            assertEquals(data[i], obtainedData[i]);
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void getLargeObjectCache_copyTo(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = tempDir.resolve("lob.data");
+        Files.write(file, data);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(file.toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+
+        var largeObjectCache = client.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+        Path copy = tempDir.resolve("lob_copy.data");
+        largeObjectCache.copyTo(copy);
+        var obtainedData = Files.readAllBytes(copy);
+        assertTrue(Files.exists(copy));
+        assertEquals(data.length, obtainedData.length);
+        for (int i = 0; i < data.length; i++) {
+            assertEquals(data[i], obtainedData[i]);
         }
         assertFalse(link.hasRemaining());
     }

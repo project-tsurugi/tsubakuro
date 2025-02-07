@@ -39,6 +39,7 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -169,6 +170,27 @@ public class SqlClientImpl implements SqlClient {
             var pb = SqlRequest.GetLargeObjectData.newBuilder()
                         .setReference(clobReferenceForSql.clobReference());
             return service.send(pb.build(), clobReference);
+        }
+        throw new IllegalStateException(clobReference.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<LargeObjectCache> getLargeObjectCache(BlobReference blobReference) throws IOException {
+        if (blobReference instanceof BlobReferenceForSql) {
+            var blobReferenceForSql = (BlobReferenceForSql) blobReference;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setReference(blobReferenceForSql.blobReference());
+            return service.send(pb.build());
+        }
+        throw new IllegalStateException(blobReference.getClass().getName() + "is unsupported.");
+    }
+
+    public FutureResponse<LargeObjectCache> getLargeObjectCache(ClobReference clobReference) throws IOException {
+        if (clobReference instanceof ClobReferenceForSql) {
+            var clobReferenceForSql = (ClobReferenceForSql) clobReference;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setReference(clobReferenceForSql.clobReference());
+            return service.send(pb.build());
         }
         throw new IllegalStateException(clobReference.getClass().getName() + "is unsupported.");
     }
