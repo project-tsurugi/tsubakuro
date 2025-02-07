@@ -20,6 +20,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -188,6 +190,26 @@ public class ChannelResponse implements Response {
             }
         }
         throw new NoSuchElementException("illegal SubResponse id");
+    }
+
+    /**
+     * Returns a Path of the file containing subResponse.
+     * @return a Path of the file containing subResponse,
+     *         null if the subResponse is not associated with a file
+     * @param id the channel name
+     * @throws IOException if I/O error was occurred while retrieving main response body
+     * @throws ServerException if server error was occurred while retrieving main response body
+     */
+    public Path subResponseFilePath(String id) throws IOException, ServerException {
+        waitForMainResponse();
+        var entry = blobs.get(id);
+        if (entry != null) {
+            var path = entry.getLeft();
+            if (path != null) {
+                return Paths.get(path);
+            }
+        }
+        return null;
     }
 
     @Override

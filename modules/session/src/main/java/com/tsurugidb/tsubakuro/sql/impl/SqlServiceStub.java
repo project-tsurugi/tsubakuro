@@ -50,6 +50,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
@@ -923,13 +924,66 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.GetLargeObjectData request, ClobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
-        if (reference instanceof ClobReferenceForSql) {
-            return session.send(
-                    SERVICE_ID,
-                    SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                    new GetClobProcessor());
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetClobProcessor());
+    }
+
+    class GetLargeObjectCacheProcessor implements ResponseProcessor<LargeObjectCache> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public LargeObjectCache process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
         }
-        throw new UnsupportedOperationException();
+
+        @Override
+        public LargeObjectCache process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                var channelName = detailResponse.getSuccess().getChannelName();
+                if (response instanceof ChannelResponse) {
+                    return new LargeObjectCacheImpl(((ChannelResponse) response).subResponseFilePath(channelName));
+                }
+                return new LargeObjectCacheImpl();
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<LargeObjectCache> send(
+            @Nonnull SqlRequest.GetLargeObjectData request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetLargeObjectCacheProcessor());
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
