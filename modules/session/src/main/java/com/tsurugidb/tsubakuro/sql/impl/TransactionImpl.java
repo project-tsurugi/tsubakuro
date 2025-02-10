@@ -169,16 +169,16 @@ public class TransactionImpl implements Transaction {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
-                    .setClob(SqlCommon.Clob.newBuilder()
-                            .setChannelName(channelName)
-                            .build())
+                            .setClob(SqlCommon.Clob.newBuilder()
+                                    .setChannelName(channelName)
+                                    .build())
                     .build();
+                case CONTENTS:
+                    return e;
                 default:
-                    throw new UnsupportedOperationException();
+                    throw new IllegalArgumentException();
             }
-
-        }
-        if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
+        } else if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
             var v = e.getBlob();
             switch (v.getDataCase()) {
                 case LOCAL_PATH:
@@ -190,12 +190,14 @@ public class TransactionImpl implements Transaction {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
-                    .setBlob(SqlCommon.Blob.newBuilder()
-                            .setChannelName(channelName)
-                            .build())
+                            .setBlob(SqlCommon.Blob.newBuilder()
+                                    .setChannelName(channelName)
+                                    .build())
                     .build();
+                case CONTENTS:
+                    return e;
                 default:
-                    throw new UnsupportedOperationException();
+                    throw new IllegalArgumentException();
             }
         }
         return e;
