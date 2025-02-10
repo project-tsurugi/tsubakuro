@@ -1752,4 +1752,56 @@ class SqlServiceStubTest {
         }
         assertFalse(wire.hasRemaining());
     }
+
+    @Test
+    void sendGetTableMetadataSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_TABLE,
+                RequestHandler.returns(SqlResponse.DescribeTable.newBuilder()
+                        .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
+                                    .setDatabaseName("D")
+                                    .setSchemaName("S")
+                                    .setTableName("TBL")
+                                    .addColumns(Types.column("a", Types.of(int.class))))
+                        .build())));
+
+        var message = SqlRequest.DescribeTable.newBuilder()
+                .setName("TBL")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+
+            var result = future.get();
+            assertEquals(Optional.of("D"), result.getDatabaseName());
+            assertEquals(Optional.of("S"), result.getSchemaName());
+            assertEquals("TBL", result.getTableName());
+            var columns = result.getColumns();
+            assertEquals(1, columns.size());
+            var column = columns.get(0);
+            assertEquals("a", column.getName());
+            assertEquals(SqlCommon.Column.TypeInfoCase.ATOM_TYPE, column.getTypeInfoCase());
+            assertEquals(SqlCommon.AtomType.INT4, column.getAtomType());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendGetTableMetadataEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.DESCRIBE_TABLE,
+                RequestHandler.returns(SqlResponse.DescribeTable.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.DescribeTable.newBuilder()
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
 }
