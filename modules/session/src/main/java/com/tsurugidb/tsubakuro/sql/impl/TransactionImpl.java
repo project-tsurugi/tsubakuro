@@ -172,7 +172,7 @@ public class TransactionImpl implements Transaction {
                             .setClob(SqlCommon.Clob.newBuilder()
                                     .setChannelName(channelName)
                                     .build())
-                    .build();
+                            .build();
                 case CONTENTS:
                     return e;
                 default:
@@ -193,7 +193,7 @@ public class TransactionImpl implements Transaction {
                             .setBlob(SqlCommon.Blob.newBuilder()
                                     .setChannelName(channelName)
                                     .build())
-                    .build();
+                            .build();
                 case CONTENTS:
                     return e;
                 default:
