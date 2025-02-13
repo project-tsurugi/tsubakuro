@@ -16,14 +16,10 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
@@ -56,18 +52,6 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
             return Optional.empty();
         }
         return Optional.of(path);
-    }
-
-    @Override
-    public void copyTo(@Nonnull Path destination) throws IOException {
-        Objects.requireNonNull(destination);
-        if (closed.get()) {
-            throw new IOException("already closed");
-        }
-        if (!exists) {
-            throw new IOException("cannot find the file");
-        }
-        Files.copy(path, destination);
     }
 
     @Override

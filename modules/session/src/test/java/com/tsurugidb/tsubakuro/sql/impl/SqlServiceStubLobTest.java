@@ -252,9 +252,8 @@ class SqlServiceStubLobTest {
         // for getLargeObjectData
         link.next(header, payload);
 
-        var largeObjectCache = client.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
         Path copy = tempDir.resolve("lob_copy.data");
-        largeObjectCache.copyTo(copy);
+        var largeObjectCache = client.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await();
         var obtainedData = Files.readAllBytes(copy);
         assertTrue(Files.exists(copy));
         assertEquals(data.length, obtainedData.length);

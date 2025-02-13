@@ -185,6 +185,7 @@ public class SqlClientImpl implements SqlClient {
         throw new IllegalStateException(blobReference.getClass().getName() + "is unsupported.");
     }
 
+    @Override
     public FutureResponse<LargeObjectCache> getLargeObjectCache(ClobReference clobReference) throws IOException {
         if (clobReference instanceof ClobReferenceForSql) {
             var clobReferenceForSql = (ClobReferenceForSql) clobReference;
@@ -193,6 +194,28 @@ public class SqlClientImpl implements SqlClient {
             return service.send(pb.build());
         }
         throw new IllegalStateException(clobReference.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<Void> copyTo(BlobReference ref, Path destination) throws IOException {
+        if (ref instanceof BlobReferenceForSql) {
+            var refForSql = (BlobReferenceForSql) ref;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setReference(refForSql.blobReference());
+            return service.send(pb.build(), destination);
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<Void> copyTo(ClobReference ref, Path destination) throws IOException {
+        if (ref instanceof ClobReferenceForSql) {
+            var refForSql = (ClobReferenceForSql) ref;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setReference(refForSql.clobReference());
+            return service.send(pb.build(), destination);
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
 
     @Override
