@@ -259,6 +259,7 @@ public final class StreamLink extends Link {
 
                 // info受信
                 info = inStream.readByte();
+                socket.setSoTimeout(0);
 
                 // slot受信
                 int slot = 0;
