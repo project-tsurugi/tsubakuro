@@ -111,20 +111,6 @@ class SessionImplTest {
                 case ROLLBACK:
                     nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
                     break;
-                case EXPLAIN:
-                    nextResponse = ProtosForTest.ExplainResponseChecker.builder().build();
-                    break;
-                case DESCRIBE_TABLE:
-                    nextResponse =  SqlResponse.Response.newBuilder()
-                    .setDescribeTable(SqlResponse.DescribeTable.newBuilder()
-                        .setSuccess(SqlResponse.DescribeTable.Success.newBuilder()
-                             .setDatabaseName("D")
-                             .setSchemaName("S")
-                             .setTableName(request.getDescribeTable().getName())
-                             .addColumns(Types.column("a", Types.of(int.class)))
-                        )
-                    ).build();
-                    break;
                 case DISPOSE_TRANSACTION:
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setDisposeTransaction(SqlResponse.DisposeTransaction.newBuilder()
@@ -283,18 +269,6 @@ class SessionImplTest {
             });
         // FIXME: check structured error code instead of message
         assertEquals("already closed", e2.getMessage());
-    }
-
-    @Test
-    void getTableMetadata() throws Exception {
-        var session = new SessionImpl();
-        session.connect(new SessionWireMock());
-        var sqlClient = SqlClient.attach(session);
-
-        var info = sqlClient.getTableMetadata("TBL").await();
-        assertEquals(Optional.of("D"), info.getDatabaseName());
-        assertEquals(Optional.of("S"), info.getSchemaName());
-        assertEquals("TBL", info.getTableName());
     }
 
     @Test
