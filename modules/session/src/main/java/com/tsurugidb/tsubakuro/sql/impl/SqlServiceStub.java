@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
@@ -984,6 +986,65 @@ public class SqlServiceStub implements SqlService {
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetLargeObjectCacheProcessor());
+    }
+
+    class CopyLargeObjectProcessor implements ResponseProcessor<Void> {
+        private final Path destination;
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        CopyLargeObjectProcessor(Path destination) {
+            this.destination = destination;
+        }
+
+        @Override
+        public Void process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
+        }
+
+        @Override
+        public Void process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                var channelName = detailResponse.getSuccess().getChannelName();
+                Files.copy(response.openSubResponse(channelName), destination);
+                return null;
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Path destination) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new CopyLargeObjectProcessor(destination));
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {

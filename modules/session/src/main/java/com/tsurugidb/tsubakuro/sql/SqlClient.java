@@ -233,8 +233,8 @@ public interface SqlClient extends ServerResource, ServiceClient {
 
     /**
      * Returns an input stream for the blob.
-     * @return a future response of an input stream for the blob
      * @param ref the blob reference
+     * @return a future response of an input stream for the blob
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<InputStream> openInputStream(BlobReference ref) throws IOException {
@@ -243,8 +243,8 @@ public interface SqlClient extends ServerResource, ServiceClient {
 
     /**
      * Returns a reader for the clob.
-     * @return a future response of a reader for the clob
      * @param ref the clob reference
+     * @return a future response of a reader for the clob
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Reader> openReader(ClobReference ref) throws IOException {
@@ -253,8 +253,8 @@ public interface SqlClient extends ServerResource, ServiceClient {
 
     /**
      * Returns an object cache for the blob.
-     * @return a future response of a LargeObjectCache
      * @param ref the blob reference
+     * @return a future response of a LargeObjectCache
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<LargeObjectCache> getLargeObjectCache(BlobReference ref) throws IOException {
@@ -263,11 +263,33 @@ public interface SqlClient extends ServerResource, ServiceClient {
 
     /**
      * Returns an object cache for the clob.
-     * @return a future response of a LargeObjectCache
      * @param ref the clob reference
+     * @return a future response of a LargeObjectCache
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<LargeObjectCache> getLargeObjectCache(ClobReference ref) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Copy the large object to the file indicated by the given path.
+     * @param ref the blob reference
+     * @param destination the path of the destination file
+     * @return a future response of Void
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<Void> copyTo(BlobReference ref, Path destination) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Copy the large object to the file indicated by the given path.
+     * @param ref the clob reference
+     * @param destination the path of the destination file
+     * @return a future response of Void
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<Void> copyTo(ClobReference ref, Path destination) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.sql;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.file.Path;
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -280,6 +281,18 @@ public interface SqlService extends ServerResource {
      * @throws IOException if I/O error was occurred while sending the request
      */
     default FutureResponse<LargeObjectCache> send(@Nonnull SqlRequest.GetLargeObjectData request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Requests {@code GetLargeObjectData} to SQL service and copy the large object to a file specified by the destination.
+     * @param request the request
+     * @param destination the path of the destination file
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<Void> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Path destination) throws IOException {
         throw new UnsupportedOperationException();
     }
 
