@@ -168,7 +168,7 @@ public abstract class Link implements ServerResource {
      */
     public abstract String linkLostMessage();
 
-    ResponseBox getResponseBox() {
+    protected ResponseBox getResponseBox() {
         return responseBox;
     }
 
