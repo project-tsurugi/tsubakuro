@@ -28,12 +28,15 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
 
 public abstract class Link implements ServerResource {
+    private static final int RESPONSE_BOX_SIZE = Byte.MAX_VALUE;
+    private static final int RESPONSE_BOX_URGENT_SIZE = 2;
+
     private final AtomicBoolean useLink = new AtomicBoolean();
     private final Lock lock = new ReentrantLock();
     private final Condition response = lock.newCondition();
     private long receivedMessageNumber = 0;
+    private ResponseBox responseBox = new ResponseBox(this, RESPONSE_BOX_SIZE, RESPONSE_BOX_URGENT_SIZE);
 
-    protected ResponseBox responseBox = new ResponseBox(this);
     protected TimeUnit closeTimeUnit;
     protected long closeTimeout = 0;
     protected long sessionId;
@@ -112,6 +115,29 @@ public abstract class Link implements ServerResource {
     }
 
     /**
+     * Send a request message via this link to the server.
+     * An exception raised here is to be stored in the channelResponse.
+     * @param frameHeader the frameHeader of the request
+     * @param payload the payload of the request
+     * @return a channelResponse that stores a response for the request
+     */
+    public ChannelResponse send(byte[] frameHeader, byte[] payload) {
+        return responseBox.register(frameHeader, payload);
+    }
+
+        /**
+     * Send an urgent request message via this link to the server.
+     * An exception raised here is to be stored in the channelResponse.
+     * @param frameHeader the frameHeader of the request
+     * @param payload the payload of the request
+     * @return a channelResponse that stores a response for the request
+     * @throws IOException if I/O error was occurred while sending request message
+     */
+    public ChannelResponse sendUrgent(byte[] frameHeader, byte[] payload) throws IOException {
+        return responseBox.registerUrgent(frameHeader, payload);
+    }
+
+    /**
      * Send request message via this link to the server.
      * An exception raised here is to be stored in the channelResponse.
      * @param s the slot number for the responseBox
@@ -168,8 +194,20 @@ public abstract class Link implements ServerResource {
      */
     public abstract String linkLostMessage();
 
-    protected ResponseBox getResponseBox() {
-        return responseBox;
+    // bridge methods for ResponseBox
+    protected void push(int slot, byte[] payload) {
+        responseBox.push(slot, payload);
+    }
+    protected void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) {
+        responseBox.pushHead(slot, payload, resultSetWire);
+    }
+    protected void doClose(boolean ic) {
+        responseBox.doClose(ic);
+    }
+
+    // for iceaxe-testing
+    public static int responseBoxSize() {
+        return RESPONSE_BOX_SIZE;
     }
 
     // to suppress spotbug error
@@ -178,5 +216,10 @@ public abstract class Link implements ServerResource {
     }
     TimeUnit unit() {
         return this.closeTimeUnit;
+    }
+
+    // for diagnostic
+    String diagnosticInfo() {
+        return responseBox.diagnosticInfo();
     }
 }

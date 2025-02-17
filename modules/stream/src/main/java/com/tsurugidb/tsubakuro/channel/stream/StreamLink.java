@@ -127,12 +127,12 @@ public final class StreamLink extends Link {
 
         case RESPONSE_SESSION_PAYLOAD:
             LOG.trace("receive SESSION_PAYLOAD, slot = {}", slot);
-            responseBox.push(slot, message.getBytes());
+            push(slot, message.getBytes());
             return true;
 
         case RESPONSE_SESSION_BODYHEAD:
             LOG.trace("receive RESPONSE_SESSION_BODYHEAD, slot = {}", slot);
-            responseBox.pushHead(slot, message.getBytes(), createResultSetWire());
+            pushHead(slot, message.getBytes(), createResultSetWire());
             return true;
 
         case RESPONSE_RESULT_SET_PAYLOAD:
@@ -179,7 +179,7 @@ public final class StreamLink extends Link {
     }
 
     private void closeBoxes(boolean intentionalClose) throws IOException {
-        responseBox.doClose(intentionalClose);
+        doClose(intentionalClose);
         resultSetBox.doClose(intentionalClose);
         if (!socket.isClosed()) {
             socket.setSoTimeout(closeTimeoutMillis());

@@ -70,9 +70,9 @@ public final class MockLink extends Link {
 
         if (currentMessage != null) {
             if (currentMessage.getInfo() == RESPONSE_PAYLOAD) {
-                responseBox.push(currentMessage.getSlot(), currentMessage.getBytes());
+                push(currentMessage.getSlot(), currentMessage.getBytes());
             } else {
-                responseBox.pushHead(currentMessage.getSlot(), currentMessage.getBytes(), createResultSetWire());
+                pushHead(currentMessage.getSlot(), currentMessage.getBytes(), createResultSetWire());
             }
             return true;
         }
