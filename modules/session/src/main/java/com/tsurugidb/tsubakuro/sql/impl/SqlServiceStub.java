@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.sql.impl;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -857,8 +858,7 @@ public class SqlServiceStub implements SqlService {
                     var errorResponse = detailResponse.getError();
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
-                var channelName = detailResponse.getSuccess().getChannelName();
-                return response.openSubResponse(channelName);
+                return response.openSubResponse(detailResponse.getSuccess().getChannelName());
             }
         }
 
@@ -910,8 +910,8 @@ public class SqlServiceStub implements SqlService {
                     var errorResponse = detailResponse.getError();
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
-                var channelName = detailResponse.getSuccess().getChannelName();
-                return new InputStreamReader(response.openSubResponse(channelName), "UTF-8");
+                var inputStream = response.openSubResponse(detailResponse.getSuccess().getChannelName());
+                return new InputStreamReader(inputStream, "UTF-8");
             }
         }
 
@@ -963,11 +963,15 @@ public class SqlServiceStub implements SqlService {
                     var errorResponse = detailResponse.getError();
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
-                var channelName = detailResponse.getSuccess().getChannelName();
-                if (response instanceof ChannelResponse) {
-                    return new LargeObjectCacheImpl(((ChannelResponse) response).subResponseFilePath(channelName));
+                try {
+                    var inputStream = response.openSubResponse(detailResponse.getSuccess().getChannelName());
+                    if (inputStream instanceof ChannelResponse.FileInputStreamWithPath) {
+                        return new LargeObjectCacheImpl(((ChannelResponse.FileInputStreamWithPath) inputStream).path());
+                    }
+                    return new LargeObjectCacheImpl();
+                } catch (FileNotFoundException e) {
+                    return new LargeObjectCacheImpl();
                 }
-                return new LargeObjectCacheImpl();
             }
         }
 
