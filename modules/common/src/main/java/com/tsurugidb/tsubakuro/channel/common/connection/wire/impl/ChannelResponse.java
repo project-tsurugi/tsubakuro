@@ -80,8 +80,36 @@ public class ChannelResponse implements Response {
     private String resultSetName = ""; // for diagnostic
     private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
 
+    /**
+     * An exception notifying that the request has been canceled.
+     */
     public static class AlreadyCanceledException extends IOException {
         AlreadyCanceledException() {
+        }
+    }
+
+    /**
+     * A file input stream class with file path return functionality.
+     */
+    public static class FileInputStreamWithPath extends FileInputStream {
+        private final String path;
+
+        /**
+         * Creates a new instance
+         * @param path the file path
+         * @throws IOException the file indicated by path does not exist
+         */
+        FileInputStreamWithPath(String path) throws IOException {
+            super(path);
+            this.path = path;
+        }
+
+        /**
+         * Returns a Path of the file corresponding to the FileInputStream.
+         * @return a Path of the file
+         */
+        public Path path() {
+            return Paths.get(path);
         }
     }
 
@@ -164,7 +192,7 @@ public class ChannelResponse implements Response {
             if (entry != null) {
                 var path = entry.getLeft();
                 if (path != null) {
-                    return new FileInputStream(path);
+                    return new FileInputStreamWithPath(path);
                 }
             }
         }
@@ -190,26 +218,6 @@ public class ChannelResponse implements Response {
             }
         }
         throw new NoSuchElementException("illegal SubResponse id");
-    }
-
-    /**
-     * Returns a Path of the file containing subResponse.
-     * @return a Path of the file containing subResponse,
-     *         null if the subResponse is not associated with a file
-     * @param id the channel name
-     * @throws IOException if I/O error was occurred while retrieving main response body
-     * @throws ServerException if server error was occurred while retrieving main response body
-     */
-    public Path subResponseFilePath(String id) throws IOException, ServerException {
-        waitForMainResponse();
-        var entry = blobs.get(id);
-        if (entry != null) {
-            var path = entry.getLeft();
-            if (path != null) {
-                return Paths.get(path);
-            }
-        }
-        return null;
     }
 
     @Override
