@@ -7,6 +7,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BOX_SIZE
+#define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BOX_SIZE 127L
+#undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BOX_URGENT_SIZE
+#define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BOX_URGENT_SIZE 2L
 #undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_NULL
 #define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_NULL 0L
 #undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_PAYLOAD

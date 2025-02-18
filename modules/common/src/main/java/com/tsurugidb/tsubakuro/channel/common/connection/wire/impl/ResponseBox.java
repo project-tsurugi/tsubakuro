@@ -30,25 +30,26 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 /**
  * ResponseBox type.
  */
-public class ResponseBox {
-    private static final int SIZE = Byte.MAX_VALUE;
-    private static final int URGENT_SIZE = 2;
-
+public class ResponseBox {    // FIXME remove public, which is for iceaxe-testing
     static final Logger LOG = LoggerFactory.getLogger(ResponseBox.class);
 
     private final Link link;
+    private final int size;
+
     private final Queues queues;
     private final Queues urgentQueues;
-    private SlotEntry[] boxes = new SlotEntry[SIZE + URGENT_SIZE];
+    private SlotEntry[] boxes;
     private boolean intentionalClose = false;
 
-    public ResponseBox(@Nonnull Link link) {
+    ResponseBox(@Nonnull Link link, int size, int urgentSize) {
         this.link = link;
+        this.size = size;
+        boxes = new SlotEntry[size + urgentSize];
         this.queues = new Queues(link);
         this.urgentQueues = new Queues(link);
-        for (int i = 0; i < SIZE + URGENT_SIZE; i++) {
+        for (int i = 0; i < size + urgentSize; i++) {
             boxes[i] = new SlotEntry(i);
-            if (i < SIZE) {
+            if (i < size) {
                 queues.addSlot(boxes[i]);
             } else {
                 urgentQueues.addSlot(boxes[i]);
@@ -78,12 +79,12 @@ public class ResponseBox {
         return channelResponse;
     }
 
-    public void push(int slot, byte[] payload) {
+    void push(int slot, byte[] payload) {
         var slotEntry = boxes[slot];
         var channelResponse = slotEntry.channelResponse();
         if (channelResponse != null) {
             channelResponse.setMainResponse(ByteBuffer.wrap(payload));
-            if (slot < SIZE) {
+            if (slot < size) {
                 queues.returnSlot(slotEntry);
             } else {
                 urgentQueues.returnSlot(slotEntry);
@@ -94,12 +95,12 @@ public class ResponseBox {
         throw new AssertionError("invalid slotEntry is used");
     }
 
-    public void push(int slot, IOException e) {
+    void push(int slot, IOException e) {
         var slotEntry = boxes[slot];
         var channelResponse = slotEntry.channelResponse();
         if (channelResponse != null) {
             channelResponse.setMainResponse(e);
-            if (slot < SIZE) {
+            if (slot < size) {
                 queues.returnSlot(slotEntry);
             } else {
                 urgentQueues.returnSlot(slotEntry);
@@ -110,16 +111,16 @@ public class ResponseBox {
         throw new AssertionError("invalid slotEntry is used");
     }
 
-    public void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) {
+    void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) {
         boxes[slot].channelResponse().setResultSet(ByteBuffer.wrap(payload), resultSetWire);
     }
 
-    public void doClose(boolean ic) {
+    void doClose(boolean ic) {
         intentionalClose = ic;
         close();
     }
 
-    public void close() {
+    void close() {
         for (SlotEntry e : boxes) {
             var response = e.channelResponse();
             if (response != null) {
@@ -132,8 +133,9 @@ public class ResponseBox {
         }
     }
 
+    // FIXME remove responseBoxSize(), which is for iceaxe-testing
     public static int responseBoxSize() {
-        return SIZE;
+        return Link.responseBoxSize();
     }
 
     // for diagnostic

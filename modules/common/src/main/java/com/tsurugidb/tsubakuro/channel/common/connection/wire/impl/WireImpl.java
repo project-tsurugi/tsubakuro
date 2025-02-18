@@ -82,7 +82,6 @@ public class WireImpl implements Wire {
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
     private final Link link;
-    private final ResponseBox responseBox;
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
@@ -92,7 +91,6 @@ public class WireImpl implements Wire {
      */
     public WireImpl(@Nonnull Link link) throws IOException {
         this.link = link;
-        this.responseBox = link.getResponseBox();
         LOG.trace("begin Session");
     }
 
@@ -107,7 +105,7 @@ public class WireImpl implements Wire {
             .setServiceId(serviceId)
             .setSessionId(sessionId())
             .build();
-        var response = responseBox.register(toDelimitedByteArray(header), payload);
+        var response = link.send(toDelimitedByteArray(header), payload);
         return FutureResponse.wrap(Owner.of(response));
     }
 
@@ -116,7 +114,7 @@ public class WireImpl implements Wire {
      * @param serviceId the destination service ID
      * @param payload the Request message in ByteBuffer
      * @return a Future response message corresponding the request
-     * @throws IOException error occurred in responseBox.register()
+     * @throws IOException error occurred in link.send()
      */
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
@@ -149,7 +147,7 @@ public class WireImpl implements Wire {
             }
             header.setBlobs(repeatedBlobInfo);
         }
-        var response = responseBox.register(toDelimitedByteArray(header.build()), payload);
+        var response = link.send(toDelimitedByteArray(header.build()), payload);
         return FutureResponse.wrap(Owner.of(response));
     }
 
@@ -176,7 +174,7 @@ public class WireImpl implements Wire {
             .setServiceId(serviceId)
             .setSessionId(sessionId())
             .build();
-        var response = responseBox.registerUrgent(toDelimitedByteArray(header), payload);
+        var response = link.sendUrgent(toDelimitedByteArray(header), payload);
         return FutureResponse.wrap(Owner.of(response));
     }
 
@@ -185,7 +183,7 @@ public class WireImpl implements Wire {
      * @param serviceId the destination service ID
      * @param payload the Request message in ByteBuffer
      * @return a Future response message corresponding the request
-     * @throws IOException error occurred in responseBox.register()
+     * @throws IOException error occurred in link.send()
      */
     public FutureResponse<? extends Response> sendUrgent(int serviceId, @Nonnull ByteBuffer payload) throws IOException {
         return send(serviceId, payload.array());
@@ -318,7 +316,7 @@ public class WireImpl implements Wire {
     }
     @Override
     public String diagnosticInfo() {
-        String diagnosticInfo = responseBox.diagnosticInfo();
+        String diagnosticInfo = link.diagnosticInfo();
         if (!diagnosticInfo.isEmpty()) {
             String rv = " +Requests in processing" + System.getProperty("line.separator");
             rv += diagnosticInfo;

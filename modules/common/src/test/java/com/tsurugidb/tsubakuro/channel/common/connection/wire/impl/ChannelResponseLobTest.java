@@ -34,7 +34,6 @@ import com.tsurugidb.tsubakuro.mock.MockLink;
 
 class ChannelResponseLobTest {
     MockLink link = new MockLink();
-    ResponseBox responseBox = link.getResponseBox();
 
     private final String channelName = "channelName";
     private final String fileName = "lob.data";
@@ -55,7 +54,7 @@ class ChannelResponseLobTest {
 
         byte[] requestHeader = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };  // dummy request header
         byte[] payload = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }; // dummy payload
-        ChannelResponse channelResponse = responseBox.register(requestHeader, payload);
+        ChannelResponse channelResponse = link.send(requestHeader, payload);
         var inputStream = channelResponse.openSubResponse(channelName);
 
         assertTrue(inputStream instanceof ChannelResponse.FileInputStreamWithPath);
@@ -84,7 +83,7 @@ class ChannelResponseLobTest {
 
         byte[] requestHeader = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };  // dummy request header
         byte[] payload = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }; // dummy payload
-        ChannelResponse channelResponse = responseBox.register(requestHeader, payload);
+        ChannelResponse channelResponse = link.send(requestHeader, payload);
         assertThrows(NoSuchElementException.class, () -> channelResponse.openSubResponse(channelName + "different"));
     }
 
@@ -102,7 +101,7 @@ class ChannelResponseLobTest {
 
         byte[] requestHeader = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 };  // dummy request header
         byte[] payload = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0 }; // dummy payload
-        ChannelResponse channelResponse = responseBox.register(requestHeader, payload);
+        ChannelResponse channelResponse = link.send(requestHeader, payload);
 
         assertThrows(IOException.class, () -> channelResponse.openSubResponse(channelName));
     }
