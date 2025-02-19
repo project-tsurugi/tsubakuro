@@ -30,7 +30,7 @@ import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 /**
  * ResponseBox type.
  */
-public class ResponseBox {    // FIXME remove public, which is for iceaxe-testing
+class ResponseBox {
     static final Logger LOG = LoggerFactory.getLogger(ResponseBox.class);
 
     private final Link link;
@@ -131,11 +131,6 @@ public class ResponseBox {    // FIXME remove public, which is for iceaxe-testin
                 }
             }
         }
-    }
-
-    // FIXME remove responseBoxSize(), which is for iceaxe-testing
-    public static int responseBoxSize() {
-        return Link.responseBoxSize();
     }
 
     // for diagnostic
