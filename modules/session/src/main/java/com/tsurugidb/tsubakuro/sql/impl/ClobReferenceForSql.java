@@ -34,4 +34,24 @@ public final class ClobReferenceForSql implements ClobReference {
     SqlCommon.LargeObjectReference clobReference() {
         return largeObjectReference;
     }
+
+    // for tests
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ClobReferenceForSql) {
+            ClobReferenceForSql other = (ClobReferenceForSql) obj;
+            return largeObjectReference.equals(other.largeObjectReference);
+        }
+        return false;
+    }
+    @Override
+    public int hashCode() {
+        return largeObjectReference.hashCode();
+    }
+    public long getProvider() {
+        return largeObjectReference.getProvider().getNumber();
+    }
+    public long getObjectId() {
+        return largeObjectReference.getObjectId();
+    }
 }

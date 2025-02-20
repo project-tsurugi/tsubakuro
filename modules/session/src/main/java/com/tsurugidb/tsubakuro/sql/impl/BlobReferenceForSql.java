@@ -34,4 +34,24 @@ public final class BlobReferenceForSql implements BlobReference {
     SqlCommon.LargeObjectReference blobReference() {
         return largeObjectReference;
     }
+
+    // for tests
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof BlobReferenceForSql) {
+            BlobReferenceForSql other = (BlobReferenceForSql) obj;
+            return largeObjectReference.equals(other.largeObjectReference);
+        }
+        return false;
+    }
+    @Override
+    public int hashCode() {
+        return largeObjectReference.hashCode();
+    }
+    public long getProvider() {
+        return largeObjectReference.getProvider().getNumber();
+    }
+    public long getObjectId() {
+        return largeObjectReference.getObjectId();
+    }
 }
