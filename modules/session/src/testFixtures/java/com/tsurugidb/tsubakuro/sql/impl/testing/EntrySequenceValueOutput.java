@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 
 // import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.io.BitBuilder;
 import com.tsurugidb.tsubakuro.sql.io.ByteBuilder;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
@@ -178,6 +180,18 @@ public class EntrySequenceValueOutput implements ValueOutput {
     @Override
     public void writeArrayBegin(int numberOfElements) {
         destination.accept(Entry.forArray(numberOfElements));
+    }
+
+    @Override
+    public void writeBlob(BlobReference value) {
+        Objects.requireNonNull(value);
+        destination.accept(Entry.forBlob(value));
+    }
+
+    @Override
+    public void writeClob(ClobReference value) {
+        Objects.requireNonNull(value);
+        destination.accept(Entry.forClob(value));
     }
 
     @Override

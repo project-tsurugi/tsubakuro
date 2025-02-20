@@ -541,30 +541,6 @@ public class StreamBackedValueInput implements ValueInput {
     }
 
     @Override
-    public BlobReference readBlob() throws IOException {
-        require(EntryType.BLOB);
-        clearHeaderInfo();
-        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
-        if (provider == null) {
-            throw new IOException("illegal blob provider");
-        }
-        var objectId = read8();
-        return new BlobReferenceForSql(provider, objectId);
-    }
-
-    @Override
-    public ClobReference readClob() throws IOException {
-        require(EntryType.CLOB);
-        clearHeaderInfo();
-        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
-        if (provider == null) {
-            throw new IOException("illegal clob provider");
-        }
-        var objectId = read8();
-        return new ClobReferenceForSql(provider, objectId);
-    }
-
-    @Override
     public int readRowBegin() throws IOException {
         require(EntryType.ROW);
 
@@ -592,6 +568,30 @@ public class StreamBackedValueInput implements ValueInput {
         }
         assert category == HEADER_ARRAY;
         return readSize();
+    }
+
+    @Override
+    public BlobReference readBlob() throws IOException {
+        require(EntryType.BLOB);
+        clearHeaderInfo();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal blob provider");
+        }
+        var objectId = read8();
+        return new BlobReferenceForSql(provider, objectId);
+    }
+
+    @Override
+    public ClobReference readClob() throws IOException {
+        require(EntryType.CLOB);
+        clearHeaderInfo();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal clob provider");
+        }
+        var objectId = read8();
+        return new ClobReferenceForSql(provider, objectId);
     }
 
     @Override

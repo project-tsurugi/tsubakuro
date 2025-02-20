@@ -28,6 +28,8 @@ import java.util.Optional;
 // import javax.annotation.Nonnull;
 // import javax.annotation.Nullable;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
 import com.tsurugidb.tsubakuro.sql.io.EntryType;
 import com.tsurugidb.tsubakuro.sql.io.ValueInput;
@@ -145,6 +147,14 @@ public final class Entry {
      *       <td> {@code value instanceof DateTimeInterval} </td>
      *       <td> {@link #forDateTimeInterval(DateTimeInterval)} </td>
      *     </tr>
+     *     <tr>
+     *       <td> {@code value instanceof BlobReference} </td>
+     *       <td> {@link #forBlob(BlobReference)} </td>
+     *     </tr>
+     *     <tr>
+     *       <td> {@code value instanceof ClobReference} </td>
+     *       <td> {@link #forClob(ClobReference)} </td>
+     *     </tr>
      *   </tbody>
      * </table>
      *
@@ -206,6 +216,12 @@ public final class Entry {
         }
         if (value instanceof DateTimeInterval) {
             return Entry.forDateTimeInterval((DateTimeInterval) value);
+        }
+        if (value instanceof BlobReference) {
+            return Entry.forBlob((BlobReference) value);
+        }
+        if (value instanceof ClobReference) {
+            return Entry.forClob((ClobReference) value);
         }
         return null;
     }
@@ -506,7 +522,43 @@ public final class Entry {
         return (Integer) value;
     }
 
-    // FIXME for clob, blob
+    /**
+     * Creates a new instance for {@link EntryType#BLOB}.
+     * @param value the value
+     * @return the created entry
+     */
+    public static Entry forBlob(BlobReference value) {
+        Objects.requireNonNull(value);
+        return new Entry(EntryType.BLOB, value);
+    }
+
+    /**
+     * Returns as {@link EntryType#DATETIME_INTERVAL} value.
+     * @return the value
+     */
+    public BlobReference getBlobValue() {
+        check(EntryType.BLOB);
+        return (BlobReference) value;
+    }
+
+    /**
+     * Creates a new instance for {@link EntryType#CLOB}.
+     * @param value the value
+     * @return the created entry
+     */
+    public static Entry forClob(ClobReference value) {
+        Objects.requireNonNull(value);
+        return new Entry(EntryType.BLOB, value);
+    }
+
+    /**
+     * Returns as {@link EntryType#CLOB} value.
+     * @return the value
+     */
+    public ClobReference getClobValue() {
+        check(EntryType.BLOB);
+        return (ClobReference) value;
+    }
 
     /**
      * Creates a new instance for {@link EntryType#END_OF_CONTENTS}.

@@ -28,6 +28,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+
 // import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.sql.io.BitBuilder;
@@ -283,6 +286,17 @@ public class EntrySequenceValueInput implements ValueInput {
     public int readArrayBegin() {
         var next = fetchNext(EntryType.ARRAY);
         return next.getArraySize();
+    }
+
+    @Override
+    public BlobReference readBlob() {
+        var next = fetchNext(EntryType.BLOB);
+        return next.getBlobValue();
+    }
+    @Override
+    public ClobReference readClob() {
+        var next = fetchNext(EntryType.CLOB);
+        return next.getClobValue();
     }
 
     @Override

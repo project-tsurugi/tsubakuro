@@ -26,6 +26,9 @@ import java.util.Objects;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+
 /**
  * Writes SQL values.
  */
@@ -219,6 +222,22 @@ public interface ValueOutput extends AutoCloseable {
      * @throws InterruptedException if interrupted while writing the contents
      */
     void writeArrayBegin(int numberOfElements) throws IOException, InterruptedException;
+
+    /**
+     * Writes a {@link EntryType#BLOB} entry.
+     * @param value the value
+     * @throws IOException if I/O error was occurred while writing the contents
+     * @throws InterruptedException if interrupted while writing the contents
+     */
+    void writeBlob(BlobReference value) throws IOException, InterruptedException;
+
+    /**
+     * Writes a {@link EntryType#CLOB} entry.
+     * @param value the value
+     * @throws IOException if I/O error was occurred while writing the contents
+     * @throws InterruptedException if interrupted while writing the contents
+     */
+    void writeClob(ClobReference value) throws IOException, InterruptedException;
 
     /**
      * Writes a {@link EntryType#END_OF_CONTENTS} entry.
