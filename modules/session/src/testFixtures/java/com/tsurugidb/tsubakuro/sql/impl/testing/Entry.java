@@ -548,7 +548,7 @@ public final class Entry {
      */
     public static Entry forClob(ClobReference value) {
         Objects.requireNonNull(value);
-        return new Entry(EntryType.BLOB, value);
+        return new Entry(EntryType.CLOB, value);
     }
 
     /**
@@ -556,7 +556,7 @@ public final class Entry {
      * @return the value
      */
     public ClobReference getClobValue() {
-        check(EntryType.BLOB);
+        check(EntryType.CLOB);
         return (ClobReference) value;
     }
 
