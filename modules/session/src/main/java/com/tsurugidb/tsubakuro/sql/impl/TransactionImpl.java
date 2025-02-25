@@ -169,6 +169,7 @@ public class TransactionImpl implements Transaction {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
+                            .setName(e.getName())
                             .setClob(SqlCommon.Clob.newBuilder()
                                     .setChannelName(channelName)
                                     .build())
@@ -190,6 +191,7 @@ public class TransactionImpl implements Transaction {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
+                            .setName(e.getName())
                             .setBlob(SqlCommon.Blob.newBuilder()
                                     .setChannelName(channelName)
                                     .build())
