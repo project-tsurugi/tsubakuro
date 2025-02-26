@@ -402,6 +402,8 @@ public interface RelationCursor extends ServerResource {
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
      * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#BLOB
+     *
+     * @since 1.8.0
      */
     default BlobReference fetchBlob() throws IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();
@@ -420,6 +422,8 @@ public interface RelationCursor extends ServerResource {
      * @throws ServerException if server error was occurred while retrieving this relation
      * @throws InterruptedException if interrupted while extracting the column data
      * @see com.tsurugidb.sql.proto.SqlCommon.AtomType#CLOB
+     *
+     * @since 1.8.0
      */
     default ClobReference fetchClob() throws IOException, ServerException, InterruptedException {
         throw new UnsupportedOperationException();

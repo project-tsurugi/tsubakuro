@@ -17,6 +17,8 @@ package com.tsurugidb.tsubakuro.sql;
 
 /**
  * Represents a reference to CLOB data.
+ *
+ * @since 1.8.0
  */
 public interface ClobReference extends LargeObjectReference {
     // no special methods.

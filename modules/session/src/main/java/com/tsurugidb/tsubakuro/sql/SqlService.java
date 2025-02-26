@@ -149,6 +149,8 @@ public interface SqlService extends ServerResource {
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecutePreparedStatement request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         throw new UnsupportedOperationException();
@@ -177,6 +179,8 @@ public interface SqlService extends ServerResource {
      *      which may raise error if the request was failed.
      *      If the request was succeeded, future will returns a result set object which includes query results.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecutePreparedQuery request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         throw new UnsupportedOperationException();
@@ -256,6 +260,8 @@ public interface SqlService extends ServerResource {
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<InputStream> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull BlobReference reference) throws IOException {
         throw new UnsupportedOperationException();
@@ -268,6 +274,8 @@ public interface SqlService extends ServerResource {
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<Reader> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull ClobReference reference) throws IOException {
         throw new UnsupportedOperationException();
@@ -279,6 +287,8 @@ public interface SqlService extends ServerResource {
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<LargeObjectCache> send(@Nonnull SqlRequest.GetLargeObjectData request) throws IOException {
         throw new UnsupportedOperationException();
@@ -291,6 +301,8 @@ public interface SqlService extends ServerResource {
      * @return the future response of the request,
      *      which may raise error if the request was failed.
      * @throws IOException if I/O error was occurred while sending the request
+     *
+     * @since 1.8.0
      */
     default FutureResponse<Void> send(@Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Path destination) throws IOException {
         throw new UnsupportedOperationException();

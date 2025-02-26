@@ -228,6 +228,8 @@ public interface ValueOutput extends AutoCloseable {
      * @param value the value
      * @throws IOException if I/O error was occurred while writing the contents
      * @throws InterruptedException if interrupted while writing the contents
+     *
+     * @since 1.8.0
      */
     void writeBlob(BlobReference value) throws IOException, InterruptedException;
 
@@ -236,6 +238,8 @@ public interface ValueOutput extends AutoCloseable {
      * @param value the value
      * @throws IOException if I/O error was occurred while writing the contents
      * @throws InterruptedException if interrupted while writing the contents
+     *
+     * @since 1.8.0
      */
     void writeClob(ClobReference value) throws IOException, InterruptedException;
 

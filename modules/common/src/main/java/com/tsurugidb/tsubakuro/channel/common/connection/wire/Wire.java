@@ -91,6 +91,8 @@ public interface Wire extends ServerResource {
      * @param blobs the blobs to send
      * @return a future of the response
      * @throws IOException if I/O error was occurred while sending message
+     *
+     * @since 1.8.0
      */
     default FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         throw new UnsupportedOperationException();
@@ -111,6 +113,8 @@ public interface Wire extends ServerResource {
      * @param blobs the blobs to send
      * @return a future of the response
      * @throws IOException if I/O error was occurred while sending message
+     *
+     * @since 1.8.0
      */
     default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         Objects.requireNonNull(payload);

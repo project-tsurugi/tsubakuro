@@ -356,6 +356,8 @@ public final class Parameters {
      * @param name the place-holder name
      * @param path the path of the clob file
      * @return the created place-holder
+     *
+     * @since 1.8.0
      */
     public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull Path path) {
         Objects.requireNonNull(name);
@@ -373,6 +375,8 @@ public final class Parameters {
      * @param name the place-holder name
      * @param path the path of the clob file
      * @return the created place-holder
+     *
+     * @since 1.8.0
      */
     public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull Path path) {
         Objects.requireNonNull(name);

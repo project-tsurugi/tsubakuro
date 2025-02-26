@@ -32,7 +32,7 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
     private final Path path;
     private final boolean exists;
     private final AtomicBoolean closed = new AtomicBoolean();
-    
+
     public LargeObjectCacheImpl(@Nullable Path path) {
         this.path = path;
         if (path != null) {

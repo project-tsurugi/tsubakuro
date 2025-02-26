@@ -79,7 +79,7 @@ public interface Session extends ServerResource {
         throw new UnsupportedOperationException();
     }
 
-        /**
+    /**
      * Sends a message to the destination server.
      * @param <R> the result value type
      * @param serviceId the destination service ID
@@ -88,6 +88,8 @@ public interface Session extends ServerResource {
      * @param processor the response processor
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
+     *
+     * @since 1.8.0
      */
     default <R> FutureResponse<R> send(
         int serviceId,
@@ -106,6 +108,8 @@ public interface Session extends ServerResource {
      * @param processor the response processor
      * @return the future of response
      * @throws IOException if I/O error was occurred while requesting
+     *
+     * @since 1.8.0
      */
     default <R> FutureResponse<R> send(
         int serviceId,
