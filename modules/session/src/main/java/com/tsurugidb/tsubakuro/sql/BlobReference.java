@@ -17,6 +17,8 @@ package com.tsurugidb.tsubakuro.sql;
 
 /**
  * Represents a reference to BLOB data.
+ *
+ * @since 1.8.0
  */
 public interface BlobReference extends LargeObjectReference {
     // no special methods.

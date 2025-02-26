@@ -17,6 +17,8 @@ package com.tsurugidb.tsubakuro.sql;
 
 /**
  * An abstract super interface of large object references.
+ *
+ * @since 1.8.0
  */
 public interface LargeObjectReference {
     // no special methods.

@@ -267,6 +267,8 @@ public interface ValueInput extends AutoCloseable {
      * @throws InterruptedException if interrupted while reading the contents
      * @throws IllegalStateException if the next entry is inconsistent value type
      * @see #peekType()
+     *
+     * @since 1.8.0
      */
     default BlobReference readBlob() throws IOException, InterruptedException {
         throw new UnsupportedOperationException();
@@ -279,6 +281,8 @@ public interface ValueInput extends AutoCloseable {
      * @throws InterruptedException if interrupted while reading the contents
      * @throws IllegalStateException if the next entry is inconsistent value type
      * @see #peekType()
+     *
+     * @since 1.8.0
      */
     default ClobReference readClob() throws IOException, InterruptedException {
         throw new UnsupportedOperationException();

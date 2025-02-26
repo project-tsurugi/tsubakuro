@@ -20,6 +20,8 @@ import java.util.Optional;
 
 /**
  * An abstract super interface of BLOB data to send to Tsurugi server.
+ *
+ * @since 1.8.0
  */
 public interface BlobInfo {
 
