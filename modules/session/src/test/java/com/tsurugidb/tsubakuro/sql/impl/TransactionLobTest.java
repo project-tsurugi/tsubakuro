@@ -47,7 +47,7 @@ import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.session.ProtosForTest;
 
-class SqlClientImplTest {
+class TransactionLobTest {
 
     private final String CHANNEL_NAME_FOR_TEST = "ChannelNameForTest";
     private final int RESPONSE_MESSAGE_SIZE = 26;
@@ -97,12 +97,20 @@ class SqlClientImplTest {
 
             var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
             switch (request.getRequestCase()) {
+                case BEGIN:
+                    nextResponse = SqlResponse.Response.newBuilder()
+                        .setBegin(SqlResponse.Begin.newBuilder()
+                                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                                        .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build()))
+                                        .build())
+                        .build();
+                    break;
                 case GET_LARGE_OBJECT_DATA:
                     nextResponse = SqlResponse.Response.newBuilder()
                         .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
                                        .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder().setChannelName(CHANNEL_NAME_FOR_TEST)))
                         .build();
-                        break;
+                    break;
                 default:
                     System.out.println("falls default case%n" + request);
                     return null;  // dummy as it is test for session
@@ -126,9 +134,10 @@ class SqlClientImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
+        var transaction = sqlClient.createTransaction().await();
 
         var blobReference = new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
-        var stream = sqlClient.openInputStream(blobReference).await();
+        var stream = transaction.openInputStream(blobReference).await();
         for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
             assertEquals('a' + i, stream.read());
         }
@@ -142,9 +151,10 @@ class SqlClientImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
+        var transaction = sqlClient.createTransaction().await();
 
         Throwable exception = assertThrows(IllegalStateException.class, () -> {
-            sqlClient.openInputStream(new BlobReferenceForTest());
+            transaction.openInputStream(new BlobReferenceForTest());
         });
     }
 
@@ -153,9 +163,10 @@ class SqlClientImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
+        var transaction = sqlClient.createTransaction().await();
 
         var clobReference = new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
-        var reader = sqlClient.openReader(clobReference).await();
+        var reader = transaction.openReader(clobReference).await();
         for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
             assertEquals('a' + i, reader.read());
         }
@@ -169,9 +180,10 @@ class SqlClientImplTest {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
+        var transaction = sqlClient.createTransaction().await();
 
         Throwable exception = assertThrows(IllegalStateException.class, () -> {
-            sqlClient.openReader(new ClobReferenceForTest());
+            transaction.openReader(new ClobReferenceForTest());
         });
     }
 }

@@ -16,6 +16,8 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -45,7 +47,11 @@ import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
+import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -322,12 +328,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public void setCloseTimeout(long t, TimeUnit u) {
-        timeout = t;
-        unit = u;
-    }
-
-    @Override
     public FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
         if (closed.get()) {
             throw new IOException("transaction already closed");
@@ -338,6 +338,68 @@ public class TransactionImpl implements Transaction {
         return service.send(SqlRequest.GetErrorInfo.newBuilder()
                 .setTransactionHandle(transaction.getTransactionHandle())
                 .build());
+    }
+
+    @Override
+    public FutureResponse<InputStream> openInputStream(@Nonnull BlobReference ref) throws IOException {
+        Objects.requireNonNull(ref);
+        if (ref instanceof BlobReferenceForSql) {
+            var blobReferenceForSql = (BlobReferenceForSql) ref;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setTransactionHandle(transaction.getTransactionHandle())
+                        .setReference(blobReferenceForSql.blobReference());
+            return service.send(pb.build(), ref);
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<Reader> openReader(@Nonnull ClobReference ref) throws IOException {
+        Objects.requireNonNull(ref);
+        if (ref instanceof ClobReferenceForSql) {
+            var clobReferenceForSql = (ClobReferenceForSql) ref;
+            var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                        .setTransactionHandle(transaction.getTransactionHandle())
+                        .setReference(clobReferenceForSql.clobReference());
+            return service.send(pb.build(), ref);
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
+        Objects.requireNonNull(ref);
+        var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                    .setTransactionHandle(transaction.getTransactionHandle());
+        if (ref instanceof BlobReferenceForSql) {
+            pb.setReference(((BlobReferenceForSql) ref).blobReference());
+            return service.send(pb.build());
+        } else if (ref instanceof ClobReferenceForSql) {
+            pb.setReference(((ClobReferenceForSql) ref).clobReference());
+            return service.send(pb.build());
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public FutureResponse<Void> copyTo(@Nonnull LargeObjectReference ref, @Nonnull Path destination) throws IOException {
+        Objects.requireNonNull(ref);
+        var pb = SqlRequest.GetLargeObjectData.newBuilder()
+                    .setTransactionHandle(transaction.getTransactionHandle());
+        if (ref instanceof BlobReferenceForSql) {
+            pb.setReference(((BlobReferenceForSql) ref).blobReference());
+            return service.send(pb.build(), destination);
+        } else if (ref instanceof ClobReferenceForSql) {
+            pb.setReference(((ClobReferenceForSql) ref).clobReference());
+            return service.send(pb.build(), destination);
+        }
+        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    @Override
+    public void setCloseTimeout(long t, TimeUnit u) {
+        timeout = t;
+        unit = u;
     }
 
     @Override
