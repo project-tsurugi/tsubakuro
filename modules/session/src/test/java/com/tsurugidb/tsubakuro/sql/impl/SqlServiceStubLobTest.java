@@ -206,14 +206,27 @@ class SqlServiceStubLobTest {
                         .build();
         // for getLargeObjectData
         link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
 
-        var largeObjectCache = client.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
-        var pathOpt = largeObjectCache.find();
-        assertTrue(pathOpt.isPresent());
-        var obtainedData = Files.readAllBytes(pathOpt.get());
-        assertEquals(data.length, obtainedData.length);
-        for (int i = 0; i < data.length; i++) {
-            assertEquals(data[i], obtainedData[i]);
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var pathOpt = largeObjectCache.find();
+            assertTrue(pathOpt.isPresent());
+            var obtainedData = Files.readAllBytes(pathOpt.get());
+            assertEquals(data.length, obtainedData.length);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
         }
         assertFalse(link.hasRemaining());
     }
@@ -242,14 +255,27 @@ class SqlServiceStubLobTest {
                         .build();
         // for getLargeObjectData
         link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
 
-        Path copy = tempDir.resolve("lob_copy.data");
-        var largeObjectCache = client.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await();
-        var obtainedData = Files.readAllBytes(copy);
-        assertTrue(Files.exists(copy));
-        assertEquals(data.length, obtainedData.length);
-        for (int i = 0; i < data.length; i++) {
-            assertEquals(data[i], obtainedData[i]);
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            Path copy = tempDir.resolve("lob_copy.data");
+            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await();
+            var obtainedData = Files.readAllBytes(copy);
+            assertTrue(Files.exists(copy));
+            assertEquals(data.length, obtainedData.length);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
         }
         assertFalse(link.hasRemaining());
     }

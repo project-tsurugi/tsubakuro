@@ -16,8 +16,6 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
@@ -36,10 +34,7 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.BlobReference;
-import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
-import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -150,79 +145,6 @@ public class SqlClientImpl implements SqlClient {
     public FutureResponse<SearchPath> getSearchPath() throws IOException {
         var pb = SqlRequest.GetSearchPath.newBuilder();
         return service.send(pb.build());
-    }
-
-    @Override
-    public FutureResponse<InputStream> openInputStream(@Nonnull BlobReference ref) throws IOException {
-        Objects.requireNonNull(ref);
-        if (ref instanceof BlobReferenceForSql) {
-            var blobReferenceForSql = (BlobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build(), ref);
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public FutureResponse<Reader> openReader(@Nonnull ClobReference ref) throws IOException {
-        Objects.requireNonNull(ref);
-        if (ref instanceof ClobReferenceForSql) {
-            var clobReferenceForSql = (ClobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build(), ref);
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull BlobReference ref) throws IOException {
-        Objects.requireNonNull(ref);
-        if (ref instanceof BlobReferenceForSql) {
-            var blobReferenceForSql = (BlobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build());
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull ClobReference ref) throws IOException {
-        Objects.requireNonNull(ref);
-        if (ref instanceof ClobReferenceForSql) {
-            var clobReferenceForSql = (ClobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build());
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public FutureResponse<Void> copyTo(@Nonnull BlobReference ref, @Nonnull Path destination) throws IOException {
-        Objects.requireNonNull(ref);
-        if (ref instanceof BlobReferenceForSql) {
-            var refForSql = (BlobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(refForSql.blobReference());
-            return service.send(pb.build(), destination);
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public FutureResponse<Void> copyTo(@Nonnull ClobReference ref, @Nonnull Path destination) throws IOException {
-        Objects.requireNonNull(ref);
-        Objects.requireNonNull(destination);
-        if (ref instanceof ClobReferenceForSql) {
-            var refForSql = (ClobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setReference(refForSql.clobReference());
-            return service.send(pb.build(), destination);
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
 
     @Override

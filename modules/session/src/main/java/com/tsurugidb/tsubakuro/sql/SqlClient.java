@@ -16,8 +16,6 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -228,80 +226,6 @@ public interface SqlClient extends ServerResource, ServiceClient {
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<SearchPath> getSearchPath() throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns an input stream for the blob.
-     * @param ref the blob reference
-     * @return a future response of an input stream for the blob
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<InputStream> openInputStream(BlobReference ref) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns a reader for the clob.
-     * @param ref the clob reference
-     * @return a future response of a reader for the clob
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<Reader> openReader(ClobReference ref) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns an object cache for the blob.
-     * @param ref the blob reference
-     * @return a future response of a LargeObjectCache
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<LargeObjectCache> getLargeObjectCache(BlobReference ref) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Returns an object cache for the clob.
-     * @param ref the clob reference
-     * @return a future response of a LargeObjectCache
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<LargeObjectCache> getLargeObjectCache(ClobReference ref) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Copy the large object to the file indicated by the given path.
-     * @param ref the blob reference
-     * @param destination the path of the destination file
-     * @return a future response of Void
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<Void> copyTo(BlobReference ref, Path destination) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Copy the large object to the file indicated by the given path.
-     * @param ref the clob reference
-     * @param destination the path of the destination file
-     * @return a future response of Void
-     * @throws IOException if I/O error was occurred while sending request
-     *
-     * @since 1.8.0
-     */
-    default FutureResponse<Void> copyTo(ClobReference ref, Path destination) throws IOException {
         throw new UnsupportedOperationException();
     }
 
