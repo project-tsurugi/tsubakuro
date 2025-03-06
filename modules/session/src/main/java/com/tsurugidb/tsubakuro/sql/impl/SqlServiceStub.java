@@ -21,6 +21,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
@@ -64,6 +67,7 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -1029,8 +1033,29 @@ public class SqlServiceStub implements SqlService {
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
                 var channelName = detailResponse.getSuccess().getChannelName();
-                Files.copy(response.openSubResponse(channelName), destination);
-                return null;
+                try {
+                    Files.copy(response.openSubResponse(channelName), destination);
+                    return null;
+                } catch (FileAlreadyExistsException e) {
+                    throw new BlobException("FileAlreadyExists: " + destination, e);
+                } catch (AccessDeniedException e) {
+                    var parent = destination.getParent();
+                    if (parent != null) {
+                        throw new BlobException("AccessDenied: " + parent, e);
+                    }
+                    throw new IOException("AccessDenied: " + destination, e);
+                } catch (FileSystemException e) {
+                    var parent = destination.getParent();
+                    if (parent != null) {
+                        if (!Files.exists(parent)) {
+                            throw new BlobException("NoSuchDirectory: " + parent, e);
+                        }
+                        throw new BlobException("IsNotDirectory: " + parent, e);
+                    }
+                    throw new BlobException("NoSuchFile: " + destination, e);
+                } catch (Exception e) {
+                    throw new BlobException("NoSuchFile: " + destination, e);
+                }
             }
         }
 

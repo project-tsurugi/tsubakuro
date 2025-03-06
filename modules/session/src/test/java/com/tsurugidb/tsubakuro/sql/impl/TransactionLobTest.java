@@ -16,36 +16,33 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
-import java.util.Optional;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.Parameters;
-import com.tsurugidb.tsubakuro.sql.Types;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.impl.TransactionLobTest.BlobReferenceForTest;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
-import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.session.ProtosForTest;
 
 class TransactionLobTest {
 
@@ -102,6 +99,13 @@ class TransactionLobTest {
                         .setBegin(SqlResponse.Begin.newBuilder()
                                         .setSuccess(SqlResponse.Begin.Success.newBuilder()
                                                         .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build()))
+                                        .build())
+                        .build();
+                    break;
+                case PREPARE:
+                    nextResponse = SqlResponse.Response.newBuilder()
+                        .setPrepare(SqlResponse.Prepare.newBuilder()
+                                        .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
                                         .build())
                         .build();
                     break;
@@ -176,14 +180,14 @@ class TransactionLobTest {
     }
 
     @Test
-    void openReader_exception() throws Exception {
+    void blobParameter_exception(@TempDir Path tempDir) throws Exception {
         var session = new SessionImpl();
         session.connect(new SessionWireMock());
         var sqlClient = SqlClient.attach(session);
         var transaction = sqlClient.createTransaction().await();
+        var preparedStatement = sqlClient.prepare("select * from table1").await();
 
-        Throwable exception = assertThrows(IllegalStateException.class, () -> {
-            transaction.openReader(new ClobReferenceForTest());
-        });
+        assertThrows(BlobException.class, () ->
+            transaction.executeStatement(preparedStatement, Parameters.blobOf("blob1", tempDir.resolve("blob.data"))));
     }
 }

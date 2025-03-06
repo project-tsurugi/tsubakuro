@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -52,6 +53,7 @@ import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -162,16 +164,20 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private SqlRequest.Parameter addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) {
+    private SqlRequest.Parameter addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) throws BlobException {
         if (e.getValueCase() == SqlRequest.Parameter.ValueCase.CLOB) {
             var v = e.getClob();
             switch (v.getDataCase()) {
                 case LOCAL_PATH:
+                    var path = Path.of(v.getLocalPath());
+                    if (!Files.isReadable(path)) {
+                        throw new BlobException(path + "is not readable");
+                    }
                     String channelName = "ClobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
                     channelName += "-";
                     channelName += Long.valueOf(clobNumber.getAndIncrement() + 1).toString();
-                    if (!lobs.add(new FileBlobInfo(channelName, Path.of(v.getLocalPath())))) {
+                    if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
@@ -189,11 +195,15 @@ public class TransactionImpl implements Transaction {
             var v = e.getBlob();
             switch (v.getDataCase()) {
                 case LOCAL_PATH:
+                    var path = Path.of(v.getLocalPath());
+                    if (!Files.isReadable(path)) {
+                        throw new BlobException(path + "is not readable");
+                    }
                     String channelName = "BlobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
                     channelName += "-";
                     channelName += Long.valueOf(blobNumber.getAndIncrement() + 1).toString();
-                    if (!lobs.add(new FileBlobInfo(channelName, Path.of(v.getLocalPath())))) {
+                    if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
