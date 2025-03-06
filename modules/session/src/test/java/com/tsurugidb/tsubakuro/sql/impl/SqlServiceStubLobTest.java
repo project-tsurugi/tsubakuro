@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,6 +49,7 @@ import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 
 class SqlServiceStubLobTest {
 
@@ -78,7 +80,7 @@ class SqlServiceStubLobTest {
     }
 
     @Test
-    void sendExecutePreparedStatementWithLobSuccess() throws Exception {
+    void sendExecutePreparedStatementWithLobSuccess(@TempDir Path tempDir) throws Exception {
         link.next(SqlResponse.Response.newBuilder()
                     .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
                                         .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
@@ -95,12 +97,19 @@ class SqlServiceStubLobTest {
                 .build();
 
         String channelName1 = "blobChannel";
-        String fileName1 = "/tmp/blob.data";
+        String fileName1 = "blob.data";
         String channelName2 = "clobChannel";
-        String fileName2 = "/tmp/clob.data";
+        String fileName2 = "clob.data";
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        Path file1 = tempDir.resolve(fileName1);
+        Path file2 = tempDir.resolve(fileName2);
+        Files.write(file1, data);
+        Files.write(file2, data);
+
         var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo(channelName1, Path.of(fileName1)));
-        lobs.add(new FileBlobInfo(channelName2, Path.of(fileName2)));
+        lobs.add(new FileBlobInfo(channelName1, file1));
+        lobs.add(new FileBlobInfo(channelName2, file2));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);
@@ -120,9 +129,9 @@ class SqlServiceStubLobTest {
                 String channelName = e.getChannelName();
                 String path = e.getPath();
                 if (channelName.equals(channelName1)) {
-                    assertEquals(e.getPath(), fileName1);
+                    assertEquals(e.getPath().toString(), file1.toString());
                 } else if (channelName.equals(channelName2)) {
-                    assertEquals(e.getPath(), fileName2);
+                    assertEquals(e.getPath().toString(), file2.toString());
                 } else {
                     fail("unexpected channel name " + channelName);
                 }
@@ -132,7 +141,7 @@ class SqlServiceStubLobTest {
     }
 
     @Test
-    void executeStatementWithLob() throws Exception {
+    void executeStatementWithLob(@TempDir Path tempDir) throws Exception {
         // for executeStatement
         link.next(SqlResponse.Response.newBuilder()
                     .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
@@ -150,9 +159,15 @@ class SqlServiceStubLobTest {
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
 
         String parameterName1 = "blob";
-        String fileName1 = "/tmp/blob.data";
+        String fileName1 = "blob.data";
         String parameterName2 = "clob";
-        String fileName2 = "/tmp/clob.data";
+        String fileName2 = "clob.data";
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        Path file1 = tempDir.resolve(fileName1);
+        Path file2 = tempDir.resolve(fileName2);
+        Files.write(file1, data);
+        Files.write(file2, data);
 
         try (
             var service = new SqlServiceStub(session);
@@ -163,17 +178,17 @@ class SqlServiceStubLobTest {
                                               null);
         ) {
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
-                                            Parameters.blobOf(parameterName1, Paths.get(fileName1)),
-                                            Parameters.clobOf(parameterName2, Paths.get(fileName2))).await();
+                                            Parameters.blobOf(parameterName1, file1),
+                                            Parameters.clobOf(parameterName2, file2)).await();
                                             var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
             assertTrue(header.hasBlobs());
             for (var e: header.getBlobs().getBlobsList()) {
                 String channelName = e.getChannelName();
                 String path = e.getPath();
                 if (channelName.startsWith("BlobChannel-")) {
-                    assertEquals(e.getPath(), fileName1);
+                    assertEquals(e.getPath().toString(), file1.toString());
                 } else if (channelName.startsWith("ClobChannel-")) {
-                    assertEquals(e.getPath(), fileName2);
+                    assertEquals(e.getPath().toString(), file2.toString());
                 } else {
                     fail("unexpected channel name " + channelName);
                 }
@@ -183,7 +198,39 @@ class SqlServiceStubLobTest {
     }
 
     @Test
-    void getLargeObjectCache_find(@TempDir Path tempDir) throws Exception {
+    void executeStatementWithLobWithoutFile(@TempDir Path tempDir) throws Exception {
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        String parameterName1 = "blob";
+        String fileName1 = "blob.data";
+        String parameterName2 = "clob";
+        String fileName2 = "clob.data";
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        Path file1 = tempDir.resolve(fileName1);
+        Path file2 = tempDir.resolve(fileName2);
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            assertThrows(BlobException.class, () ->
+                transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
+                                                Parameters.blobOf(parameterName1, file1),
+                                                Parameters.clobOf(parameterName2, file2)));
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void getLargeObjectCache(@TempDir Path tempDir) throws Exception {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
@@ -232,7 +279,91 @@ class SqlServiceStubLobTest {
     }
 
     @Test
-    void getLargeObjectCache_copyTo(@TempDir Path tempDir) throws Exception {
+    void getLargeObjectCacheNoFile(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = tempDir.resolve(fileName);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(file.toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var pathOpt = largeObjectCache.find();
+            assertFalse(pathOpt.isPresent());
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void copyToNoFile(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+        Path file = tempDir.resolve(fileName);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(file.toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            Path copy = tempDir.resolve("lob_copy.data");
+            assertThrows(BlobException.class, () ->
+                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await());
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void copyTo(@TempDir Path tempDir) throws Exception {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
