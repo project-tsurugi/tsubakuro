@@ -171,7 +171,7 @@ public class TransactionImpl implements Transaction {
                 case LOCAL_PATH:
                     var path = Path.of(v.getLocalPath());
                     if (!Files.isReadable(path)) {
-                        throw new BlobException(path + "is not readable");
+                        throw new BlobException(path + " is not readable");
                     }
                     String channelName = "ClobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
@@ -197,7 +197,7 @@ public class TransactionImpl implements Transaction {
                 case LOCAL_PATH:
                     var path = Path.of(v.getLocalPath());
                     if (!Files.isReadable(path)) {
-                        throw new BlobException(path + "is not readable");
+                        throw new BlobException(path + " is not readable");
                     }
                     String channelName = "BlobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();

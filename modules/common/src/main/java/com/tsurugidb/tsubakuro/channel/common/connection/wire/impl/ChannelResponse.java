@@ -20,6 +20,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.NoSuchElementException;
@@ -188,15 +191,8 @@ public class ChannelResponse implements Response {
             return relationChannel();
         } else {
             waitForMainResponse();
-            var entry = blobs.get(id);
-            if (entry != null) {
-                var path = entry.getLeft();
-                if (path != null) {
-                    return new FileInputStreamWithPath(path);
-                }
-            }
+            return returnsBlob(id);
         }
-        throw new NoSuchElementException("illegal SubResponse id");
     }
 
     @Override
@@ -209,12 +205,23 @@ public class ChannelResponse implements Response {
             return relationChannel();
         } else {
             waitForMainResponse(timeout, unit);
-            var entry = blobs.get(id);
-            if (entry != null) {
-                var path = entry.getLeft();
-                if (path != null) {
-                    return new FileInputStream(path);
+            return returnsBlob(id);
+        }
+    }
+
+    private InputStream returnsBlob(String id) throws NoSuchElementException, IOException {
+        var entry = blobs.get(id);
+        if (entry != null) {
+            var path = entry.getLeft();
+            if (path != null) {
+                var filePath = Paths.get(path);
+                if (Files.notExists(filePath)) {
+                    throw new NoSuchFileException("client has not received the BLOB file: " + filePath.toString());
                 }
+                if (!Files.isReadable(filePath)) {
+                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: " + filePath.toString());
+                }
+                return new FileInputStreamWithPath(path);
             }
         }
         throw new NoSuchElementException("illegal SubResponse id");
