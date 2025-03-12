@@ -866,9 +866,9 @@ public class SqlServiceStub implements SqlService {
                 try {
                     return response.openSubResponse(detailResponse.getSuccess().getChannelName());
                 } catch (NoSuchFileException | AccessDeniedException e) {
-                    throw new BlobException(e.getMessage());
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
-                    throw new BlobException("openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName(), e);
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName() + "}", e);
                 }
             }
         }
@@ -924,9 +924,10 @@ public class SqlServiceStub implements SqlService {
                 try {
                     return new InputStreamReader(response.openSubResponse(detailResponse.getSuccess().getChannelName()), "UTF-8");
                 } catch (NoSuchFileException | AccessDeniedException e) {
-                    throw new BlobException(e.getMessage());
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
-                    throw new BlobException("openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName(), e);
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName() + "}", e);
+
                 }
             }
         }
@@ -986,7 +987,7 @@ public class SqlServiceStub implements SqlService {
                     }
                     return new LargeObjectCacheImpl();
                 } catch (AccessDeniedException e) {
-                    throw new BlobException(e.getMessage());
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (NoSuchFileException | FileNotFoundException e) {
                     return new LargeObjectCacheImpl();
                 }
@@ -1053,31 +1054,31 @@ public class SqlServiceStub implements SqlService {
                         Files.copy(inputStream, destination);
                         return null;
                     } catch (FileAlreadyExistsException e) {
-                        throw new BlobException("FileAlreadyExists: " + destination, e);
+                        throw new BlobException("error occurred while copying BLOB data: {FileAlreadyExists: " + destination + "}", e);
                     } catch (AccessDeniedException e) {
                         var parent = destination.getParent();
                         if (parent != null) {
-                            throw new BlobException("AccessDenied: " + parent, e);
+                            throw new BlobException("error occurred while copying BLOB data: {AccessDenied: " + parent + "}", e);
                         }
-                        throw new IOException("AccessDenied: " + destination, e);
+                        throw new BlobException("error occurred while copying BLOB data: {AccessDenied: " + destination + "}", e);
                     } catch (FileSystemException e) {
                         var parent = destination.getParent();
                         if (parent != null) {
                             if (!Files.exists(parent)) {
-                                throw new BlobException("NoSuchDirectory: " + parent, e);
+                                throw new BlobException("error occurred while copying BLOB data: {NoSuchDirectory: " + parent + "}", e);
                             }
-                            throw new BlobException("IsNotDirectory: " + parent, e);
+                            throw new BlobException("error occurred while copying BLOB data: {IsNotDirectory: " + parent + "}", e);
                         }
-                        throw new BlobException("NoSuchFile: " + destination, e);
+                        throw new BlobException("error occurred while copying BLOB data: {NoSuchFile: " + destination + "}", e);
                     }
                 } catch (BlobException e) {
                     throw e;
                 } catch (NoSuchFileException | AccessDeniedException e) {
-                    throw new BlobException(e.getMessage());
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
-                    throw new BlobException("openSubResponse fail, channel name: " + channelName, e);
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + channelName + "}", e);
                 } catch (Exception e) {
-                    throw new BlobException("unknown error", e);  // should not happen
+                    throw new BlobException("error occurred while receiving BLOB data: {unknown error}", e);  // should not happen
                 }
             }
         }
