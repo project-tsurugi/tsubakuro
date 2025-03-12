@@ -1070,6 +1070,8 @@ public class SqlServiceStub implements SqlService {
                         }
                         throw new BlobException("NoSuchFile: " + destination, e);
                     }
+                } catch (BlobException e) {
+                    throw e;
                 } catch (NoSuchFileException | AccessDeniedException e) {
                     throw new BlobException(e.getMessage());
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
