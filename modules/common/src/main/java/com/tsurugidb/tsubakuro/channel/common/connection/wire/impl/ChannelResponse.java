@@ -216,15 +216,15 @@ public class ChannelResponse implements Response {
             if (path != null) {
                 var filePath = Paths.get(path);
                 if (Files.notExists(filePath)) {
-                    throw new NoSuchFileException("client has not received the BLOB file in privileged mode: " + filePath.toString());
+                    throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + filePath.toString() + "}");
                 }
                 if (!Files.isReadable(filePath)) {
-                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: " + filePath.toString());
+                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + filePath.toString() + "}");
                 }
                 return new FileInputStreamWithPath(path);
             }
         }
-        throw new NoSuchElementException("illegal SubResponse id");
+        throw new NoSuchElementException("client failed to receive BLOB file in privileged mode: {illegal SubResponse id: " + id + "}");
     }
 
     @Override
