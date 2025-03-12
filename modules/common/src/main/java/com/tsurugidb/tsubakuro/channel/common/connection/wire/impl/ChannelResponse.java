@@ -216,7 +216,7 @@ public class ChannelResponse implements Response {
             if (path != null) {
                 var filePath = Paths.get(path);
                 if (Files.notExists(filePath)) {
-                    throw new NoSuchFileException("client has not received the BLOB file: " + filePath.toString());
+                    throw new NoSuchFileException("client has not received the BLOB file in privileged mode: " + filePath.toString());
                 }
                 if (!Files.isReadable(filePath)) {
                     throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: " + filePath.toString());
