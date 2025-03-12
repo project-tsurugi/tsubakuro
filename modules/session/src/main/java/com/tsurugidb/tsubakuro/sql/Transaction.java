@@ -342,7 +342,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      * Copy the large object to the file indicated by the given path.
      * @param ref the large object reference
      * @param destination the path of the destination file
-     * @return a future response of Void
+     * @return a future response of Void, whose get() or await() may throws a BlobException meaning an error was occurred while copying the BLOB data
      * @throws IOException if I/O error was occurred while sending request
      *
      * @since 1.8.0
