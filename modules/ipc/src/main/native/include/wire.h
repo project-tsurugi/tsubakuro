@@ -857,16 +857,6 @@ public:
                                               return eor;
                                           })) {
                     wait_for_record_ = false;
-                    bool eor = is_eor();
-                    std::atomic_thread_fence(std::memory_order_acq_rel);
-                    for (auto&& wire: unidirectional_simple_wires_) {
-                        if (wire.has_record()) {
-                            return &wire;
-                        }
-                    }
-                    if (eor) {
-                        return nullptr;
-                    }
                     throw std::runtime_error("record has not been received within the specified time");
                 }
                 wait_for_record_ = false;
