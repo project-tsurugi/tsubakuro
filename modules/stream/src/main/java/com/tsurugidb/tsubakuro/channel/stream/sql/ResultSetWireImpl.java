@@ -17,7 +17,6 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -48,17 +47,13 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         @Override
-        protected boolean next() {
-            try {
-                var buffer = receive();
-                if (buffer == null) {
-                    return false;
-                }
-                source = ByteBuffer.wrap(buffer);
-                return true;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        protected boolean next() throws IOException {
+            var buffer = receive();
+            if (buffer == null) {
+                return false;
             }
+            source = ByteBuffer.wrap(buffer);
+            return true;
         }
 
         @Override
@@ -98,17 +93,13 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Provides the Input to retrieve the received data.
      */
     @Override
-    public InputStream getByteBufferBackedInput() {
+    public InputStream getByteBufferBackedInput() throws IOException {
         if (byteBufferBackedInput == null) {
-            try {
-                var buffer = receive();
-                if (buffer != null) {
-                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
-                } else {
-                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            var buffer = receive();
+            if (buffer != null) {
+                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
+            } else {
+                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
             }
         }
         return byteBufferBackedInput;
