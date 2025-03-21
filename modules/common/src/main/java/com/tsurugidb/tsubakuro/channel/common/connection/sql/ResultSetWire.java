@@ -43,7 +43,7 @@ public interface ResultSetWire extends Closeable {
         }
 
         @Override
-        public int read() {
+        public int read() throws IOException {
             while (true) {
                 if (source.hasRemaining()) {
                     return source.get() & 0xff;
@@ -55,7 +55,7 @@ public interface ResultSetWire extends Closeable {
         }
 
         @Override
-        public int read(byte[] b, int off, int len) {
+        public int read(byte[] b, int off, int len) throws IOException {
             if (len == 0) {
                 return 0;
             }
@@ -71,7 +71,7 @@ public interface ResultSetWire extends Closeable {
             }
         }
 
-        protected abstract boolean next();
+        protected abstract boolean next() throws IOException;
     }
 
     /**
@@ -88,7 +88,7 @@ public interface ResultSetWire extends Closeable {
      * Provides an InputStream to retrieve the received data.
      * @return InputStream throuth which the record data from the SQL server will be provided.
      */
-    default InputStream getByteBufferBackedInput() {
+    default InputStream getByteBufferBackedInput() throws IOException {
         throw new UnsupportedOperationException();
     }
 }

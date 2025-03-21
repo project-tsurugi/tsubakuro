@@ -74,7 +74,7 @@ public class ChannelResponse implements Response {
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
-    private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
+    private final AtomicReference<ResultSetWire> resultSetWire = new AtomicReference<>();
     private final AtomicReference<Exception> exceptionMain = new AtomicReference<>();
     private final AtomicReference<Exception> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -321,8 +321,8 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream relationChannel() throws IOException, InterruptedException, ServerException {
-        if (resultSet.get() != null) {
-            return resultSet.get().getByteBufferBackedInput();
+        if (resultSetWire.get() != null) {
+            return resultSetWire.get().getByteBufferBackedInput();
         }
         var e = exceptionResultSet.get();
         if (e != null) {
@@ -364,7 +364,7 @@ public class ChannelResponse implements Response {
     }
 
     private boolean isResultSetReady() {
-        return (resultSet.get() != null) || (exceptionResultSet.get() != null);
+        return (resultSetWire.get() != null) || (exceptionResultSet.get() != null);
     }
 
     // get call from a thread that has received the response
@@ -384,17 +384,17 @@ public class ChannelResponse implements Response {
         exceptionMain.set(exception);
     }
 
-    public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire resultSetWire) {
+    public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire rsw) {
         Objects.requireNonNull(response);
-        Objects.requireNonNull(resultSetWire);
+        Objects.requireNonNull(rsw);
         try {
             var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
             var detailResponse = sqlResponse.getExecuteQuery();
             resultSetName = detailResponse.getName();
-            resultSetWire.connect(resultSetName);
+            rsw.connect(resultSetName);
 
             metadata.set(detailResponse);
-            resultSet.set(resultSetWire);
+            resultSetWire.set(rsw);
         } catch (IOException | CoreServiceException e) {
             exceptionResultSet.set(e);
         }
