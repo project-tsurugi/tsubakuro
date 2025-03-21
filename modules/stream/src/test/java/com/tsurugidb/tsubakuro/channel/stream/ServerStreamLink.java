@@ -26,7 +26,7 @@ public class ServerStreamLink {
     private Socket socket;
     private DataOutputStream outStream;
     private DataInputStream inStream;
-    private boolean sendOk;
+    private boolean sendOk = false;
 
     public byte[] bytes;
     private byte info;
@@ -36,7 +36,7 @@ public class ServerStreamLink {
         this.socket = socket;
         this.outStream = new DataOutputStream(socket.getOutputStream());
         this.inStream = new DataInputStream(socket.getInputStream());
-        this.sendOk = false;
+        this.sendOk = true;
     }
 
     public void sendResponse(int s, byte[] payload) throws IOException {
@@ -63,47 +63,73 @@ public class ServerStreamLink {
     }
 
     public void sendRecordHello(int s, String name) throws IOException {
-    byte[] header = new byte[7];
-    byte[] payload = name.getBytes("UTF-8");
-    int length = payload.length;
-    //    System.out.println("sendRecordByeOk, slot = " + s);
+        byte[] header = new byte[7];
+        byte[] payload = name.getBytes("UTF-8");
+        int length = payload.length;
+        //    System.out.println("sendRecordByeOk, slot = " + s);
 
-    header[0] = StreamLink.RESPONSE_RESULT_SET_HELLO;  // info
-    header[1] = strip(s);       // slot
-    header[2] = strip(s >> 8);  // slot
-    header[3] = strip(length);
-    header[4] = strip(length >> 8);
-    header[5] = strip(length >> 16);
-    header[6] = strip(length >> 24);
+        header[0] = StreamLink.RESPONSE_RESULT_SET_HELLO;  // info
+        header[1] = strip(s);       // slot
+        header[2] = strip(s >> 8);  // slot
+        header[3] = strip(length);
+        header[4] = strip(length >> 8);
+        header[5] = strip(length >> 16);
+        header[6] = strip(length >> 24);
 
-    synchronized (this) {
-        outStream.write(header, 0, header.length);
-        outStream.write(payload, 0, length);
-    }
-    sendOk = true;
+        synchronized (this) {
+            outStream.write(header, 0, header.length);
+            outStream.write(payload, 0, length);
+        }
     }
 
     public void sendRecord(int s, int w, byte[] payload) throws IOException {
-    byte[] header = new byte[8];
+        byte[] header = new byte[8];
+        byte[] commit = new byte[8];
         int length = payload.length;
     //    System.out.println("sendRecord " + length + " bytes, slot = " + s + ", writer = " + w);
 
-    header[0] = StreamLink.RESPONSE_RESULT_SET_PAYLOAD;  // info
-    header[1] = strip(s);       // slot
-    header[2] = strip(s >> 8);  // slot
-    header[3] = strip(w);  // writer
-    header[4] = strip(length);
-    header[5] = strip(length >> 8);
-    header[6] = strip(length >> 16);
-    header[7] = strip(length >> 24);
+        header[0] = StreamLink.RESPONSE_RESULT_SET_PAYLOAD;  // info
+        header[1] = strip(s);       // slot
+        header[2] = strip(s >> 8);  // slot
+        header[3] = strip(w);  // writer
+        header[4] = strip(length);
+        header[5] = strip(length >> 8);
+        header[6] = strip(length >> 16);
+        header[7] = strip(length >> 24);
 
-    synchronized (this) {
-        outStream.write(header, 0, header.length);
+        commit[0] = StreamLink.RESPONSE_RESULT_SET_PAYLOAD;  // info
+        commit[1] = strip(s);       // slot
+        commit[2] = strip(s >> 8);  // slot
+        commit[3] = strip(w);  // writer
+        commit[4] = strip(0);
+        commit[5] = strip(0 >> 8);
+        commit[6] = strip(0 >> 16);
+        commit[7] = strip(0 >> 24);
 
+        synchronized (this) {
+            outStream.write(header, 0, header.length);
             if (length > 0) {
                 // payload送信
                 outStream.write(payload, 0, length);
             }
+            outStream.write(commit, 0, 8);
+        }
+    }
+
+    public void sendRecordBye(int s) throws IOException {
+        byte[] header = new byte[7];
+        int length = 0;
+
+        header[0] = StreamLink.RESPONSE_RESULT_SET_BYE;  // info
+        header[1] = strip(s);       // slot
+        header[2] = strip(s >> 8);  // slot
+        header[3] = strip(length);
+        header[4] = strip(length >> 8);
+        header[5] = strip(length >> 16);
+        header[6] = strip(length >> 24);
+
+        synchronized (this) {
+            outStream.write(header, 0, header.length);
         }
     }
 
@@ -112,7 +138,7 @@ public class ServerStreamLink {
     }
 
     public boolean isSnedOk() {
-    return sendOk;
+        return sendOk;
     }
 
     public boolean receive() throws IOException {
@@ -169,9 +195,9 @@ public class ServerStreamLink {
     }
 
     public void close() throws IOException {
-    if (socket != null) {
-        socket.close();
-        socket = null;
-    }
+        if (socket != null) {
+            socket.close();
+            socket = null;
+        }
     }
 }

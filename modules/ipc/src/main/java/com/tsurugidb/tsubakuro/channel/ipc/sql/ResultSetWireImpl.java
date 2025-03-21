@@ -29,7 +29,7 @@ import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name) throws IOException;
-    private static native ByteBuffer getChunkNative(long handle) throws IOException;
+    private static native ByteBuffer getChunkNative(long handle, long timeoutNs) throws IOException;
     private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
@@ -43,7 +43,6 @@ public class ResultSetWireImpl implements ResultSetWire {
         private long wireHandle;  // for c++
 
         ByteBufferBackedInputForIpc(long sessionWireHandle, String name) throws IOException {
-            super(ByteBuffer.allocate(0));
             this.wireHandle = createNative(sessionWireHandle, name);
         }
 
@@ -54,7 +53,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                     if (source.capacity() > 0) {
                         disposeUsedDataNative(wireHandle, source.capacity());
                     }
-                    source = getChunkNative(wireHandle);
+                    source = getChunkNative(wireHandle, timeoutNanos());
                     return source != null;
                 }
                 return false;

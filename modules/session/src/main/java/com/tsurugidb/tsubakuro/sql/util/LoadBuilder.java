@@ -301,7 +301,7 @@ public class LoadBuilder {
      */
     public LoadBuilder mapping(
             @Nonnull SqlCommon.Column destinationColumn,
-            @Nonnull int sourceColumnPosition) {
+            int sourceColumnPosition) {
         Objects.requireNonNull(destinationColumn);
         String name = createPlaceHolderName(destinationColumn, entries.size());
         this.entries.add(new Entry(
