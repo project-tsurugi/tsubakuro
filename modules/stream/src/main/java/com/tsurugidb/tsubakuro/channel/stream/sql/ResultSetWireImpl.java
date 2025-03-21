@@ -23,6 +23,9 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 
@@ -34,9 +37,12 @@ public class ResultSetWireImpl implements ResultSetWire {
     private final ResultSetBox resultSetBox;
     private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
+    private String resultSetName = "(resultSetName has not been assgined yet)";
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean eor;
     private IOException exception;
+
+    static final Logger LOG = LoggerFactory.getLogger(ResultSetWireImpl.class);
 
     class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
@@ -82,6 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public ResultSetWire connect(String name) throws IOException {
+        resultSetName = name;
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
@@ -93,14 +100,20 @@ public class ResultSetWireImpl implements ResultSetWire {
      * Provides the Input to retrieve the received data.
      */
     @Override
-    public InputStream getByteBufferBackedInput() throws IOException {
+    public InputStream getByteBufferBackedInput() {
         if (byteBufferBackedInput == null) {
-            var buffer = receive();
-            if (buffer != null) {
-                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
-            } else {
-                byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
+            try {
+                var buffer = receive();
+                if (buffer != null) {
+                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
+                    return byteBufferBackedInput;
+                }
+            } catch (IOException e) {
+                LOG.error("Failed to receive the first record, name = {}", resultSetName);
+                e.printStackTrace();
             }
+            byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
+            return byteBufferBackedInput;
         }
         return byteBufferBackedInput;
     }

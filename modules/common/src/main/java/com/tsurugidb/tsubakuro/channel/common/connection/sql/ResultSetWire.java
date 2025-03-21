@@ -88,7 +88,7 @@ public interface ResultSetWire extends Closeable {
      * Provides an InputStream to retrieve the received data.
      * @return InputStream throuth which the record data from the SQL server will be provided.
      */
-    default InputStream getByteBufferBackedInput() throws IOException {
+    default InputStream getByteBufferBackedInput() {
         throw new UnsupportedOperationException();
     }
 }
