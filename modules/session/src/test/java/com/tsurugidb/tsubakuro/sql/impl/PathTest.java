@@ -59,7 +59,7 @@ class PathTest {
 
     @Test
     void tableListAdapter() {
-        HashSet expected = new HashSet<String>();
+        HashSet<String> expected = new HashSet<>();
         expected.add("databaseName.schema1Name.table1Name");
         expected.add("databaseName.schema1Name.table2Name");
         expected.add("databaseName.schema2Name.table1Name");
@@ -74,7 +74,7 @@ class PathTest {
 
     @Test
     void searchPathAdapter() {
-        HashSet expected = new HashSet<String>();
+        HashSet<String> expected = new HashSet<>();
         expected.add("databaseName.schema1Name");
         expected.add("databaseName.schema3Name");
 
@@ -87,7 +87,7 @@ class PathTest {
 
     @Test
     void tableListAdapterWithsearchPathAdapter() {
-        HashSet expected = new HashSet<String>();
+        HashSet<String> expected = new HashSet<>();
         expected.add("databaseName.schema1Name.table1Name");
         expected.add("databaseName.schema1Name.table2Name");
 

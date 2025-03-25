@@ -27,7 +27,6 @@ import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -453,12 +452,6 @@ public class TransactionImpl implements Transaction {
             return service.send(pb.build(), destination);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public void setCloseTimeout(long t, TimeUnit u) {
-        timeout = t;
-        unit = u;
     }
 
     @Override

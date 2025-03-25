@@ -128,7 +128,7 @@ public class SessionImpl implements Session {
     }
 
     // for SqlServiceStubImpl only
-    public Disposer disposer() {  
+    public Disposer disposer() {
         return disposer;
     }
 

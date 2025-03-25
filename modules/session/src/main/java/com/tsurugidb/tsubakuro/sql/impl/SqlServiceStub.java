@@ -218,16 +218,6 @@ public class SqlServiceStub implements SqlService {
         }
     }
 
-    FutureResponse<Void> send(
-            @Nonnull SqlRequest.Commit request, @Nonnull TransactionImpl transaction) throws IOException {
-        Objects.requireNonNull(request);
-        LOG.trace("send (commit): {}", request); //$NON-NLS-1$
-        return session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionCommitProcessor(transaction).asResponseProcessor(false));
-    }
-
     @Override
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Commit request) throws IOException {
@@ -236,7 +226,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionCommitProcessor(null).asResponseProcessor());
+                new TransactionCommitProcessor().asResponseProcessor());
     }
 
     class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
