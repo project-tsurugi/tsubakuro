@@ -25,7 +25,7 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -42,7 +42,6 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
@@ -58,6 +57,7 @@ import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * Transaction type.
@@ -67,8 +67,9 @@ public class TransactionImpl implements Transaction {
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
     private final SqlResponse.Begin.Success transaction;
-    private long timeout = 0;
-    private TimeUnit unit;
+    private final AtomicBoolean cleanuped = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
+    private Timeout timeout = null;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     private FutureResponse<Void> commitResult = null;
@@ -455,6 +456,14 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public void setCloseTimeout(long t, TimeUnit u) {
+        if (t != 0 && u != null) {
+            timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+        }
+        timeout = null;
+    }
+
+    @Override
     public String getTransactionId() {
         return transaction.getTransactionId().getId();
     }
@@ -531,34 +540,28 @@ public class TransactionImpl implements Transaction {
             if (needRollback) {
                 // FIXME need to consider rollback is suitable here
                 try (var rollback = submitRollback()) {
-                    if (timeout == 0) {
+                    if (timeout == null) {
                         rollback.get();
                     } else {
-                        rollback.get(timeout, unit);
+                        timeout.waitFor(rollback);
                     }
-                } catch (TimeoutException e) {
-                    LOG.warn("timeout occurred in the transaction rollback", e);
-                    throw new ResponseTimeoutException(e.getMessage(), e);
                 }
-            }
-        } finally {
-            if (closeHandler != null) {
-                Lang.suppress(
-                        e -> LOG.warn("error occurred while collecting garbage", e),
-                        () -> closeHandler.onClosed(this));
-            }
-            if (needDispose) {
-                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .build())) {
-                    if (timeout == 0) {
-                        futureResponse.get();
-                    } else {
-                        futureResponse.get(timeout, unit);
+            } finally {
+                if (closeHandler != null) {
+                    Lang.suppress(
+                            e -> LOG.warn("error occurred while collecting garbage", e),
+                            () -> closeHandler.onClosed(this));
+                }
+                if (needDispose) {
+                    try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                            .setTransactionHandle(transaction.getTransactionHandle())
+                            .build())) {
+                        if (timeout == null) {
+                            futureResponse.get();
+                        } else {
+                            timeout.waitFor(futureResponse);
+                        }
                     }
-                } catch (TimeoutException e) {
-                    LOG.warn("timeout occurred in the transaction disposal", e);
-                    throw new ResponseTimeoutException(e.getMessage(), e);
                 }
             }
             state.set(State.CLOSED);

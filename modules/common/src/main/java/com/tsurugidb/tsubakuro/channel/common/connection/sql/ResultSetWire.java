@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -32,14 +33,16 @@ public interface ResultSetWire extends Closeable {
      */
     abstract class ByteBufferBackedInput extends InputStream {
         protected ByteBuffer source;
+        protected TimeUnit timeoutUnit = null;
+        protected long timeoutValue = 0;
 
         /**
          * Creates a new instance.
-         * @param source the source buffer
          */
-        public ByteBufferBackedInput(@Nonnull ByteBuffer source) {
-            Objects.requireNonNull(source);
-            this.source = source;
+        public ByteBufferBackedInput() {
+            this.source = ByteBuffer.allocate(0);
+            this.timeoutUnit = null;
+            this.timeoutValue = 0;
         }
 
         @Override
@@ -71,7 +74,35 @@ public interface ResultSetWire extends Closeable {
             }
         }
 
+        @Override
+        public int available() {
+            if (source != null) {
+                return source.remaining();
+            }
+            return 0;
+        }
+
+        /**
+         * Sets timeout for nextRow.
+         * @param timeout the maximum time to wait, or {@code 0} to disable
+         * @param unit the time unit of {@code timeout}
+         *
+         * @since 1.9.0
+         */
+        public void setTimeout(long timeout, @Nonnull TimeUnit unit) {
+            Objects.requireNonNull(unit);
+            timeoutValue = timeout;
+            timeoutUnit = unit;
+        }
+
         protected abstract boolean next() throws IOException;
+
+        protected long timeoutNanos() {
+            if (timeoutUnit != null) {
+                return timeoutUnit.toNanos(timeoutValue);
+            }
+            return 0;
+        }
     }
 
     /**

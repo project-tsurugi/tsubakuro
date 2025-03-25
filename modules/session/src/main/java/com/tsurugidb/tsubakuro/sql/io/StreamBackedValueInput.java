@@ -59,6 +59,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -67,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
@@ -599,6 +601,23 @@ public class StreamBackedValueInput implements ValueInput {
         require(EntryType.END_OF_CONTENTS);
         clearHeaderInfo();
         // header only
+    }
+
+    /**
+     * Sets timeout for nextRow, nextColumn(), fetchDataValue().
+     * When the timeout is reached, an InterruptedException will be generated.
+     * @param timeout the maximum time to wait, or {@code 0} to disable
+     * @param unit the time unit of {@code timeout}
+     *
+     * @since 1.9.0
+     */
+    public void setTimeout(long timeout, @Nonnull TimeUnit unit) {
+        Objects.requireNonNull(unit);
+        if (input instanceof ResultSetWire.ByteBufferBackedInput) {
+            ((ResultSetWire.ByteBufferBackedInput) input).setTimeout(timeout, unit);
+            return;
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -16,6 +16,9 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 
@@ -36,5 +39,17 @@ public interface ResultSet extends RelationCursor {
     @Override
     default void close() throws ServerException, IOException, InterruptedException {
         // do nothing
+    }
+
+    /**
+     * Sets timeout for nextRow, nextColumn(), fetchDataValue().
+     * When the timeout is reached, an InterruptedException will be generated.
+     * @param timeout the maximum time to wait, or {@code 0} to disable
+     * @param unit the time unit of {@code timeout}
+     *
+     * @since 1.9.0
+     */
+    default void setTimeout(long timeout, @Nonnull TimeUnit unit) {
+        throw new UnsupportedOperationException();
     }
 }

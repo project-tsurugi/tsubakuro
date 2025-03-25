@@ -26,12 +26,14 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
@@ -338,10 +340,20 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
         input.close();
     }
 
+    void setTimeout(long timeout, @Nonnull TimeUnit unit) {
+        Objects.requireNonNull(unit);
+        if (input instanceof ResultSetWire.ByteBufferBackedInput) {
+            ((ResultSetWire.ByteBufferBackedInput) input).setTimeout(timeout, unit);
+        }
+    }
+
     private EntryType checkColumnPrepared() {
         EntryType type = currentColumnType;
         if (type == null) {
             throw new IllegalStateException("invoke .nextColumn() before fetch value");
+        }
+        if (stack.isEmpty()) {
+            throw new IllegalStateException("no more data available");
         }
         return type;
     }

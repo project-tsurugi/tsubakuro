@@ -18,10 +18,10 @@ JNIEXPORT jlong JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWi
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl
  * Method:    getChunkNative
- * Signature: (J)Ljava/nio/ByteBuffer;
+ * Signature: (JJ)Ljava/nio/ByteBuffer;
  */
 JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl_getChunkNative
-  (JNIEnv *, jclass, jlong);
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSetWireImpl

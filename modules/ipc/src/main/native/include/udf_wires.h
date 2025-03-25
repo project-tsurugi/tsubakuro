@@ -41,7 +41,7 @@ public:
                 throw std::runtime_error(msg.c_str());
             }
         }
-        std::string_view get_chunk() {
+        std::string_view get_chunk(long timeout_us) {
             if (!closed_) {
                 if (wrap_around_.data()) {
                     auto rv = wrap_around_;
@@ -49,7 +49,7 @@ public:
                     return rv;
                 }
                 if (current_wire_ == nullptr) {
-                    current_wire_ = active_wire();
+                    current_wire_ = active_wire(timeout_us);
                 }
                 if (current_wire_ != nullptr) {
                     return current_wire_->get_chunk(current_wire_->get_bip_address(managed_shm_ptr_), wrap_around_);
@@ -84,8 +84,8 @@ public:
         session_wire_container* get_envelope() { return envelope_; }
 
     private:
-        shm_resultset_wire* active_wire() {
-            return shm_resultset_wires_->active_wire();
+        shm_resultset_wire* active_wire(long timeout) {
+            return shm_resultset_wires_->active_wire(timeout);
         }
 
         session_wire_container *envelope_;
