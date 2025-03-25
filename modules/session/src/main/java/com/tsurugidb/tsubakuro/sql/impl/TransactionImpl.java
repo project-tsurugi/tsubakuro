@@ -537,20 +537,20 @@ public class TransactionImpl implements Transaction {
                     if (timeout == null) {
                         rollback.get();
                     } else {
-                            timeout.waitFor(rollback);
+                        timeout.waitFor(rollback);
                     }
                 }
             }
         } finally {
             if (closeHandler != null) {
                 Lang.suppress(
-                        e -> LOG.warn("error occurred while collecting garbage", e),
-                        () -> closeHandler.onClosed(this));
+                              e -> LOG.warn("error occurred while collecting garbage", e),
+                              () -> closeHandler.onClosed(this));
             }
             if (needDispose) {
                 try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .build())) {
+                                                       .setTransactionHandle(transaction.getTransactionHandle())
+                                                       .build())) {
                     if (timeout == null) {
                         futureResponse.get();
                     } else {
