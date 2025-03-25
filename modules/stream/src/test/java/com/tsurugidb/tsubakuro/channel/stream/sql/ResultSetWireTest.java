@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.channel.ipc.sql;
+package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -28,20 +28,33 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
-import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
+import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 
 class ResultSetWireTest {
+    static final int SERVICE_ID_SQL = 3;
+    private static final String HOST = "localhost";
+    private static final int PORT = 12334;
+
     private final String NAME = "resultset";
     private final int COUNT = 128;
 
+    private StreamLink link;
     private WireImpl client;
     private ServerWireImpl server;
-    private final String dbName = "tsubakuro";
     private final long sessionId = 1;
     private long serverResultSetWire;
     private int writeCount;
 
     private class Sender extends Thread {
+        private boolean doSend;
+        private boolean finish = false;
+
+        Sender() {
+            this.doSend = true;
+        }
+        Sender(boolean doSend) {
+            this.doSend = doSend;
+        }
         public void run() {
             byte[] ba = new byte[1024];
             try {
@@ -50,33 +63,48 @@ class ResultSetWireTest {
                 } catch(InterruptedException e) {
                     // do nothing
                 }
-                writeCount = 0;
-                for (int i = 0; i < COUNT; i++) {
-                    server.putRecordsRSL(serverResultSetWire, ba);
-                    writeCount++;
-                }
-                server.eorRSL(serverResultSetWire);
-                try {
-                    Thread.sleep(100);
-                } catch(InterruptedException e) {
-                    // do nothing
+                if (doSend) {
+                    writeCount = 0;
+                    for (int i = 0; i < COUNT; i++) {
+                        server.putRecordsRSL(serverResultSetWire, ba);
+                        writeCount++;
+                    }
+                    server.eorRSL(serverResultSetWire);
+                    try {
+                        Thread.sleep(100);
+                    } catch(InterruptedException e) {
+                        // do nothing
+                    }
+                } else {
+                    while (!finish) {
+                        try {
+                            Thread.sleep(100);
+                        } catch(InterruptedException e) {
+                            // do nothing
+                        }
+                    }
                 }
             } catch(IOException e) {
                 throw new UncheckedIOException(e);
             }
+        }
+        void finish() {
+            this.finish = true;
         }
     }
 
     @Test
     void readRecordsTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionId);
-            client = new WireImpl(new IpcLink(dbName, sessionId));
+            server = new ServerWireImpl(PORT - 1, sessionId);
+            link = new StreamLink(HOST, PORT - 1);
+            client = new WireImpl(link);
         } catch (Exception e) {
             fail("cought Exception");
         }
 
         serverResultSetWire = server.createRSL(NAME);
+        link.pullMessage(link.messageNumber(), 0, null);
         var sender = new Sender();
         sender.start();
 
@@ -100,14 +128,16 @@ class ResultSetWireTest {
     @Test
     void serverCrashDetectionTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionId, false);
-            client = new WireImpl(new IpcLink(dbName, sessionId));
+            server = new ServerWireImpl(PORT - 2, sessionId);
+            link = new StreamLink(HOST, PORT - 2);
+            client = new WireImpl(link);
         } catch (Exception e) {
             fail("cought Exception");
         }
 
         serverResultSetWire = server.createRSL(NAME);
-        var sender = new Sender();
+        link.pullMessage(link.messageNumber(), 0, null);
+        var sender = new Sender(false);
         sender.start();
 
         var clientResultSetWire = client.createResultSetWire();
@@ -115,27 +145,32 @@ class ResultSetWireTest {
         var recordStream = clientResultSetWire.getByteBufferBackedInput();
         byte[] ba = new byte[1024];
 
+        server.closeSocket();
+
         Throwable exception = assertThrows(IOException.class, () -> {
             recordStream.read(ba);
             clientResultSetWire.close();
         });
         // FIXME: check error code instead of message
-        assertEquals(0, exception.getMessage().indexOf("No response from the server for a long time, server status check result is '"));
+        assertEquals(0, exception.getMessage().indexOf("lost connection"));
 
+        sender.finish();
         sender.join();
     }
 
     @Test
     void timeoutDetectionTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionId, false);
-            client = new WireImpl(new IpcLink(dbName, sessionId));
+            server = new ServerWireImpl(PORT - 3, sessionId);
+            link = new StreamLink(HOST, PORT - 3);
+            client = new WireImpl(link);
         } catch (Exception e) {
             fail("cought Exception");
         }
 
         serverResultSetWire = server.createRSL(NAME);
-        var sender = new Sender();
+        link.pullMessage(link.messageNumber(), 0, null);
+        var sender = new Sender(false);
         sender.start();
 
         var clientResultSetWire = client.createResultSetWire();
@@ -153,21 +188,24 @@ class ResultSetWireTest {
             clientResultSetWire.close();
         });
         // FIXME: check error code instead of message
-        assertEquals(0, exception.getMessage().indexOf("No response from the server in the specified time ("));
+        assertEquals(0, exception.getMessage().indexOf("response has not been received within the specified time"));
 
+        sender.finish();
         sender.join();
     }
 
     @Test
     void closeWithRecordRemainTest() throws Exception {
         try {
-            server = new ServerWireImpl(dbName, sessionId);
-            client = new WireImpl(new IpcLink(dbName, sessionId));
+            server = new ServerWireImpl(PORT - 4, sessionId);
+            link = new StreamLink(HOST, PORT - 4);
+            client = new WireImpl(link);
         } catch (Exception e) {
             fail("cought Exception");
         }
 
         serverResultSetWire = server.createRSL(NAME);
+        link.pullMessage(link.messageNumber(), 0, null);
         var sender = new Sender();
         sender.start();
         var clientResultSetWire = client.createResultSetWire();

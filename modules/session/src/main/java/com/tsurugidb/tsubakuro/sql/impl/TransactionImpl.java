@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -41,7 +40,6 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
@@ -57,6 +55,7 @@ import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * Transaction type.
@@ -68,8 +67,7 @@ public class TransactionImpl implements Transaction {
     private final SqlResponse.Begin.Success transaction;
     private final AtomicBoolean cleanuped = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private long timeout = 0;
-    private TimeUnit unit;
+    private Timeout timeout = null;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     private final boolean autoDispose = false;
@@ -408,8 +406,10 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void setCloseTimeout(long t, TimeUnit u) {
-        timeout = t;
-        unit = u;
+        if (t != 0 && u != null) {
+            timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+        }
+        timeout = null;
     }
 
     @Override
@@ -424,14 +424,11 @@ public class TransactionImpl implements Transaction {
                 if (!cleanuped.getAndSet(true)) {
                     // FIXME need to consider rollback is suitable here
                     try (var rollback = submitRollback()) {
-                        if (timeout == 0) {
+                        if (timeout == null) {
                             rollback.get();
                         } else {
-                            rollback.get(timeout, unit);
+                            timeout.waitFor(rollback);
                         }
-                    } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction rollback", e);
-                        throw new ResponseTimeoutException(e.getMessage(), e);
                     }
                 }
             } finally {
@@ -444,14 +441,11 @@ public class TransactionImpl implements Transaction {
                     try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
                             .setTransactionHandle(transaction.getTransactionHandle())
                             .build())) {
-                        if (timeout == 0) {
+                        if (timeout == null) {
                             futureResponse.get();
                         } else {
-                            futureResponse.get(timeout, unit);
+                            timeout.waitFor(futureResponse);
                         }
-                    } catch (TimeoutException e) {
-                        LOG.warn("timeout occurred in the transaction disposal", e);
-                        throw new ResponseTimeoutException(e.getMessage(), e);
                     }
                 }
             }

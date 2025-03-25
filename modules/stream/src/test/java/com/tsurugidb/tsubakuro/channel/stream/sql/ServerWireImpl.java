@@ -44,7 +44,7 @@ public class ServerWireImpl implements Closeable {
 
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
-    private ServerStreamLink serverStreamLink;
+    private ServerStreamLink serverStreamLink = null;
     private final ArrayDeque<Message> receiveQueue;
     private final ReceiveWorker receiver;
     private final ArrayDeque<Message> sendQueue;
@@ -104,7 +104,7 @@ public class ServerWireImpl implements Closeable {
             }
         }
         void close() throws IOException {
-            serverSocket.close();
+            serverStreamLink.close();
         }
         boolean handshake() {
             try {
@@ -143,6 +143,7 @@ public class ServerWireImpl implements Closeable {
 
     private class SendWorker extends Thread {
         String name;
+        boolean eor = false;
 
         SendWorker(String name) {
             this.name = name;
@@ -150,16 +151,18 @@ public class ServerWireImpl implements Closeable {
         @Override
         public void run() {
             try {
+                waitServerStreamLink();
                 serverStreamLink.sendRecordHello(slot, name);
                 while (true) {
                     if (serverStreamLink.isSnedOk()) {
                         while (!sendQueue.isEmpty()) {
                             var entry = sendQueue.poll().getBytes();
                             serverStreamLink.sendRecord(slot, 0, entry);
-                            if (entry.length == 0) {
-                                return;
-                            }
                         }
+                    }
+                    if (eor) {
+                        serverStreamLink.sendRecordBye(slot);
+                        return;
                     }
                     waitReady();
                 }
@@ -178,6 +181,9 @@ public class ServerWireImpl implements Closeable {
         }
         synchronized void notifyEvent() {
             notify();
+        }
+        void eor() {
+            eor = true;
         }
     }
 
@@ -241,6 +247,7 @@ public class ServerWireImpl implements Closeable {
             header.writeDelimitedTo(buffer);
             response.writeDelimitedTo(buffer);
             var bytes = buffer.toByteArray();
+            waitServerStreamLink();
             serverStreamLink.sendResponse(slot, bytes);
         }
     }
@@ -252,15 +259,27 @@ public class ServerWireImpl implements Closeable {
     }
 
     public void putRecordsRSL(long handle, byte[] ba) throws IOException {
-        //    serverStreamLink.sendRecord(0, 0, ba);
         sendQueue.add(new Message(ba));
         sender.notifyEvent();
     }
 
     public void eorRSL(long handle) throws IOException {
-        byte[] ba = new byte[0];
-        //    serverStreamLink.sendRecord(0, 0, ba);
-        sendQueue.add(new Message(ba));
+        sender.eor();
         sender.notifyEvent();
+    }
+
+    void closeSocket() throws IOException {
+        receiver.close();
+    }
+
+    private void waitServerStreamLink() {
+        while (serverStreamLink == null) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println(e);
+            }
+        }
     }
 }

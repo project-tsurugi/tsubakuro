@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -158,6 +159,8 @@ public class ResultSetImpl implements ResultSet {
                 }
             }
             return false;
+        } catch (InterruptedIOException e) {
+            throw new InterruptedException(e.getMessage());
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;
@@ -435,6 +438,14 @@ public class ResultSetImpl implements ResultSet {
             timeout = t.value();
             unit = t.unit();
             cursor.setCloseTimeout(t);
+        }
+    }
+
+    @Override
+    public synchronized void setTimeout(long t, @Nonnull TimeUnit u) {
+        Objects.requireNonNull(u);
+        if (cursor instanceof ValueInputBackedRelationCursor) {
+            ((ValueInputBackedRelationCursor) cursor).setTimeout(t, u);
         }
     }
 
