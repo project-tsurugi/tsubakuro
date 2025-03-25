@@ -113,7 +113,6 @@ public class TransactionImpl implements Transaction {
         this.service = service;
         this.closeHandler = closeHandler;
         this.disposer = disposer;
-        this.timeout = 0;
         state.set(State.INITIAL);
     }
 
@@ -372,12 +371,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized void setCloseTimeout(long t, TimeUnit u) {
-        timeout = t;
-        unit = u;
-    }
-
-    @Override
     public synchronized FutureResponse<SqlServiceException> getSqlServiceException() throws IOException {
         if (state.get() == State.CLOSED) {
             throw new IOException("transaction already closed");
@@ -457,10 +450,12 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void setCloseTimeout(long t, TimeUnit u) {
-        if (t != 0 && u != null) {
-            timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+        synchronized (this) {  // work around for SpotBugs
+            if (t != 0 && u != null) {
+                timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+            }
+            timeout = null;
         }
-        timeout = null;
     }
 
     @Override
@@ -546,21 +541,21 @@ public class TransactionImpl implements Transaction {
                         timeout.waitFor(rollback);
                     }
                 }
-            } finally {
-                if (closeHandler != null) {
-                    Lang.suppress(
-                            e -> LOG.warn("error occurred while collecting garbage", e),
-                            () -> closeHandler.onClosed(this));
-                }
-                if (needDispose) {
-                    try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                            .setTransactionHandle(transaction.getTransactionHandle())
-                            .build())) {
-                        if (timeout == null) {
-                            futureResponse.get();
-                        } else {
-                            timeout.waitFor(futureResponse);
-                        }
+            }
+        } finally {
+            if (closeHandler != null) {
+                Lang.suppress(
+                              e -> LOG.warn("error occurred while collecting garbage", e),
+                              () -> closeHandler.onClosed(this));
+            }
+            if (needDispose) {
+                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                                                       .setTransactionHandle(transaction.getTransactionHandle())
+                                                       .build())) {
+                    if (timeout == null) {
+                        futureResponse.get();
+                    } else {
+                        timeout.waitFor(futureResponse);
                     }
                 }
             }
