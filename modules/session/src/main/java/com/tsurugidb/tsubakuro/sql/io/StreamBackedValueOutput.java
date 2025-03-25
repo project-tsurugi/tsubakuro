@@ -39,6 +39,8 @@ import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY_WITH_TIME_ZONE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT_WITH_TIME_ZONE;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_BLOB;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_CLOB;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_EMBED_ARRAY_SIZE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_EMBED_BIT_SIZE;
@@ -75,6 +77,11 @@ import javax.annotation.concurrent.NotThreadSafe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
+import com.tsurugidb.tsubakuro.sql.impl.ClobReferenceForSql;
 
 /**
  * {@link ValueOutput} to {@link OutputStream}.
@@ -348,6 +355,32 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
         } else {
             output.write(HEADER_ARRAY);
             Base128Variant.writeUnsigned(numberOfElements, output);
+        }
+    }
+    @Override
+    public void writeBlob(@Nonnull BlobReference value) throws IOException {
+        Objects.requireNonNull(value);
+        output.write(HEADER_BLOB);
+
+        if (value instanceof BlobReferenceForSql) {
+            var blob = (BlobReferenceForSql) value;
+            write8(blob.getProvider());
+            write8(blob.getObjectId());
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+    @Override
+    public void writeClob(@Nonnull ClobReference value) throws IOException {
+        Objects.requireNonNull(value);
+        output.write(HEADER_CLOB);
+
+        if (value instanceof ClobReferenceForSql) {
+            var clob = (ClobReferenceForSql) value;
+            write8(clob.getProvider());
+            write8(clob.getObjectId());
+        } else {
+            throw new IllegalArgumentException();
         }
     }
 

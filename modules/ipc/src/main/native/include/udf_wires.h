@@ -69,9 +69,13 @@ public:
             std::abort();  //  This must not happen.
         }
         bool is_eor() {
+            if (closed_) {
+                return true;
+            }
             return shm_resultset_wires_->is_eor();
         }
         void set_closed() {
+            closed_ = true;
             shm_resultset_wires_->set_closed();
         }
         void be_orphaned() {

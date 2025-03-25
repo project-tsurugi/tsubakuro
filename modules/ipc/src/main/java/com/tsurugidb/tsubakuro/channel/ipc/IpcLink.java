@@ -116,13 +116,9 @@ public final class IpcLink extends Link {
         if (message != null) {
             if (message.getInfo() != RESPONSE_NULL) {
                 if (message.getInfo() == RESPONSE_BODYHEAD) {
-                    try {
-                        responseBox.pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
-                    } catch (IOException e) {
-                        responseBox.push(message.getSlot(), e);
-                    }
+                    pushHead(message.getSlot(), message.getBytes(), createResultSetWire());
                 } else {
-                    responseBox.push(message.getSlot(), message.getBytes());
+                    push(message.getSlot(), message.getBytes());
                 }
                 return true;
             }
@@ -133,7 +129,7 @@ public final class IpcLink extends Link {
         if (!intentionalClose) {
             serverDown.set(true);
         }
-        responseBox.doClose(intentionalClose);
+        doClose(intentionalClose);
         return false;
     }
 

@@ -5,7 +5,7 @@ concurrency: ${{ github.workflow }}
 
 jobs:
   Publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     defaults:
       run:

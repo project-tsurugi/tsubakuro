@@ -37,6 +37,8 @@ import com.google.protobuf.Message;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
@@ -333,12 +335,33 @@ public class ResultSetImpl implements ResultSet {
         }
     }
 
-
     @Override
     public synchronized DateTimeInterval fetchDateTimeIntervalValue() throws IOException, ServerException, InterruptedException {
         checkResponse();
         try {
             return cursor.fetchDateTimeIntervalValue();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public synchronized BlobReference fetchBlob() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchBlob();
+        } catch (IOException | ServerException e) {
+            checkResponse(e);
+            throw e;
+        }
+    }
+
+    @Override
+    public synchronized ClobReference fetchClob() throws IOException, ServerException, InterruptedException {
+        checkResponse();
+        try {
+            return cursor.fetchClob();
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;

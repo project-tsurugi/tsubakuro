@@ -17,12 +17,14 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
@@ -35,9 +37,12 @@ public class ResultSetWireImpl implements ResultSetWire {
     private final ResultSetBox resultSetBox;
     private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
+    private String resultSetName = "(resultSetName has not been assgined yet)";
     private ByteBufferBackedInput byteBufferBackedInput;
     private boolean eor;
     private IOException exception;
+
+    static final Logger LOG = LoggerFactory.getLogger(ResultSetWireImpl.class);
 
     class ByteBufferBackedInputForStream extends ByteBufferBackedInput {
         private final ResultSetWireImpl resultSetWireImpl;
@@ -48,17 +53,13 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         @Override
-        protected boolean next() {
-            try {
-                var buffer = receive();
-                if (buffer == null) {
-                    return false;
-                }
-                source = ByteBuffer.wrap(buffer);
-                return true;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+        protected boolean next() throws IOException {
+            var buffer = receive();
+            if (buffer == null) {
+                return false;
             }
+            source = ByteBuffer.wrap(buffer);
+            return true;
         }
 
         @Override
@@ -87,6 +88,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public ResultSetWire connect(String name) throws IOException {
+        resultSetName = name;
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
@@ -104,12 +106,14 @@ public class ResultSetWireImpl implements ResultSetWire {
                 var buffer = receive();
                 if (buffer != null) {
                     byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.wrap(buffer), this);
-                } else {
-                    byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
+                    return byteBufferBackedInput;
                 }
             } catch (IOException e) {
-                throw new UncheckedIOException(e);
+                LOG.error("Failed to receive the first record, name = {}", resultSetName);
+                e.printStackTrace();
             }
+            byteBufferBackedInput = new ByteBufferBackedInputForStream(ByteBuffer.allocate(0), this);
+            return byteBufferBackedInput;
         }
         return byteBufferBackedInput;
     }

@@ -25,6 +25,9 @@ import java.time.OffsetDateTime;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+
 /**
  * Retrieves SQL values.
  */
@@ -237,8 +240,6 @@ public interface ValueInput extends AutoCloseable {
      */
     DateTimeInterval readDateTimeInterval() throws IOException, InterruptedException;
 
-    // FIXME blob, clob
-
     /**
      * Reads the next {@link EntryType#ROW} entry.
      * @return the number of row elements
@@ -258,6 +259,34 @@ public interface ValueInput extends AutoCloseable {
      * @see #peekType()
      */
     int readArrayBegin() throws IOException, InterruptedException;
+
+    /**
+     * Reads the next {@link EntryType#BLOB} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     *
+     * @since 1.8.0
+     */
+    default BlobReference readBlob() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Reads the next {@link EntryType#CLOB} entry.
+     * @return the value
+     * @throws IOException if I/O error was occurred while reading the contents
+     * @throws InterruptedException if interrupted while reading the contents
+     * @throws IllegalStateException if the next entry is inconsistent value type
+     * @see #peekType()
+     *
+     * @since 1.8.0
+     */
+    default ClobReference readClob() throws IOException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Reads the next {@link EntryType#END_OF_CONTENTS} entry.

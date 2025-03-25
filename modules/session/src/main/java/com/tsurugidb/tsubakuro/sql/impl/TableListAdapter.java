@@ -57,23 +57,17 @@ public class TableListAdapter implements TableList {
         var rv = new ArrayList<String>();
         for (var n : proto.getTablePathNamesList()) {
             if (n.getIdentifiersList().size() > 0) {
-                var sn = searchPath.getSchemaNames();
-                boolean find = true;
-                for (int i = 0; i < sn.size(); i++) {
-                    if (!sn.get(i).equals(n.getIdentifiersList().get(i).getLabel())) {
-                        find = false;
-                        break;
+                for (var sn: searchPath.getSchemaNames()) {
+                    if (getTableName(n).startsWith(sn)) {
+                        rv.add(getTableName(n));
                     }
-                }
-                if (find) {
-                    rv.add(getTableName(n));
                 }
             }
         }
         return rv;
     }
 
-    private String getTableName(SqlResponse.Name n) {
+    static String getTableName(SqlResponse.Name n) {
         var l = n.getIdentifiersList();
         if (l.size() > 0) {
             String name = l.get(0).getLabel();

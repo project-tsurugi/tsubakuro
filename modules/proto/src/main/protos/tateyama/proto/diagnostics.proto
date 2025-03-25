@@ -60,6 +60,9 @@ enum Code {
 
     // operation was canceled by user or system.
     OPERATION_CANCELED = 42;
+
+    // operation is not allowed on the server.
+    OPERATION_DENIED = 43;
 }
 
 // diagnostic record.

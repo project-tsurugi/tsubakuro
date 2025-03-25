@@ -17,11 +17,13 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
@@ -46,6 +48,8 @@ public class MockWire implements Wire {
 
     private ByteBuffer resultSetData;
 
+    private List<? extends BlobInfo> blobList = null;
+
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
         var next = handlers.poll();
@@ -64,6 +68,18 @@ public class MockWire implements Wire {
     @Override
     public FutureResponse<Response> send(int serviceId, byte[] payload) throws IOException {
         return send(serviceId, ByteBuffer.wrap(payload));
+    }
+
+    @Override
+    public FutureResponse<? extends Response> send(int serviceId, ByteBuffer payload, List<? extends BlobInfo> blobs) throws IOException {
+        blobList = blobs;
+        return send(serviceId, payload);
+    }
+
+    @Override
+    public FutureResponse<? extends Response> send(int serviceId, byte[] payload, List<? extends BlobInfo> blobs) throws IOException {
+        blobList = blobs;
+        return send(serviceId, ByteBuffer.wrap(payload), blobs);
     }
 
     /**
@@ -94,6 +110,10 @@ public class MockWire implements Wire {
      */
     public boolean hasRemaining() {
         return !handlers.isEmpty();
+    }
+
+    List<? extends BlobInfo> blobs() {
+        return blobList;
     }
 
     @Override

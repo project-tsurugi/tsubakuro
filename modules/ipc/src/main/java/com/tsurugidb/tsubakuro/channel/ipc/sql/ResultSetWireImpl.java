@@ -29,7 +29,7 @@ import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
  */
 public class ResultSetWireImpl implements ResultSetWire {
     private static native long createNative(long sessionWireHandle, String name) throws IOException;
-    private static native ByteBuffer getChunkNative(long handle);
+    private static native ByteBuffer getChunkNative(long handle) throws IOException;
     private static native void disposeUsedDataNative(long handle, long length);
     private static native boolean isEndOfRecordNative(long handle);
     private static native void closeNative(long handle);
@@ -48,7 +48,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
 
         @Override
-        protected boolean next() {
+        protected boolean next() throws IOException {
             synchronized (this) {
                 if (wireHandle != 0) {
                     if (source.capacity() > 0) {

@@ -893,7 +893,7 @@ public:
     void set_eor() {
         eor_ = true;
         std::atomic_thread_fence(std::memory_order_acq_rel);
-        if (wait_for_record_) {
+        {
             boost::interprocess::scoped_lock lock(m_record_);
             c_record_.notify_one();
         }
@@ -934,10 +934,8 @@ private:
      *  used by server
      */
     void notify_record_arrival() {
-        if (wait_for_record_) {
-            boost::interprocess::scoped_lock lock(m_record_);
-            c_record_.notify_one();
-        }
+        boost::interprocess::scoped_lock lock(m_record_);
+        c_record_.notify_one();
     }
 
     static constexpr std::size_t Alignment = 64;

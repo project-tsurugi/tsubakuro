@@ -22,13 +22,13 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 
 /**
  * ResultSetBox type.
  */
 public class ResultSetBox {
-    private static final int SIZE = ResponseBox.responseBoxSize();
+    private static final int SIZE = Link.responseBoxSize();
 
     private ResultSetWireImpl[] boxes = new ResultSetWireImpl[SIZE];
     private Map<String, Integer> map = new HashMap<>();;

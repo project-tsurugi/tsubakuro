@@ -15,11 +15,20 @@
  */
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,17 +46,22 @@ import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SearchPath;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
@@ -55,8 +69,9 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
+import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
@@ -136,12 +151,6 @@ public class SqlServiceStub implements SqlService {
                 kind));
     }
 
-    private static SqlRequest.Request.Builder newRequest() {
-        return SqlRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(SqlClient.SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(SqlClient.SERVICE_MESSAGE_VERSION_MINOR);
-    }
-
     class TransactionBeginProcessor implements MainResponseProcessor<Transaction> {
         private final AtomicReference<SqlResponse.Begin> detailResponseCache = new AtomicReference<>();
 
@@ -179,9 +188,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (Begin): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setBegin(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionBeginProcessor().asResponseProcessor());
     }
 
@@ -211,6 +218,16 @@ public class SqlServiceStub implements SqlService {
         }
     }
 
+    FutureResponse<Void> send(
+            @Nonnull SqlRequest.Commit request, @Nonnull TransactionImpl transaction) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (commit): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new TransactionCommitProcessor(transaction).asResponseProcessor(false));
+    }
+
     @Override
     public FutureResponse<Void> send(
             @Nonnull SqlRequest.Commit request) throws IOException {
@@ -218,10 +235,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (commit): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setCommit(request)
-                    .build()),
-                new TransactionCommitProcessor().asResponseProcessor());
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new TransactionCommitProcessor(null).asResponseProcessor());
     }
 
     class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
@@ -257,9 +272,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (rollback): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setRollback(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new TransactionRollbackProcessor().asResponseProcessor(false));
     }
 
@@ -305,9 +318,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setPrepare(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new StatementPrepareProcessor(request).asResponseProcessor());
     }
 
@@ -344,9 +355,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (dispose prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDisposePreparedStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new StatementDisposeProcessor().asResponseProcessor(false));
     }
 
@@ -390,9 +399,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (explain): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExplain(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeStatementProcessor().asResponseProcessor());
     }
 
@@ -403,9 +410,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (explain): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExplainByText(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeStatementProcessor().asResponseProcessor(false));
     }
 
@@ -442,9 +447,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (describe table): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDescribeTable(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DescribeTableProcessor().asResponseProcessor(false));
     }
 
@@ -489,9 +492,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ExecuteProcessor().asResponseProcessor(false));
     }
 
@@ -502,9 +503,19 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecutePreparedStatement(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new ExecuteProcessor().asResponseProcessor());
+    }
+
+    @Override
+    public FutureResponse<ExecuteResult> send(
+            @Nonnull SqlRequest.ExecutePreparedStatement request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (execute prepared statement): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                blobs,
                 new ExecuteProcessor().asResponseProcessor());
     }
 
@@ -515,9 +526,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (batch): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setBatch(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ExecuteProcessor().asResponseProcessor());
     }
 
@@ -618,10 +627,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteQuery(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
     }
 
     @Override
@@ -631,10 +638,20 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecutePreparedQuery(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
+    }
+
+    @Override
+    public FutureResponse<ResultSet> send(
+            @Nonnull SqlRequest.ExecutePreparedQuery request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                blobs,
+                new QueryProcessor(request));
     }
 
     @Override
@@ -644,10 +661,8 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteDump(request)
-                    .build()),
-                    new QueryProcessor(request));
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new QueryProcessor(request));
     }
 
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
@@ -691,9 +706,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (execute load): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setExecuteLoad(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new LoadProcessor().asResponseProcessor(false));
     }
 
@@ -730,9 +743,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (ListTables): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setListTables(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new ListTablesProcessor().asResponseProcessor(false));
     }
 
@@ -769,9 +780,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (getSearchPath): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setGetSearchPath(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetSearchPathProcessor().asResponseProcessor(false));
     }
 
@@ -817,10 +826,276 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (GetErrorInfo): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setGetErrorInfo(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new GetErrorInfoProcessor().asResponseProcessor(false));
+    }
+
+    class GetBlobProcessor implements ResponseProcessor<InputStream> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public InputStream process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
+        }
+
+        @Override
+        public InputStream process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                try {
+                    return response.openSubResponse(detailResponse.getSuccess().getChannelName());
+                } catch (NoSuchFileException | AccessDeniedException e) {
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
+                } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName() + "}", e);
+                }
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<InputStream> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, BlobReference reference) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetBlobProcessor());
+    }
+
+    class GetClobProcessor implements ResponseProcessor<Reader> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public Reader process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
+        }
+
+        @Override
+        public Reader process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                try {
+                    return new InputStreamReader(response.openSubResponse(detailResponse.getSuccess().getChannelName()), "UTF-8");
+                } catch (NoSuchFileException | AccessDeniedException e) {
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
+                } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + detailResponse.getSuccess().getChannelName() + "}", e);
+
+                }
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<Reader> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, ClobReference reference) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetClobProcessor());
+    }
+
+    class GetLargeObjectCacheProcessor implements ResponseProcessor<LargeObjectCache> {
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public LargeObjectCache process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
+        }
+
+        @Override
+        public LargeObjectCache process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                try {
+                    var inputStream = response.openSubResponse(detailResponse.getSuccess().getChannelName());
+                    if (inputStream instanceof ChannelResponse.FileInputStreamWithPath) {
+                        return new LargeObjectCacheImpl(((ChannelResponse.FileInputStreamWithPath) inputStream).path());
+                    }
+                    return new LargeObjectCacheImpl();
+                } catch (AccessDeniedException e) {
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
+                } catch (NoSuchFileException | FileNotFoundException e) {
+                    return new LargeObjectCacheImpl();
+                }
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<LargeObjectCache> send(
+            @Nonnull SqlRequest.GetLargeObjectData request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetLargeObjectCacheProcessor());
+    }
+
+    class CopyLargeObjectProcessor implements ResponseProcessor<Void> {
+        private final Path destination;
+        private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+
+        CopyLargeObjectProcessor(Path destination) {
+            this.destination = destination;
+        }
+
+        @Override
+        public Void process(Response response) throws IOException, ServerException, InterruptedException {
+            return process(response, Timeout.DISABLED);
+        }
+
+        @Override
+        public Void process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+            Objects.requireNonNull(response);
+
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            try (response) {
+                var payload = response.waitForMainResponse();
+                if (detailResponseCache.get() == null) {
+                    var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                    if (!SqlResponse.Response.ResponseCase.GET_LARGE_OBJECT_DATA.equals(sqlResponse.getResponseCase())) {
+                        // FIXME log error message
+                        throw new IOException("response type is inconsistent with the request type");
+                    }
+                    detailResponseCache.set(sqlResponse.getGetLargeObjectData());
+                }
+                var detailResponse = detailResponseCache.get();
+                LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                    var errorResponse = detailResponse.getError();
+                    throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                }
+                var channelName = detailResponse.getSuccess().getChannelName();
+                try {
+                    var inputStream = response.openSubResponse(channelName);
+                    try {
+                        Files.copy(inputStream, destination);
+                        return null;
+                    } catch (FileAlreadyExistsException e) {
+                        throw new BlobException("error occurred while copying BLOB data: {FileAlreadyExists: " + destination + "}", e);
+                    } catch (AccessDeniedException e) {
+                        var parent = destination.getParent();
+                        if (parent != null) {
+                            throw new BlobException("error occurred while copying BLOB data: {AccessDenied: " + parent + "}", e);
+                        }
+                        throw new BlobException("error occurred while copying BLOB data: {AccessDenied: " + destination + "}", e);
+                    } catch (FileSystemException e) {
+                        var parent = destination.getParent();
+                        if (parent != null) {
+                            if (!Files.exists(parent)) {
+                                throw new BlobException("error occurred while copying BLOB data: {NoSuchDirectory: " + parent + "}", e);
+                            }
+                            throw new BlobException("error occurred while copying BLOB data: {IsNotDirectory: " + parent + "}", e);
+                        }
+                        throw new BlobException("error occurred while copying BLOB data: {NoSuchFile: " + destination + "}", e);
+                    }
+                } catch (BlobException e) {
+                    throw e;
+                } catch (NoSuchFileException | AccessDeniedException e) {
+                    throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
+                } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
+                    throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + channelName + "}", e);
+                } catch (Exception e) {
+                    throw new BlobException("error occurred while receiving BLOB data: {unknown error}", e);  // should not happen
+                }
+            }
+        }
+
+        @Override
+        public boolean isReturnsServerResource() {
+            return false;
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> send(
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull Path destination) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new CopyLargeObjectProcessor(destination));
     }
 
     class DisposeTransactionProcessor implements MainResponseProcessor<Void> {
@@ -864,9 +1139,7 @@ public class SqlServiceStub implements SqlService {
         LOG.trace("send (DisposeTransaction): {}", request); //$NON-NLS-1$
         return session.send(
                 SERVICE_ID,
-                toDelimitedByteArray(newRequest()
-                    .setDisposeTransaction(request)
-                    .build()),
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new DisposeTransactionProcessor().asResponseProcessor(false));
     }
 
@@ -910,13 +1183,6 @@ public class SqlServiceStub implements SqlService {
             resources.close();
         }
         session.remove(this);
-    }
-
-    private byte[] toDelimitedByteArray(SqlRequest.Request request) throws IOException {
-        try (var buffer = new ByteArrayOutputStream()) {
-            request.writeDelimitedTo(buffer);
-            return buffer.toByteArray();
-        }
     }
 
     // for diagnostic

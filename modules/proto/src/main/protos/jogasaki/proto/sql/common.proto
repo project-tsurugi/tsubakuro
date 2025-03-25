@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/empty.proto";
 
 package jogasaki.proto.sql.common;
 
@@ -127,7 +128,54 @@ message Column {
     // the type dimension for array types.
     uint32 dimension = 11;
 
-    // FIXME type details (e.g. decimal precisions)
+    // the length for data types that have associated length.
+    oneof length_opt {
+        // if nothing is set, that means no length information is provided.
+
+        // defined length
+        uint32 length = 12;
+
+        // arbitrary length (*)
+        google.protobuf.Empty arbitrary_length = 13;
+    }
+
+    // the precision for decimal types.
+    oneof precision_opt {
+        // if nothing is set, that means no precision information is provided.
+
+        // defined precision
+        uint32 precision = 14;
+
+        // arbitrary precision (*)
+        google.protobuf.Empty arbitrary_precision = 15;
+    }
+
+    // the scale for decimal types.
+    oneof scale_opt {
+        // if nothing is set, that means no scale information is provided.
+
+        // defined scale
+        uint32 scale = 16;
+
+        // arbitrary scale (*)
+        google.protobuf.Empty arbitrary_scale = 17;
+    }
+
+    reserved 18 to 20;
+
+    // whether the column is nullable or not
+    oneof nullable_opt {
+        // if nothing is set, that means no nullable information is provided.
+
+        bool nullable = 21;
+    }
+
+    // whether the column type is varying or not
+    oneof varying_opt {
+        // if nothing is set, that means no varying information is provided.
+
+        bool varying = 22;
+    }
 }
 
 // the row type.
@@ -210,12 +258,61 @@ message DateTimeInterval {
 
 // the character large object value.
 message Clob {
-    // FIXME impl
+
+    // the data of this large object.
+    oneof data {
+        // the object value is stored in the file (don't across the network, only for used in the local system).
+        string local_path = 1;
+
+        // the channel name to transmit this object value.
+        string channel_name = 2;
+
+        // the immediate object value (for small objects).
+        bytes contents = 3;
+    }
 }
 
 // the binary large object value.
 message Blob {
-    // FIXME impl
+
+    // the data of this large object.
+    oneof data {
+        // the object value is stored in the file (don't across the network, only for used in the local system).
+        string local_path = 1;
+
+        // the channel name to transmit this object value.
+        string channel_name = 2;
+
+        // the immediate object value (for small objects).
+        bytes contents = 3;
+    }
+}
+
+// Represents a kind of BLOB source location.
+enum LargeObjectProvider {
+
+    // the large object data is in BLOB reference itself.
+    LARGE_OBJECT_PROVIDER_UNSET = 0;
+
+    // the large object data is persisted in the log-datastore.
+    DATASTORE = 1;
+
+    // the large object data is located in SQL engine temporarily.
+    SQL = 2;
+}
+
+// Represents reference to BLOB data.
+message LargeObjectReference {
+    // The provider type who holds the large object data.
+    LargeObjectProvider provider = 1;
+
+    // Object ID of the large object (unique in the provider).
+    uint64 object_id = 2;
+
+    oneof contents_opt {
+        // large object contents for small data.
+        bytes contents = 3;
+    }
 }
 
 // unit for time and timestamp value

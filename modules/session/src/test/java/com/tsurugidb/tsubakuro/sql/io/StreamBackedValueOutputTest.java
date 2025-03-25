@@ -39,6 +39,8 @@ import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_OF_DAY_WITH_TIME_ZONE;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_TIME_POINT_WITH_TIME_ZONE;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_BLOB;
+import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_CLOB;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.HEADER_UNKNOWN;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MAX_DECIMAL_COMPACT_COEFFICIENT;
 import static com.tsurugidb.tsubakuro.sql.io.Constants.MIN_DECIMAL_COMPACT_COEFFICIENT;
@@ -61,6 +63,13 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
+import com.tsurugidb.tsubakuro.sql.impl.ClobReferenceForSql;
+
 
 class StreamBackedValueOutputTest {
 
@@ -425,6 +434,20 @@ class StreamBackedValueOutputTest {
         assertArrayEquals(
                 sequence(HEADER_ARRAY, uint(4096)),
                 perform(o -> o.writeArrayBegin(4096)));
+    }
+
+    @Test
+    void writeBlob() {
+        assertArrayEquals(
+                sequence(HEADER_BLOB, fixed8(1), fixed8(123)),
+                perform(o -> o.writeBlob(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123))));
+    }
+
+    @Test
+    void writeClob() {
+        assertArrayEquals(
+                sequence(HEADER_CLOB, fixed8(1), fixed8(123)),
+                perform(o -> o.writeClob(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123))));
     }
 
     @Test

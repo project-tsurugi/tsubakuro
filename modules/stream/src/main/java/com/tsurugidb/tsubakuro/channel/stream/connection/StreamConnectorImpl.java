@@ -26,7 +26,7 @@ import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ResponseBox;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -49,7 +49,7 @@ public final class StreamConnectorImpl implements Connector {
 
     private EndpointRequest.WireInformation wireInformation() {
         return EndpointRequest.WireInformation.newBuilder().setStreamInformation(
-            EndpointRequest.WireInformation.StreamInformation.newBuilder().setMaximumConcurrentResultSets(ResponseBox.responseBoxSize())
+            EndpointRequest.WireInformation.StreamInformation.newBuilder().setMaximumConcurrentResultSets(Link.responseBoxSize())
         ).build();
     }
 

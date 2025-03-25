@@ -6,6 +6,7 @@ plugins {
 dependencies {
     api project(':tsubakuro-common')
 
+    testImplementation(testFixtures(project(':tsubakuro-common')))
     api 'com.auth0:java-jwt:3.19.2'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.7.1'
 }

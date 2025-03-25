@@ -66,6 +66,12 @@ import javax.annotation.concurrent.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
+import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
+import com.tsurugidb.tsubakuro.sql.impl.ClobReferenceForSql;
+
 /**
  * {@link ValueInput} from {@link InputStream}.
  * @see StreamBackedValueOutput
@@ -119,9 +125,9 @@ public class StreamBackedValueInput implements ValueInput {
             // 0xf9
             EntryType.ARRAY,
             // 0xfa
-            null, // EntryType.CLOB,
+            EntryType.CLOB,
             // 0xfb
-            null, // EntryType.BLOB,
+            EntryType.BLOB,
             // 0xfc
             null,
             // 0xfd
@@ -277,6 +283,13 @@ public class StreamBackedValueInput implements ValueInput {
             return true;
         case DATETIME_INTERVAL:
             readDateTimeInterval();
+            return true;
+
+        case BLOB:
+            readBlob();
+            return true;
+        case CLOB:
+            readClob();
             return true;
 
         case ROW: {
@@ -555,6 +568,30 @@ public class StreamBackedValueInput implements ValueInput {
         }
         assert category == HEADER_ARRAY;
         return readSize();
+    }
+
+    @Override
+    public BlobReference readBlob() throws IOException {
+        require(EntryType.BLOB);
+        clearHeaderInfo();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal blob provider");
+        }
+        var objectId = read8();
+        return new BlobReferenceForSql(provider, objectId);
+    }
+
+    @Override
+    public ClobReference readClob() throws IOException {
+        require(EntryType.CLOB);
+        clearHeaderInfo();
+        var provider = SqlCommon.LargeObjectProvider.forNumber((int) read8());
+        if (provider == null) {
+            throw new IOException("illegal clob provider");
+        }
+        var objectId = read8();
+        return new ClobReferenceForSql(provider, objectId);
     }
 
     @Override

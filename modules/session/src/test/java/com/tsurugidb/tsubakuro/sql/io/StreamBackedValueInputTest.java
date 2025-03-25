@@ -35,6 +35,10 @@ import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.tsubakuro.sql.impl.BlobReferenceForSql;
+import com.tsurugidb.tsubakuro.sql.impl.ClobReferenceForSql;
+
 class StreamBackedValueInputTest {
 
     @Test
@@ -258,6 +262,18 @@ class StreamBackedValueInputTest {
         assertSerDe(0, StreamBackedValueOutput::writeArrayBegin, StreamBackedValueInput::readArrayBegin);
         assertSerDe(17, StreamBackedValueOutput::writeArrayBegin, StreamBackedValueInput::readArrayBegin);
         assertSerDe(4096, StreamBackedValueOutput::writeArrayBegin, StreamBackedValueInput::readArrayBegin);
+    }
+
+    @Test
+    void readBlob() {
+        assertSerDe(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123),
+                StreamBackedValueOutput::writeBlob, StreamBackedValueInput::readBlob);
+    }
+
+    @Test
+    void readClob() {
+        assertSerDe(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123),
+                StreamBackedValueOutput::writeClob, StreamBackedValueInput::readClob);
     }
 
     @Test

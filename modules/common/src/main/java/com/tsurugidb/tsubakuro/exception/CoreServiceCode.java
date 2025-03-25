@@ -150,6 +150,18 @@ public enum CoreServiceCode implements DiagnosticCode {
     OPERATION_CANCELED(4_03, Diagnostics.Code.OPERATION_CANCELED),
 
     /**
+     * request has been denied.
+     */
+    @Doc(
+            value = "the service has denied the request to conduct.",
+            reference = {
+                    "Issue: \"SCD-00404: operation denied\""
+                    + "upgrade-guide.md"
+                    + "#operation-denied",
+            })
+    OPERATION_DENIED(4_04, Diagnostics.Code.OPERATION_DENIED),
+
+    /**
      * request payload is not valid.
      */
     @Doc(

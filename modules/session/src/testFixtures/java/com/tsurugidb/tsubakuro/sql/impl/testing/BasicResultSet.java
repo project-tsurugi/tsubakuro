@@ -27,6 +27,8 @@ import java.util.Objects;
 //import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.BlobReference;
+import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.ResultSetMetadata;
@@ -172,6 +174,16 @@ public class BasicResultSet implements ResultSet {
     @Override
     public void endRowValue() throws IOException, ServerException, InterruptedException {
         cursor.endRowValue();
+    }
+
+    @Override
+    public BlobReference fetchBlob() throws IOException, ServerException, InterruptedException {
+        return cursor.fetchBlob();
+    }
+
+    @Override
+    public ClobReference fetchClob() throws IOException, ServerException, InterruptedException {
+        return cursor.fetchClob();
     }
 
     @Override

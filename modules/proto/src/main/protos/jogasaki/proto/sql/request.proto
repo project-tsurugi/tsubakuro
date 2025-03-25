@@ -92,6 +92,12 @@ message Parameter {
         // time point with time zone.
         common.TimePointWithTimeZone time_point_with_time_zone_value = 30;
 
+        // the character large object.
+        common.Clob clob = 31;
+
+        // the binary large object.
+        common.Blob blob = 32;
+
         // reference column position (for load action).
         uint64 reference_column_position = 51;
 
@@ -99,7 +105,7 @@ message Parameter {
         string reference_column_name = 52;
     }
 
-    reserved 12, 13, 20, 22, 24, 31 to 40, 41 to 50, 53 to 99;
+    reserved 12, 13, 20, 22, 24, 33 to 40, 41 to 50, 53 to 99;
 }
 
 // the parameter set for the statement.
@@ -435,6 +441,26 @@ message DisposeTransaction {
   common.Transaction transaction_handle = 1;
 }
 
+// Requests to extract executing statement info in payload data.
+message ExtractStatementInfo {
+
+    // session ID
+    uint64 session_id = 1;
+
+    // payload data as plain byte array.
+    bytes payload = 2;
+}
+
+// request to retrieve large object data.
+message GetLargeObjectData {
+
+    // the target transaction handle.
+    common.Transaction transaction_handle = 1;
+
+    // the reference to large object data to retrieve.
+    common.LargeObjectReference reference = 2;
+}
+
 /* For request message to the SQL service. */
 message Request {
   common.Session session_handle = 1;
@@ -459,9 +485,11 @@ message Request {
     GetErrorInfo get_error_info = 19;
     DisposeTransaction dispose_transaction = 20;
     ExplainByText explain_by_text = 21;
+    ExtractStatementInfo extract_statement_info = 22;
+    GetLargeObjectData get_large_object_data = 23;
   }
 
-  reserved 22 to 99;
+  reserved 24 to 99;
 
   // service message version (major)
   uint64 service_message_version_major = 100;

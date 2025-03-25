@@ -16,11 +16,18 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,6 +46,7 @@ import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
+import com.tsurugidb.tsubakuro.util.Pair;
 
 /**
  * A simple implementation of {@link Response} which just returns payload data.
@@ -66,16 +74,45 @@ public class ChannelResponse implements Response {
 
     private final AtomicReference<ByteBuffer> main = new AtomicReference<>();
     private final AtomicReference<SqlResponse.ExecuteQuery> metadata = new AtomicReference<>();
-    private final AtomicReference<ResultSetWire> resultSet = new AtomicReference<>();
+    private final AtomicReference<ResultSetWire> resultSetWire = new AtomicReference<>();
     private final AtomicReference<Exception> exceptionMain = new AtomicReference<>();
     private final AtomicReference<Exception> exceptionResultSet = new AtomicReference<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean canceled = new AtomicBoolean();
     private final Link link;
     private String resultSetName = ""; // for diagnostic
+    private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
 
+    /**
+     * An exception notifying that the request has been canceled.
+     */
     public static class AlreadyCanceledException extends IOException {
         AlreadyCanceledException() {
+        }
+    }
+
+    /**
+     * A file input stream class with file path return functionality.
+     */
+    public static class FileInputStreamWithPath extends FileInputStream {
+        private final String path;
+
+        /**
+         * Creates a new instance
+         * @param path the file path
+         * @throws IOException the file indicated by path does not exist
+         */
+        FileInputStreamWithPath(String path) throws IOException {
+            super(path);
+            this.path = path;
+        }
+
+        /**
+         * Returns a Path of the file corresponding to the FileInputStream.
+         * @return a Path of the file
+         */
+        public Path path() {
+            return Paths.get(path);
         }
     }
 
@@ -152,8 +189,10 @@ public class ChannelResponse implements Response {
         } else if (id.equals(RELATION_CHANNEL_ID)) {
             waitForResultSetOrMainResponse();
             return relationChannel();
+        } else {
+            waitForMainResponse();
+            return returnsBlob(id);
         }
-        throw new NoSuchElementException("illegal SubResponse id");
     }
 
     @Override
@@ -164,8 +203,28 @@ public class ChannelResponse implements Response {
         } else if (id.equals(RELATION_CHANNEL_ID)) {
             waitForResultSetOrMainResponse(timeout, unit);
             return relationChannel();
+        } else {
+            waitForMainResponse(timeout, unit);
+            return returnsBlob(id);
         }
-        throw new NoSuchElementException("illegal SubResponse id");
+    }
+
+    private InputStream returnsBlob(String id) throws NoSuchElementException, IOException {
+        var entry = blobs.get(id);
+        if (entry != null) {
+            var path = entry.getLeft();
+            if (path != null) {
+                var filePath = Paths.get(path);
+                if (Files.notExists(filePath)) {
+                    throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + filePath.toString() + "}");
+                }
+                if (!Files.isReadable(filePath)) {
+                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + filePath.toString() + "}");
+                }
+                return new FileInputStreamWithPath(path);
+            }
+        }
+        throw new NoSuchElementException("client failed to receive BLOB file in privileged mode: {illegal SubResponse id: " + id + "}");
     }
 
     @Override
@@ -262,8 +321,8 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream relationChannel() throws IOException, InterruptedException, ServerException {
-        if (resultSet.get() != null) {
-            return resultSet.get().getByteBufferBackedInput();
+        if (resultSetWire.get() != null) {
+            return resultSetWire.get().getByteBufferBackedInput();
         }
         var e = exceptionResultSet.get();
         if (e != null) {
@@ -305,7 +364,7 @@ public class ChannelResponse implements Response {
     }
 
     private boolean isResultSetReady() {
-        return (resultSet.get() != null) || (exceptionResultSet.get() != null);
+        return (resultSetWire.get() != null) || (exceptionResultSet.get() != null);
     }
 
     // get call from a thread that has received the response
@@ -325,17 +384,17 @@ public class ChannelResponse implements Response {
         exceptionMain.set(exception);
     }
 
-    public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire resultSetWire) {
+    public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire rsw) {
         Objects.requireNonNull(response);
-        Objects.requireNonNull(resultSetWire);
+        Objects.requireNonNull(rsw);
         try {
             var sqlResponse = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(skipFrameworkHeader(response)));
             var detailResponse = sqlResponse.getExecuteQuery();
             resultSetName = detailResponse.getName();
-            resultSetWire.connect(resultSetName);
+            rsw.connect(resultSetName);
 
             metadata.set(detailResponse);
-            resultSet.set(resultSetWire);
+            resultSetWire.set(rsw);
         } catch (IOException | CoreServiceException e) {
             exceptionResultSet.set(e);
         }
@@ -347,6 +406,11 @@ public class ChannelResponse implements Response {
         if (header.getPayloadType() == com.tsurugidb.framework.proto.FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS) {
             var errorResponse = com.tsurugidb.diagnostics.proto.Diagnostics.Record.parseDelimitedFrom(new ByteBufferInputStream(response));
             throw new CoreServiceException(CoreServiceCode.valueOf(errorResponse.getCode()), errorResponse.getMessage());
+        }
+        if (header.hasBlobs()) {
+            for (var e : header.getBlobs().getBlobsList()) {
+                blobs.put(e.getChannelName(), Pair.of(e.getPath(), e.getTemporary()));
+            }
         }
         return response;
     }

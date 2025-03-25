@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql;
 
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -347,6 +348,44 @@ public final class Parameters {
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
                 .setTimePointWithTimeZoneValue(value)
+                .build();
+    }
+
+    /**
+     * Returns a new {@code CLOB} parameter.
+     * @param name the place-holder name
+     * @param path the path of the clob file
+     * @return the created place-holder
+     *
+     * @since 1.8.0
+     */
+    public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull Path path) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(path);
+
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setClob(SqlCommon.Clob.newBuilder()
+                        .setLocalPath(path.toString()))
+                .build();
+    }
+
+    /**
+     * Returns a new {@code BLOB} parameter.
+     * @param name the place-holder name
+     * @param path the path of the clob file
+     * @return the created place-holder
+     *
+     * @since 1.8.0
+     */
+    public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull Path path) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(path);
+
+        return SqlRequest.Parameter.newBuilder()
+                .setName(name)
+                .setBlob(SqlCommon.Blob.newBuilder()
+                        .setLocalPath(path.toString()))
                 .build();
     }
 
