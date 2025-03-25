@@ -25,7 +25,12 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
+<<<<<<< HEAD
 import java.util.concurrent.atomic.AtomicBoolean;
+=======
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+>>>>>>> fd60839d (follow recent updates)
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -456,15 +461,6 @@ public class TransactionImpl implements Transaction {
             return service.send(pb.build(), destination);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
-    }
-
-    @Override
-    public void setCloseTimeout(long t, TimeUnit u) {
-        if (t != 0 && u != null) {
-            timeout = new Timeout(t, u, Timeout.Policy.ERROR);
-            return;
-        }
-        timeout = null;
     }
 
     @Override
