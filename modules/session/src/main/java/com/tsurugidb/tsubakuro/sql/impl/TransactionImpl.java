@@ -408,6 +408,7 @@ public class TransactionImpl implements Transaction {
     public void setCloseTimeout(long t, TimeUnit u) {
         if (t != 0 && u != null) {
             timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+            return;
         }
         timeout = null;
     }
