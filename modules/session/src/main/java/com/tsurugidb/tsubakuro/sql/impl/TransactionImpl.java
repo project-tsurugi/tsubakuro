@@ -453,6 +453,7 @@ public class TransactionImpl implements Transaction {
         synchronized (this) {  // work around for SpotBugs
             if (t != 0 && u != null) {
                 timeout = new Timeout(t, u, Timeout.Policy.ERROR);
+                return;
             }
             timeout = null;
         }
