@@ -78,8 +78,7 @@ public class Disposer extends Thread {
                     continue;
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-                    throw new AssertionError("SessionAlreadyClosedException should not occur in the current server implementation");  // FIXME remove this line
-                    // continue;
+                    continue;
                 } catch (TimeoutException e) {
                     // Let's try again
                     queue.add(futureResponse);
