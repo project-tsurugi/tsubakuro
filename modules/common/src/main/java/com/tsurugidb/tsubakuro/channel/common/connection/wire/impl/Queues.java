@@ -74,7 +74,7 @@ class Queues {
                     if (channelResponse.canAssignSlot()) {
                         slotEntry.channelResponse(channelResponse);
                         slotEntry.requestMessage(requestEntry.payload());
-                        link.send(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
+                        link.sendInternal(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
                         channelResponse.finishAssignSlot(slotEntry.slot());
                         return;
                     }

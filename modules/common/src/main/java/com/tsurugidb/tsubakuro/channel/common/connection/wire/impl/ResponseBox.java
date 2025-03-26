@@ -71,7 +71,8 @@ class ResponseBox {
             var channelResponse = new ChannelResponse(link, slotEntry.slot());
             slotEntry.channelResponse(channelResponse);
             slotEntry.requestMessage(payload);
-            link.send(slotEntry.slot(), header, payload, channelResponse);
+            link.sendInternal(slotEntry.slot(), header, payload, channelResponse);
+            channelResponse.finishAssignSlot(slotEntry.slot());
             return channelResponse;
         }
         var channelResponse = new ChannelResponse(link);
