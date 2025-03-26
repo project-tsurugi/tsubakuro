@@ -195,7 +195,7 @@ public final class StreamLink extends Link {
     private void send(byte i, int s) throws IOException {  // RESULT_SET_BYE_OK
         byte[] header = new byte[STREAM_HEADER_SIZE];
 
-        header[0] = i;  // info
+        header[0] = i;              // info
         header[1] = strip(s);       // slot
         header[2] = strip(s >> 8);  // slot
         header[3] = 0;
@@ -214,7 +214,7 @@ public final class StreamLink extends Link {
     }
 
     @Override
-    public void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {  // SESSION_PAYLOAD
+    protected void doSend(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {  // SESSION_PAYLOAD
         var headerLength = frameHeader.length;
         var payloadLength = payload.length;
         int length = headerLength + payloadLength;

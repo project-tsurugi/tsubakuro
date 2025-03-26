@@ -77,7 +77,7 @@ public final class IpcLink extends Link {
     }
 
     @Override
-    public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
+    protected void doSend(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
         if (serverDown.get()) {
             channelResponse.setMainResponse(new IOException("Link already closed"));
             return;

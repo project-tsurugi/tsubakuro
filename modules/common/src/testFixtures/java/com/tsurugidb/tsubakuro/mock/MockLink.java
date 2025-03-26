@@ -54,7 +54,7 @@ public final class MockLink extends Link {
     }
 
     @Override
-    public void send(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
+    protected void doSend(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
         justBeforeHeader = frameHeader;
         justBeforePayload = payload;
         if (registerdMessages.isEmpty()) {
