@@ -175,6 +175,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
@@ -219,6 +220,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             assertThrows(BlobException.class, () ->
@@ -264,6 +266,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
@@ -312,6 +315,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
@@ -353,6 +357,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
@@ -397,6 +402,7 @@ class SqlServiceStubLobTest {
                                               .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
                                               .build(),
                                               service,
+                                              null,
                                               null);
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
