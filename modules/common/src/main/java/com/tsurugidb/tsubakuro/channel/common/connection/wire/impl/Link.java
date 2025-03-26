@@ -125,7 +125,7 @@ public abstract class Link implements ServerResource {
         return responseBox.register(frameHeader, payload);
     }
 
-        /**
+    /**
      * Send an urgent request message via this link to the server.
      * An exception raised here is to be stored in the channelResponse.
      * @param frameHeader the frameHeader of the request
@@ -137,15 +137,11 @@ public abstract class Link implements ServerResource {
         return responseBox.registerUrgent(frameHeader, payload);
     }
 
-    /**
-     * Send request message via this link to the server.
-     * An exception raised here is to be stored in the channelResponse.
-     * @param s the slot number for the responseBox
-     * @param frameHeader the frameHeader of the request
-     * @param payload the payload of the request
-     * @param channelResponse the channelResponse that will store a response for the request
-     */
-    public abstract void send(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse);
+    void sendInternal(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse) {
+        doSend(s, frameHeader, payload, channelResponse);
+    }
+
+    protected abstract void doSend(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse);
 
     /**
      * Create a ResultSetWire without a name, meaning that this link is not connected

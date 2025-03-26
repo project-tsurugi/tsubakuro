@@ -82,6 +82,7 @@ public class ChannelResponse implements Response {
     private final Link link;
     private String resultSetName = ""; // for diagnostic
     private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
+    private int slotNumber;
 
     /**
      * An exception notifying that the request has been canceled.
@@ -124,7 +125,8 @@ public class ChannelResponse implements Response {
      */
     public ChannelResponse(Link link, int slot) {
         this.link = link;
-        this.cancelStatus.set(slot);
+        this.cancelStatus.set(CANCEL_STATUS_REQUEST_SNEDING);
+        this.slotNumber = slot;
     }
 
     /**
@@ -135,6 +137,7 @@ public class ChannelResponse implements Response {
     public ChannelResponse(Link link) {
         this.link = link;
         this.cancelStatus.set(CANCEL_STATUS_NO_SLOT);
+        this.slotNumber = CANCEL_STATUS_NO_SLOT;
     }
 
     @Override
@@ -254,13 +257,21 @@ public class ChannelResponse implements Response {
     }
 
     /**
-     * set cancelStatus to the slot number given.
-     * precondition: cancelStatus == CANCEL_STATUS_REQUEST_SNEDING
+     * set cancelStatus and slot to the slot number given.
+     * This method is called after the request has been sent to the server.
      *
      * @param slot the slot number in the responseBox
      */
     void finishAssignSlot(int slot) {
+        if (cancelStatus.get() !=  CANCEL_STATUS_REQUEST_SNEDING) {
+            throw new AssertionError("request has not been sent");
+        }
         cancelStatus.set(slot);
+        if (slotNumber == CANCEL_STATUS_NO_SLOT) {
+            slotNumber = slot;
+        } else if (slotNumber != slot) {
+            throw new AssertionError("slot number given is inconsistent with the previous slot number");
+        }
     }
 
     @Override
@@ -272,7 +283,7 @@ public class ChannelResponse implements Response {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_CANCEL_SENDING)) {
                     try {
                         cancelThreadId = Thread.currentThread().getId();
-                        link.send(expected, CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
+                        link.sendInternal(expected, CancelMessage.header(link.sessionId), CancelMessage.payload(), this);
                     } finally {
                         cancelThreadId = 0;
                         cancelStatus.set(CANCEL_STATUS_CANCEL_SENT);
