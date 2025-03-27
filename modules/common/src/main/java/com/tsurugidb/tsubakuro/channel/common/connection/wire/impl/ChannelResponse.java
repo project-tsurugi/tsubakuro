@@ -308,13 +308,19 @@ public class ChannelResponse implements Response {
         exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
     }
 
-    private void responseArrive() {
+    private void responseArrive(boolean received) {
         if (cancelThreadId == Thread.currentThread().getId()) {
             return;
         }
         while (true) {
             var expected = cancelStatus.get();
             if (expected >= 0) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
+                    return;
+                }
+                continue;
+            }
+            if (!received && expected == CANCEL_STATUS_REQUEST_SNEDING) {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
                     return;
                 }
@@ -381,7 +387,7 @@ public class ChannelResponse implements Response {
     // get call from a thread that has received the response
     void setMainResponse(@Nonnull ByteBuffer response) {
         Objects.requireNonNull(response);
-        responseArrive();
+        responseArrive(true);
         try {
             main.set(skipFrameworkHeader(response));
         } catch (IOException | CoreServiceException e) {
@@ -391,7 +397,7 @@ public class ChannelResponse implements Response {
 
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
-        responseArrive();
+        responseArrive(false);
         exceptionMain.set(exception);
     }
 
