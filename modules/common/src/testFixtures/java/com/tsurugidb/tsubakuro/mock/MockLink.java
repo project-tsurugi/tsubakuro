@@ -57,6 +57,10 @@ public final class MockLink extends Link {
     protected void doSend(int s, @Nonnull byte[] frameHeader, @Nonnull byte[] payload, @Nonnull ChannelResponse channelResponse) {
         justBeforeHeader = frameHeader;
         justBeforePayload = payload;
+        if (!alive) {
+            channelResponse.setMainResponse(new IOException("MockLink already closed"));
+            return;
+        }
         if (registerdMessages.isEmpty()) {
             throw new AssertionError("no more response message registered");
         }

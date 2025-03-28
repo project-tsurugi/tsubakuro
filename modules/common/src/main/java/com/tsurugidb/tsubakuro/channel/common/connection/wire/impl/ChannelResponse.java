@@ -67,8 +67,10 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_CANCEL_SENDING = -3;
     // cancel request has been sent out
     public static final int CANCEL_STATUS_CANCEL_SENT = -4;
-    // cancel request has been sent out
+    // the request is to be sent
     public static final int CANCEL_STATUS_REQUEST_SNEDING = -5;
+    // the request is not sent out
+    public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
 
     private long cancelThreadId = 0;
 
@@ -263,8 +265,9 @@ public class ChannelResponse implements Response {
      * @param slot the slot number in the responseBox
      */
     void finishAssignSlot(int slot) {
-        if (cancelStatus.get() !=  CANCEL_STATUS_REQUEST_SNEDING) {
-            throw new AssertionError("request has not been sent");
+        var st = cancelStatus.get();
+        if (st !=  CANCEL_STATUS_REQUEST_SNEDING && st != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+            throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
         }
         cancelStatus.set(slot);
         if (slotNumber == CANCEL_STATUS_NO_SLOT) {
@@ -321,7 +324,7 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (!received && expected == CANCEL_STATUS_REQUEST_SNEDING) {
-                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
                     return;
                 }
                 continue;
