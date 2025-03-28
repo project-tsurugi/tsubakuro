@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.channels.Channel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -200,6 +201,20 @@ class WireImplTest {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
             return buffer.toByteArray();
+        }
+    }
+
+    @Test
+    void sendToClosedLink() throws Exception {
+        link.close();
+        var payload = SqlRequest.Request.newBuilder().setBegin(SqlRequest.Begin.newBuilder()).build();
+        var response = wire.send(SERVICE_ID_FOR_THE_TEST, toDelimitedByteArray(payload)).get();
+        if (response instanceof ChannelResponse) {
+            assertThrows(IOException.class, () -> {
+                ((ChannelResponse)response).waitForMainResponse();
+            });
+        } else {
+            fail("unexpected response type " + response.getClass().getName());
         }
     }
 }
