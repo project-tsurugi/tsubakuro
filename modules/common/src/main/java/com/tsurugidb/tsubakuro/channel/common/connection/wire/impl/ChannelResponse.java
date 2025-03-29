@@ -336,11 +336,12 @@ public class ChannelResponse implements Response {
                     throw new AssertionError("response returned even though the request is going to send");
                 case CANCEL_STATUS_REQUEST_DO_NOT_SEND:
                 case CANCEL_STATUS_NO_SLOT:
-                case CANCEL_STATUS_CANCEL_SENDING:
                     if (!received) {
                         return;
                     }
                     throw new AssertionError("response returned even though the request was not sent, state: " + expected);
+                case CANCEL_STATUS_CANCEL_SENDING:
+                    continue;  // try again if status is CANCEL_STATUS_CANCEL_SENDING.
                 case CANCEL_STATUS_CANCEL_SENT:
                     if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
                         return; // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
@@ -359,7 +360,6 @@ public class ChannelResponse implements Response {
                 default:
                     throw new AssertionError("illegal CANCEL_STATUS: " + expected);
             }
-            // try again if status is CANCEL_STATUS_CANCEL_SENDING.
         }
     }
 
