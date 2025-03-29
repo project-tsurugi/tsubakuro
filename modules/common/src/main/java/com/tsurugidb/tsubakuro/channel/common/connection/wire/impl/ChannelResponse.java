@@ -347,8 +347,14 @@ public class ChannelResponse implements Response {
                     }
                     break;
                 case CANCEL_STATUS_RESPONSE_ARRIVED:
+                    if (!received) {
+                        return;
+                    }
                     throw new AssertionError("response arrived twice, implies some error");
                 case CANCEL_STATUS_CANCEL_DO_NOT_SEND:
+                    if (!received) {
+                        return;
+                    }
                     throw new AssertionError("CANCEL_STATUS_CANCEL_DO_NOT_SEND should not appear here");
                 default:
                     throw new AssertionError("illegal CANCEL_STATUS: " + expected);
@@ -417,6 +423,11 @@ public class ChannelResponse implements Response {
 
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
+        var e = exceptionMain.get();
+        if (e != null) {
+            e.addSuppressed(exception);
+            return;
+        }
         responseArrive(false);
         exceptionMain.set(exception);
     }
