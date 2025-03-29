@@ -71,6 +71,8 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_REQUEST_SNEDING = -5;
     // the request is not sent out
     public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
+    // the request is not sent out
+    public static final int CANCEL_STATUS_CANCEL_DO_NOT_SEND = -7;
 
     private long cancelThreadId = 0;
 
@@ -323,21 +325,33 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (!received) {
-                if (expected == CANCEL_STATUS_REQUEST_SNEDING) {
-                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
+            switch (expected) {
+                case CANCEL_STATUS_REQUEST_SNEDING:
+                    if (!received) {
+                        if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
+                            return;
+                        }
+                        break;
+                    }
+                    throw new AssertionError("response returned even though the request is going to send");
+                case CANCEL_STATUS_REQUEST_DO_NOT_SEND:
+                case CANCEL_STATUS_NO_SLOT:
+                case CANCEL_STATUS_CANCEL_SENDING:
+                    if (!received) {
                         return;
                     }
-                    continue;
-                }
-                throw new AssertionError("cancelStatus is not CANCEL_STATUS_REQUEST_SNEDING, but " + expected);
-            }
-            if (expected == CANCEL_STATUS_CANCEL_SENT) {
-                cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED);
-                return; // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
-            }
-            if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
-                return; // response arrives twice, implies some error.
+                    throw new AssertionError("response returned even though the request was not sent, state: " + expected);
+                case CANCEL_STATUS_CANCEL_SENT:
+                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
+                        return; // Cancel operation is being executed at the same time. Either, REQUESTED or RESPONSE_ARRIVED, is OK.
+                    }
+                    break;
+                case CANCEL_STATUS_RESPONSE_ARRIVED:
+                    throw new AssertionError("response arrived twice, implies some error");
+                case CANCEL_STATUS_CANCEL_DO_NOT_SEND:
+                    throw new AssertionError("CANCEL_STATUS_CANCEL_DO_NOT_SEND should not appear here");
+                default:
+                    throw new AssertionError("illegal CANCEL_STATUS: " + expected);
             }
             // try again if status is CANCEL_STATUS_CANCEL_SENDING.
         }
