@@ -323,11 +323,14 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (!received && expected == CANCEL_STATUS_REQUEST_SNEDING) {
-                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
-                    return;
+            if (!received) {
+                if (expected == CANCEL_STATUS_REQUEST_SNEDING) {
+                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
+                        return;
+                    }
+                    continue;
                 }
-                continue;
+                throw new AssertionError("cancelStatus is not CANCEL_STATUS_REQUEST_SNEDING, but " + expected);
             }
             if (expected == CANCEL_STATUS_CANCEL_SENT) {
                 cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED);
