@@ -274,7 +274,7 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (expected !=  CANCEL_STATUS_REQUEST_SNEDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+            if (expected != CANCEL_STATUS_REQUEST_SNEDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
                 throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
             }
             if (cancelStatus.compareAndSet(expected, slot)) {
