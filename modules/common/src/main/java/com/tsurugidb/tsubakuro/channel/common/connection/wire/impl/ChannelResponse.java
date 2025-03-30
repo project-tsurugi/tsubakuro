@@ -268,7 +268,7 @@ public class ChannelResponse implements Response {
     void finishAssignSlot(int slot) {
         while (true) {
             var expected = cancelStatus.get();
-            if (expected ==  CANCEL_STATUS_ALREADY_RECEIVED) {
+            if (expected == CANCEL_STATUS_ALREADY_RECEIVED) {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
                     return;
                 }
