@@ -88,7 +88,6 @@ public class ChannelResponse implements Response {
     private final Link link;
     private String resultSetName = ""; // for diagnostic
     private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
-    private int slotNumber;
 
     /**
      * An exception notifying that the request has been canceled.
@@ -132,7 +131,6 @@ public class ChannelResponse implements Response {
     public ChannelResponse(Link link, int slot) {
         this.link = link;
         this.cancelStatus.set(CANCEL_STATUS_REQUEST_SNEDING);
-        this.slotNumber = slot;
     }
 
     /**
@@ -143,7 +141,6 @@ public class ChannelResponse implements Response {
     public ChannelResponse(Link link) {
         this.link = link;
         this.cancelStatus.set(CANCEL_STATUS_NO_SLOT);
-        this.slotNumber = CANCEL_STATUS_NO_SLOT;
     }
 
     @Override
@@ -269,32 +266,21 @@ public class ChannelResponse implements Response {
      * @param slot the slot number in the responseBox
      */
     void finishAssignSlot(int slot) {
-        do {
+        while (true) {
             var expected = cancelStatus.get();
             if (expected ==  CANCEL_STATUS_ALREADY_RECEIVED) {
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
-                    if (slotNumber == CANCEL_STATUS_NO_SLOT) {
-                        slotNumber = slot;
-                        return;
-                    }
-                    if (slotNumber != slot) {
-                        throw new AssertionError("slot number given is inconsistent with the previous slot number");
-                    }
+                    return;
                 }
                 continue;
             }
             if (expected !=  CANCEL_STATUS_REQUEST_SNEDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
                 throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
             }
-            if (!cancelStatus.compareAndSet(expected, slot)) {
-                continue;
+            if (cancelStatus.compareAndSet(expected, slot)) {
+                return;
             }
-            if (slotNumber == CANCEL_STATUS_NO_SLOT) {
-                slotNumber = slot;
-            } else if (slotNumber != slot) {
-                throw new AssertionError("slot number given is inconsistent with the previous slot number");
-            }
-        } while (false);
+        }
     }
 
     @Override
