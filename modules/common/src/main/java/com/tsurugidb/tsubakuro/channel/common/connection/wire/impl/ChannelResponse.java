@@ -73,6 +73,8 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
     // the request is not sent out
     public static final int CANCEL_STATUS_CANCEL_DO_NOT_SEND = -7;
+    // the request is not sent out
+    public static final int CANCEL_STATUS_ALREADY_RECEIVED = -8;
 
     private long cancelThreadId = 0;
 
@@ -267,16 +269,30 @@ public class ChannelResponse implements Response {
      * @param slot the slot number in the responseBox
      */
     void finishAssignSlot(int slot) {
-        var st = cancelStatus.get();
-        if (st !=  CANCEL_STATUS_REQUEST_SNEDING && st != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
-            throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
-        }
-        cancelStatus.set(slot);
-        if (slotNumber == CANCEL_STATUS_NO_SLOT) {
-            slotNumber = slot;
-        } else if (slotNumber != slot) {
-            throw new AssertionError("slot number given is inconsistent with the previous slot number");
-        }
+        do {
+            var expected = cancelStatus.get();
+            if (expected ==  CANCEL_STATUS_ALREADY_RECEIVED) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
+                    if (slotNumber == CANCEL_STATUS_NO_SLOT) {
+                        slotNumber = slot;
+                        return;
+                    }
+                    throw new AssertionError("slot number given is inconsistent with the previous slot number");
+                }
+                continue;
+            }
+            if (expected !=  CANCEL_STATUS_REQUEST_SNEDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+                throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
+            }
+            if (!cancelStatus.compareAndSet(expected, slot)) {
+                continue;
+            }
+            if (slotNumber == CANCEL_STATUS_NO_SLOT) {
+                slotNumber = slot;
+            } else if (slotNumber != slot) {
+                throw new AssertionError("slot number given is inconsistent with the previous slot number");
+            }
+        } while (false);
     }
 
     @Override
@@ -333,7 +349,10 @@ public class ChannelResponse implements Response {
                         }
                         break;
                     }
-                    throw new AssertionError("response returned even though the request is going to send");
+                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_ALREADY_RECEIVED)) {
+                        return;
+                    }
+                    break;
                 case CANCEL_STATUS_REQUEST_DO_NOT_SEND:
                 case CANCEL_STATUS_NO_SLOT:
                     if (!received) {
