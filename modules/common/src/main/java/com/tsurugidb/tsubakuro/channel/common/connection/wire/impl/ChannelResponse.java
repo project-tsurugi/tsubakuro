@@ -277,7 +277,9 @@ public class ChannelResponse implements Response {
                         slotNumber = slot;
                         return;
                     }
-                    throw new AssertionError("slot number given is inconsistent with the previous slot number");
+                    if (slotNumber != slot) {
+                        throw new AssertionError("slot number given is inconsistent with the previous slot number");
+                    }
                 }
                 continue;
             }
