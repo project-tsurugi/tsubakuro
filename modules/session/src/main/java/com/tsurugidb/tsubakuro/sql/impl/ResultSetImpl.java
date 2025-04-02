@@ -160,7 +160,7 @@ public class ResultSetImpl implements ResultSet {
             }
             return false;
         } catch (InterruptedIOException e) {
-            throw new InterruptedException(e.getMessage());
+            throw new ResponseTimeoutException(e);
         } catch (IOException | ServerException e) {
             checkResponse(e);
             throw e;
