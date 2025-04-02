@@ -359,6 +359,14 @@ public class TransactionImpl implements Transaction {
                     state.set(State.ROLLBACKED);
                     return submitRollback();
                 case COMMITTED:
+                    if (commitResult.isDone()) {
+                        try {
+                            commitResult.get();
+                            throw new IOException("transaction already committed and succeeded");
+                        } catch (IOException | ServerException | InterruptedException e) {
+                            return submitRollback();
+                        }
+                    }
                     throw new IOException("transaction already committed");
                 case ROLLBACKED:
                     return FutureResponse.returns(null);
