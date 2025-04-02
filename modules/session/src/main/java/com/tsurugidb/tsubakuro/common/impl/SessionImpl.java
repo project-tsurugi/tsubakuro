@@ -392,9 +392,12 @@ public class SessionImpl implements Session {
     }
 
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
-        ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
-        disposer.registerDelayedShutdown(shutdownCleanUp);
-        return shutdownCleanUp;
+        if (!closed.get()) {
+            ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
+            disposer.registerDelayedShutdown(shutdownCleanUp);
+            return shutdownCleanUp;
+        }
+        return FutureResponse.returns(null);
     }
 
     static CoreServiceException newUnknown() {
