@@ -390,6 +390,33 @@ class SqlServiceStubTest {
     }
 
     @Test
+    void sendCommitEngineErrorRollback() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.ROLLBACK,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImplTest(service);
+        ) {
+            try {
+                transaction.commit().await();
+            } catch (SqlServiceException e) {
+                assertDoesNotThrow(() -> transaction.rollback().await());
+            }
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
     void sendRollbackSuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.ROLLBACK,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
