@@ -391,6 +391,7 @@ public class SessionImpl implements Session {
         }
     }
 
+    @Override
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         if (!closed.get()) {
             ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
