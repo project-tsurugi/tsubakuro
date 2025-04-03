@@ -200,36 +200,47 @@ public class Disposer extends Thread {
 
     /**
      * Register a delayed shutdown procesure of the Session.
-     * If disposer thread has not started, c.shoutdown() is immediately executed.
+     * If disposer thread has not started, cleanUp.shoutdown() is immediately executed.
      * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
-     * @param c the clean up procesure to be registered
+     * @param cleanUp the clean up procesure to be registered
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
-    public void registerDelayedShutdown(DelayedShutdown c) throws IOException {
+    public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
         synchronized (this) {
-            if (started.getAndSet(true)) {
-                shutdownQueue.add(c);
-                return;
+            if (close.get() != null) {
+                throw new AssertionError("Session already closed");
             }
+            if (started.getAndSet(true)) {  // true if daemon is working
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    shutdownQueue.add(cleanUp);
+                    return;
+                }
+                shutdownQueue.add(new DelayedShutdown() {
+                    @Override
+                    public void shutdown() {
+                        // do nothing
+                    }
+                });
+            }
+            empty.set(true);
         }
-        empty.set(true);
-        c.shutdown();
+        cleanUp.shutdown();
     }
 
     /**
      * Register a delayed close object in charge of asynchronous close of the Session.
      * If disposer thread has not started or both queue is empty, c.delayedClose() is immediately executed.
      * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
-     * @param c the clean up procesure to be registered
+     * @param cleanUp the clean up procesure to be registered
      * @throws ServerException if server error was occurred while disposing the session
      * @throws IOException if I/O error was occurred while disposing the session
      * @throws InterruptedException if interrupted while disposing the session
      */
-    public synchronized void registerDelayedClose(DelayedClose c) throws ServerException, IOException, InterruptedException {
+    public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
         synchronized (this) {
-            if (started.getAndSet(true)) {
+            if (started.getAndSet(true)) {  // true if daemon is working
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
-                    close.set(c);
+                    close.set(cleanUp);
                     return;
                 }
                 close.set(new DelayedClose() {
@@ -239,9 +250,9 @@ public class Disposer extends Thread {
                     }
                 });
             }
+            empty.set(true);
         }
-        empty.set(true);
-        c.delayedClose();
+        cleanUp.delayedClose();
     }
 
     /**
