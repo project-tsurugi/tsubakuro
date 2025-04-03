@@ -473,7 +473,6 @@ public class SessionImpl implements Session {
         waitForDisposerEmpty();
         if (!closed.getAndSet(true)) {
             timer.cancel();  // does not throw any exception
-            System.out.println("session close");
             wireClose();
         }
     }
