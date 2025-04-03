@@ -254,7 +254,6 @@ public class Disposer extends Thread {
             }
             empty.set(true);
         }
-        System.out.println("call cleanUp.delayedClose " + cleanUp.toString());
         cleanUp.delayedClose();
     }
 
