@@ -44,7 +44,6 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final AtomicBoolean addedToDisposer = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
@@ -101,7 +100,9 @@ public class PreparedStatementImpl implements PreparedStatement {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (disposer != null) {
-            if (!addedToDisposer.getAndSet(true)) {
+            if (disposer.isClosingNow(this)) {
+                doClose();
+            } else {
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
                     public void delayedClose() throws ServerException, IOException, InterruptedException {
@@ -114,7 +115,7 @@ public class PreparedStatementImpl implements PreparedStatement {
         doClose();
     }
 
-    void doClose() throws IOException, ServerException, InterruptedException {
+    private void doClose() throws IOException, ServerException, InterruptedException {
         if (!closed.getAndSet(true) && service != null) {
             try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
                 if (timeout == 0) {
