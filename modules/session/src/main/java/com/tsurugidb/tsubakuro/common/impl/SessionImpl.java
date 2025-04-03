@@ -409,7 +409,11 @@ public class SessionImpl implements Session {
             var exception = cleanServiceStub();
 
             try {
-                doClose();
+                waitForDisposerEmpty();
+                if (!closed.getAndSet(true)) {
+                    timer.cancel();  // does not throw any exception
+                    wireClose();
+                }
             } catch (ServerException | IOException | InterruptedException fe) {
                 if (exception == null) {
                     exception = fe;
@@ -454,14 +458,6 @@ public class SessionImpl implements Session {
             return exception;
         }
         return null;
-    }
-
-    private void doClose() throws ServerException, IOException, InterruptedException {
-        waitForDisposerEmpty();
-        if (!closed.getAndSet(true)) {
-            timer.cancel();  // does not throw any exception
-            wireClose();
-        }
     }
 
     private static void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
