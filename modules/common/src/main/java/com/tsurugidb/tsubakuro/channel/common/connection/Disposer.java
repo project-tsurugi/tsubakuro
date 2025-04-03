@@ -46,6 +46,8 @@ public class Disposer extends Thread {
 
     private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
+    private ServerResource closingNow = null;
+
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
     /**
@@ -89,7 +91,9 @@ public class Disposer extends Thread {
                 try {
                     var obj = futureResponse.retrieve();
                     if (obj instanceof ServerResource) {
+                        closingNow = (ServerResource) obj;
                         ((ServerResource) obj).close();
+                        closingNow = null;
                     }
                     continue;
                 } catch (ChannelResponse.AlreadyCanceledException e) {
@@ -238,6 +242,19 @@ public class Disposer extends Thread {
         }
         empty.set(true);
         c.delayedClose();
+    }
+
+    /**
+     * Method to check if the disposer is calling close on the ServerResource given.
+     * This method is provided in order to deal with both the case where a FutureResponse is closed without get
+     * and the case where close is taken place for a ServerResource that has gotton from a FutureResponse.
+     * ServerResource.close() should implement in that it performs close processing when it has been called from the Disposer,
+     * and it registers a delayed close with the Disposer when it has been called from a non-disposer module.
+     * @param serverResource ServerResource to be queried whether it is closed from the Disposer or not
+     * @return true if serverResource.close() is currently being called by this disposer
+     */
+    public boolean isClosingNow(ServerResource serverResource) {
+        return serverResource == closingNow;
     }
 
     /**
