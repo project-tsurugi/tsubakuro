@@ -327,7 +327,8 @@ public class SessionImpl implements Session {
                 addSuppressed(fe);
             }
             try {
-                doClose();
+                close();
+                waitForDisposerEmpty();
             } catch (IOException | ServerException | InterruptedException fe) {
                 addSuppressed(fe);
             }
