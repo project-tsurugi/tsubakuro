@@ -495,6 +495,7 @@ public class TransactionImpl implements Transaction {
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
                     public void delayedClose() throws ServerException, IOException, InterruptedException {
+                        System.out.println("transaction close " + this.toString());
                         doClose();
                     }
                 });
