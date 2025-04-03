@@ -33,13 +33,13 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.RelationCursor;
 import com.tsurugidb.tsubakuro.sql.io.BrokenRelationException;
 import com.tsurugidb.tsubakuro.sql.io.DateTimeInterval;
 import com.tsurugidb.tsubakuro.sql.io.EntryType;
+import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.io.ValueInput;
 
 /**
@@ -342,8 +342,8 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
 
     void setTimeout(long timeout, @Nonnull TimeUnit unit) {
         Objects.requireNonNull(unit);
-        if (input instanceof ResultSetWire.ByteBufferBackedInput) {
-            ((ResultSetWire.ByteBufferBackedInput) input).setTimeout(timeout, unit);
+        if (input instanceof StreamBackedValueInput) {
+            ((StreamBackedValueInput) input).setTimeout(timeout, unit);
         }
     }
 
