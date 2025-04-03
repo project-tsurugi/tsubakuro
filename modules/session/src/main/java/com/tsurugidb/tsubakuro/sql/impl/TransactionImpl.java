@@ -489,13 +489,17 @@ public class TransactionImpl implements Transaction {
                 return;
         }
         if (disposer != null) {
-            disposer.add(new Disposer.DelayedClose() {
-                @Override
-                public void delayedClose() throws ServerException, IOException, InterruptedException {
-                    doClose();
-                }
-            });
-            state.set(toBeClosed(state.get()));
+            if (disposer.isClosingNow(this)) {
+                doClose();
+            } else {
+                disposer.add(new Disposer.DelayedClose() {
+                    @Override
+                    public void delayedClose() throws ServerException, IOException, InterruptedException {
+                        doClose();
+                    }
+                });
+                state.set(toBeClosed(state.get()));
+            }
             return;
         }
         doClose();
