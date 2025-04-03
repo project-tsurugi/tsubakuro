@@ -86,6 +86,7 @@ public class Disposer extends Thread {
         boolean shutdownProcessed = false;
 
         while (true) {
+            empty.set(false);
             var futureResponse = futureResponseQueue.poll();
             if (futureResponse != null) {
                 try {
@@ -217,8 +218,9 @@ public class Disposer extends Thread {
                         // do nothing
                     }
                 });
+            } else {
+                empty.set(true);
             }
-            empty.set(true);
         }
         cleanUp.shutdown();
     }
@@ -245,8 +247,9 @@ public class Disposer extends Thread {
                         // do nothing
                     }
                 });
+            } else {
+                empty.set(true);
             }
-            empty.set(true);
         }
         cleanUp.delayedClose();
     }
