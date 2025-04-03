@@ -92,32 +92,30 @@ public class Disposer extends Thread {
                     var obj = futureResponse.retrieve();
                     if (obj instanceof ServerResource) {
                         closingNow = (ServerResource) obj;
+                        System.out.println("handle futureResponseQueue " + closingNow.toString());
                         ((ServerResource) obj).close();
                         closingNow = null;
                     }
-                    continue;
                 } catch (ChannelResponse.AlreadyCanceledException e) {
                     // Server resource has not created at the server
-                    continue;
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-                    continue;
                 } catch (TimeoutException e) {
                     // Let's try again
                     futureResponseQueue.add(futureResponse);
-                    continue;
                 } catch (Exception e) {     // should not occur
                     if (exception == null) {
                         exception = e;
                     } else {
                         exception.addSuppressed(e);
                     }
-                    continue;
                 }
+                continue;
             }
             var serverResource = serverResourceQueue.poll();
             if (serverResource != null) {
                 try {
+                    System.out.println("handle serverResourceQueue " + serverResource.toString());
                     serverResource.delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
                     exception = addSuppressed(exception, e);
@@ -139,6 +137,7 @@ public class Disposer extends Thread {
             if (cl != null) {
                 if (shutdownProcessed || shutdownQueue.isEmpty()) {
                     try {
+                        System.out.println("daemon is going to call cleanUp.delayedClose " + cl.toString());
                         cl.delayedClose();
                     } catch (ServerException | IOException | InterruptedException e) {
                         exception = addSuppressed(exception, e);
@@ -177,6 +176,7 @@ public class Disposer extends Thread {
         if (close.get() != null || !shutdownQueue.isEmpty()) {
             throw new AssertionError("Session already closed");
         }
+        System.out.println("add to futureResponseQueue " + futureResponse.toString());
         futureResponseQueue.add(futureResponse);
         if (!started.getAndSet(true)) {
             this.start();
@@ -192,6 +192,7 @@ public class Disposer extends Thread {
         if (close.get() != null || !shutdownQueue.isEmpty()) {
             throw new AssertionError("Session already closed");
         }
+        System.out.println("add to serverResourceQueue " + resource.toString());
         serverResourceQueue.add(resource);
         if (!started.getAndSet(true)) {
             this.start();
@@ -240,6 +241,7 @@ public class Disposer extends Thread {
         synchronized (this) {
             if (started.getAndSet(true)) {  // true if daemon is working
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    System.out.println("register cleanUp " + cleanUp.toString());
                     close.set(cleanUp);
                     return;
                 }
@@ -252,6 +254,7 @@ public class Disposer extends Thread {
             }
             empty.set(true);
         }
+        System.out.println("call cleanUp.delayedClose " + cleanUp.toString());
         cleanUp.delayedClose();
     }
 
