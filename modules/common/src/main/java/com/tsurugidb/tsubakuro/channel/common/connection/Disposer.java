@@ -21,6 +21,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,13 +45,17 @@ public class Disposer extends Thread {
 
     private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
-    private AtomicBoolean empty = new AtomicBoolean();
-
     private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
     private ServerResource closingNow = null;
 
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
+
+    private AtomicBoolean working = new AtomicBoolean();
+
+    private final Lock lock = new ReentrantLock();
+
+    private final Condition empty = lock.newCondition();
 
     /**
      * Enclodure of delayed clean up procedure.
@@ -86,7 +93,7 @@ public class Disposer extends Thread {
         boolean shutdownProcessed = false;
 
         while (true) {
-            empty.set(false);
+            working.set(true);
             var futureResponse = futureResponseQueue.poll();
             if (futureResponse != null) {
                 try {
@@ -121,7 +128,13 @@ public class Disposer extends Thread {
                 }
                 continue;
             }
-            notifyEmpty();
+            lock.lock();
+            try {
+                working.set(false);
+                empty.signalAll();
+            } finally {
+                lock.unlock();
+            }
             if (!shutdownProcessed) {
                 try {
                     while (!shutdownQueue.isEmpty()) {
@@ -170,13 +183,18 @@ public class Disposer extends Thread {
         return exception;
     }
 
-    synchronized void add(ForegroundFutureResponse<?> futureResponse) {
-        if (close.get() != null || !shutdownQueue.isEmpty()) {
-            throw new AssertionError("Session already closed");
-        }
-        futureResponseQueue.add(futureResponse);
-        if (!started.getAndSet(true)) {
-            this.start();
+    void add(ForegroundFutureResponse<?> futureResponse) {
+        lock.lock();
+        try {
+            if (close.get() != null || !shutdownQueue.isEmpty()) {
+                throw new AssertionError("Session already closed");
+            }
+            futureResponseQueue.add(futureResponse);
+            if (!started.getAndSet(true)) {
+                this.start();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -185,13 +203,18 @@ public class Disposer extends Thread {
      * If disposer thread has not started, a disposer thread will be started.
      * @param resource the DelayedClose to be added
      */
-    public synchronized void add(DelayedClose resource) {
-        if (close.get() != null || !shutdownQueue.isEmpty()) {
-            throw new AssertionError("Session already closed");
-        }
-        serverResourceQueue.add(resource);
-        if (!started.getAndSet(true)) {
-            this.start();
+    public void add(DelayedClose resource) {
+        lock.lock();
+        try {
+            if (close.get() != null || !shutdownQueue.isEmpty()) {
+                throw new AssertionError("Session already closed");
+            }
+            serverResourceQueue.add(resource);
+            if (!started.getAndSet(true)) {
+                this.start();
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -203,7 +226,8 @@ public class Disposer extends Thread {
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
     public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
-        synchronized (this) {
+        lock.lock();
+        try {
             if (close.get() != null) {
                 throw new AssertionError("Session already closed");
             }
@@ -218,9 +242,10 @@ public class Disposer extends Thread {
                         // do nothing
                     }
                 });
-            } else {
-                notifyEmpty();
             }
+            empty.signalAll();
+        } finally {
+            lock.unlock();
         }
         cleanUp.shutdown();
     }
@@ -235,7 +260,8 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
-        synchronized (this) {
+        lock.lock();
+        try {
             if (started.getAndSet(true)) {  // true if daemon is working
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                     close.set(cleanUp);
@@ -247,9 +273,10 @@ public class Disposer extends Thread {
                         // do nothing
                     }
                 });
-            } else {
-                notifyEmpty();
             }
+            empty.signalAll();
+        } finally {
+            lock.unlock();
         }
         cleanUp.delayedClose();
     }
@@ -272,18 +299,18 @@ public class Disposer extends Thread {
      * closed without getting is completed.
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
-    public synchronized void waitForEmpty() {
-        while (!empty.get()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                continue;
+    public void waitForEmpty() {
+        lock.lock();
+        try {
+            while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
+                try {
+                    empty.await();
+                } catch (InterruptedException e) {
+                    continue;
+                }
             }
+        } finally {
+            lock.unlock();
         }
-    }
-
-    private synchronized void notifyEmpty() {
-        empty.set(true);
-        notify();
     }
 }
