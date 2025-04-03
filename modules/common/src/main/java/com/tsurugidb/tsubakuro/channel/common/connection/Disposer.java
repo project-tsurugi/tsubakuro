@@ -97,13 +97,17 @@ public class Disposer extends Thread {
                         closingNow = null;
                     }
                 } catch (ChannelResponse.AlreadyCanceledException e) {
+                    System.out.println("handle futureResponseQueue exception 1 " + e);
                     // Server resource has not created at the server
                 } catch (SessionAlreadyClosedException e) {
+                    System.out.println("handle futureResponseQueue exception 2 " + e);
                     // Server resource has been disposed by the session close
                 } catch (TimeoutException e) {
+                    System.out.println("handle futureResponseQueue exception 3 " + e);
                     // Let's try again
                     futureResponseQueue.add(futureResponse);
                 } catch (Exception e) {     // should not occur
+                    System.out.println("handle futureResponseQueue exception 4 " + e);
                     if (exception == null) {
                         exception = e;
                     } else {
@@ -118,6 +122,7 @@ public class Disposer extends Thread {
                     System.out.println("handle serverResourceQueue " + serverResource.toString());
                     serverResource.delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
+                    System.out.println("handle futureResponseQueue exception " + e);
                     exception = addSuppressed(exception, e);
                 }
                 continue;
