@@ -219,7 +219,7 @@ public class Disposer extends Thread {
                     }
                 });
             } else {
-                empty.set(true);
+                notifyEmpty();
             }
         }
         cleanUp.shutdown();
@@ -248,7 +248,7 @@ public class Disposer extends Thread {
                     }
                 });
             } else {
-                empty.set(true);
+                notifyEmpty();
             }
         }
         cleanUp.delayedClose();
@@ -273,13 +273,11 @@ public class Disposer extends Thread {
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
     public synchronized void waitForEmpty() {
-        if (started.get()) {
-            while (!empty.get()) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    continue;
-                }
+        while (!empty.get()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                continue;
             }
         }
     }
