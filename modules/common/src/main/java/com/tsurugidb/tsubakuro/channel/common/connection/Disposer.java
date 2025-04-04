@@ -47,7 +47,7 @@ public class Disposer extends Thread {
 
     private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
-    private ServerResource closingNow = null;
+    private long disposerThreadId = 0;
 
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
@@ -91,6 +91,7 @@ public class Disposer extends Thread {
     public void run() {
         Exception exception = null;
         boolean shutdownProcessed = false;
+        disposerThreadId = Thread.currentThread().getId();
 
         while (true) {
             working.set(true);
@@ -99,9 +100,7 @@ public class Disposer extends Thread {
                 try {
                     var obj = futureResponse.retrieve();
                     if (obj instanceof ServerResource) {
-                        closingNow = (ServerResource) obj;
                         ((ServerResource) obj).close();
-                        closingNow = null;
                     }
                 } catch (ChannelResponse.AlreadyCanceledException e) {
                     // Server resource has not created at the server
@@ -232,7 +231,7 @@ public class Disposer extends Thread {
                 throw new AssertionError("Session already closed");
             }
             if (started.getAndSet(true)) {  // true if daemon is working
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
                     shutdownQueue.add(cleanUp);
                     return;
                 }
@@ -263,7 +262,7 @@ public class Disposer extends Thread {
         lock.lock();
         try {
             if (started.getAndSet(true)) {  // true if daemon is working
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
                     close.set(cleanUp);
                     return;
                 }
@@ -282,16 +281,15 @@ public class Disposer extends Thread {
     }
 
     /**
-     * Method to check if the disposer is calling close on the ServerResource given.
+     * Method to check whether the thread that called close is a disposer or not.
      * This method is provided in order to deal with both the case where a FutureResponse is closed without get
      * and the case where close is taken place for a ServerResource that has gotton from a FutureResponse.
      * ServerResource.close() should implement in that it performs close processing when it has been called from the Disposer,
      * and it registers a delayed close with the Disposer when it has been called from a non-disposer module.
-     * @param serverResource ServerResource to be queried whether it is closed from the Disposer or not
      * @return true if serverResource.close() is currently being called by this disposer
      */
-    public boolean isClosingNow(ServerResource serverResource) {
-        return serverResource == closingNow;
+    public boolean isClosingNow() {
+        return disposerThreadId == Thread.currentThread().getId();
     }
 
     /**

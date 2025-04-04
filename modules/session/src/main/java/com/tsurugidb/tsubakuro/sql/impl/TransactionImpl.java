@@ -489,7 +489,7 @@ public class TransactionImpl implements Transaction {
                 return;
         }
         if (disposer != null) {
-            if (disposer.isClosingNow(this)) {
+            if (disposer.isClosingNow()) {
                 doClose();
             } else {
                 disposer.add(new Disposer.DelayedClose() {

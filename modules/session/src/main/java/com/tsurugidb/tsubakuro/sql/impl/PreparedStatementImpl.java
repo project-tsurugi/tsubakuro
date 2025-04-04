@@ -100,7 +100,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
         if (disposer != null) {
-            if (disposer.isClosingNow(this)) {
+            if (disposer.isClosingNow()) {
                 doClose();
             } else {
                 disposer.add(new Disposer.DelayedClose() {
