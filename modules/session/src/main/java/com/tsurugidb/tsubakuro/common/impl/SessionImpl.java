@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -70,12 +71,14 @@ public class SessionImpl implements Session {
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean cleanUpFinished = new AtomicBoolean();
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean();
-    private final AtomicBoolean closed = new AtomicBoolean();
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
 
     private Wire wire;
     private Timeout closeTimeout;
+
+    private final AtomicInteger closed = new AtomicInteger(0);
+    public static final int SESSION_CLOSED = -1;
 
     /**
      * The keep alive interval in milliseconds.
@@ -93,7 +96,7 @@ public class SessionImpl implements Session {
 
         public void run() {
             try {
-                if (!closed.get()) {
+                if (closed.get() != SESSION_CLOSED) {
                     updateExpirationTime().get();
                 } else {
                     timer.cancel();
@@ -307,18 +310,27 @@ public class SessionImpl implements Session {
         }
         @Override
         public synchronized boolean process() throws IOException {
-            if (future == null) {
-                exception = cleanServiceStub();
-                disposer.waitForEmpty();
-                var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-                future = sendUrgent(
-                    SERVICE_ID,
-                        toDelimitedByteArray(newRequest()
-                            .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                            .build()),
-                    new ShutdownProcessor(gotton).asResponseProcessor());
+            while (true) {
+                int expected = closed.get();
+                if (expected == SESSION_CLOSED) {
+                    return true;
+                }
+                if (future == null) {
+                    if (!closed.compareAndSet(expected, expected + 1)) {
+                        continue;
+                    }
+                    exception = cleanServiceStub();
+                    disposer.waitForEmpty();
+                    var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
+                    future = sendUrgent(
+                        SERVICE_ID,
+                            toDelimitedByteArray(newRequest()
+                                .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                                .build()),
+                        new ShutdownProcessor(gotton).asResponseProcessor());
+                }
+                return gotton.get();
             }
-            return gotton.get();
         }
         @Override
         public Void get() throws IOException, ServerException, InterruptedException {
@@ -349,7 +361,7 @@ public class SessionImpl implements Session {
                 addSuppressed(fe);
             }
             try {
-                doClose();
+                doClose(1);
             } catch (IOException | ServerException | InterruptedException fe) {
                 addSuppressed(fe);
             }
@@ -401,9 +413,9 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+    public synchronized FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         Objects.requireNonNull(type);
-        if (!closed.get()) {
+        if (closed.get() != SESSION_CLOSED) {
             ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
             disposer.registerDelayedShutdown(shutdownCleanUp);
             return shutdownCleanUp;
@@ -431,7 +443,7 @@ public class SessionImpl implements Session {
             var exception = cleanServiceStub();
 
             try {
-                doClose();
+                doClose(0);
             } catch (ServerException | IOException | InterruptedException fe) {
                 if (exception == null) {
                     exception = fe;
@@ -478,11 +490,28 @@ public class SessionImpl implements Session {
         return null;
     }
 
-    private void doClose() throws ServerException, IOException, InterruptedException {
+    private void doClose(int d) throws ServerException, IOException, InterruptedException {
         waitForDisposerEmpty();
-        if (!closed.getAndSet(true)) {
-            timer.cancel();  // does not throw any exception
-            wireClose();
+        while (true) {
+            int expected = closed.get();
+            if (expected == SESSION_CLOSED) {
+                return;
+            }
+            if (expected > d) {
+                if (d == 0) {
+                    return;
+                }
+                if (closed.compareAndSet(expected, expected - d)) {
+                    return;
+                }
+            }
+            if (expected == d) {
+                if (closed.compareAndSet(expected, SESSION_CLOSED)) {
+                    timer.cancel();  // does not throw any exception
+                    wireClose();
+                    return;
+                }
+            }
         }
     }
 
@@ -506,7 +535,7 @@ public class SessionImpl implements Session {
 
     @Override
     public boolean isClosed() {
-        return closed.get();
+        return closed.get() == SESSION_CLOSED;
     }
 
     private void wireClose()  throws ServerException, IOException, InterruptedException {
@@ -580,7 +609,7 @@ public class SessionImpl implements Session {
         }
     }
     public String diagnosticInfo() {
-        if (!closed.get()) {
+        if (closed.get() != SESSION_CLOSED) {
             String sessionId = "";
             if (wire instanceof WireImpl) {
                 sessionId = Long.valueOf(((WireImpl) wire).sessionId()).toString();
