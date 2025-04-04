@@ -266,7 +266,7 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
   (JNIEnv *env, jclass, jlong handle, jlong timeout_ns)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
-    long timeout_us = (timeout_ns != 0) ? (timeout_ns + 500) / 1000 : 0;
+    long timeout_us = (timeout_ns != 0) ? ((timeout_ns - 500) / 1000) + 1 : 0;
 
     while (true) {
         try {
