@@ -617,7 +617,6 @@ public class StreamBackedValueInput implements ValueInput {
             ((ResultSetWire.ByteBufferBackedInput) input).setTimeout(timeout, unit);
             return;
         }
-        throw new UnsupportedOperationException();
     }
 
     @Override
