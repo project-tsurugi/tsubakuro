@@ -39,7 +39,7 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public class Disposer extends Thread {
     static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
-    private AtomicBoolean started = new AtomicBoolean();
+    private AtomicBoolean started = new AtomicBoolean(false);
 
     private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
@@ -51,7 +51,7 @@ public class Disposer extends Thread {
 
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
-    private AtomicBoolean working = new AtomicBoolean();
+    private AtomicBoolean working = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
 
@@ -63,9 +63,10 @@ public class Disposer extends Thread {
     public interface DelayedShutdown {
         /**
          * clean up procedure.
+         * @return true if clean up is completed.
          * @throws IOException An error was occurred while cleanUP() is executed.
          */
-        void shutdown() throws IOException;
+        boolean process() throws IOException;
     }
 
     /**
@@ -90,7 +91,6 @@ public class Disposer extends Thread {
     @Override
     public void run() {
         Exception exception = null;
-        boolean shutdownProcessed = false;
         disposerThreadId = Thread.currentThread().getId();
 
         while (true) {
@@ -134,19 +134,26 @@ public class Disposer extends Thread {
             } finally {
                 lock.unlock();
             }
-            if (!shutdownProcessed) {
+            while (!shutdownQueue.isEmpty()) {
+                var entry = shutdownQueue.peek();
                 try {
-                    while (!shutdownQueue.isEmpty()) {
-                        shutdownQueue.poll().shutdown();
+                    if (entry.process()) {
+                        shutdownQueue.poll();
+                    } else {
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            // No problem, it's OK
+                        }
                     }
-                    shutdownProcessed = true;
                 } catch (IOException e) {
                     exception = addSuppressed(exception, e);
+                    shutdownQueue.poll();
                 }
             }
             var cl = close.get();
             if (cl != null) {
-                if (shutdownProcessed || shutdownQueue.isEmpty()) {
+                if (shutdownQueue.isEmpty()) {
                     try {
                         cl.delayedClose();
                     } catch (ServerException | IOException | InterruptedException e) {
@@ -219,7 +226,7 @@ public class Disposer extends Thread {
 
     /**
      * Register a delayed shutdown procesure of the Session.
-     * If disposer thread has not started, cleanUp.shoutdown() is immediately executed.
+     * If disposer thread has not started, a disposer thread will be started.
      * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
      * @param cleanUp the clean up procesure to be registered
      * @throws IOException An error was occurred in c.shoutdown() execution.
@@ -230,23 +237,13 @@ public class Disposer extends Thread {
             if (close.get() != null) {
                 throw new AssertionError("Session already closed");
             }
-            if (started.getAndSet(true)) {  // true if daemon is working
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
-                    shutdownQueue.add(cleanUp);
-                    return;
-                }
-                shutdownQueue.add(new DelayedShutdown() {
-                    @Override
-                    public void shutdown() {
-                        // do nothing
-                    }
-                });
+            shutdownQueue.add(cleanUp);
+            if (!started.getAndSet(true)) {
+                this.start();
             }
-            empty.signalAll();
         } finally {
             lock.unlock();
         }
-        cleanUp.shutdown();
     }
 
     /**
@@ -262,7 +259,7 @@ public class Disposer extends Thread {
         lock.lock();
         try {
             if (started.getAndSet(true)) {  // true if daemon is working
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty() || working.get()) {
                     close.set(cleanUp);
                     return;
                 }

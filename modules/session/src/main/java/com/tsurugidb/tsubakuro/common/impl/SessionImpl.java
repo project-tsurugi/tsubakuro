@@ -279,10 +279,17 @@ public class SessionImpl implements Session {
     }
 
     static class ShutdownProcessor implements MainResponseProcessor<Void> {
+        private final AtomicBoolean gotton;
+
+        ShutdownProcessor(AtomicBoolean gotton) {
+            this.gotton = gotton;
+        }
+
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             // No error checking is performed here,
             // as only core diagnostic errors can occur for shutdown requests.
+            gotton.set(true);
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             return null;
@@ -293,12 +300,13 @@ public class SessionImpl implements Session {
         private final ShutdownType type;
         private FutureResponse<Void> future = null;
         private Exception exception = null;
+        private AtomicBoolean gotton = new AtomicBoolean(false);
 
         ShutdownCleanUp(ShutdownType type) {
             this.type = type;
         }
         @Override
-        public synchronized void shutdown() throws IOException {
+        public synchronized boolean process() throws IOException {
             if (future == null) {
                 exception = cleanServiceStub();
                 disposer.waitForEmpty();
@@ -308,8 +316,9 @@ public class SessionImpl implements Session {
                         toDelimitedByteArray(newRequest()
                             .setShutdown(shutdownMessageBuilder.setType(type.type()))
                             .build()),
-                    new ShutdownProcessor().asResponseProcessor());
+                    new ShutdownProcessor(gotton).asResponseProcessor());
             }
+            return gotton.get();
         }
         @Override
         public Void get() throws IOException, ServerException, InterruptedException {
@@ -323,7 +332,7 @@ public class SessionImpl implements Session {
         public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
             if (future == null) {
                 try {
-                    shutdown();
+                    process();
                 } catch (IOException fe) {
                     addSuppressed(fe);
                 }
@@ -340,8 +349,7 @@ public class SessionImpl implements Session {
                 addSuppressed(fe);
             }
             try {
-                close();
-                waitForDisposerEmpty();
+                doClose();
             } catch (IOException | ServerException | InterruptedException fe) {
                 addSuppressed(fe);
             }
@@ -358,7 +366,7 @@ public class SessionImpl implements Session {
         @Override
         public void close() throws IOException, ServerException, InterruptedException {
             if (future == null) {
-                shutdown();
+                process();
             }
             future.close();
         }
@@ -394,6 +402,7 @@ public class SessionImpl implements Session {
 
     @Override
     public FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        Objects.requireNonNull(type);
         if (!closed.get()) {
             ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
             disposer.registerDelayedShutdown(shutdownCleanUp);
@@ -422,11 +431,7 @@ public class SessionImpl implements Session {
             var exception = cleanServiceStub();
 
             try {
-                waitForDisposerEmpty();
-                if (!closed.getAndSet(true)) {
-                    timer.cancel();  // does not throw any exception
-                    wireClose();
-                }
+                doClose();
             } catch (ServerException | IOException | InterruptedException fe) {
                 if (exception == null) {
                     exception = fe;
@@ -471,6 +476,14 @@ public class SessionImpl implements Session {
             return exception;
         }
         return null;
+    }
+
+    private void doClose() throws ServerException, IOException, InterruptedException {
+        waitForDisposerEmpty();
+        if (!closed.getAndSet(true)) {
+            timer.cancel();  // does not throw any exception
+            wireClose();
+        }
     }
 
     private static void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
