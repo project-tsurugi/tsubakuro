@@ -56,6 +56,8 @@ public final class SessionBuilder {
 
     private boolean doKeepAlive = true;
 
+    private BlobPathMapping blobPathMapping = null;
+
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
@@ -142,6 +144,16 @@ public final class SessionBuilder {
     }
 
     /**
+     * Sets the path mapping configuration for BLOB transfer.
+     * @param mapping the path mapping configuration
+     * @return this
+     */
+    public SessionBuilder withBlobPathMapping(@Nonnull BlobPathMapping mapping) {
+        this.blobPathMapping = mapping;
+        return this;
+    }
+
+    /**
      * Establishes a connection to the Tsurugi server.
      * This operation will block until the connection was established,
      * please consider to use {@link #create(long, TimeUnit)}.
@@ -206,7 +218,7 @@ public final class SessionBuilder {
 
     private Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
-        var session = new SessionImpl(doKeepAlive);
+        var session = new SessionImpl(doKeepAlive, blobPathMapping);
         boolean green = false;
         try {
             session.connect(wire);

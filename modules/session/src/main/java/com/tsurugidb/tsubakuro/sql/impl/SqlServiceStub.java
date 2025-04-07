@@ -27,7 +27,9 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
@@ -49,7 +51,10 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -517,11 +522,50 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                blobs,
+                applySendBlobPathMapping(blobs),
                 new ExecuteProcessor().asResponseProcessor());
     }
 
-    @Override
+    private List<? extends BlobInfo> applySendBlobPathMapping(List<? extends BlobInfo> blobs) {
+        if (session instanceof SessionImpl) {
+            var blobPathMapping = ((SessionImpl) session).getBlobPathMapping();
+            if (blobPathMapping == null) {
+                return blobs;
+            }
+            var lobs = new LinkedList<BlobInfo>();
+            for (var blob : blobs) {
+                if (blob instanceof FileBlobInfo) {
+                    if (applySendFileBlobPathMapping(blobPathMapping, (FileBlobInfo) blob, lobs)) {
+                        continue;
+                    }
+                }
+                lobs.add(blob);
+            }
+            return lobs;
+        }
+        return blobs;
+    }
+
+    private boolean applySendFileBlobPathMapping(BlobPathMapping blobPathMapping, FileBlobInfo blob, LinkedList<BlobInfo> lobs) {
+        var mapping = blobPathMapping.getOnSend();
+        var blobPath = blob.getPath().get();
+
+        if (blobPath != null) {
+            for (var entry : mapping) {
+                var bp = blobPath.getParent();
+                var bf = blobPath.getFileName();
+                if (bp != null && bf != null) {
+                    if (entry.getClientPath().toString().equals(bp.toString())) {
+                        lobs.add(new FileBlobInfo(blob.getChannelName(), Paths.get(entry.getServerPath(), bf.toString())));
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+   @Override
     public FutureResponse<ExecuteResult> send(
             @Nonnull SqlRequest.Batch request) throws IOException {
         Objects.requireNonNull(request);
@@ -652,7 +696,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                blobs,
+                applySendBlobPathMapping(blobs),
                 new QueryProcessor(request));
     }
 
@@ -864,6 +908,9 @@ public class SqlServiceStub implements SqlService {
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
                 try {
+                    if (response instanceof ChannelResponse && session instanceof SessionImpl) {
+                        ((ChannelResponse) response).setBlobPathMapping(((SessionImpl) session).getBlobPathMapping());
+                    }
                     return response.openSubResponse(detailResponse.getSuccess().getChannelName());
                 } catch (NoSuchFileException | AccessDeniedException e) {
                     throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
@@ -922,6 +969,9 @@ public class SqlServiceStub implements SqlService {
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
                 try {
+                    if (response instanceof ChannelResponse && session instanceof SessionImpl) {
+                        ((ChannelResponse) response).setBlobPathMapping(((SessionImpl) session).getBlobPathMapping());
+                    }
                     return new InputStreamReader(response.openSubResponse(detailResponse.getSuccess().getChannelName()), "UTF-8");
                 } catch (NoSuchFileException | AccessDeniedException e) {
                     throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
@@ -981,6 +1031,9 @@ public class SqlServiceStub implements SqlService {
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                 }
                 try {
+                    if (response instanceof ChannelResponse && session instanceof SessionImpl) {
+                        ((ChannelResponse) response).setBlobPathMapping(((SessionImpl) session).getBlobPathMapping());
+                    }
                     var inputStream = response.openSubResponse(detailResponse.getSuccess().getChannelName());
                     if (inputStream instanceof ChannelResponse.FileInputStreamWithPath) {
                         return new LargeObjectCacheImpl(((ChannelResponse.FileInputStreamWithPath) inputStream).path());
@@ -1049,6 +1102,9 @@ public class SqlServiceStub implements SqlService {
                 }
                 var channelName = detailResponse.getSuccess().getChannelName();
                 try {
+                    if (response instanceof ChannelResponse && session instanceof SessionImpl) {
+                        ((ChannelResponse) response).setBlobPathMapping(((SessionImpl) session).getBlobPathMapping());
+                    }
                     var inputStream = response.openSubResponse(channelName);
                     try {
                         Files.copy(inputStream, destination);

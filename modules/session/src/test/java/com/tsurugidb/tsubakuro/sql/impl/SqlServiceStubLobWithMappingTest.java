@@ -41,6 +41,7 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -51,7 +52,7 @@ import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.io.BlobException;
 
-class SqlServiceStubLobTest {
+class SqlServiceStubLobWithMappingTest {
 
     private final MockLink link = new MockLink();
 
@@ -59,12 +60,26 @@ class SqlServiceStubLobTest {
 
     private Session session = null;
 
-    SqlServiceStubLobTest() {
+    private final String ServerReceiveDirectory = "ServerReceiveDirectory";
+    private final String ClientSendDirectory = "ClientSendDirectory";  
+    private final String ServerSendDirectory = "ServerSendDirectory";
+    private final String ClientReceiveDirectory = "ClientReceiveDirectory"; 
+
+    private void connect(Path tempDir) {
         try {
+            var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
+            var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
+            var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
+            var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
+            BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+            BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                                .onSend(ClientSendDirectoryPath, ServerReceiveDirectoryPath.toString())
+                                                .onReceive(ServerSendDirectoryPath.toString(), ClientReceiveDirectoryPath)
+                                                .build();
             wire = new WireImpl(link);
-            session = new SessionImpl();
+            session = new SessionImpl(false, blobPathMapping);
             session.connect(wire);
-     } catch (IOException e) {
+        } catch (IOException e) {
             System.err.println(e);
             fail("fail to create WireImpl");
         }
@@ -79,6 +94,12 @@ class SqlServiceStubLobTest {
 
     @Test
     void sendExecutePreparedStatementWithLobSuccess(@TempDir Path tempDir) throws Exception {
+        var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
+        var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
+        Files.createDirectory(ClientSendDirectoryPath);
+        Files.createDirectory(ServerReceiveDirectoryPath);
+
+        connect(tempDir);
         link.next(SqlResponse.Response.newBuilder()
                     .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
                                         .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
@@ -100,14 +121,19 @@ class SqlServiceStubLobTest {
         String fileName2 = "clob.data";
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-        Path file1 = tempDir.resolve(fileName1);
-        Path file2 = tempDir.resolve(fileName2);
+        Path file1 = ServerReceiveDirectoryPath.resolve(fileName1);
+        Path file2 = ServerReceiveDirectoryPath.resolve(fileName2);
         Files.write(file1, data);
         Files.write(file2, data);
 
+        Path dummy1 = ClientSendDirectoryPath.resolve(fileName1);
+        Path dummy2 = ClientSendDirectoryPath.resolve(fileName2);
+        Files.createFile(dummy1);
+        Files.createFile(dummy2);
+
         var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo(channelName1, file1));
-        lobs.add(new FileBlobInfo(channelName2, file2));
+        lobs.add(new FileBlobInfo(channelName1, dummy1));
+        lobs.add(new FileBlobInfo(channelName2, dummy2));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);
@@ -140,6 +166,12 @@ class SqlServiceStubLobTest {
 
     @Test
     void executeStatementWithLob(@TempDir Path tempDir) throws Exception {
+        var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
+        var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
+        Files.createDirectory(ClientSendDirectoryPath);
+        Files.createDirectory(ServerReceiveDirectoryPath);
+
+        connect(tempDir);
         // for executeStatement
         link.next(SqlResponse.Response.newBuilder()
                     .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
@@ -162,11 +194,16 @@ class SqlServiceStubLobTest {
         String fileName2 = "clob.data";
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-        Path file1 = tempDir.resolve(fileName1);
-        Path file2 = tempDir.resolve(fileName2);
+        Path file1 = ServerReceiveDirectoryPath.resolve(fileName1);
+        Path file2 = ServerReceiveDirectoryPath.resolve(fileName2);
         Files.write(file1, data);
         Files.write(file2, data);
 
+        Path dummy1 = ClientSendDirectoryPath.resolve(fileName1);
+        Path dummy2 = ClientSendDirectoryPath.resolve(fileName2);
+        Files.createFile(dummy1);
+        Files.createFile(dummy2);
+    
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
@@ -197,6 +234,12 @@ class SqlServiceStubLobTest {
 
     @Test
     void executeStatementWithLobWithoutFile(@TempDir Path tempDir) throws Exception {
+        var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
+        var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
+        Files.createDirectory(ClientSendDirectoryPath);
+        Files.createDirectory(ServerReceiveDirectoryPath);
+
+        connect(tempDir);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
         // for dispose transaction
@@ -207,9 +250,8 @@ class SqlServiceStubLobTest {
         String parameterName2 = "clob";
         String fileName2 = "clob.data";
 
-        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-        Path file1 = tempDir.resolve(fileName1);
-        Path file2 = tempDir.resolve(fileName2);
+        Path file1 = ServerReceiveDirectoryPath.resolve(fileName1);
+        Path file2 = ServerReceiveDirectoryPath.resolve(fileName2);
 
         try (
             var service = new SqlServiceStub(session);
@@ -229,12 +271,19 @@ class SqlServiceStubLobTest {
 
     @Test
     void getLargeObjectCache(@TempDir Path tempDir) throws Exception {
+        var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
+        var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
+        Files.createDirectory(ServerSendDirectoryPath);
+        Files.createDirectory(ClientReceiveDirectoryPath);
+
+        connect(tempDir);
+
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
-        Path file = tempDir.resolve(fileName);
+        Path file = ClientReceiveDirectoryPath.resolve(fileName);
         Files.write(file, data);
 
         var header = FrameworkResponse.Header.newBuilder()
@@ -242,7 +291,7 @@ class SqlServiceStubLobTest {
                         .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
                                     .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
                                                 .setChannelName(channelName)
-                                                .setPath(file.toString())))
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
                         .build();
         var payload = SqlResponse.Response.newBuilder()
                         .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
@@ -278,19 +327,26 @@ class SqlServiceStubLobTest {
 
     @Test
     void getLargeObjectCacheNoFile(@TempDir Path tempDir) throws Exception {
+        var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
+        var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
+        Files.createDirectory(ServerSendDirectoryPath);
+        Files.createDirectory(ClientReceiveDirectoryPath);
+
+        connect(tempDir);
+
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
-        Path file = tempDir.resolve(fileName);
+        Path file = ClientReceiveDirectoryPath.resolve(fileName);
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
                         .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
                                     .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
                                                 .setChannelName(channelName)
-                                                .setPath(file.toString())))
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
                         .build();
         var payload = SqlResponse.Response.newBuilder()
                         .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
@@ -321,17 +377,24 @@ class SqlServiceStubLobTest {
 
     @Test
     void copyToNoFile(@TempDir Path tempDir) throws Exception {
+        var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
+        var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
+        Files.createDirectory(ServerSendDirectoryPath);
+        Files.createDirectory(ClientReceiveDirectoryPath);
+
+        connect(tempDir);
+
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
-        Path file = tempDir.resolve(fileName);
+        Path file = ClientReceiveDirectoryPath.resolve(fileName);
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
                         .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
                                     .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
                                                 .setChannelName(channelName)
-                                                .setPath(file.toString())))
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
                         .build();
         var payload = SqlResponse.Response.newBuilder()
                         .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
@@ -362,12 +425,19 @@ class SqlServiceStubLobTest {
 
     @Test
     void copyTo(@TempDir Path tempDir) throws Exception {
+        var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
+        var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
+        Files.createDirectory(ServerSendDirectoryPath);
+        Files.createDirectory(ClientReceiveDirectoryPath);
+
+        connect(tempDir);
+
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
-        Path file = tempDir.resolve("lob.data");
+        Path file = ClientReceiveDirectoryPath.resolve("lob.data");
         Files.write(file, data);
 
         var header = FrameworkResponse.Header.newBuilder()
@@ -375,7 +445,7 @@ class SqlServiceStubLobTest {
                         .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
                                     .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
                                                 .setChannelName(channelName)
-                                                .setPath(file.toString())))
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
                         .build();
         var payload = SqlResponse.Response.newBuilder()
                         .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
