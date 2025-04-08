@@ -76,6 +76,8 @@ class DbTransactionTest extends DbTester {
 
                     occ.rollback().await(10, TimeUnit.SECONDS);
                 }
+
+                ltx.rollback().await(10, TimeUnit.SECONDS);
             }
 
             var occOption = TransactionOption.newBuilder() //
