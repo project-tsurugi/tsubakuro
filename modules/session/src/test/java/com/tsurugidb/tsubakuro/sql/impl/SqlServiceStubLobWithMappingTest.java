@@ -76,6 +76,7 @@ class SqlServiceStubLobWithMappingTest {
                                                 .onSend(ClientSendDirectoryPath, ServerReceiveDirectoryPath.toString())
                                                 .onReceive(ServerSendDirectoryPath.toString(), ClientReceiveDirectoryPath)
                                                 .build();
+            System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
             session = new SessionImpl(false, blobPathMapping);
             session.connect(wire);

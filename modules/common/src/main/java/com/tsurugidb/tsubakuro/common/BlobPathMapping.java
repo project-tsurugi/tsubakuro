@@ -58,7 +58,36 @@ public class BlobPathMapping {
             return serverPath;
         }
 
-        // FIXME: impl toString, equals, hashCode
+        @Override
+        public int hashCode() {
+            int result = 17;
+            final int prime = 31;
+
+            result = prime * result + Objects.hashCode(clientPath);
+            result = prime * result + Objects.hashCode(serverPath);
+
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            Entry other = (Entry) obj;
+            return Objects.equals(clientPath, other.clientPath) && Objects.equals(serverPath, other.serverPath);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("clientPath(%s) - serverPath(%s)", clientPath.toString(), serverPath); //$NON-NLS-1$
+        }
     }
 
     /**
@@ -171,5 +200,35 @@ public class BlobPathMapping {
         return onReceive;
     }
 
-      // FIXME: impl toString, equals, hashCode
+    @Override
+    public int hashCode() {
+        int result = 17;
+        final int prime = 31;
+
+        result = prime * result + Objects.hashCode(onSend);
+        result = prime * result + Objects.hashCode(onReceive);
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        BlobPathMapping other = (BlobPathMapping) obj;
+        return Objects.equals(onSend, other.onSend) && Objects.equals(onReceive, other.onReceive);
+    }
+
+    @Override
+    public String toString() {
+        return "onReceive\n" + onReceive.stream().map(Entry::toString).reduce(" ", (a, b) -> a + b)
+             + "\nonSend\n" + onSend.stream().map(Entry::toString).reduce(" ", (a, b) -> a + b); //$NON-NLS-1$
+    }
 }
