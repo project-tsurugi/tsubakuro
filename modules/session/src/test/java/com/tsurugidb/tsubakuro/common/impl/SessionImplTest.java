@@ -48,7 +48,11 @@ class SessionImplTest {
 
     private final MockWire wire = new MockWire();
 
-    private final Session session = new SessionImpl(wire);
+    private final Session session = new SessionImpl();
+
+    public SessionImplTest() {
+        session.connect(wire);
+    }
 
     @AfterEach
     void tearDown() throws IOException, InterruptedException, ServerException {

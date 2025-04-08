@@ -102,17 +102,6 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Creates a new instance.
-     * @param wire the underlying wire
-     */
-    public SessionImpl(@Nonnull Wire wire) {
-        Objects.requireNonNull(wire);
-        this.wire = wire;
-        this.doKeepAlive = false;
-        this.blobPathMapping = null;
-    }
-
-    /**
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
@@ -124,10 +113,23 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Creates a new instance with doKeepAlive is false, exist for tests.
+     * Creates a new instance with doKeepAlive is false and blobPathMapping is null, exist for tests.
      */
     public SessionImpl() {
         this.wire = null;
+        this.doKeepAlive = false;
+        this.blobPathMapping = null;
+    }
+
+    /**
+     * Creates a new instance.
+     * @deprecated use SessionImpl() after connect(wire)
+     * @param wire the underlying wire
+     */
+    @Deprecated
+    public SessionImpl(@Nonnull Wire wire) {
+        Objects.requireNonNull(wire);
+        this.wire = wire;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
     }
