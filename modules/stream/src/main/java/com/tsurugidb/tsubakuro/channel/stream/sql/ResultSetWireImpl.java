@@ -54,7 +54,7 @@ public class ResultSetWireImpl implements ResultSetWire {
 
         @Override
         protected boolean next() throws IOException {
-            var buffer = receive(timeoutNanos(), TimeUnit.NANOSECONDS);
+            var buffer = receive(timeoutNanos);
             if (buffer == null) {
                 return false;
             }
@@ -117,7 +117,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     /**
      * Receive resultSet payload
      */
-    private byte[] receive(long t, TimeUnit u) throws IOException {
+    private byte[] receive(long timeoutNanos) throws IOException {
         while (true) {
             var n = streamLink.messageNumber();
             if (!queues.isEmpty()) {
@@ -130,7 +130,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                 throw exception;
             }
             try {
-                streamLink.pullMessage(n, t, u);
+                streamLink.pullMessage(n, timeoutNanos, TimeUnit.NANOSECONDS);
             } catch (TimeoutException e) {
                 throw new InterruptedIOException(e.getMessage());
             }
