@@ -33,16 +33,14 @@ public interface ResultSetWire extends Closeable {
      */
     abstract class ByteBufferBackedInput extends InputStream {
         protected ByteBuffer source;
-        protected TimeUnit timeoutUnit = null;
-        protected long timeoutValue = 0;
+        protected long timeoutNanos;
 
         /**
          * Creates a new instance.
          */
         public ByteBufferBackedInput() {
             this.source = ByteBuffer.allocate(0);
-            this.timeoutUnit = null;
-            this.timeoutValue = 0;
+            this.timeoutNanos = 0;
         }
 
         @Override
@@ -91,17 +89,14 @@ public interface ResultSetWire extends Closeable {
          */
         public void setTimeout(long timeout, @Nonnull TimeUnit unit) {
             Objects.requireNonNull(unit);
-            timeoutValue = timeout;
-            timeoutUnit = unit;
+            timeoutNanos = unit.toNanos(timeout);
         }
 
         protected abstract boolean next() throws IOException;
 
-        protected long timeoutNanos() {
-            if (timeoutUnit != null) {
-                return timeoutUnit.toNanos(timeoutValue);
-            }
-            return 0;
+        // avoid spotbus warning
+        protected long getTimeoutNanos() {
+            return timeoutNanos;
         }
     }
 

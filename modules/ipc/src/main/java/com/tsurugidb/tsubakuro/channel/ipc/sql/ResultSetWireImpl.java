@@ -53,7 +53,7 @@ public class ResultSetWireImpl implements ResultSetWire {
                     if (source.capacity() > 0) {
                         disposeUsedDataNative(wireHandle, source.capacity());
                     }
-                    source = getChunkNative(wireHandle, timeoutNanos());
+                    source = getChunkNative(wireHandle, timeoutNanos);
                     return source != null;
                 }
                 return false;
