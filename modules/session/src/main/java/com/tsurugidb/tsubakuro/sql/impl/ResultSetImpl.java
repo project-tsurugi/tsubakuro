@@ -78,6 +78,8 @@ public class ResultSetImpl implements ResultSet {
 
     private final Message request;
 
+    private long timeoutCount = 0;
+
     /**
      * Tests if the response is valid.
      */
@@ -136,6 +138,7 @@ public class ResultSetImpl implements ResultSet {
         this.tester = checker;
         this.resultSetName = resultSetName;
         this.request = request;
+        setTimeout(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
 
     @Override
@@ -443,6 +446,7 @@ public class ResultSetImpl implements ResultSet {
 
     @Override
     public synchronized void setTimeout(long t, @Nonnull TimeUnit u) {
+        timeoutCount++;
         Objects.requireNonNull(u);
         if (cursor instanceof ValueInputBackedRelationCursor) {
             ((ValueInputBackedRelationCursor) cursor).setTimeout(t, u);
@@ -452,6 +456,9 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public synchronized void close() throws ServerException, IOException, InterruptedException {
         if (!closed.getAndSet(true)) {
+            if (timeoutCount > 1) {
+                System.out.println("==== timeoutCount = " + timeoutCount + " ====");
+            }
             try (response) {
                 try {
                     cursor.close();
