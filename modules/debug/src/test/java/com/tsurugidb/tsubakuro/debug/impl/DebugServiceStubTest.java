@@ -42,7 +42,11 @@ class DebugServiceStubTest {
 
     private final MockWire wire = new MockWire();
 
-    private final Session session = new SessionImpl(wire);
+    private final Session session = new SessionImpl();
+
+    public DebugServiceStubTest() {
+        session.connect(wire);
+    }
 
     @AfterEach
     void tearDown() throws IOException, InterruptedException, ServerException {

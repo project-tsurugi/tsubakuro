@@ -35,7 +35,11 @@ import com.tsurugidb.tsubakuro.mock.RequestHandler;
 class KvsServiceStubTest {
 
     private final MockWire wire = new MockWire();
-    private final Session session = new SessionImpl(wire);
+    private final Session session = new SessionImpl();
+
+    public KvsServiceStubTest() {
+        session.connect(wire);
+    }
 
     @AfterEach
     void tearDown() throws IOException, InterruptedException, ServerException {

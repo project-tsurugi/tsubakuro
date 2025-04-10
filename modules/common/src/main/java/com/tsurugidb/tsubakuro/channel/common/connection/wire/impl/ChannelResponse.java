@@ -41,6 +41,7 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
@@ -88,7 +89,7 @@ public class ChannelResponse implements Response {
     private final Link link;
     private String resultSetName = ""; // for diagnostic
     private final ConcurrentHashMap<String, Pair<String, Boolean>> blobs = new ConcurrentHashMap<>();
-
+    private BlobPathMapping blobPathMapping = null;
     /**
      * An exception notifying that the request has been canceled.
      */
@@ -221,6 +222,18 @@ public class ChannelResponse implements Response {
             var path = entry.getLeft();
             if (path != null) {
                 var filePath = Paths.get(path);
+                if (blobPathMapping != null) {
+                    var parent = filePath.getParent();
+                    for (var m : blobPathMapping.getOnReceive()) {
+                        if (parent.toString().equals(m.getServerPath())) {
+                            var fileName = filePath.getFileName();
+                            if (fileName != null) {
+                                filePath = Paths.get(m.getClientPath().toString(), fileName.toString());
+                                return new FileInputStreamWithPath(filePath.toString());
+                            }
+                        }
+                    }
+                }
                 if (Files.notExists(filePath)) {
                     throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + filePath.toString() + "}");
                 }
@@ -315,6 +328,14 @@ public class ChannelResponse implements Response {
 
     public void cancelSuccessWithoutServerInteraction() {
         exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
+    }
+
+    /**
+     * Sets a path mapping used in receiving BLOBs.
+     * @param mapping the target server path to be transformed, must be a directory
+     */
+    public void setBlobPathMapping(BlobPathMapping mapping) {
+        blobPathMapping = mapping;
     }
 
     private void responseArrive(boolean received) {

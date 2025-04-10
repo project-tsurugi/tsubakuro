@@ -43,6 +43,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
@@ -69,6 +70,7 @@ public class SessionImpl implements Session {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean shutdownCompleted = new AtomicBoolean();
     private final Disposer disposer = new Disposer(this);
+    private final BlobPathMapping blobPathMapping;
     private Wire wire;
     private Timeout closeTimeout;
 
@@ -100,29 +102,36 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Creates a new instance.
-     * @param wire the underlying wire
-     */
-    public SessionImpl(@Nonnull Wire wire) {
-        Objects.requireNonNull(wire);
-        this.wire = wire;
-    }
-
-    /**
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
+     * @param blobPathMapping path mapping used when passing blobs using file
      */
-    public SessionImpl(boolean doKeepAlive) {
+    public SessionImpl(boolean doKeepAlive, BlobPathMapping blobPathMapping) {
         this.wire = null;
         this.doKeepAlive = doKeepAlive;
+        this.blobPathMapping = blobPathMapping;
     }
 
     /**
-     * Creates a new instance with doKeepAlive is false, exist for tests.
+     * Creates a new instance with doKeepAlive is false and blobPathMapping is null, exist for tests.
      */
     public SessionImpl() {
         this.wire = null;
         this.doKeepAlive = false;
+        this.blobPathMapping = null;
+    }
+
+    /**
+     * Creates a new instance.
+     * @deprecated use SessionImpl() after connect(wire)
+     * @param wire the underlying wire
+     */
+    @Deprecated
+    public SessionImpl(@Nonnull Wire wire) {
+        Objects.requireNonNull(wire);
+        this.wire = wire;
+        this.doKeepAlive = false;
+        this.blobPathMapping = null;
     }
 
     /**
@@ -401,6 +410,15 @@ public class SessionImpl implements Session {
     @Override
     public void remove(@Nonnull ServerResource resource) {
         services.remove(resource);
+    }
+
+    /**
+     * Returns the blobPathMapping.
+     * Supporsed to be used by SqlServiceStub
+     * @return the blobPathMapping
+     */
+    public BlobPathMapping getBlobPathMapping() {
+        return blobPathMapping;
     }
 
     static CoreServiceException newUnknown(@Nonnull CoreResponse.UnknownError message) {
