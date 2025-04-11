@@ -444,9 +444,6 @@ public class ResultSetImpl implements ResultSet {
     @Override
     public synchronized void setTimeout(long t, @Nonnull TimeUnit u) {
         Objects.requireNonNull(u);
-        if (cursor instanceof ValueInputBackedRelationCursor) {
-            ((ValueInputBackedRelationCursor) cursor).setTimeout(t, u);
-        }
     }
 
     @Override
