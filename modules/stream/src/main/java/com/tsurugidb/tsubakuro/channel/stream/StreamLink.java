@@ -44,7 +44,6 @@ public final class StreamLink extends Link {
     private ResultSetBox resultSetBox = new ResultSetBox();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
-    private final AtomicBoolean socketClosed = new AtomicBoolean();
 
     public static final int STREAM_HEADER_SIZE = 7;
 
@@ -62,6 +61,12 @@ public final class StreamLink extends Link {
     private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
+
+    private static class SocketAlreadyClosedException extends IOException {
+        SocketAlreadyClosedException() {
+            // do nothing
+        }
+    }
 
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
@@ -106,6 +111,8 @@ public final class StreamLink extends Link {
         }
         try {
             message = receive();
+        } catch (SocketAlreadyClosedException e) {  // Someone closed the socket, meaning Session is terminated. It's OK.
+            return false;
         } catch (SocketTimeoutException e) {
             throw new TimeoutException("response has not been received within the specified time");
         } catch (EOFException e) {   // imply session close
@@ -185,7 +192,6 @@ public final class StreamLink extends Link {
             socket.setSoTimeout(closeTimeoutMillis());
             socket.close();
         }
-        socketClosed.set(true);
     }
 
     public ResultSetBox getResultSetBox() {
@@ -252,6 +258,9 @@ public final class StreamLink extends Link {
 
     private LinkMessage receive() throws IOException, SocketTimeoutException {
         synchronized (inStream) {
+            if (socket.isClosed()) {
+                throw new SocketAlreadyClosedException();
+            }
             try {
                 byte[] bytes;
                 byte writer = 0;
