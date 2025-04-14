@@ -44,7 +44,6 @@ public final class StreamLink extends Link {
     private ResultSetBox resultSetBox = new ResultSetBox();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
-    private final AtomicBoolean socketClosed = new AtomicBoolean();
 
     public static final int STREAM_HEADER_SIZE = 7;
 
@@ -193,7 +192,6 @@ public final class StreamLink extends Link {
             socket.setSoTimeout(closeTimeoutMillis());
             socket.close();
         }
-        socketClosed.set(true);
     }
 
     public ResultSetBox getResultSetBox() {
@@ -260,7 +258,7 @@ public final class StreamLink extends Link {
 
     private LinkMessage receive() throws IOException, SocketTimeoutException {
         synchronized (inStream) {
-            if (socketClosed.get()) {
+            if (socket.isClosed()) {
                 throw new SocketAlreadyClosedException();
             }
             try {
