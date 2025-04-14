@@ -32,6 +32,7 @@ import java.text.MessageFormat;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -104,6 +105,8 @@ public class SqlServiceStub implements SqlService {
 
     private final ServerResourceHolder resources = new ServerResourceHolder();
 
+    private final ConcurrentHashMap<Long, ServerResourceHolder> transactions = new ConcurrentHashMap<>();
+
     private Timeout closeTimeout = Timeout.DISABLED;
 
     /**
@@ -172,8 +175,11 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
-            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources);
+            var success = detailResponse.getSuccess();
+            var transactionImpl = new TransactionImpl(success, SqlServiceStub.this, resources);
             transactionImpl.setCloseTimeout(closeTimeout);
+            long handle = success.getTransactionHandle().getHandle();
+            transactions.put(handle, new ServerResourceHolder());
             synchronized (resources) {
                 return resources.register(transactionImpl);
             }
@@ -194,9 +200,11 @@ public class SqlServiceStub implements SqlService {
     class TransactionCommitProcessor implements MainResponseProcessor<Void> {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
         private final TransactionImpl transaction;
+        private final long handle;
 
-        TransactionCommitProcessor(@Nullable TransactionImpl transaction) {
+        TransactionCommitProcessor(@Nullable TransactionImpl transaction, long handle) {
             this.transaction = transaction;
+            this.handle = handle;
         }
 
         @Override
@@ -218,11 +226,22 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
+            removeTransactionResource(handle);
             if (transaction != null) {
                 transaction.notifyCommitSuccess();
             }
             return null;
         }
+    }
+
+    void removeTransactionResource(long handle) throws IOException, ServerException, InterruptedException {
+        var holder = transactions.get(handle);
+        if (holder != null) {
+            synchronized (holder) {
+                holder.close();
+            }
+        }
+        transactions.remove(handle);
     }
 
     FutureResponse<Void> send(
@@ -232,7 +251,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionCommitProcessor(transaction).asResponseProcessor(false));
+                new TransactionCommitProcessor(transaction, request.getTransactionHandle().getHandle()).asResponseProcessor(false));
     }
 
     @Override
@@ -243,11 +262,16 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionCommitProcessor(null).asResponseProcessor());
+                new TransactionCommitProcessor(null, request.getTransactionHandle().getHandle()).asResponseProcessor());
     }
 
     class TransactionRollbackProcessor implements MainResponseProcessor<Void> {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
+        private final long handle;
+
+        TransactionRollbackProcessor(long handle) {
+            this.handle = handle;
+        }
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -268,6 +292,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
+            removeTransactionResource(handle);
             return null;
         }
     }
@@ -280,7 +305,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionRollbackProcessor().asResponseProcessor(false));
+                new TransactionRollbackProcessor(request.getTransactionHandle().getHandle()).asResponseProcessor(false));
     }
 
     class StatementPrepareProcessor implements MainResponseProcessor<PreparedStatement> {
@@ -578,10 +603,12 @@ public class SqlServiceStub implements SqlService {
 
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
         Message request;
+        private final long handle;
 
-        QueryProcessor(Message request) {
+        QueryProcessor(Message request, long handle) {
             super(resources);
             this.request = request;
+            this.handle = handle;
         }
 
         @Override
@@ -652,11 +679,15 @@ public class SqlServiceStub implements SqlService {
                 if (response instanceof ChannelResponse) {
                     resultSetName = ((ChannelResponse) response).resultSetName();
                 }
-                var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName, request);
+                var ownerHolder = transactions.get(handle);
+                var resultSetImpl = new ResultSetImpl(ownerHolder, metadata, cursor, owner.release(), this, resultSetName, request);
                 resultSetImpl.setCloseTimeout(closeTimeout);
-                synchronized (resources) {
-                    return resources.register(resultSetImpl);
+                if (ownerHolder != null) {
+                    synchronized (ownerHolder) {
+                        return ownerHolder.register(resultSetImpl);
+                    }
                 }
+                return resultSetImpl;
             }
         }
 
@@ -674,7 +705,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                new QueryProcessor(request, request.getTransactionHandle().getHandle()));
     }
 
     @Override
@@ -685,7 +716,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                new QueryProcessor(request, request.getTransactionHandle().getHandle()));
     }
 
     @Override
@@ -697,7 +728,7 @@ public class SqlServiceStub implements SqlService {
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 applySendBlobPathMapping(blobs),
-                new QueryProcessor(request));
+                new QueryProcessor(request, request.getTransactionHandle().getHandle()));
     }
 
     @Override
@@ -708,7 +739,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                new QueryProcessor(request, request.getTransactionHandle().getHandle()));
     }
 
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
@@ -1001,6 +1032,11 @@ public class SqlServiceStub implements SqlService {
 
     class GetLargeObjectCacheProcessor implements ResponseProcessor<LargeObjectCache> {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
+        private final long handle;
+
+        GetLargeObjectCacheProcessor(long handle) {
+            this.handle = handle;
+        }
 
         @Override
         public LargeObjectCache process(Response response) throws IOException, ServerException, InterruptedException {
@@ -1026,6 +1062,7 @@ public class SqlServiceStub implements SqlService {
                 }
                 var detailResponse = detailResponseCache.get();
                 LOG.trace("receive (GetLargeObjectData): {}", detailResponse); //$NON-NLS-1$
+                var ownerHolder = transactions.get(handle);
                 if (SqlResponse.GetLargeObjectData.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
                     var errorResponse = detailResponse.getError();
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
@@ -1036,13 +1073,19 @@ public class SqlServiceStub implements SqlService {
                     }
                     var inputStream = response.openSubResponse(detailResponse.getSuccess().getChannelName());
                     if (inputStream instanceof ChannelResponse.FileInputStreamWithPath) {
-                        return new LargeObjectCacheImpl(((ChannelResponse.FileInputStreamWithPath) inputStream).path());
+                        var largeObjectCacheImpl = new LargeObjectCacheImpl(ownerHolder, ((ChannelResponse.FileInputStreamWithPath) inputStream).path());
+                        if (ownerHolder != null) {
+                            synchronized (ownerHolder) {
+                                return ownerHolder.register(largeObjectCacheImpl);
+                            }
+                        }
+                        return largeObjectCacheImpl;
                     }
-                    return new LargeObjectCacheImpl();
+                    return new LargeObjectCacheImpl(ownerHolder);
                 } catch (AccessDeniedException e) {
                     throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (NoSuchFileException | FileNotFoundException e) {
-                    return new LargeObjectCacheImpl();
+                    return new LargeObjectCacheImpl(ownerHolder);
                 }
             }
         }
@@ -1061,7 +1104,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new GetLargeObjectCacheProcessor());
+                new GetLargeObjectCacheProcessor(request.getTransactionHandle().getHandle()));
     }
 
     class CopyLargeObjectProcessor implements ResponseProcessor<Void> {
@@ -1237,6 +1280,12 @@ public class SqlServiceStub implements SqlService {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
+        for (var holder : transactions.values()) {
+            synchronized (holder) {
+                holder.close();
+            }
+        }
+        transactions.clear();
         synchronized (resources) {
             resources.close();
         }

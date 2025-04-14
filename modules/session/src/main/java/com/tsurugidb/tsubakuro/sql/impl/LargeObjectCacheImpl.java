@@ -22,18 +22,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
+import com.tsurugidb.tsubakuro.util.Lang;
+import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
  * An implementation of {@link LargeObjectCache}.
  */
 public class LargeObjectCacheImpl implements LargeObjectCache {
 
+    static final Logger LOG = LoggerFactory.getLogger(LargeObjectCacheImpl.class);
+
+    private final CloseHandler closeHandler;
+
     private final Path path;
+
     private final boolean exists;
+
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public LargeObjectCacheImpl(@Nullable Path path) {
+    public LargeObjectCacheImpl(@Nullable ServerResource.CloseHandler closeHandler, @Nullable Path path) {
+        this.closeHandler = closeHandler;
         this.path = path;
         if (path != null) {
             exists = new File(path.toString()).exists();
@@ -41,7 +53,8 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
         }
         exists = false;
     }
-    public LargeObjectCacheImpl() {
+    public LargeObjectCacheImpl(@Nullable ServerResource.CloseHandler closeHandler) {
+        this.closeHandler = closeHandler;
         this.path = null;
         exists = false;
     }
@@ -57,5 +70,10 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
     @Override
     public void close() {
         closed.set(true);
+        if (closeHandler != null) {
+            Lang.suppress(
+                    e -> LOG.warn("error occurred while collecting garbage", e),
+                    () -> closeHandler.onClosed(this));
+        }
     }
 }

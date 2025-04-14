@@ -20,18 +20,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
@@ -39,7 +39,6 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
@@ -47,8 +46,8 @@ import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.Parameters;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.io.BlobException;
 
 class SqlServiceStubLobTest {
@@ -249,6 +248,12 @@ class SqlServiceStubLobTest {
                                                    .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
                                                                 .setChannelName(channelName)))
                         .build();
+        // for begin
+        link.next(SqlResponse.Response.newBuilder()
+                    .setBegin(SqlResponse.Begin.newBuilder()
+                                .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                                        .setHandle(123).build()))).build());
         // for getLargeObjectData
         link.next(header, payload);
         // for rollback
@@ -258,11 +263,7 @@ class SqlServiceStubLobTest {
 
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
-                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
-                                              .build(),
-                                              service,
-                                              null);
+            var transaction = service.send(SqlRequest.Begin.newBuilder().build()).await();
         ) {
             var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
             var pathOpt = largeObjectCache.find();
@@ -272,6 +273,8 @@ class SqlServiceStubLobTest {
             for (int i = 0; i < data.length; i++) {
                 assertEquals(data[i], obtainedData[i]);
             }
+            transaction.commit().await();
+            assertEquals(Optional.empty(), largeObjectCache.find());  // confirm largeObjectCache is closed after the transaction is committed
         }
         assertFalse(link.hasRemaining());
     }

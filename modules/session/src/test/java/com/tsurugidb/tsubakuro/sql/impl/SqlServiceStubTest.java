@@ -1001,7 +1001,6 @@ class SqlServiceStubTest {
         assertFalse(wire.hasRemaining());
     }
 
-
     @Test
     void sendQuerySuccess() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_QUERY,
@@ -1040,6 +1039,49 @@ class SqlServiceStubTest {
 
             assertFalse(rs.nextColumn());
             assertFalse(rs.nextRow());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void useResultSet_after_transaction_close() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.BEGIN,
+                RequestHandler.returns(
+                        SqlResponse.Begin.newBuilder()
+                                .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                                        .setHandle(123))).build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_QUERY,
+                RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
+                        toResultSetMetadata(
+                            Types.column("a", Types.of(BigDecimal.class)),
+                            Types.column("b", Types.of(String.class)),
+                            Types.column("c", Types.of(double.class))).toByteArray(),
+                        Relation.of(new Object[][] {
+                            {
+                                new BigDecimal("3.14"),
+                                "Hello, world!",
+                                1.25,
+                            },
+                        }))));
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
+                RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build())));
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = service.send(SqlRequest.Begin.newBuilder().build()).await();
+            var future = transaction.executeQuery("SELECT 1");
+            var rs = future.await();
+        ) {
+            transaction.commit().await();
+
+            // expects transaction already closed
+            assertThrows(IOException.class, () -> rs.nextRow());
         }
         assertFalse(wire.hasRemaining());
     }
