@@ -63,6 +63,12 @@ public final class StreamLink extends Link {
 
     static final Logger LOG = LoggerFactory.getLogger(StreamLink.class);
 
+    private static class SocketAlreadyClosedException extends IOException {
+        SocketAlreadyClosedException() {
+            // do nothing
+        }
+    }
+
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
         this.socket.setTcpNoDelay(true);
@@ -106,6 +112,8 @@ public final class StreamLink extends Link {
         }
         try {
             message = receive();
+        } catch (SocketAlreadyClosedException e) {  // Someone closed the socket, meaning Session is terminated. It's OK.
+            return false;
         } catch (SocketTimeoutException e) {
             throw new TimeoutException("response has not been received within the specified time");
         } catch (EOFException e) {   // imply session close
@@ -252,6 +260,9 @@ public final class StreamLink extends Link {
 
     private LinkMessage receive() throws IOException, SocketTimeoutException {
         synchronized (inStream) {
+            if (socketClosed.get()) {
+                throw new SocketAlreadyClosedException();
+            }
             try {
                 byte[] bytes;
                 byte writer = 0;
