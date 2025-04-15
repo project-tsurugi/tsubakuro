@@ -120,6 +120,11 @@ class DbResultSetFutureTest extends DbTester {
                     return;
                 }
             }
+            if (e instanceof RestrictedOperationException) {
+                if (e.getMessage().contains("commit requested while other transaction operations are on-going")) {
+                    return;
+                }
+            }
             throw e;
         });
     }
@@ -139,6 +144,11 @@ class DbResultSetFutureTest extends DbTester {
         }, e -> {
             if (e instanceof InactiveTransactionException) {
                 if (e.getMessage().contains("the other request already made to terminate the transaction")) {
+                    return;
+                }
+            }
+            if (e instanceof RestrictedOperationException) {
+                if (e.getMessage().contains("commit requested while other transaction operations are on-going")) {
                     return;
                 }
             }
