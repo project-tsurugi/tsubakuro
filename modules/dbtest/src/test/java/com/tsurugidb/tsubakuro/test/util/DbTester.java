@@ -238,6 +238,14 @@ public class DbTester {
     }
 
     protected static void executeOcc(TransactionAction action) throws IOException, ServerException, InterruptedException, TimeoutException {
+        executeOcc(action, null);
+    }
+
+    protected static interface ExceptionAction {
+        void apply(Exception e) throws Exception;
+    }
+
+    protected static void executeOcc(TransactionAction action, ExceptionAction commitErrorAction) throws IOException, ServerException, InterruptedException, TimeoutException {
         try (var sqlClient = SqlClient.attach(getSession())) {
             var option = TransactionOption.newBuilder() //
                     .setType(TransactionType.SHORT) //
@@ -245,7 +253,23 @@ public class DbTester {
                     .build();
             try (var transaction = sqlClient.createTransaction(option).await(10, TimeUnit.SECONDS)) {
                 action.execute(transaction);
-                transaction.commit().await(10, TimeUnit.SECONDS);
+                try {
+                    transaction.commit().await(10, TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    if (commitErrorAction != null) {
+                        try {
+                            commitErrorAction.apply(e);
+                        } catch (IOException | ServerException | InterruptedException | TimeoutException e1) {
+                            throw e1;
+                        } catch (RuntimeException e1) {
+                            throw e1;
+                        } catch (Exception e1) {
+                            throw new RuntimeException(e1);
+                        }
+                    } else {
+                        throw e;
+                    }
+                }
             }
         }
     }

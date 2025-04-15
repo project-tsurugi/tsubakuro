@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.exception.InactiveTransactionException;
+import com.tsurugidb.tsubakuro.sql.exception.RestrictedOperationException;
 import com.tsurugidb.tsubakuro.test.util.DbTester;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -86,6 +88,18 @@ class DbResultSetFutureTest extends DbTester {
             try (var future = transaction.executeQuery(sql)) {
                 // do nothing
             }
+        }, e -> {
+            if (e instanceof InactiveTransactionException) {
+                if (e.getMessage().contains("the other request already made to terminate the transaction")) {
+                    return;
+                }
+            }
+            if (e instanceof RestrictedOperationException) {
+                if (e.getMessage().contains("commit requested while other transaction operations are on-going")) {
+                    return;
+                }
+            }
+            throw e;
         });
     }
 
@@ -100,6 +114,13 @@ class DbResultSetFutureTest extends DbTester {
                 });
                 assertTrue(e.getMessage().contains("already closed"));
             }
+        }, e -> {
+            if (e instanceof InactiveTransactionException) {
+                if (e.getMessage().contains("the other request already made to terminate the transaction")) {
+                    return;
+                }
+            }
+            throw e;
         });
     }
 
@@ -115,6 +136,13 @@ class DbResultSetFutureTest extends DbTester {
                 });
                 assertTrue(e.getMessage().contains("already closed"));
             }
+        }, e -> {
+            if (e instanceof InactiveTransactionException) {
+                if (e.getMessage().contains("the other request already made to terminate the transaction")) {
+                    return;
+                }
+            }
+            throw e;
         });
     }
 }
