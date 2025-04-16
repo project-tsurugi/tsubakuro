@@ -59,6 +59,12 @@ public class TableMetadataAdapter implements TableMetadata {
     }
 
     @Override
+    public Optional<String> getDescription() {
+        return Optional.of(proto.getDescription())
+                .filter(it -> !it.isEmpty());
+    }
+
+    @Override
     public List<? extends SqlCommon.Column> getColumns() {
         return proto.getColumnsList();
     }
