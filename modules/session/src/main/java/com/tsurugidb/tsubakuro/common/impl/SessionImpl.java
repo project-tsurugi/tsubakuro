@@ -149,6 +149,9 @@ public class SessionImpl implements Session {
         if (doKeepAlive) {
             timer.scheduleAtFixedRate(new KeepAliveTask(timer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
+        if (wire instanceof WireImpl) {
+            ((WireImpl) wire).setBlobPathMapping(blobPathMapping);
+        }
     }
 
     @Override

@@ -217,33 +217,45 @@ public class ChannelResponse implements Response {
     }
 
     private InputStream returnsBlob(String id) throws NoSuchElementException, IOException {
-        var entry = blobs.get(id);
+        Pair<String, Boolean> entry = blobs.get(id);
         if (entry != null) {
-            var path = entry.getLeft();
-            if (path != null) {
-                var filePath = Paths.get(path);
+            String serverFileName = entry.getLeft();
+            if (serverFileName != null) {
                 if (blobPathMapping != null) {
-                    var parent = filePath.getParent();
+                    Path filePath  = null;
                     for (var m : blobPathMapping.getOnReceive()) {
-                        if (parent.toString().equals(m.getServerPath())) {
-                            var fileName = filePath.getFileName();
-                            if (fileName != null) {
-                                filePath = Paths.get(m.getClientPath().toString(), fileName.toString());
-                                return new FileInputStreamWithPath(filePath.toString());
-                            }
+                        if (!serverFileName.startsWith(m.getServerPath())) {
+                            continue;
                         }
+                        String remainingFileName = serverFileName.substring(m.getServerPath().length());
+                        filePath = connectPath(m.getClientPath(), remainingFileName);
+                        return new FileInputStreamWithPath(filePath.toString());
                     }
                 }
-                if (Files.notExists(filePath)) {
-                    throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + filePath.toString() + "}");
+                if (Files.notExists(Paths.get(serverFileName))) {
+                    throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + serverFileName + "}");
                 }
-                if (!Files.isReadable(filePath)) {
-                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + filePath.toString() + "}");
+                if (!Files.isReadable(Paths.get(serverFileName))) {
+                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + serverFileName + "}");
                 }
-                return new FileInputStreamWithPath(path);
+                return new FileInputStreamWithPath(serverFileName);
             }
         }
         throw new NoSuchElementException("client failed to receive BLOB file in privileged mode: {illegal SubResponse id: " + id + "}");
+    }
+
+    private Path connectPath(Path clientPath, String remainingFileName) {
+        String[] elms = remainingFileName.split("/");  // server path is separated by "/"
+        for (var elm : elms) {
+            if (elm.equals("..")) {
+                clientPath = clientPath.getParent();
+            } else if (elm.equals(".")) {
+                continue;
+            } else {
+                clientPath = clientPath.resolve(elm);
+            }
+        }
+        return clientPath;
     }
 
     @Override
