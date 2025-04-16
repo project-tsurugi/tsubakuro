@@ -41,4 +41,10 @@ public interface TableMetadata extends RelationMetadata {
      * @return the simple name
      */
     String getTableName();
+
+    /**
+     * Returns description of tha table.
+     * @return the description of tha table, or empty if it is not set
+     */
+    Optional<String> getDescription();
 }
