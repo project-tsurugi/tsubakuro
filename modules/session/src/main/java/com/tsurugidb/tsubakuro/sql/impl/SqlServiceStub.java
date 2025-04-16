@@ -27,9 +27,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
@@ -51,9 +49,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
-import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
@@ -522,47 +518,8 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                applySendBlobPathMapping(blobs),
+                blobs,
                 new ExecuteProcessor().asResponseProcessor());
-    }
-
-    private List<? extends BlobInfo> applySendBlobPathMapping(List<? extends BlobInfo> blobs) {
-        if (session instanceof SessionImpl) {
-            var blobPathMapping = ((SessionImpl) session).getBlobPathMapping();
-            if (blobPathMapping == null) {
-                return blobs;
-            }
-            var lobs = new LinkedList<BlobInfo>();
-            for (var blob : blobs) {
-                if (blob instanceof FileBlobInfo) {
-                    if (applySendFileBlobPathMapping(blobPathMapping, (FileBlobInfo) blob, lobs)) {
-                        continue;
-                    }
-                }
-                lobs.add(blob);
-            }
-            return lobs;
-        }
-        return blobs;
-    }
-
-    private boolean applySendFileBlobPathMapping(BlobPathMapping blobPathMapping, FileBlobInfo blob, LinkedList<BlobInfo> lobs) {
-        var mapping = blobPathMapping.getOnSend();
-        var blobPath = blob.getPath().get();
-
-        if (blobPath != null) {
-            for (var entry : mapping) {
-                var bp = blobPath.getParent();
-                var bf = blobPath.getFileName();
-                if (bp != null && bf != null) {
-                    if (entry.getClientPath().toString().equals(bp.toString())) {
-                        lobs.add(new FileBlobInfo(blob.getChannelName(), Paths.get(entry.getServerPath(), bf.toString())));
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 
    @Override
@@ -696,7 +653,7 @@ public class SqlServiceStub implements SqlService {
         return session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                applySendBlobPathMapping(blobs),
+                blobs,
                 new QueryProcessor(request));
     }
 

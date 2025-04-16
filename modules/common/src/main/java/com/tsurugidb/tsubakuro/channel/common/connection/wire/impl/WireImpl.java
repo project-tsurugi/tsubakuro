@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +37,7 @@ import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
@@ -83,7 +85,8 @@ public class WireImpl implements Wire {
 
     private final Link link;
     private final AtomicBoolean closed = new AtomicBoolean();
-
+    private BlobPathMapping blobPathMapping = null;
+    
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param link the stream object by which this WireImpl is connected to the SQL server
@@ -92,6 +95,14 @@ public class WireImpl implements Wire {
     public WireImpl(@Nonnull Link link) throws IOException {
         this.link = link;
         LOG.trace("begin Session");
+    }
+
+    /**
+     * Set BlobPathMapping.
+     * @param mapping path mapping used when passing blobs to the server
+     */
+    public void setBlobPathMapping(BlobPathMapping mapping) {
+        this.blobPathMapping = mapping;
     }
 
     @Override
@@ -138,10 +149,9 @@ public class WireImpl implements Wire {
                 if (!dupCheck.add(e.getChannelName())) {
                     throw new IllegalArgumentException("duplicate channel name: " + e.getChannelName());
                 }
-                var blobInfo = FrameworkCommon.BlobInfo.newBuilder()
-                .setChannelName(e.getChannelName());
+                var blobInfo = FrameworkCommon.BlobInfo.newBuilder().setChannelName(e.getChannelName());
                 if (e.getPath().isPresent() && e.isFile()) {
-                    blobInfo.setPath(e.getPath().get().toString());
+                    blobInfo.setPath(serverPathString(e.getPath().get()));
                 }
                 repeatedBlobInfo.addBlobs(blobInfo.build());
             }
@@ -151,6 +161,28 @@ public class WireImpl implements Wire {
         return FutureResponse.wrap(Owner.of(response));
     }
 
+    private String serverPathString(Path blobPath) {
+        if (blobPathMapping == null) {
+            return blobPath.toString();
+        }
+        var mapping = blobPathMapping.getOnSend();
+        if (blobPath != null) {
+            for (var entry : mapping) {
+                if (blobPath.toString().startsWith(entry.getClientPath().toString())) {
+                    var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
+                    if (remainingPath != null) {
+                        String serverPath = entry.getServerPath();
+                        for (int i = 0; i < remainingPath.getNameCount(); i++) {
+                            serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
+                        }
+                        return serverPath;
+                    }
+                }
+            }
+            return blobPath.toString();
+        }
+        throw new AssertionError("blobPath is null");
+    }
 
     @Override
     public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {

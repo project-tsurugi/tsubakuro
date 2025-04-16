@@ -94,7 +94,7 @@ class SqlServiceStubLobWithMappingTest {
     }
 
     @Test
-    void sendExecutePreparedStatementWithLobSuccess(@TempDir Path tempDir) throws Exception {
+    void sendExecutePreparedStatementWithLobSuccessVirService(@TempDir Path tempDir) throws Exception {
         var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
         var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
         Files.createDirectory(ClientSendDirectoryPath);
@@ -166,11 +166,84 @@ class SqlServiceStubLobWithMappingTest {
     }
 
     @Test
-    void executeStatementWithLob(@TempDir Path tempDir) throws Exception {
+    void executeStatementWithLobVirTransaction(@TempDir Path tempDir) throws Exception {
         var ClientSendDirectoryPath = tempDir.resolve(ClientSendDirectory);
         var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory);
         Files.createDirectory(ClientSendDirectoryPath);
         Files.createDirectory(ServerReceiveDirectoryPath);
+
+        connect(tempDir);
+        // for executeStatement
+        link.next(SqlResponse.Response.newBuilder()
+                    .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
+                            .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4))
+                            )
+                    ).build()
+        );
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        String parameterName1 = "blob";
+        String fileName1 = "blob.data";
+        String parameterName2 = "clob";
+        String fileName2 = "clob.data";
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        Path file1 = ServerReceiveDirectoryPath.resolve(fileName1);
+        Path file2 = ServerReceiveDirectoryPath.resolve(fileName2);
+        Files.write(file1, data);
+        Files.write(file2, data);
+
+        Path dummy1 = ClientSendDirectoryPath.resolve(fileName1);
+        Path dummy2 = ClientSendDirectoryPath.resolve(fileName2);
+        Files.createFile(dummy1);
+        Files.createFile(dummy2);
+    
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
+                                            Parameters.blobOf(parameterName1, file1),
+                                            Parameters.clobOf(parameterName2, file2)).await();
+                                            var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
+            assertTrue(header.hasBlobs());
+            for (var e: header.getBlobs().getBlobsList()) {
+                String channelName = e.getChannelName();
+                String path = e.getPath();
+                if (channelName.startsWith("BlobChannel-")) {
+                    assertEquals(e.getPath().toString(), file1.toString());
+                } else if (channelName.startsWith("ClobChannel-")) {
+                    assertEquals(e.getPath().toString(), file2.toString());
+                } else {
+                    fail("unexpected channel name " + channelName);
+                }
+            }
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void executeStatementWithLobVirTransactionNest(@TempDir Path tempDir) throws Exception {
+        String childDirectory = "child";
+        var ServerReceiveParentPath = tempDir.resolve(ServerReceiveDirectory);
+        var ClientSendParentPath = tempDir.resolve(ClientSendDirectory);
+        Files.createDirectory(ServerReceiveParentPath);
+        Files.createDirectory(ClientSendParentPath);
+        var ServerReceiveDirectoryPath = ServerReceiveParentPath.resolve(childDirectory);
+        var ClientSendDirectoryPath = ClientSendParentPath.resolve(childDirectory);
+        Files.createDirectory(ServerReceiveDirectoryPath);
+        Files.createDirectory(ClientSendDirectoryPath);
 
         connect(tempDir);
         // for executeStatement
@@ -274,7 +347,65 @@ class SqlServiceStubLobWithMappingTest {
     void getLargeObjectCache(@TempDir Path tempDir) throws Exception {
         var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory);
         var ClientReceiveDirectoryPath = tempDir.resolve(ClientReceiveDirectory);
-        Files.createDirectory(ServerSendDirectoryPath);
+        Files.createDirectory(ClientReceiveDirectoryPath);
+
+        connect(tempDir);
+
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = ClientReceiveDirectoryPath.resolve(fileName);
+        Files.write(file, data);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var pathOpt = largeObjectCache.find();
+            assertTrue(pathOpt.isPresent());
+            var obtainedData = Files.readAllBytes(pathOpt.get());
+            assertEquals(data.length, obtainedData.length);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void getLargeObjectCacheNest(@TempDir Path tempDir) throws Exception {
+        String childDirectory = "child";
+        var ServerSendParentPath = tempDir.resolve(ServerSendDirectory);
+        var ClientReceiveParentPath = tempDir.resolve(ClientReceiveDirectory);
+        Files.createDirectory(ClientReceiveParentPath);
+        var ServerSendDirectoryPath = ServerSendParentPath.resolve(childDirectory);
+        var ClientReceiveDirectoryPath = ClientReceiveParentPath.resolve(childDirectory);
         Files.createDirectory(ClientReceiveDirectoryPath);
 
         connect(tempDir);
