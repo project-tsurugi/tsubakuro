@@ -220,7 +220,7 @@ class SqlServiceStubLobWithMappingTest {
             assertTrue(header.hasBlobs());
             for (var e: header.getBlobs().getBlobsList()) {
                 String channelName = e.getChannelName();
-                String path = e.getPath();
+//                String path = e.getPath();
                 if (channelName.startsWith("BlobChannel-")) {
                     assertEquals(e.getPath().toString(), file1.toString());
                 } else if (channelName.startsWith("ClobChannel-")) {
@@ -293,7 +293,7 @@ class SqlServiceStubLobWithMappingTest {
             assertTrue(header.hasBlobs());
             for (var e: header.getBlobs().getBlobsList()) {
                 String channelName = e.getChannelName();
-                String path = e.getPath();
+//                String path = e.getPath();
                 if (channelName.startsWith("BlobChannel-")) {
                     assertEquals(e.getPath().toString(), file1.toString());
                 } else if (channelName.startsWith("ClobChannel-")) {

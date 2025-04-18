@@ -166,22 +166,19 @@ public class WireImpl implements Wire {
             return blobPath.toString();
         }
         var mapping = blobPathMapping.getOnSend();
-        if (blobPath != null) {
-            for (var entry : mapping) {
-                if (blobPath.toString().startsWith(entry.getClientPath().toString())) {
-                    var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
-                    if (remainingPath != null) {
-                        String serverPath = entry.getServerPath();
-                        for (int i = 0; i < remainingPath.getNameCount(); i++) {
-                            serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
-                        }
-                        return serverPath;
+        for (var entry : mapping) {
+            if (blobPath.startsWith(entry.getClientPath())) {
+                var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
+                if (remainingPath != null) {
+                    String serverPath = entry.getServerPath();
+                    for (int i = 0; i < remainingPath.getNameCount(); i++) {
+                        serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
                     }
+                    return serverPath;
                 }
             }
-            return blobPath.toString();
         }
-        throw new AssertionError("blobPath is null");
+        return blobPath.toString();
     }
 
     @Override

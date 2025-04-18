@@ -221,14 +221,24 @@ public class ChannelResponse implements Response {
         if (entry != null) {
             String serverFileName = entry.getLeft();
             if (serverFileName != null) {
+                String[] serverFileNameElements = serverFileName.split("/");
                 if (blobPathMapping != null) {
                     Path filePath  = null;
                     for (var m : blobPathMapping.getOnReceive()) {
-                        if (!serverFileName.startsWith(m.getServerPath())) {
+                        String[] serverPathElements = m.getServerPath().split("/");
+                        int length = serverPathElements.length;
+                        if (serverFileNameElements.length < serverPathElements.length) {
                             continue;
                         }
-                        String remainingFileName = serverFileName.substring(m.getServerPath().length());
-                        filePath = connectPath(m.getClientPath(), remainingFileName);
+                        for (int i = 0; i < length; i++) {
+                            if (!serverFileNameElements[i].equals(serverPathElements[i])) {
+                                continue;
+                            }
+                        }
+                        filePath = m.getClientPath();
+                        for (int i = length; i < serverFileNameElements.length; i++) {
+                            filePath = filePath.resolve(serverFileNameElements[i]);
+                        }
                         return new FileInputStreamWithPath(filePath.toString());
                     }
                 }
@@ -242,20 +252,6 @@ public class ChannelResponse implements Response {
             }
         }
         throw new NoSuchElementException("client failed to receive BLOB file in privileged mode: {illegal SubResponse id: " + id + "}");
-    }
-
-    private Path connectPath(Path clientPath, String remainingFileName) {
-        String[] elms = remainingFileName.split("/");  // server path is separated by "/"
-        for (var elm : elms) {
-            if (elm.equals("..")) {
-                clientPath = clientPath.getParent();
-            } else if (elm.equals(".")) {
-                continue;
-            } else {
-                clientPath = clientPath.resolve(elm);
-            }
-        }
-        return clientPath;
     }
 
     @Override
