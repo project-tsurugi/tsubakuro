@@ -230,10 +230,15 @@ public class ChannelResponse implements Response {
                         if (serverFileNameElements.length < serverPathElements.length) {
                             continue;
                         }
+                        boolean isSame = true;
                         for (int i = 0; i < length; i++) {
                             if (!serverFileNameElements[i].equals(serverPathElements[i])) {
-                                continue;
+                                isSame = false;
+                                break;
                             }
+                        }
+                        if (!isSame) {
+                            continue;
                         }
                         filePath = m.getClientPath();
                         for (int i = length; i < serverFileNameElements.length; i++) {

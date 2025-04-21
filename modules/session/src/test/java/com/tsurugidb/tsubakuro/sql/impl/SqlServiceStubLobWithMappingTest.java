@@ -26,7 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -49,7 +48,6 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.io.BlobException;
 
 class SqlServiceStubLobWithMappingTest {
@@ -416,6 +414,78 @@ class SqlServiceStubLobWithMappingTest {
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = ClientReceiveDirectoryPath.resolve(fileName);
+        Files.write(file, data);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null);
+        ) {
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var pathOpt = largeObjectCache.find();
+            assertTrue(pathOpt.isPresent());
+            var obtainedData = Files.readAllBytes(pathOpt.get());
+            assertEquals(data.length, obtainedData.length);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void getLargeObjectCacheNest_noConvert(@TempDir Path tempDir) throws Exception {
+        String childDirectory = "data/log/blob";
+        var ServerSendParentPath = tempDir.resolve("mnt/cygwin64/tmp");
+        var ClientReceiveParentPath = tempDir.resolve("cygwin64/tmp");
+        var ServerSendDirectoryPath = ServerSendParentPath.resolve(childDirectory);
+        var ClientReceiveDirectoryPath = ClientReceiveParentPath.resolve(childDirectory);
+        Files.createDirectories(ServerSendDirectoryPath);
+        Files.createDirectories(ClientReceiveDirectoryPath);
+
+        try {
+            var ServerMappingParentPath = tempDir.resolve("opt/tsurugi/var");
+            BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+            BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                                .onReceive(ServerMappingParentPath.toString(), ClientReceiveParentPath)
+                                                .build();
+            System.out.println(blobPathMapping.toString());
+            wire = new WireImpl(link);
+            session = new SessionImpl(false, blobPathMapping);
+            session.connect(wire);
+        } catch (IOException e) {
+            System.err.println(e);
+            fail("fail to create WireImpl");
+        }
+
+        String fileName = "0000000000000002.blob";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = ServerSendDirectoryPath.resolve(fileName);
         Files.write(file, data);
 
         var header = FrameworkResponse.Header.newBuilder()
