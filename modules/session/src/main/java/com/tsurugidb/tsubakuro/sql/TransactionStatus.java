@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
- * transaction staus in SQL service
+ * transaction status in SQL service
  */
 public enum TransactionStatus {
 
