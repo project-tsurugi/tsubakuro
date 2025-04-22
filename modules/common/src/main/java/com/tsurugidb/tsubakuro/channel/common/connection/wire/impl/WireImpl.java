@@ -167,7 +167,9 @@ public class WireImpl implements Wire {
         }
         var mapping = blobPathMapping.getOnSend();
         for (var entry : mapping) {
-            if (blobPath.startsWith(entry.getClientPath())) {
+            var cp = entry.getClientPath();
+            var clientPath = cp.isAbsolute() ? cp : cp.toAbsolutePath();
+            if (blobPath.startsWith(clientPath)) {
                 var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
                 if (remainingPath != null) {
                     String serverPath = entry.getServerPath();
