@@ -68,57 +68,53 @@ public enum TransactionStatus {
     ;
 
     private final String status;
-
-    private String message;
-
+    
     /**
      * Creates a new instance.
      * @param code the diagnostic code
      */
     TransactionStatus(String status) {
         this.status = status;
-        this.message = "";
     }
 
     /**
-     * Returns the status message.
-     * @return the status message
-     */
-    public String getMessage() {
-        return message;
-    }
-
-    /**
-     * Returns the status label.
+     * Returns the status lavel.
      * @return the status label
      */
-    public String getStatus() {
+    public String getStatusLabel() {
         return status;
     }
 
-    /**
-     * Creates a new instance.
-     * @param success the SqlResponse.GetTransactionStatus.Success proto received
-     * @return TransactionStatus corresponding to the success message
-     */
-    public static TransactionStatus of(@Nonnull SqlResponse.GetTransactionStatus.Success success) {
+    public static TransactionStatusWithMessage of(@Nonnull SqlResponse.GetTransactionStatus.Success success) {
         Objects.requireNonNull(success);
-
         switch (success.getStatus()) {
-        case RUNNING: return RUNNING.setMessage(success.getMessage());
-        case COMMITTING: return COMMITTING.setMessage(success.getMessage());
-        case AVAILABLE: return AVAILABLE.setMessage(success.getMessage());
-        case STORED: return STORED.setMessage(success.getMessage());
-        case PROPAGATED: return PROPAGATED.setMessage(success.getMessage());
-        case ABORTING: return ABORTING.setMessage(success.getMessage());
-        case ABORTED: return ABORTED.setMessage(success.getMessage());
-        case TRANSACTION_STATUS_UNSPECIFIED: return UNSPECIFIED.setMessage(success.getMessage());
+        case RUNNING: return new TransactionStatusWithMessage(RUNNING, success.getMessage());
+        case COMMITTING: return new TransactionStatusWithMessage(COMMITTING, success.getMessage());
+        case AVAILABLE: return new TransactionStatusWithMessage(AVAILABLE, success.getMessage());
+        case STORED: return new TransactionStatusWithMessage(STORED, success.getMessage());
+        case PROPAGATED: return new TransactionStatusWithMessage(PROPAGATED, success.getMessage());
+        case ABORTING: return new TransactionStatusWithMessage(ABORTING, success.getMessage());
+        case ABORTED: return new TransactionStatusWithMessage(ABORTED, success.getMessage());
+        case TRANSACTION_STATUS_UNSPECIFIED: return new TransactionStatusWithMessage(UNSPECIFIED, success.getMessage());
         default: throw new AssertionError("status code given is undefined: " + success.getStatus());
         }
     }
 
-    private TransactionStatus setMessage(String msg) {
-        this.message = msg;
-        return this;
+    /**
+     * Immutable wrapper class for TransactionStatus with an associated message.
+     */
+    public static final class TransactionStatusWithMessage {
+        private final TransactionStatus status;
+        private final String message;
+        public TransactionStatusWithMessage(TransactionStatus status, String message) {
+            this.status = Objects.requireNonNull(status);
+            this.message = Objects.requireNonNull(message);
+        }
+        public TransactionStatus getStatus() {
+            return status;
+        }
+        public String getMessage() {
+            return message;
+        }
     }
 }
