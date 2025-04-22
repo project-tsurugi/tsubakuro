@@ -102,15 +102,15 @@ public class ChannelResponse implements Response {
      * A file input stream class with file path return functionality.
      */
     public static class FileInputStreamWithPath extends FileInputStream {
-        private final String path;
+        private final Path path;
 
         /**
          * Creates a new instance
          * @param path the file path
          * @throws IOException the file indicated by path does not exist
          */
-        FileInputStreamWithPath(String path) throws IOException {
-            super(path);
+        FileInputStreamWithPath(Path path) throws IOException {
+            super(path.toString());
             this.path = path;
         }
 
@@ -119,7 +119,7 @@ public class ChannelResponse implements Response {
          * @return a Path of the file
          */
         public Path path() {
-            return Paths.get(path);
+            return path;
         }
     }
 
@@ -224,39 +224,38 @@ public class ChannelResponse implements Response {
                 String[] serverFileNameElements = serverFileName.split("/");
                 if (blobPathMapping != null) {
                     Path filePath  = null;
-                    for (var m : blobPathMapping.getOnReceive()) {
+                    outerloop: for (var m : blobPathMapping.getOnReceive()) {
                         String[] serverPathElements = m.getServerPath().split("/");
                         int length = serverPathElements.length;
                         if (serverFileNameElements.length < serverPathElements.length) {
                             continue;
                         }
-                        boolean isSame = true;
                         for (int i = 0; i < length; i++) {
                             if (!serverFileNameElements[i].equals(serverPathElements[i])) {
-                                isSame = false;
-                                break;
+                                continue outerloop;
                             }
-                        }
-                        if (!isSame) {
-                            continue;
                         }
                         filePath = m.getClientPath();
                         for (int i = length; i < serverFileNameElements.length; i++) {
                             filePath = filePath.resolve(serverFileNameElements[i]);
                         }
-                        return new FileInputStreamWithPath(filePath.toString());
+                        return getFileInputStream(filePath);
                     }
                 }
-                if (Files.notExists(Paths.get(serverFileName))) {
-                    throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + serverFileName + "}");
-                }
-                if (!Files.isReadable(Paths.get(serverFileName))) {
-                    throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + serverFileName + "}");
-                }
-                return new FileInputStreamWithPath(serverFileName);
+                return getFileInputStream(Paths.get(serverFileName));
             }
         }
         throw new NoSuchElementException("client failed to receive BLOB file in privileged mode: {illegal SubResponse id: " + id + "}");
+    }
+
+    private FileInputStream getFileInputStream(Path serverFile) throws IOException {
+        if (Files.notExists(serverFile)) {
+            throw new NoSuchFileException("client failed to receive BLOB file in privileged mode: {NoSuchFile:" + serverFile + "}");
+        }
+        if (!Files.isReadable(serverFile)) {
+            throw new AccessDeniedException("client failed to receive BLOB file in privileged mode: {CannotRead: " + serverFile + "}");
+        }
+        return new FileInputStreamWithPath(serverFile);
     }
 
     @Override
