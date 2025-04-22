@@ -224,21 +224,16 @@ public class ChannelResponse implements Response {
                 String[] serverFileNameElements = serverFileName.split("/");
                 if (blobPathMapping != null) {
                     Path filePath  = null;
-                    for (var m : blobPathMapping.getOnReceive()) {
+                    outerloop: for (var m : blobPathMapping.getOnReceive()) {
                         String[] serverPathElements = m.getServerPath().split("/");
                         int length = serverPathElements.length;
                         if (serverFileNameElements.length < serverPathElements.length) {
                             continue;
                         }
-                        boolean isSame = true;
                         for (int i = 0; i < length; i++) {
                             if (!serverFileNameElements[i].equals(serverPathElements[i])) {
-                                isSame = false;
-                                break;
+                                continue outerloop;
                             }
-                        }
-                        if (!isSame) {
-                            continue;
                         }
                         filePath = m.getClientPath();
                         for (int i = length; i < serverFileNameElements.length; i++) {
