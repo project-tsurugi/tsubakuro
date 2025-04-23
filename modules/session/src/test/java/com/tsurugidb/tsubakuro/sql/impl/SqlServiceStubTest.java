@@ -153,7 +153,13 @@ class SqlServiceStubTest {
                     .setSuccess(SqlResponse.Void.newBuilder().build())
                     .build())));
             });
+        }
 
+        session.close();
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -201,6 +207,12 @@ class SqlServiceStubTest {
                     .setSuccess(SqlResponse.Void.newBuilder().build())
                     .build())));
             });
+        }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -334,19 +346,8 @@ class SqlServiceStubTest {
     }
 
     static class TransactionImplTest extends TransactionImpl {
-        private boolean notified = false;
-        public TransactionImplTest(SqlService service) {
-            super(null, service, null);
-        }
-        boolean isNotified() {
-            return notified;
-        }
-        @Override
-        void notifyCommitSuccess() {
-            notified = true;
-        }
-        @Override
-        public void close() {
+        TransactionImplTest(SqlService service) {
+            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, null);
         }
     }
 
@@ -357,16 +358,12 @@ class SqlServiceStubTest {
                         .setSuccess(newVoid())
                         .build())));
 
-        var message = SqlRequest.Commit.newBuilder()
-                .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
-                .build();
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTest(service);
-            var future = service.send(message, transaction);
+            var future = transaction.commit();
         ) {
             assertDoesNotThrow(() -> future.get());
-            assertTrue(transaction.isNotified());
         }
         assertFalse(wire.hasRemaining());
     }
@@ -377,18 +374,44 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setError(newEngineError())
                         .build())));
-
-        var message = SqlRequest.Commit.newBuilder()
-                .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
-                .build();
+        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTest(service);
-            var future = service.send(message, transaction);
+            var future = transaction.commit();
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
             assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
-            assertFalse(transaction.isNotified());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendCommitEngineErrorRollback() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.ROLLBACK,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImplTest(service);
+        ) {
+            try {
+                transaction.commit().await();
+            } catch (SqlServiceException e) {
+                assertDoesNotThrow(() -> transaction.rollback().await());
+            }
         }
         assertFalse(wire.hasRemaining());
     }
@@ -461,6 +484,12 @@ class SqlServiceStubTest {
                     .build())));
             });
         }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
+        }
         assertFalse(wire.hasRemaining());
     }
 
@@ -520,6 +549,12 @@ class SqlServiceStubTest {
                 .setSuccess(newVoid())
                 .build())));
             });
+        }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForDisposerEmpty();
         }
         assertFalse(wire.hasRemaining());
     }
