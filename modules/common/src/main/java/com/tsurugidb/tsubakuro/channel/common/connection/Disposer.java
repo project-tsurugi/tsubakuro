@@ -151,17 +151,30 @@ public class Disposer extends Thread {
                     shutdownQueue.poll();
                 }
             }
-            var cl = close.get();
-            if (cl != null) {
-                if (shutdownQueue.isEmpty()) {
-                    try {
-                        cl.delayedClose();
-                    } catch (ServerException | IOException | InterruptedException e) {
-                        exception = addSuppressed(exception, e);
-                    }
-                    break;
+
+            // confirm if we can go ahead to session close
+            DelayedClose delayedClose = null;
+            lock.lock();
+            try {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty()) {
+                    continue;
                 }
+                delayedClose = close.get();
+            } finally {
+                lock.unlock();
             }
+
+            if (delayedClose != null) {
+                // go ahead to session close as futureResponseQueue, serverResourceQueue, and shutdownQueue are empty
+                try {
+                    delayedClose.delayedClose();
+                } catch (ServerException | IOException | InterruptedException e) {
+                    exception = addSuppressed(exception, e);
+                }
+                break;
+            }
+
+            // sleep outside of the lock
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
@@ -235,7 +248,7 @@ public class Disposer extends Thread {
         lock.lock();
         try {
             if (close.get() != null) {
-                throw new AssertionError("Session already closed");
+                throw new AssertionError("Session close is already scheduled");
             }
             shutdownQueue.add(cleanUp);
             if (!started.getAndSet(true)) {

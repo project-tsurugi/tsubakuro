@@ -557,7 +557,6 @@ class SqlServiceStubTest {
             ((SessionImpl) session).waitForDisposerEmpty();
         }
         assertFalse(wire.hasRemaining());
-        assertFalse(wire.hasRemaining());
     }
 
     @Test
