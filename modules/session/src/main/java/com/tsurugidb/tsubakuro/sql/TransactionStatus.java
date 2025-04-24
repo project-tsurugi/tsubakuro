@@ -85,19 +85,23 @@ public enum TransactionStatus {
         return status;
     }
 
+    public static TransactionStatus of(@Nonnull SqlResponse.TransactionStatus status) {
+        switch (status) {
+        case RUNNING: return RUNNING;
+        case COMMITTING: return COMMITTING;
+        case AVAILABLE: return AVAILABLE;
+        case STORED: return STORED;
+        case PROPAGATED: return PROPAGATED;
+        case ABORTING: return ABORTING;
+        case ABORTED: return ABORTED;
+        case TRANSACTION_STATUS_UNSPECIFIED: return UNSPECIFIED;
+        default: throw new AssertionError("status code given is undefined: " + status);
+        }
+    }
+
     public static TransactionStatusWithMessage of(@Nonnull SqlResponse.GetTransactionStatus.Success success) {
         Objects.requireNonNull(success);
-        switch (success.getStatus()) {
-        case RUNNING: return new TransactionStatusWithMessage(RUNNING, success.getMessage());
-        case COMMITTING: return new TransactionStatusWithMessage(COMMITTING, success.getMessage());
-        case AVAILABLE: return new TransactionStatusWithMessage(AVAILABLE, success.getMessage());
-        case STORED: return new TransactionStatusWithMessage(STORED, success.getMessage());
-        case PROPAGATED: return new TransactionStatusWithMessage(PROPAGATED, success.getMessage());
-        case ABORTING: return new TransactionStatusWithMessage(ABORTING, success.getMessage());
-        case ABORTED: return new TransactionStatusWithMessage(ABORTED, success.getMessage());
-        case TRANSACTION_STATUS_UNSPECIFIED: return new TransactionStatusWithMessage(UNSPECIFIED, success.getMessage());
-        default: throw new AssertionError("status code given is undefined: " + success.getStatus());
-        }
+        return new TransactionStatusWithMessage(TransactionStatus.of(success.getStatus()), success.getMessage());
     }
 
     /**
