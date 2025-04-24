@@ -261,11 +261,11 @@ public interface Transaction extends ServerResourceNeedingDisposal {
 
     /**
      * Get the transaction status on the server.
-     * @return the transaction status on the server side, which may have changed by the time this result is received
+     * @return the transaction status with message on the server side, which may have changed by the time this result is received
      * @throws IOException if I/O error was occurred while sending request
      * @see TransactionStatus
      */
-    default FutureResponse<TransactionStatus> getStatus() throws IOException {
+    default FutureResponse<TransactionStatus.TransactionStatusWithMessage> getStatus() throws IOException {
         throw new UnsupportedOperationException();
     }
 
