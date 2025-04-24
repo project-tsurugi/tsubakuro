@@ -331,6 +331,7 @@ public final class StreamLink extends Link {
     public void close() throws IOException, ServerException {
         if (!closed.getAndSet(true) && !socketError.get()) {
             try (var c1 = socket; var c2 = inStream; var c3 = outStream) {
+                outStream.flush();
                 c1.close();
                 closeBoxes(true);
             } catch (Exception e) {
