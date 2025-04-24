@@ -51,6 +51,7 @@ import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
+import com.tsurugidb.tsubakuro.sql.TransactionStatus;
 import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
@@ -304,6 +305,13 @@ public class TransactionImpl implements Transaction {
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(e);
         }
+        return service.send(pb.build());
+    }
+
+    @Override
+    public FutureResponse<TransactionStatus.TransactionStatusWithMessage> getStatus() throws IOException {
+        var pb = SqlRequest.GetTransactionStatus.newBuilder()
+        .setTransactionHandle(transaction.getTransactionHandle());
         return service.send(pb.build());
     }
 

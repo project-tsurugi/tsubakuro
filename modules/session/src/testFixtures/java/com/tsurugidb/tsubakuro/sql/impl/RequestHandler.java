@@ -15,14 +15,12 @@
  */
 package com.tsurugidb.tsubakuro.sql.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 // import java.util.Arrays;
 // import java.util.Map;
 import java.util.Objects;
 
-import com.google.protobuf.Message;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -136,6 +134,10 @@ public interface RequestHandler {
         return returns(SqlResponseUtils.toSqlResponseDelimitedByteArray(response));
     }
     static RequestHandler returns(SqlResponse.GetLargeObjectData response) {
+        Objects.requireNonNull(response);
+        return returns(SqlResponseUtils.toSqlResponseDelimitedByteArray(response));
+    }
+    static RequestHandler returns(SqlResponse.GetTransactionStatus response) {
         Objects.requireNonNull(response);
         return returns(SqlResponseUtils.toSqlResponseDelimitedByteArray(response));
     }
