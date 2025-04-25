@@ -155,7 +155,7 @@ class SessionImplTest {
         var sqlClient = SqlClient.attach(session);
         sqlClient.close();
         session.close();
-        session.waitForDisposerEmpty();
+        session.waitForCompletion();
 
         Throwable exception = assertThrows(IOException.class, () -> {
                 sqlClient.createTransaction();
@@ -210,7 +210,7 @@ class SessionImplTest {
 
         sqlClient.close();
         session.close();
-        session.waitForDisposerEmpty();
+        session.waitForCompletion();
 
         Throwable e1 = assertThrows(IOException.class, () -> {
                 t1.executeStatement("INSERT INTO tbl (c1, c2, c3) VALUES (123, 456,789, 'abcdef')");
@@ -263,7 +263,7 @@ class SessionImplTest {
         ps4.close();
         sqlClient.close();
         session.close();
-        session.waitForDisposerEmpty();
+        session.waitForCompletion();
 
         Throwable e1 = assertThrows(IOException.class, () -> {
                 var handle = ((PreparedStatementImpl) ps1).getHandle();

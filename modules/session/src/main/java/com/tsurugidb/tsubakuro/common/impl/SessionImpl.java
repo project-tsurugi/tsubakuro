@@ -69,14 +69,17 @@ public class SessionImpl implements Session {
     public static final int SERVICE_ID = Constants.SERVICE_ID_ROUTING;
 
     private final ServiceShelf services = new ServiceShelf();
-    private final AtomicBoolean cleanUpFinished = new AtomicBoolean();
-    private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean();
+    private final AtomicBoolean cleanUpFinished = new AtomicBoolean(false);
+    private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
+    private final AtomicBoolean completed = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
 
     private Wire wire;
     private Timeout closeTimeout;
 
+    // As there are cases where multiple close requests occur in parallel,
+    // use AtomicInteger to keep track of the number of close requests.
     private final AtomicInteger closed = new AtomicInteger(0);
     public static final int SESSION_CLOSED = -1;
 
@@ -491,7 +494,7 @@ public class SessionImpl implements Session {
     }
 
     private void doClose(int d) throws ServerException, IOException, InterruptedException {
-        waitForDisposerEmpty();
+        disposer.waitForEmpty();
         while (true) {
             int expected = closed.get();
             if (expected == SESSION_CLOSED) {
@@ -506,10 +509,14 @@ public class SessionImpl implements Session {
                 }
             }
             if (expected == d) {
-                if (closed.compareAndSet(expected, SESSION_CLOSED)) {
-                    timer.cancel();  // does not throw any exception
-                    wireClose();
-                    return;
+                try {
+                    if (closed.compareAndSet(expected, SESSION_CLOSED)) {
+                        timer.cancel();  // does not throw any exception
+                        wireClose();
+                        return;
+                    }
+                } finally {
+                    completed.set(true);
                 }
             }
         }
@@ -535,7 +542,7 @@ public class SessionImpl implements Session {
 
     @Override
     public boolean isClosed() {
-        return closed.get() == SESSION_CLOSED;
+        return completed.get();
     }
 
     private void wireClose()  throws ServerException, IOException, InterruptedException {
@@ -549,10 +556,21 @@ public class SessionImpl implements Session {
     }
 
     /**
+     * Wait until the Session completion.
+     * @throws InterruptedException if interrupted while waiting
+     * NOTE: This method is provided for testing purposes only.
+     */
+    public void waitForCompletion() throws InterruptedException {
+        while (!completed.get()) {
+            Thread.sleep(100);
+        }
+    }
+
+    /**
      * Wait until there are no more ServerResources in the Disposer to process.
      * It can be called even when the Session is not shutdown or closed. However, in that case,
      * there may be a possibility that a ServerResource to be processed is added to the Disposer later.
-     * NOTE: This method is provided for testing purposes only.
+     * NOTE: This method is provided for testing purposes only and is intended to be used only in tests provided in tsubakuro.
      */
     public void waitForDisposerEmpty() {
         disposer.waitForEmpty();
