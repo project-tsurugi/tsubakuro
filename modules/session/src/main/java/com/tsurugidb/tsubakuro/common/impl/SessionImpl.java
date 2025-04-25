@@ -561,6 +561,9 @@ public class SessionImpl implements Session {
      * NOTE: This method is provided for testing purposes only.
      */
     public void waitForCompletion() throws InterruptedException {
+        if (!closeCleanUpRegistered.get()) {
+            throw new AssertionError("Session close is not submitted");
+        }
         while (!completed.get()) {
             Thread.sleep(100);
         }

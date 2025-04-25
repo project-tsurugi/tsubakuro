@@ -530,7 +530,11 @@ public class TransactionImpl implements Transaction {
         case COMMITTED:
         case TO_BE_CLOSED_WITH_COMMIT:
             try {
-                commitResult.get();
+                if (timeout == null) {
+                    commitResult.get();
+                } else {
+                    timeout.waitFor(commitResult);
+                }
                 needDispose = false;
             } catch (IOException | ServerException | InterruptedException e) {
                 needDispose = true;
