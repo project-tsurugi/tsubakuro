@@ -157,9 +157,9 @@ class SqlServiceStubTest {
 
         session.close();
         // neccesarry for taking care of delayed disposal
-        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        // need session.close() followed by SessionImpl.waitForCompletion()
         if (session instanceof SessionImpl) {
-            ((SessionImpl) session).waitForDisposerEmpty();
+            ((SessionImpl) session).waitForCompletion();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -209,10 +209,10 @@ class SqlServiceStubTest {
             });
         }
         // neccesarry for taking care of delayed disposal
-        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        // need session.close() followed by SessionImpl.waitForCompletion()
         session.close();
         if (session instanceof SessionImpl) {
-            ((SessionImpl) session).waitForDisposerEmpty();
+            ((SessionImpl) session).waitForCompletion();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -485,10 +485,10 @@ class SqlServiceStubTest {
             });
         }
         // neccesarry for taking care of delayed disposal
-        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        // need session.close() followed by SessionImpl.waitForCompletion()
         session.close();
         if (session instanceof SessionImpl) {
-            ((SessionImpl) session).waitForDisposerEmpty();
+            ((SessionImpl) session).waitForCompletion();
         }
         assertFalse(wire.hasRemaining());
     }
@@ -551,10 +551,10 @@ class SqlServiceStubTest {
             });
         }
         // neccesarry for taking care of delayed disposal
-        // need session.close() followed by SessionImpl.waitForDisposerEmpty()
+        // need session.close() followed by SessionImpl.waitForCompletion()
         session.close();
         if (session instanceof SessionImpl) {
-            ((SessionImpl) session).waitForDisposerEmpty();
+            ((SessionImpl) session).waitForCompletion();
         }
         assertFalse(wire.hasRemaining());
     }
