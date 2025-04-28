@@ -53,6 +53,7 @@ import com.tsurugidb.tsubakuro.sql.SearchPath;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
+import com.tsurugidb.tsubakuro.sql.TransactionStatus;
 import com.tsurugidb.tsubakuro.sql.Types;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -1535,6 +1536,49 @@ class SqlServiceStubTest {
                 .addFile("b")
                 .addFile("c")
                 .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendGetTransactionStatusSuccess() throws Exception {
+        String testMessage = "this is a test message for GetTransactionStatus";
+        wire.next(accepts(SqlRequest.Request.RequestCase.GET_TRANSACTION_STATUS,
+                RequestHandler.returns(SqlResponse.GetTransactionStatus.newBuilder()
+                        .setSuccess(SqlResponse.GetTransactionStatus.Success.newBuilder()
+                                    .setStatus(SqlResponse.TransactionStatus.RUNNING)
+                                    .setMessage(testMessage))
+                        .build())));
+        var message = SqlRequest.GetTransactionStatus.newBuilder()
+                        .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
+                        .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var transactionStatusWithMessage = future.get();
+            assertEquals(TransactionStatus.of(SqlResponse.TransactionStatus.RUNNING), transactionStatusWithMessage.getStatus());
+            assertEquals(testMessage, transactionStatusWithMessage.getMessage());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendGetTransactionStatusEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.GET_TRANSACTION_STATUS,
+                RequestHandler.returns(SqlResponse.GetTransactionStatus.newBuilder()
+                        .setError(newEngineError())
+                        .build())));
+
+        var message = SqlRequest.GetTransactionStatus.newBuilder()
+                        .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
+                        .build();
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message);

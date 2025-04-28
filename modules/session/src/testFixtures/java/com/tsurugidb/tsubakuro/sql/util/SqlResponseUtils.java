@@ -265,6 +265,24 @@ public final class SqlResponseUtils {
         return SqlResponse.Response.newBuilder().setGetLargeObjectData(response).build();
     }
 
+    /**
+     * Convert SqlResponse.xxx response to delimited byte[].
+     * @param response the SqlResponse.xxx response
+     * @return the delimited byte[]
+     * @if I/O error was occurred while converting SqlResponse.xxx response
+     */
+    public static byte[] toSqlResponseDelimitedByteArray(@Nonnull SqlResponse.GetTransactionStatus response) {
+        return toDelimitedByteArray(toSqlResponse(response));
+    }
+    /**
+     * Set SqlResponse.xxx response into SqlResponse.Response response.
+     * @param response the SqlResponse.xxx response
+     * @return SqlResponse.Response response
+     */
+    public static SqlResponse.Response toSqlResponse(@Nonnull SqlResponse.GetTransactionStatus response) {
+        return SqlResponse.Response.newBuilder().setGetTransactionStatus(response).build();
+    }
+
     private static byte[] toDelimitedByteArray(Message response) {
         try (var buffer = new ByteArrayOutputStream()) {
             response.writeDelimitedTo(buffer);
