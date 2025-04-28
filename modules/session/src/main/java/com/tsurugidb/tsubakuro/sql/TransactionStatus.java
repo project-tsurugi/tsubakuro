@@ -22,7 +22,7 @@ import javax.annotation.Nonnull;
 import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
- * transaction status in SQL service
+ * Represents transaction status in SQL service
  */
 public enum TransactionStatus {
 
@@ -71,21 +71,21 @@ public enum TransactionStatus {
     
     /**
      * Creates a new instance.
-     * @param code the diagnostic code
+     * @param status the status label
      */
     TransactionStatus(String status) {
         this.status = status;
     }
 
     /**
-     * Returns the status lavel.
+     * Returns the status label.
      * @return the status label
      */
     public String getStatusLabel() {
         return status;
     }
 
-    public static TransactionStatus of(@Nonnull SqlResponse.TransactionStatus status) {
+    private static TransactionStatus of(SqlResponse.TransactionStatus status) {
         switch (status) {
         case RUNNING: return RUNNING;
         case COMMITTING: return COMMITTING;
@@ -99,6 +99,11 @@ public enum TransactionStatus {
         }
     }
 
+    /**
+     * Creates a new object.
+     * @param success the SqlResponse.GetTransactionStatus.Success message
+     * @return a TransactionStatusWithMessage object
+     */
     public static TransactionStatusWithMessage of(@Nonnull SqlResponse.GetTransactionStatus.Success success) {
         Objects.requireNonNull(success);
         return new TransactionStatusWithMessage(TransactionStatus.of(success.getStatus()), success.getMessage());
@@ -110,13 +115,21 @@ public enum TransactionStatus {
     public static final class TransactionStatusWithMessage {
         private final TransactionStatus status;
         private final String message;
-        public TransactionStatusWithMessage(TransactionStatus status, String message) {
+        private TransactionStatusWithMessage(TransactionStatus status, String message) {
             this.status = Objects.requireNonNull(status);
             this.message = Objects.requireNonNull(message);
         }
+        /**
+         * Returns the status.
+         * @return the status
+         */
         public TransactionStatus getStatus() {
             return status;
         }
+        /**
+         * Returns the message.
+         * @return the message
+         */
         public String getMessage() {
             return message;
         }
