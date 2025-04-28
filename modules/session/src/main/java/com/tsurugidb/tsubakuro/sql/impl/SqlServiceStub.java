@@ -69,6 +69,7 @@ import com.tsurugidb.tsubakuro.sql.StatementMetadata;
 import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.TransactionStatus;
 import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
@@ -698,6 +699,43 @@ public class SqlServiceStub implements SqlService {
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 new LoadProcessor().asResponseProcessor(false));
+    }
+
+    class GetTransactionStatusProcessor implements MainResponseProcessor<TransactionStatus.TransactionStatusWithMessage> {
+        private final AtomicReference<SqlResponse.GetTransactionStatus> detailResponseCache = new AtomicReference<>();
+
+        @Override
+        public TransactionStatus.TransactionStatusWithMessage process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            if (session.isClosed()) {
+                throw new SessionAlreadyClosedException();
+            }
+            if (detailResponseCache.get() == null) {
+                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
+                if (!SqlResponse.Response.ResponseCase.GET_TRANSACTION_STATUS.equals(response.getResponseCase())) {
+                    // FIXME log error message
+                    throw new IOException("response type is inconsistent with the request type");
+                }
+                detailResponseCache.set(response.getGetTransactionStatus());
+            }
+            var detailResponse = detailResponseCache.get();
+            LOG.trace("receive (GetTransactionStatus): {}", detailResponse); //$NON-NLS-1$
+            if (SqlResponse.GetTransactionStatus.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
+                var errorResponse = detailResponse.getError();
+                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+            }
+            return TransactionStatus.of(detailResponse.getSuccess());
+        }
+    }
+
+    @Override
+    public FutureResponse<TransactionStatus.TransactionStatusWithMessage> send(
+            @Nonnull SqlRequest.GetTransactionStatus request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (get transaction status): {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                new GetTransactionStatusProcessor().asResponseProcessor(false));
     }
 
     class ListTablesProcessor implements MainResponseProcessor<TableList> {
