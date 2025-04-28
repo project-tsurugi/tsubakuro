@@ -1549,11 +1549,12 @@ class SqlServiceStubTest {
     @Test
     void sendGetTransactionStatusSuccess() throws Exception {
         String testMessage = "this is a test message for GetTransactionStatus";
+        SqlResponse.GetTransactionStatus.Success success = SqlResponse.GetTransactionStatus.Success.newBuilder()
+                                                            .setStatus(SqlResponse.TransactionStatus.RUNNING)
+                                                            .setMessage(testMessage).build();
         wire.next(accepts(SqlRequest.Request.RequestCase.GET_TRANSACTION_STATUS,
                 RequestHandler.returns(SqlResponse.GetTransactionStatus.newBuilder()
-                        .setSuccess(SqlResponse.GetTransactionStatus.Success.newBuilder()
-                                    .setStatus(SqlResponse.TransactionStatus.RUNNING)
-                                    .setMessage(testMessage))
+                        .setSuccess(success)
                         .build())));
         var message = SqlRequest.GetTransactionStatus.newBuilder()
                         .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100))
@@ -1563,7 +1564,8 @@ class SqlServiceStubTest {
             var future = service.send(message);
         ) {
             var transactionStatusWithMessage = future.get();
-            assertEquals(TransactionStatus.of(SqlResponse.TransactionStatus.RUNNING), transactionStatusWithMessage.getStatus());
+
+            assertEquals(TransactionStatus.of(success).getStatus(), transactionStatusWithMessage.getStatus());
             assertEquals(testMessage, transactionStatusWithMessage.getMessage());
         }
         assertFalse(wire.hasRemaining());
