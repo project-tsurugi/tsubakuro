@@ -15,20 +15,22 @@
  */
 package com.tsurugidb.tsubakuro.channel.common.connection;
 
-import java.util.ArrayDeque;
-import java.util.Objects;
-import java.util.Queue;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.annotation.Nonnull;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
-// import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
@@ -37,100 +39,267 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public class Disposer extends Thread {
     static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
-    private AtomicBoolean started = new AtomicBoolean();
+    private AtomicBoolean started = new AtomicBoolean(false);
 
-    private AtomicBoolean sessionClosed = new AtomicBoolean();
+    private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
-    private Queue<ForegroundFutureResponse<?>> queue = new ArrayDeque<>();
+    private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
-    private AtomicBoolean queueHasEntry = new AtomicBoolean();
+    private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
-    private ServerResource session;
+    private long disposerThreadId = 0;
+
+    private final AtomicReference<DelayedClose> close = new AtomicReference<>();
+
+    private AtomicBoolean working = new AtomicBoolean(false);
+
+    private final Lock lock = new ReentrantLock();
+
+    private final Condition empty = lock.newCondition();
+
+    /**
+     * Enclodure of delayed clean up procedure.
+     */
+    public interface DelayedShutdown {
+        /**
+         * clean up procedure.
+         * @return true if clean up is completed.
+         * @throws IOException An error was occurred while cleanUP() is executed.
+         */
+        boolean process() throws IOException;
+    }
+
+    /**
+     * Enclodure of delayed clean up procedure.
+     */
+    public interface DelayedClose {
+        /**
+         * invoke the close() procedure of its belonging object.
+         * @throws ServerException if error was occurred while disposing this session
+         * @throws IOException if I/O error was occurred while disposing this session
+         * @throws InterruptedException if interrupted while disposing this session
+         */
+        void delayedClose() throws ServerException, IOException, InterruptedException;
+    }
 
     /**
      * Creates a new instance.
-     * @param session the current session which this blongs to
      */
-    public Disposer(@Nonnull ServerResource session) {
-        Objects.requireNonNull(session);
-        this.session = session;
+    public Disposer() {
     }
 
     @Override
     public void run() {
+        Exception exception = null;
+        disposerThreadId = Thread.currentThread().getId();
+
         while (true) {
-            ForegroundFutureResponse<?> futureResponse;
-            synchronized (queue) {
-                futureResponse = queue.poll();
-            }
-            if (sessionClosed.get() && futureResponse == null) {
-                break;
-            }
+            working.set(true);
+            var futureResponse = futureResponseQueue.poll();
             if (futureResponse != null) {
                 try {
                     var obj = futureResponse.retrieve();
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
-                    continue;
                 } catch (ChannelResponse.AlreadyCanceledException e) {
                     // Server resource has not created at the server
-                    continue;
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-                    continue;
                 } catch (TimeoutException e) {
                     // Let's try again
-                    queue.add(futureResponse);
-                    continue;
-                } catch (Exception e) {
-                    // should not occur
-                    LOG.info(e.getMessage());
-                    continue;
+                    futureResponseQueue.add(futureResponse);
+                } catch (Exception e) {     // should not occur
+                    if (exception == null) {
+                        exception = e;
+                    } else {
+                        exception.addSuppressed(e);
+                    }
                 }
-            } else {
-                notifyQueueIsEmpty();
+                continue;
             }
-            if (!sessionClosed.get()) {
+            var serverResource = serverResourceQueue.poll();
+            if (serverResource != null) {
                 try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    // No problem, it's OK
+                    serverResource.delayedClose();
+                } catch (ServerException | IOException | InterruptedException e) {
+                    exception = addSuppressed(exception, e);
                 }
+                continue;
+            }
+            lock.lock();
+            try {
+                working.set(false);
+                empty.signalAll();
+            } finally {
+                lock.unlock();
+            }
+            while (!shutdownQueue.isEmpty()) {
+                var entry = shutdownQueue.peek();
+                try {
+                    if (entry.process()) {
+                        shutdownQueue.poll();
+                    } else {
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            // No problem, it's OK
+                        }
+                    }
+                } catch (IOException e) {
+                    exception = addSuppressed(exception, e);
+                    shutdownQueue.poll();
+                }
+            }
+
+            // confirm if we can go ahead to session close
+            DelayedClose delayedClose = null;
+            lock.lock();
+            try {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty()) {
+                    continue;
+                }
+                delayedClose = close.get();
+            } finally {
+                lock.unlock();
+            }
+
+            if (delayedClose != null) {
+                // go ahead to session close as futureResponseQueue, serverResourceQueue, and shutdownQueue are empty
+                try {
+                    delayedClose.delayedClose();
+                } catch (ServerException | IOException | InterruptedException e) {
+                    exception = addSuppressed(exception, e);
+                }
+                break;
+            }
+
+            // sleep outside of the lock
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // No problem, it's OK
             }
         }
-// FIXME Revive these lines when the server implementation improves.
-//        try {
-//            session.close();
-//        } catch (Exception e) {
-//            LOG.error(e.getMessage());
-//        }
+
+        if (exception != null) {
+            LOG.error(exception.getMessage());
+            exception.printStackTrace();
+            if (exception instanceof IOException) {
+                throw new UncheckedIOException((IOException) exception);
+            } else {
+                throw new UncheckedIOException(new IOException(exception));
+            }
+        }
     }
 
-    /**
-     * Receive notification that the session is to be closed soon and 
-     * let the caller know if the session can be closed immediately.
-     * NOTE: This method is assumed to be called from Session.close() only.
-     * @return true if the session can be closed immediately
-     * as the queue that stores unhandled ForegroundFutureResponse is empty
-     */
-    public boolean prepareCloseAndIsEmpty() {
-// FIXME Remove the following line when the server implementation improves.
-        waitForFinishDisposal();
-        synchronized (queue) {
-            sessionClosed.set(true);
-            return queue.isEmpty();
+    private Exception addSuppressed(Exception exception, Exception e) {
+        if (exception == null) {
+            exception = e;
+        } else {
+            exception.addSuppressed(e);
         }
+        return exception;
     }
 
     void add(ForegroundFutureResponse<?> futureResponse) {
-        if (!started.getAndSet(true)) {
-            this.start();
+        lock.lock();
+        try {
+            if (close.get() != null || !shutdownQueue.isEmpty()) {
+                throw new AssertionError("Session already closed");
+            }
+            futureResponseQueue.add(futureResponse);
+            if (!started.getAndSet(true)) {
+                this.start();
+            }
+        } finally {
+            lock.unlock();
         }
-        synchronized (queue) {
-            queue.add(futureResponse);
-            queueHasEntry.set(true);
+    }
+
+    /**
+     * Add a DelayedClose object containing a close procedure for a certain ServerResource object.
+     * If disposer thread has not started, a disposer thread will be started.
+     * @param resource the DelayedClose to be added
+     */
+    public void add(DelayedClose resource) {
+        lock.lock();
+        try {
+            if (close.get() != null || !shutdownQueue.isEmpty()) {
+                throw new AssertionError("Session already closed");
+            }
+            serverResourceQueue.add(resource);
+            if (!started.getAndSet(true)) {
+                this.start();
+            }
+        } finally {
+            lock.unlock();
         }
+    }
+
+    /**
+     * Register a delayed shutdown procesure of the Session.
+     * If disposer thread has not started, a disposer thread will be started.
+     * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
+     * @param cleanUp the clean up procesure to be registered
+     * @throws IOException An error was occurred in c.shoutdown() execution.
+     */
+    public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
+        lock.lock();
+        try {
+            if (close.get() != null) {
+                throw new AssertionError("Session close is already scheduled");
+            }
+            shutdownQueue.add(cleanUp);
+            if (!started.getAndSet(true)) {
+                this.start();
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Register a delayed close object in charge of asynchronous close of the Session.
+     * If disposer thread has not started or both queue is empty, c.delayedClose() is immediately executed.
+     * NOTE: This method is assumed to be called only in close and/or shutdown of a Session.
+     * @param cleanUp the clean up procesure to be registered
+     * @throws ServerException if server error was occurred while disposing the session
+     * @throws IOException if I/O error was occurred while disposing the session
+     * @throws InterruptedException if interrupted while disposing the session
+     */
+    public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
+        lock.lock();
+        try {
+            if (started.getAndSet(true)) {  // true if daemon is working
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty() || working.get()) {
+                    close.set(cleanUp);
+                    return;
+                }
+                close.set(new DelayedClose() {
+                    @Override
+                    public void  delayedClose() {
+                        // do nothing
+                    }
+                });
+            }
+            empty.signalAll();
+        } finally {
+            lock.unlock();
+        }
+        cleanUp.delayedClose();
+    }
+
+    /**
+     * Method to check whether the thread that called close is a disposer or not.
+     * This method is provided in order to deal with both the case where a FutureResponse is closed without get
+     * and the case where close is taken place for a ServerResource that has gotton from a FutureResponse.
+     * ServerResource.close() should implement in that it performs close processing when it has been called from the Disposer,
+     * and it registers a delayed close with the Disposer when it has been called from a non-disposer module.
+     * @return true if serverResource.close() is currently being called by this disposer
+     */
+    public boolean isClosingNow() {
+        return disposerThreadId == Thread.currentThread().getId();
     }
 
     /**
@@ -138,18 +307,18 @@ public class Disposer extends Thread {
      * closed without getting is completed.
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
-    public synchronized void waitForFinishDisposal() {
-        while (queueHasEntry.get()) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                continue;
+    public void waitForEmpty() {
+        lock.lock();
+        try {
+            while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
+                try {
+                    empty.await();
+                } catch (InterruptedException e) {
+                    continue;
+                }
             }
+        } finally {
+            lock.unlock();
         }
-    }
-
-    private synchronized void notifyQueueIsEmpty() {
-        queueHasEntry.set(false);
-        notify();
     }
 }

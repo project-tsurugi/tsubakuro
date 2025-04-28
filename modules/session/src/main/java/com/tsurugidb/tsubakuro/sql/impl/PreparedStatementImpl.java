@@ -16,15 +16,20 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -44,6 +49,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     private TimeUnit unit;
     final SqlCommon.PreparedStatement handle;
     private final SqlRequest.Prepare request;
+    private Disposer disposer = null;
 
     /**
      * Creates a new instance.
@@ -51,20 +57,28 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
      * @param request the request origin of the PreparedStatement
+     * @param disposer the Disposer in charge of its asynchronous close
      */
-    public PreparedStatementImpl(SqlCommon.PreparedStatement handle, SqlService service, ServerResource.CloseHandler closeHandler, SqlRequest.Prepare request) {
+    public PreparedStatementImpl(
+            @Nonnull SqlCommon.PreparedStatement handle,
+            @Nullable SqlService service,
+            @Nullable ServerResource.CloseHandler closeHandler,
+            @Nullable SqlRequest.Prepare request,
+            @Nullable Disposer disposer) {
+        Objects.requireNonNull(handle);
         this.handle = handle;
         this.service = service;
         this.closeHandler = closeHandler;
         this.request = request;
+        this.disposer = disposer;
     }
 
     /**
-     * Creates a new instance without service, closeHandle, request for test purpose.
+     * Creates a new instance without service, closeHandle, request for test purpose, and disposer.
      * @param handle the handle of the PreparedStatement
      */
     public PreparedStatementImpl(SqlCommon.PreparedStatement handle) {
-        this(handle, null, null, null);
+        this(handle, null, null, null, null);
     }
 
     @Override
@@ -85,6 +99,23 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     @Override
     public void close() throws IOException, ServerException, InterruptedException {
+        if (disposer != null) {
+            if (disposer.isClosingNow()) {
+                doClose();
+            } else {
+                disposer.add(new Disposer.DelayedClose() {
+                    @Override
+                    public void delayedClose() throws ServerException, IOException, InterruptedException {
+                        doClose();
+                    }
+                });
+            }
+            return;
+        }
+        doClose();
+    }
+
+    private void doClose() throws IOException, ServerException, InterruptedException {
         if (!closed.getAndSet(true) && service != null) {
             try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
                 if (timeout == 0) {
