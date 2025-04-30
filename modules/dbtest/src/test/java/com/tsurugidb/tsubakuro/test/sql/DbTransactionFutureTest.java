@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.sql.proto.SqlRequest.TransactionOption;
 import com.tsurugidb.sql.proto.SqlRequest.TransactionType;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.test.util.DbTestConnector;
 import com.tsurugidb.tsubakuro.test.util.DbTester;
@@ -51,9 +52,12 @@ class DbTransactionFutureTest extends DbTester {
         doNothing(ShutdownType.FORCEFUL);
     }
 
+    @SuppressWarnings("resource")
     void doNothing(ShutdownType shutdownType) throws Exception {
+        SessionImpl sessionImpl;
         try (var session = DbTestConnector.createSession("DbTransactionFutureTest.doNothing().main"); //
                 var sqlClient = SqlClient.attach(session)) {
+            sessionImpl = (SessionImpl) session;
             for (int i = 0; i < 300; i++) {
                 var option = TransactionOption.newBuilder() //
                         .setType(TransactionType.SHORT) //
@@ -67,9 +71,13 @@ class DbTransactionFutureTest extends DbTester {
                 session.shutdown(shutdownType).await();
             }
         }
+        if (shutdownType == null) {
+            sessionImpl.waitForCompletion();
+        }
 
         try (var session = DbTestConnector.createSession("DbTransactionFutureTest.doNothing().after"); //
                 var sqlClient = SqlClient.attach(session)) {
+            sessionImpl = (SessionImpl) session;
             var option = TransactionOption.newBuilder() //
                     .setType(TransactionType.SHORT) //
                     .setLabel("DbTransactionFutureTest.doNothing().after") //
@@ -79,6 +87,7 @@ class DbTransactionFutureTest extends DbTester {
                 transaction.commit().await();
             }
         }
+        sessionImpl.waitForCompletion();
     }
 
     @Test
