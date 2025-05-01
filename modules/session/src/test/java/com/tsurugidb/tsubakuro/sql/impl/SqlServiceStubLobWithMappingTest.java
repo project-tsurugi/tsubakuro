@@ -23,9 +23,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -688,5 +690,224 @@ class SqlServiceStubLobWithMappingTest {
             }
         }
         assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void executeStatementWithLobVirTransactionRelativePath(@TempDir Path directory) throws Exception {
+        System.setProperty("user.dir", directory.toString());
+
+        String rootDirectory = "relative_path_send_test";
+        var rootDirectoryPath = Paths.get(rootDirectory);
+        FileDeleter.deleteFiles(new File(rootDirectoryPath.toAbsolutePath().toString()));
+        var tempDir = Files.createDirectory(rootDirectoryPath.toAbsolutePath());
+
+        var ClientSendDirectoryPath = rootDirectoryPath.resolve(ClientSendDirectory);
+        var ServerReceiveDirectoryPath = tempDir.resolve(ServerReceiveDirectory).toAbsolutePath();
+        Files.createDirectory(ClientSendDirectoryPath);
+        Files.createDirectory(ServerReceiveDirectoryPath);
+
+        try {
+            BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+            BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                                .onSend(ClientSendDirectoryPath, ServerReceiveDirectoryPath.toString())
+                                                .build();
+            System.out.println(blobPathMapping.toString());
+            wire = new WireImpl(link);
+            session = new SessionImpl(false, blobPathMapping);
+            session.connect(wire);
+        } catch (IOException e) {
+            System.err.println(e);
+            fail("fail to create WireImpl");
+        }
+
+        // for executeStatement
+        link.next(SqlResponse.Response.newBuilder()
+                    .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
+                            .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4))
+                            )
+                    ).build()
+        );
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        String parameterName1 = "blob";
+        String fileName1 = "blob.data";
+        String parameterName2 = "clob";
+        String fileName2 = "clob.data";
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        Path file1 = ServerReceiveDirectoryPath.resolve(fileName1);
+        Path file2 = ServerReceiveDirectoryPath.resolve(fileName2);
+        Files.write(file1, data);
+        Files.write(file2, data);
+
+        Path dummy1 = ClientSendDirectoryPath.resolve(fileName1);
+        Path dummy2 = ClientSendDirectoryPath.resolve(fileName2);
+        Files.createFile(dummy1);
+        Files.createFile(dummy2);
+    
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              null);
+        ) {
+            transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
+                                            Parameters.blobOf(parameterName1, file1),
+                                            Parameters.clobOf(parameterName2, file2)).await();
+                                            var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
+            assertTrue(header.hasBlobs());
+            for (var e: header.getBlobs().getBlobsList()) {
+                String channelName = e.getChannelName();
+//                String path = e.getPath();
+                if (channelName.startsWith("BlobChannel-")) {
+                    assertEquals(e.getPath().toString(), file1.toString());
+                } else if (channelName.startsWith("ClobChannel-")) {
+                    assertEquals(e.getPath().toString(), file2.toString());
+                } else {
+                    fail("unexpected channel name " + channelName);
+                }
+            }
+        }
+        assertFalse(link.hasRemaining());
+
+        FileDeleter.deleteFiles(new File(rootDirectoryPath.toAbsolutePath().toString()));
+    }
+
+    @Test
+    void getLargeObjectCacheRelativePath(@TempDir Path directory) throws Exception {
+        System.setProperty("user.dir", directory.toString());
+
+        String rootDirectory = "relative_path_receive_test";
+        var rootDirectoryPath = Paths.get(rootDirectory);
+        FileDeleter.deleteFiles(new File(rootDirectoryPath.toAbsolutePath().toString()));
+        var tempDir = Files.createDirectory(rootDirectoryPath.toAbsolutePath());
+
+        var ClientReceiveDirectoryPath = rootDirectoryPath.resolve(ClientReceiveDirectory);
+        var ServerSendDirectoryPath = tempDir.resolve(ServerSendDirectory).toAbsolutePath();
+        Files.createDirectory(ClientReceiveDirectoryPath);
+        Files.createDirectory(ServerSendDirectoryPath);
+
+        try {
+            BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+            BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                                .onReceive(ServerSendDirectoryPath.toString(), ClientReceiveDirectoryPath)
+                                                .build();
+            System.out.println(blobPathMapping.toString());
+            wire = new WireImpl(link);
+            session = new SessionImpl(false, blobPathMapping);
+            session.connect(wire);
+        } catch (IOException e) {
+            System.err.println(e);
+            fail("fail to create WireImpl");
+        }
+
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+
+        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
+        Path file = ClientReceiveDirectoryPath.resolve(fileName);
+        Files.write(file, data);
+
+        var header = FrameworkResponse.Header.newBuilder()
+                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
+                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
+                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
+                                                .setChannelName(channelName)
+                                                .setPath(ServerSendDirectoryPath.resolve(fileName).toString())))
+                        .build();
+        var payload = SqlResponse.Response.newBuilder()
+                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
+                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
+                                                                .setChannelName(channelName)))
+                        .build();
+        // for getLargeObjectData
+        link.next(header, payload);
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              null);
+        ) {
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var pathOpt = largeObjectCache.find();
+            assertTrue(pathOpt.isPresent());
+            var obtainedData = Files.readAllBytes(pathOpt.get());
+            assertEquals(data.length, obtainedData.length);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
+        }
+        assertFalse(link.hasRemaining());
+
+        FileDeleter.deleteFiles(new File(rootDirectoryPath.toAbsolutePath().toString()));
+    }
+
+    static private class FileDeleter {
+        public static void deleteFiles(File dir) {        
+            if(dir.exists()) {
+                if(dir.isDirectory()) {
+                    File[] files = dir.listFiles();
+                    if(files != null) {
+                        for(int i=0; i<files.length; i++) {
+                            var tf = files[i];
+                            if(!tf.exists()) {
+                                continue;
+                            } else if(tf.isFile()) {
+                                tf.delete();
+                            } else if(tf.isDirectory()) {
+                                FileDeleter.deleteFiles(tf);
+                                tf.delete();
+                            }        
+                        }
+                    }
+                }
+                dir.delete();
+            }
+        }
+    }
+
+    @Test
+    void relativeServerPath_onSend(@TempDir Path tempDir) throws Exception {
+        BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+        BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                            .onSend(tempDir, "server_relative_directory")
+                                            .onReceive("/server_relative_directory", tempDir)
+                                            .build();
+        
+        wire = new WireImpl(link);
+        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping));
+        assertEquals("server path must be absolute", e.getMessage());
+    }
+
+    @Test
+    void relativeServerPath_onReceive(@TempDir Path tempDir) throws Exception {
+        BlobPathMapping.Builder blobPathMappingBuilder = new BlobPathMapping.Builder();
+        BlobPathMapping blobPathMapping = blobPathMappingBuilder
+                                            .onSend(tempDir, "/server_relative_directory")
+                                            .onReceive("server_relative_directory", tempDir)
+                                            .build();
+        
+        wire = new WireImpl(link);
+        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping));
+        assertEquals("server path must be absolute", e.getMessage());
     }
 }
