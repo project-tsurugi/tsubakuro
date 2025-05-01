@@ -70,6 +70,7 @@ public class TransactionImpl implements Transaction {
     private Timeout timeout = null;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
+    private final boolean autoDispose = false;
     private FutureResponse<Void> commitResult;
     private AtomicReference<State> state = new AtomicReference<>();
     private Disposer disposer = null;
@@ -346,7 +347,7 @@ public class TransactionImpl implements Transaction {
                 commitResult = service.send(SqlRequest.Commit.newBuilder()
                                     .setTransactionHandle(transaction.getTransactionHandle())
                                     .setNotificationType(status)
-                                    .setAutoDispose(true)
+                                    .setAutoDispose(autoDispose)
                                     .build());
                 state.set(State.COMMITTED);
                 return commitResult;
@@ -543,7 +544,9 @@ public class TransactionImpl implements Transaction {
                 } else {
                     timeout.waitFor(commitResult);
                 }
-                needDispose = false;
+                if (autoDispose) {
+                    needDispose = false;
+                }
             } catch (IOException | ServerException | InterruptedException e) {
                 needDispose = true;
             }
