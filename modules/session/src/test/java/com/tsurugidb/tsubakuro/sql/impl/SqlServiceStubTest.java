@@ -36,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.sql.proto.SqlCommon;
@@ -352,9 +353,31 @@ class SqlServiceStubTest {
         }
     }
 
+    @Disabled("As TransactionImpl.autoDispose is false")
     @Test
     void sendCommitSuccessAutoDispose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImplTest(service);
+            var future = transaction.commit();
+        ) {
+            assertDoesNotThrow(() -> future.get());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendCommitSuccessAutoDisposeFalse() throws Exception {  // should be disable when TransactionImpl.AutoDispose becomes true
+        wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
+                RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
+                        .setSuccess(newVoid())
+                        .build())));
+        wire.next(accepts(SqlRequest.Request.RequestCase.DISPOSE_TRANSACTION,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
