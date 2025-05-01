@@ -119,6 +119,23 @@ public class SessionImpl implements Session {
         this.wire = null;
         this.doKeepAlive = doKeepAlive;
         this.blobPathMapping = blobPathMapping;
+        checkBlogPathMapping();
+    }
+
+    private void checkBlogPathMapping() {
+        if (blobPathMapping != null) {
+            for (var e: blobPathMapping.getOnSend()) {
+                if (!e.getServerPath().startsWith("/")) {
+                    throw new IllegalArgumentException("server path must be absolute");
+                }
+
+            }
+            for (var e: blobPathMapping.getOnReceive()) {
+                if (!e.getServerPath().startsWith("/")) {
+                    throw new IllegalArgumentException("server path must be absolute");
+                }
+            }
+        }
     }
 
     /**

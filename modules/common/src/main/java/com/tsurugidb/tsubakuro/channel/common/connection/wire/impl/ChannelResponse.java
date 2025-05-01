@@ -219,13 +219,16 @@ public class ChannelResponse implements Response {
     private InputStream returnsBlob(String id) throws NoSuchElementException, IOException {
         Pair<String, Boolean> entry = blobs.get(id);
         if (entry != null) {
-            String serverFileName = entry.getLeft();
-            if (serverFileName != null) {
+            String sfn = entry.getLeft();
+            if (sfn != null) {
+                String serverFileName = sfn.startsWith("/") ? sfn : "/" + sfn;
                 String[] serverFileNameElements = serverFileName.split("/");
                 if (blobPathMapping != null) {
                     Path filePath  = null;
                     outerloop: for (var m : blobPathMapping.getOnReceive()) {
-                        String[] serverPathElements = m.getServerPath().split("/");
+                        String msp = m.getServerPath();
+                        String serverPath = msp.startsWith("/") ? msp : "/" + msp;
+                        String[] serverPathElements = serverPath.split("/");
                         int length = serverPathElements.length;
                         if (serverFileNameElements.length < serverPathElements.length) {
                             continue;
