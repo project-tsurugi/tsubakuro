@@ -51,6 +51,7 @@ public class ServerWireImpl implements Closeable {
     private SendWorker sender;
     private final long sessionId;
     private int slot;
+    private boolean receiveResultSetByeOk;
 
     private static class Message {
         byte[] bytes;
@@ -65,6 +66,7 @@ public class ServerWireImpl implements Closeable {
     private class ReceiveWorker extends Thread {
         private final int port;
         private final boolean doHandshake;
+
         ServerSocket serverSocket;
 
         ReceiveWorker(int port, boolean doHandshake) throws IOException {
@@ -92,6 +94,7 @@ public class ServerWireImpl implements Closeable {
                             receiveQueue.add(new Message(serverStreamLink.getBytes()));
                             break;
                         case 3: // StreamLink.REQUEST_RESULT_SET_BYE_OK = 3
+                            receiveResultSetByeOk = true;
                             break;
                         case 4: // StreamLink.REQUEST_SESSION_BYE = 4
                             serverStreamLink.close();
@@ -193,6 +196,7 @@ public class ServerWireImpl implements Closeable {
         this.sendQueue = new ConcurrentLinkedQueue<Message>();
         this.receiver = new ReceiveWorker(port, doHandshake);
         this.slot = 0;
+        this.receiveResultSetByeOk = false;
         receiver.start();
     }
 
@@ -266,6 +270,10 @@ public class ServerWireImpl implements Closeable {
     public void eorRSL(long handle) throws IOException {
         sender.eor();
         sender.notifyEvent();
+    }
+
+    public boolean isReceiveResultSetByeOk() {
+        return receiveResultSetByeOk;
     }
 
     void closeSocket() throws IOException {

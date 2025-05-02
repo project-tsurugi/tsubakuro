@@ -155,12 +155,6 @@ public final class StreamLink extends Link {
 
         case RESPONSE_RESULT_SET_BYE:
             LOG.trace("receive RESPONSE_RESULT_SET_BYE");
-            try {
-                send(REQUEST_RESULT_SET_BYE_OK, slot);
-            } catch (IOException e) {
-                resultSetBox.pushBye(slot, e);
-                return false;
-            }
             resultSetBox.pushBye(slot);
             return true;
 
@@ -350,5 +344,15 @@ public final class StreamLink extends Link {
     public void closeWithoutGet() throws IOException {
         closed.set(true);
         closeBoxes(false);
+    }
+
+    /**
+     * Send REQUEST_RESULT_SET_BYE_OK message.
+     * This method is intended to use by ResultSetWireImpl.
+     * @param slot the slot number
+     * @throws IOException if I/O error was occurred while close the socket
+     */
+    public void sendResultSetBye(int slot) throws IOException {
+        send(REQUEST_RESULT_SET_BYE_OK, slot);
     }
 }

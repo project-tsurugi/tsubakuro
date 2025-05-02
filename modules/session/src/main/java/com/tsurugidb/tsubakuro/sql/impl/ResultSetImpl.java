@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -455,14 +456,16 @@ public class ResultSetImpl implements ResultSet {
             try (response) {
                 try {
                     cursor.close();
+                } catch (ResultSetWire.IntentioanalResultSetCloseNotification e) {
+                    return;
                 } catch (Exception e) {
                     // suppresses exception while closing the sub-response
                     LOG.warn("error occurred while closing result set", e);
-                }
-
-                // check main response whether to finish the request normally
-                if (tested.compareAndSet(false, true)) {
-                    tester.test(response, timeout, unit);
+                } finally {
+                    // check main response whether to finish the request normally
+                    if (tested.compareAndSet(false, true)) {
+                        tester.test(response, timeout, unit);
+                    }
                 }
             } catch (TimeoutException e) {
                 throw new ResponseTimeoutException(e);

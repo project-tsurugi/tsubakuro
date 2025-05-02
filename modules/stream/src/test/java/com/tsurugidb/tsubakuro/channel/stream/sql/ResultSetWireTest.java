@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.channel.stream.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -123,6 +124,7 @@ class ResultSetWireTest {
         clientResultSetWire.close();
         sender.join();
         assertEquals(COUNT * 1024, readBytes);
+        assertTrue(server.isReceiveResultSetByeOk());
     }
 
     @Test
@@ -210,8 +212,39 @@ class ResultSetWireTest {
         sender.start();
         var clientResultSetWire = client.createResultSetWire();
         clientResultSetWire.connect(NAME);
-        clientResultSetWire.close();
+        assertThrows(ResultSetWire.IntentioanalResultSetCloseNotification.class, () -> {
+            clientResultSetWire.close();
+        });
         sender.join();  // pass if join() returns
         assertEquals(COUNT, writeCount);
+        assertTrue(server.isReceiveResultSetByeOk());
+    }
+
+    @Test
+    void readNoRecordsTest() throws Exception {
+        try {
+            server = new ServerWireImpl(PORT - 5, sessionId);
+            link = new StreamLink(HOST, PORT - 5);
+            client = new WireImpl(link);
+        } catch (Exception e) {
+            fail("cought Exception");
+        }
+
+        serverResultSetWire = server.createRSL(NAME);
+        link.pullMessage(link.messageNumber(), 0, null);
+        var sender = new Sender();
+        sender.start();
+
+        var clientResultSetWire = client.createResultSetWire();
+        clientResultSetWire.connect(NAME);
+        var recordStream = clientResultSetWire.getByteBufferBackedInput();
+
+        assertThrows(ResultSetWire.IntentioanalResultSetCloseNotification.class, () -> {
+            recordStream.close();
+        });
+
+        sender.finish();
+        sender.join();
+        assertTrue(server.isReceiveResultSetByeOk());
     }
 }

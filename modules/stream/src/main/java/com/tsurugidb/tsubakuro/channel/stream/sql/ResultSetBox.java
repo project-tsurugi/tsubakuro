@@ -45,7 +45,7 @@ public class ResultSetBox {
         }
     }
 
-    public void register(String name, ResultSetWireImpl resultSetWire) throws IOException {
+    int register(String name, ResultSetWireImpl resultSetWire) throws IOException {
         while (true) {
             lock.lock();
             try {
@@ -60,7 +60,7 @@ public class ResultSetBox {
                     } finally {
                         l.unlock();
                     }
-                    return;
+                    return slot;
                 }
                 availableCondition.await();
             } catch (InterruptedException e) {
@@ -105,15 +105,6 @@ public class ResultSetBox {
         var box = boxes[slot];
         boxes[slot] = null;
         box.endOfRecords();
-    }
-
-    public void pushBye(int slot, IOException e) throws IOException {  // for RESPONSE_RESULT_SET_BYE
-        if (boxes[slot] == null) {
-            waitRegistration(slot);
-        }
-        var box = boxes[slot];
-        boxes[slot] = null;
-        box.endOfRecords(e);
     }
 
     private void waitRegistration(int slot) throws IOException {

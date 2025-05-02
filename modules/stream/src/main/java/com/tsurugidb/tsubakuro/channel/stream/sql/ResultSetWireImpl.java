@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +40,18 @@ public class ResultSetWireImpl implements ResultSetWire {
     private final ResultSetBox resultSetBox;
     private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
-    private ByteBufferBackedInputForStream byteBufferBackedInput;
-    private boolean eor;
+    private int slot;
+    private ByteBufferBackedInput byteBufferBackedInput;
     private IOException exception;
+    private AtomicReference<State> state = new AtomicReference<>(State.NONE);
+    private enum State {
+                    // | client close | receive eor |
+                    // ------------------------------
+        NONE,       // | no           | no          |
+        EOR_ONLY,   // | no           | yes         |
+        CLOSE_ONLY, // | yes          | no          |
+        BOTH        // | yes          | yes         |
+    };
 
     static final Logger LOG = LoggerFactory.getLogger(ResultSetWireImpl.class);
 
@@ -77,7 +87,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         this.streamLink = streamLink;
         this.resultSetBox = streamLink.getResultSetBox();
         this.byteBufferBackedInput = null;
-        this.eor = false;
+        this.state.set(State.NONE);
         this.exception = null;
     }
 
@@ -91,7 +101,7 @@ public class ResultSetWireImpl implements ResultSetWire {
         if (name.length() == 0) {
             throw new IOException("ResultSet wire name is empty");
         }
-        resultSetBox.register(name, this);
+        slot = resultSetBox.register(name, this);
         return this;
     }
 
@@ -112,16 +122,25 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public void close() throws IOException {
-        // If the data in the ResultSet has not been received at the time the close is executed,
-        // it is treated as if it had not been, so a short timeout value is used.
-        long timeoutNanos = 1000000000L;
-        while (!eor && exception == null) {
-            var n = streamLink.messageNumber();
-            try {
-                streamLink.pullMessage(n, timeoutNanos, TimeUnit.NANOSECONDS);
-            } catch (TimeoutException e) {
-                throw new InterruptedIOException(e.getMessage());
+        while (true) {
+            var s = state.get();
+            switch (s) {
+                case NONE:
+                    if (!state.compareAndSet(s, State.CLOSE_ONLY)) {
+                        continue;
+                    }
+                    streamLink.sendResultSetBye(slot);
+                    throw new ResultSetWire.IntentioanalResultSetCloseNotification();
+                case EOR_ONLY:
+                    if (!state.compareAndSet(s, State.BOTH)) {
+                        continue;
+                    }
+                    break;
+                case CLOSE_ONLY:
+                case BOTH:
+                    return;  // do nothing
             }
+            break;
         }
     }
 
@@ -134,8 +153,11 @@ public class ResultSetWireImpl implements ResultSetWire {
             if (!queues.isEmpty()) {
                 return queues.poll();
             }
-            if (eor) {
+            var s = state.get();
+            if (s == State.EOR_ONLY) {
                 return null;
+            } else if (s == State.CLOSE_ONLY  || s == State.BOTH) {
+                throw new IllegalStateException("ResultSet wire is closed");
             }
             if (exception != null) {
                 throw exception;
@@ -162,7 +184,35 @@ public class ResultSetWireImpl implements ResultSetWire {
     }
 
     void endOfRecords() {
-        eor = true;
+        boolean sendBye = false;
+        while (true) {
+            var s = state.get();
+            switch (s) {
+                case NONE:
+                    if (!state.compareAndSet(s, State.EOR_ONLY)) {
+                        continue;
+                    }
+                    sendBye = true;
+                    break;
+                case CLOSE_ONLY:
+                    if (!state.compareAndSet(s, State.BOTH)) {
+                        continue;
+                    }
+                    break;
+                case EOR_ONLY:
+                case BOTH:
+                    throw new IllegalStateException("ResultSet already received eor");
+            }
+            break;
+        }
+        if (sendBye) {
+            try {
+                streamLink.sendResultSetBye(slot);
+            } catch (IOException e) {
+                exception = e;
+            }
+
+        }
     }
 
     void endOfRecords(IOException e) {

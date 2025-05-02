@@ -117,4 +117,7 @@ public interface ResultSetWire extends Closeable {
     default InputStream getByteBufferBackedInput() {
         throw new UnsupportedOperationException();
     }
+
+    class IntentioanalResultSetCloseNotification extends IOException {
+    }
 }
