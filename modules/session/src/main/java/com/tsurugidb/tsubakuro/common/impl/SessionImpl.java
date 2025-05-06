@@ -329,11 +329,11 @@ public class SessionImpl implements Session {
             this.type = type;
         }
         @Override
-        public synchronized boolean process() throws IOException {
+        public synchronized void process() throws IOException {
             while (true) {
                 int expected = closed.get();
                 if (expected == SESSION_CLOSED) {
-                    return true;
+                    return;
                 }
                 if (future == null) {
                     if (!closed.compareAndSet(expected, expected + 1)) {
@@ -349,7 +349,7 @@ public class SessionImpl implements Session {
                                 .build()),
                         new ShutdownProcessor(gotton).asResponseProcessor());
                 }
-                return gotton.get();
+                return;
             }
         }
         @Override
