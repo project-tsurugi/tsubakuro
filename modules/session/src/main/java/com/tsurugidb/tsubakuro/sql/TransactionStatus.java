@@ -23,6 +23,8 @@ import com.tsurugidb.sql.proto.SqlResponse;
 
 /**
  * Represents transaction status in SQL service
+ *
+ * @since 1.9.0
  */
 public enum TransactionStatus {
 
