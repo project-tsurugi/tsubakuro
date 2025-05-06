@@ -63,10 +63,9 @@ public class Disposer extends Thread {
     public interface DelayedShutdown {
         /**
          * clean up procedure.
-         * @return true if clean up is completed.
          * @throws IOException An error was occurred while cleanUP() is executed.
          */
-        boolean process() throws IOException;
+        void process() throws IOException;
     }
 
     /**
@@ -127,25 +126,29 @@ public class Disposer extends Thread {
                 }
                 continue;
             }
+            boolean shoudContinue = false;
             lock.lock();
             try {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    continue;
+                }
                 working.set(false);
                 empty.signalAll();
+                shoudContinue = shutdownQueue.isEmpty() && close.get() == null;
             } finally {
                 lock.unlock();
             }
-            while (!shutdownQueue.isEmpty()) {
-                var entry = shutdownQueue.peek();
+            if (shoudContinue) {
                 try {
-                    if (entry.process()) {
-                        shutdownQueue.poll();
-                    } else {
-                        try {
-                            Thread.sleep(10);
-                        } catch (InterruptedException e) {
-                            // No problem, it's OK
-                        }
-                    }
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // No problem, it's OK
+                }
+                continue;
+            }
+            while (!shutdownQueue.isEmpty()) {  // in case multiple shutdown requests are registered
+                try {
+                    shutdownQueue.poll().process();
                 } catch (IOException e) {
                     exception = addSuppressed(exception, e);
                     shutdownQueue.poll();
