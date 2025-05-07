@@ -39,7 +39,7 @@ public class ResultSetWireImpl implements ResultSetWire {
     private final ResultSetBox resultSetBox;
     private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
-    private ByteBufferBackedInput byteBufferBackedInput;
+    private ByteBufferBackedInputForStream byteBufferBackedInput;
     private boolean eor;
     private IOException exception;
 
@@ -112,6 +112,17 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     @Override
     public void close() throws IOException {
+        // If the data in the ResultSet has not been received at the time the close is executed,
+        // it is treated as if it had not been, so a short timeout value is used.
+        long timeoutNanos = 1000000000L;
+        while (!eor && exception == null) {
+            var n = streamLink.messageNumber();
+            try {
+                streamLink.pullMessage(n, timeoutNanos, TimeUnit.NANOSECONDS);
+            } catch (TimeoutException e) {
+                throw new InterruptedIOException(e.getMessage());
+            }
+        }
     }
 
     /**
