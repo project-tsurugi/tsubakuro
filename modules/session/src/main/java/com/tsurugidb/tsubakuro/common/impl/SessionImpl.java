@@ -302,17 +302,11 @@ public class SessionImpl implements Session {
     }
 
     static class ShutdownProcessor implements MainResponseProcessor<Void> {
-        private final AtomicBoolean gotton;
-
-        ShutdownProcessor(AtomicBoolean gotton) {
-            this.gotton = gotton;
-        }
 
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             // No error checking is performed here,
             // as only core diagnostic errors can occur for shutdown requests.
-            gotton.set(true);
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             return null;
@@ -323,13 +317,16 @@ public class SessionImpl implements Session {
         private final ShutdownType type;
         private FutureResponse<Void> future = null;
         private Exception exception = null;
-        private AtomicBoolean gotton = new AtomicBoolean(false);
+        private AtomicBoolean done = new AtomicBoolean(false);
 
         ShutdownCleanUp(ShutdownType type) {
             this.type = type;
         }
         @Override
         public synchronized void process() throws IOException {
+            if (done.getAndSet(true)) {
+                return;
+            }
             while (true) {
                 int expected = closed.get();
                 if (expected == SESSION_CLOSED) {
@@ -339,7 +336,6 @@ public class SessionImpl implements Session {
                     if (!closed.compareAndSet(expected, expected + 1)) {
                         continue;
                     }
-                    exception = cleanServiceStub();
                     disposer.waitForEmpty();
                     var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
                     future = sendUrgent(
@@ -347,7 +343,7 @@ public class SessionImpl implements Session {
                             toDelimitedByteArray(newRequest()
                                 .setShutdown(shutdownMessageBuilder.setType(type.type()))
                                 .build()),
-                        new ShutdownProcessor(gotton).asResponseProcessor());
+                        new ShutdownProcessor().asResponseProcessor());
                 }
                 return;
             }
