@@ -29,6 +29,11 @@ import com.tsurugidb.sql.proto.SqlResponse;
 public enum TransactionStatus {
 
     /**
+     * the transaction status unknown or not provided
+     */
+    UNTRACKED("UNTRACKED"),
+
+    /**
      * before the commit process begins
      */
     RUNNING("RUNNING"),
@@ -89,6 +94,7 @@ public enum TransactionStatus {
 
     private static TransactionStatus of(SqlResponse.TransactionStatus status) {
         switch (status) {
+        case UNTRACKED: return UNTRACKED;
         case RUNNING: return RUNNING;
         case COMMITTING: return COMMITTING;
         case AVAILABLE: return AVAILABLE;
