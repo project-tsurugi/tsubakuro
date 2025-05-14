@@ -83,6 +83,8 @@ public class SessionImpl implements Session {
     private final AtomicInteger closed = new AtomicInteger(0);
     public static final int SESSION_CLOSED = -1;
 
+    private Exception exception = null;
+
     /**
      * The keep alive interval in milliseconds.
      */
@@ -316,7 +318,6 @@ public class SessionImpl implements Session {
     class ShutdownCleanUp implements FutureResponse<Void>, Disposer.DelayedShutdown {
         private final ShutdownType type;
         private FutureResponse<Void> future = null;
-        private Exception exception = null;
         private AtomicBoolean done = new AtomicBoolean(false);
 
         ShutdownCleanUp(ShutdownType type) {
@@ -432,6 +433,7 @@ public class SessionImpl implements Session {
     public synchronized FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
         Objects.requireNonNull(type);
         if (closed.get() != SESSION_CLOSED) {
+            cleanServiceStub();
             ShutdownCleanUp shutdownCleanUp = new ShutdownCleanUp(type);
             disposer.registerDelayedShutdown(shutdownCleanUp);
             return shutdownCleanUp;
@@ -456,7 +458,7 @@ public class SessionImpl implements Session {
 
     class CloseCleanUp implements Disposer.DelayedClose {
         public void delayedClose() throws ServerException, IOException, InterruptedException {
-            var exception = cleanServiceStub();
+            cleanServiceStub();
 
             try {
                 doClose(0);
@@ -481,10 +483,8 @@ public class SessionImpl implements Session {
         }
     }
 
-    private Exception cleanServiceStub() {
+    private void cleanServiceStub() {
         if (!cleanUpFinished.getAndSet(true)) {
-            Exception exception = null;
-
             // take care of the serviceStubs
             if (closeTimeout != null) {
                 services.setCloseTimeout(closeTimeout);
@@ -501,9 +501,7 @@ public class SessionImpl implements Session {
                     }
                 }
             }
-            return exception;
         }
-        return null;
     }
 
     private void doClose(int d) throws ServerException, IOException, InterruptedException {
