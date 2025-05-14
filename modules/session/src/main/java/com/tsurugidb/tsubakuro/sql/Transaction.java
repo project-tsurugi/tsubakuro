@@ -121,6 +121,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
     }
 
     /**
+     * <em>This method is not yet implemented:</em>
      * Executes a dump action.
      * <p>
      * This operation just executes a query, but will write the resulting relation data into dump files
