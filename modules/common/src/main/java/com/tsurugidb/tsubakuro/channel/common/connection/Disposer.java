@@ -53,6 +53,8 @@ public class Disposer extends Thread {
 
     private AtomicBoolean working = new AtomicBoolean(false);
 
+    private boolean disableAdd = false;
+
     private final Lock lock = new ReentrantLock();
 
     private final Condition empty = lock.newCondition();
@@ -208,7 +210,7 @@ public class Disposer extends Thread {
     void add(ForegroundFutureResponse<?> futureResponse) {
         lock.lock();
         try {
-            if (close.get() != null || !shutdownQueue.isEmpty()) {
+            if (disableAdd) {
                 throw new AssertionError("Session already closed");
             }
             futureResponseQueue.add(futureResponse);
@@ -228,7 +230,7 @@ public class Disposer extends Thread {
     public void add(DelayedClose resource) {
         lock.lock();
         try {
-            if (close.get() != null || !shutdownQueue.isEmpty()) {
+            if (disableAdd) {
                 throw new AssertionError("Session already closed");
             }
             serverResourceQueue.add(resource);
@@ -253,6 +255,7 @@ public class Disposer extends Thread {
             if (close.get() != null) {
                 throw new AssertionError("Session close is already scheduled");
             }
+            disableAdd = true;
             shutdownQueue.add(cleanUp);
             if (!started.getAndSet(true)) {
                 this.start();
@@ -274,6 +277,7 @@ public class Disposer extends Thread {
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
         lock.lock();
         try {
+            disableAdd = true;
             if (started.getAndSet(true)) {  // true if daemon is working
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty() || working.get()) {
                     close.set(cleanUp);
