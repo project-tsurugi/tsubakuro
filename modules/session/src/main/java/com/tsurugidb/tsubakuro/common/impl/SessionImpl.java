@@ -50,6 +50,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.SqlServiceStub;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -407,26 +408,6 @@ public class SessionImpl implements Session {
                 exception.addSuppressed(exceptionNew);
             }
         }
-        private void throwException() throws IOException, ServerException, InterruptedException, TimeoutException {
-            if (exception != null) {
-                if (exception instanceof IOException) {
-                    throw (IOException) exception;
-                }
-                if (exception instanceof ServerException) {
-                    throw (ServerException) exception;
-                }
-                if (exception instanceof TimeoutException) {
-                    throw (TimeoutException) exception;
-                }
-                if (exception instanceof InterruptedException) {
-                    throw (InterruptedException) exception;
-                }
-                if (exception instanceof RuntimeException) {
-                    throw (RuntimeException) exception;
-                }
-                throw new AssertionError(exception);
-            }
-        }
     }
 
     @Override
@@ -469,7 +450,32 @@ public class SessionImpl implements Session {
                     exception.addSuppressed(fe);
                 }
             }
-            throwException(exception);
+            throwException();
+        }
+    }
+
+    private void throwException() throws IOException, ServerException, InterruptedException {
+        if (exception != null) {
+            try {
+                if (exception instanceof IOException) {
+                    throw (IOException) exception;
+                }
+                if (exception instanceof ServerException) {
+                    throw (ServerException) exception;
+                }
+                if (exception instanceof TimeoutException) {
+                    throw new ResponseTimeoutException(exception);
+                }
+                if (exception instanceof InterruptedException) {
+                    throw (InterruptedException) exception;
+                }
+                if (exception instanceof RuntimeException) {
+                    throw (RuntimeException) exception;
+                }
+                throw new AssertionError(exception);
+            } finally {
+                exception = null;
+            }
         }
     }
 
@@ -530,24 +536,6 @@ public class SessionImpl implements Session {
                     completed.set(true);
                 }
             }
-        }
-    }
-
-    private static void throwException(Exception exception) throws IOException, ServerException, InterruptedException {
-        if (exception != null) {
-            if (exception instanceof IOException) {
-                throw (IOException) exception;
-            }
-            if (exception instanceof InterruptedException) {
-                throw (InterruptedException) exception;
-            }
-            if (exception instanceof ServerException) {
-                throw (ServerException) exception;
-            }
-            if (exception instanceof RuntimeException) {
-                throw (RuntimeException) exception;
-            }
-            throw new AssertionError(exception);
         }
     }
 
