@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
 // import java.text.MessageFormat;
-import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +45,9 @@ public class ServerWireImpl implements Closeable {
     static final Logger LOG = LoggerFactory.getLogger(ServerWireImpl.class);
 
     private ServerStreamLink serverStreamLink = null;
-    private final ArrayDeque<Message> receiveQueue;
+    private final ConcurrentLinkedQueue<Message> receiveQueue;
     private final ReceiveWorker receiver;
-    private final ArrayDeque<Message> sendQueue;
+    private final ConcurrentLinkedQueue<Message> sendQueue;
     private SendWorker sender;
     private final long sessionId;
     private int slot;
@@ -189,8 +189,8 @@ public class ServerWireImpl implements Closeable {
 
     public ServerWireImpl(int port, long sessionId, boolean doHandshake) throws IOException {
         this.sessionId = sessionId;
-        this.receiveQueue = new ArrayDeque<Message>();
-        this.sendQueue = new ArrayDeque<Message>();
+        this.receiveQueue = new ConcurrentLinkedQueue<Message>();
+        this.sendQueue = new ConcurrentLinkedQueue<Message>();
         this.receiver = new ReceiveWorker(port, doHandshake);
         this.slot = 0;
         receiver.start();
