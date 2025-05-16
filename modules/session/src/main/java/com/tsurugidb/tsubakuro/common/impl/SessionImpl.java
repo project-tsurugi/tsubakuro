@@ -439,8 +439,6 @@ public class SessionImpl implements Session {
 
     class CloseCleanUp implements Disposer.DelayedClose {
         public void delayedClose() throws ServerException, IOException, InterruptedException {
-            cleanServiceStub();
-
             try {
                 doClose(0);
             } catch (ServerException | IOException | InterruptedException fe) {
@@ -485,6 +483,7 @@ public class SessionImpl implements Session {
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         if (!closeCleanUpRegistered.getAndSet(true)) {
+            cleanServiceStub();
             disposer.registerDelayedClose(new CloseCleanUp());
         }
     }
