@@ -154,11 +154,20 @@ public class SqlServiceStub implements SqlService {
 
     class TransactionBeginProcessor implements MainResponseProcessor<Transaction> {
         private final AtomicReference<SqlResponse.Begin> detailResponseCache = new AtomicReference<>();
+        FutureResponse<Transaction> futureResponse = null;
+
+        FutureResponse<Transaction> setFutureResponse(FutureResponse<Transaction> r) {
+            futureResponse = r;
+            return r;
+        }
 
         @Override
         public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
+            }
+            if (futureResponse != null) {
+                resources.onClosed(futureResponse);
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -187,10 +196,12 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.Begin request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (Begin): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new TransactionBeginProcessor();
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new TransactionBeginProcessor().asResponseProcessor());
+                processor.asResponseProcessor())));
     }
 
     class TransactionCommitProcessor implements MainResponseProcessor<Void> {
@@ -270,15 +281,23 @@ public class SqlServiceStub implements SqlService {
     class StatementPrepareProcessor implements MainResponseProcessor<PreparedStatement> {
         private final AtomicReference<SqlResponse.Prepare> detailResponseCache = new AtomicReference<>();
         private final SqlRequest.Prepare request;
+        FutureResponse<PreparedStatement> futureResponse = null;
 
         StatementPrepareProcessor(SqlRequest.Prepare request) {
             this.request = request;
+        }
+        FutureResponse<PreparedStatement> setFutureResponse(FutureResponse<PreparedStatement> r) {
+            futureResponse = r;
+            return r;
         }
 
         @Override
         public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
+            }
+            if (futureResponse != null) {
+                resources.onClosed(futureResponse);
             }
             if (detailResponseCache.get() == null) {
                 var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -307,10 +326,12 @@ public class SqlServiceStub implements SqlService {
             SqlRequest.Prepare request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new StatementPrepareProcessor(request);
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new StatementPrepareProcessor(request).asResponseProcessor());
+                processor.asResponseProcessor())));
     }
 
     class StatementDisposeProcessor implements MainResponseProcessor<Void> {
@@ -523,10 +544,15 @@ public class SqlServiceStub implements SqlService {
 
     class QueryProcessor extends AbstractResultSetProcessor<SqlResponse.Response> {
         Message request;
+        FutureResponse<ResultSet> futureResponse = null;
 
         QueryProcessor(Message request) {
             super(resources);
             this.request = request;
+        }
+        FutureResponse<ResultSet> setFutureResponse(FutureResponse<ResultSet> r) {
+            futureResponse = r;
+            return r;
         }
 
         @Override
@@ -554,6 +580,9 @@ public class SqlServiceStub implements SqlService {
             Objects.requireNonNull(response);
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
+            }
+            if (futureResponse != null) {
+                resources.onClosed(futureResponse);
             }
             try (
                 var owner = Owner.of(response);
@@ -616,10 +645,12 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.ExecuteQuery request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute query): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new QueryProcessor(request);
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                processor)));
     }
 
     @Override
@@ -627,10 +658,12 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.ExecutePreparedQuery request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new QueryProcessor(request);
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                processor)));
     }
 
     @Override
@@ -638,11 +671,13 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.ExecutePreparedQuery request, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new QueryProcessor(request);
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
                 blobs,
-                new QueryProcessor(request));
+                processor)));
     }
 
     @Override
@@ -650,10 +685,12 @@ public class SqlServiceStub implements SqlService {
             @Nonnull SqlRequest.ExecuteDump request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
-        return session.send(
+        var processor = new QueryProcessor(request);
+        return processor.setFutureResponse(resources.register(
+            session.send(
                 SERVICE_ID,
                 SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                new QueryProcessor(request));
+                processor)));
     }
 
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
