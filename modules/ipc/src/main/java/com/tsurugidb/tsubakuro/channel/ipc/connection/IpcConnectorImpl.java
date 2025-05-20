@@ -37,7 +37,6 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  * IpcConnectorImpl type.
  */
 public final class IpcConnectorImpl implements Connector {
-    private static final long MAX_TIMEOUT_YEAR = 10;
 
     private static final Logger LOG = LoggerFactory.getLogger(IpcConnectorImpl.class);
 
@@ -82,7 +81,7 @@ public final class IpcConnectorImpl implements Connector {
     }
 
     synchronized WireImpl getSessionWire(long id, long timeout, TimeUnit unit) throws TimeoutException, IOException {
-        long timeoutNano = ((MAX_TIMEOUT_YEAR * 365) > TimeUnit.DAYS.convert(timeout, unit)) ? unit.toNanos(timeout) : MAX_TIMEOUT_YEAR * 365 * 24 * 3600_000_000_000L;
+        long timeoutNano = (WireImpl.MAX_TIMEOUT_DAYS > TimeUnit.DAYS.convert(timeout, unit)) ? unit.toNanos(timeout) : WireImpl.MAX_TIMEOUT_DAYS * 24 * 3600_000_000_000L;
         long sessionId = waitNative(handle, id, timeoutNano);
         close();
         return new WireImpl(new IpcLink(name, sessionId));

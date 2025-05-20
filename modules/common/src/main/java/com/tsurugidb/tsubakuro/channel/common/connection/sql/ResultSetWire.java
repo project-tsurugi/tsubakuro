@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+
 /**
  * ResultSetWire type.
  */
@@ -89,7 +91,7 @@ public interface ResultSetWire extends Closeable {
          */
         public void setTimeout(long timeout, @Nonnull TimeUnit unit) {
             Objects.requireNonNull(unit);
-            timeoutNanos = unit.toNanos(timeout);
+            timeoutNanos = (WireImpl.MAX_TIMEOUT_DAYS > TimeUnit.DAYS.convert(timeout, unit)) ? unit.toNanos(timeout) : WireImpl.MAX_TIMEOUT_DAYS * 24 * 3600_000_000_000L;
         }
 
         protected abstract boolean next() throws IOException;
