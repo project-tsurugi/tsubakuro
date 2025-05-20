@@ -81,6 +81,11 @@ public class WireImpl implements Wire {
      */
     private static final int SERVICE_ID_ENDPOINT_BROKER = 1;
 
+    /**
+     * The maximum timeout in days.
+     */
+    public static final long MAX_TIMEOUT_DAYS = (10 * 365);
+
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
     private final Link link;
