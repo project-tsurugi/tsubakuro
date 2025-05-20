@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_MAX_TIMEOUT_YEAR
+#define com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl_MAX_TIMEOUT_YEAR 10LL
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_connection_IpcConnectorImpl
  * Method:    getConnectorNative
