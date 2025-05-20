@@ -19,6 +19,7 @@ else()
     set(JAVA_AWT_INCLUDE_PATH NotNeeded)
     find_package(JNI REQUIRED)
 endif()
+message (STATUS "JNI_LIBRARIES: ${JNI_LIBRARIES}")
 
 include_directories(${JNI_INCLUDE_DIRS})
 
