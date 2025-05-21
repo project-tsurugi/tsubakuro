@@ -9,4 +9,5 @@ repositories {
 dependencies {
     implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.0.7'
     implementation 'gradle.plugin.com.hierynomus.gradle.plugins:license-gradle-plugin:0.16.1'
+    implementation 'com.vanniktech:gradle-maven-publish-plugin:0.32.0'
 }
