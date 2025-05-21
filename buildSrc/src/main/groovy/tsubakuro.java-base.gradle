@@ -11,6 +11,14 @@ java {
     }
 }
 
+task showToolchainJavaHome {
+    doLast {
+        var jdk = javaToolchains.compilerFor(java.toolchain).get()
+        var home = jdk.metadata.installationPath.asFile
+        println(home)
+    }
+}
+
 ext {
     tsubakuroVersion = "${project.version}"
     isReleaseVersion = !version.endsWith("SNAPSHOT")
