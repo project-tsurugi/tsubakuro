@@ -139,9 +139,14 @@ class ResponseBox {
         String diagnosticInfo = "";
         for (var et : boxes) {
             var cr = et.channelResponse();
-            if (cr != null) {
+            var message = et.requestMessage();
+            if (cr != null && message != null) {
                 try {
-                    diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(et.requestMessage()))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    if (message.length > 0) {
+                        diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + SqlRequest.Request.parseDelimitedFrom(new ByteBufferInputStream(ByteBuffer.wrap(message))).toString() + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    } else {
+                        diagnosticInfo += "  +request in processing:" + System.getProperty("line.separator") + cr.diagnosticInfo() + System.getProperty("line.separator");
+                    }
                 } catch (IOException ex) {
                     diagnosticInfo += "  +request in processing: (error) " + ex + System.getProperty("line.separator");
                 }
