@@ -26,11 +26,3 @@ components.java.withVariantsFromConfiguration(configurations.runtimeElements) {
 components.java.withVariantsFromConfiguration(configurations.sourcesElements) {
     skip()
 }
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifactId = "${rootProject.name}"
-        }
-    }
-}
