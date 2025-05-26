@@ -50,7 +50,7 @@ Build and deploy the java and native libraries into Maven Local Repository.
 ### install only java libraries
 Build and deploy only the java libraries into Maven Local Repository.
 ```
-./gradlew PublishMavenJavaPublicationToMavenLocal -PskipBuildNative
+./gradlew PublishToMavenLocal -PskipBuildNative
 ```
 
 ### generate all(aggregated) Javadoc
