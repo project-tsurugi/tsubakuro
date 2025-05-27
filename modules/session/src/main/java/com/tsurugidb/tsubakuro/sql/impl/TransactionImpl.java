@@ -70,10 +70,10 @@ public class TransactionImpl implements Transaction {
     private Timeout timeout = null;
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final boolean autoDispose = false;
     private FutureResponse<Void> commitResult;
     private AtomicReference<State> state = new AtomicReference<>();
     private Disposer disposer = null;
+    private boolean autoDispose = false;
 
     private enum State {
                                     // | commitResult | commit    | rollback  | delayedClose | Transaction |
@@ -339,15 +339,25 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    @Deprecated
     public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
 
+        return commit(SqlRequest.CommitOption.newBuilder().setNotificationType(status).build());
+    }
+
+    @Override
+    public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitOption option) throws IOException {
+        Objects.requireNonNull(option);
+
         switch (state.get()) {
             case INITIAL:
+                autoDispose = option.getAutoDispose();
                 commitResult = service.send(SqlRequest.Commit.newBuilder()
                                     .setTransactionHandle(transaction.getTransactionHandle())
-                                    .setNotificationType(status)
+                                    .setNotificationType(option.getNotificationType())
                                     .setAutoDispose(autoDispose)
+                                    .setOption(option)
                                     .build());
                 state.set(State.COMMITTED);
                 return commitResult;

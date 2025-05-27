@@ -353,7 +353,6 @@ class SqlServiceStubTest {
         }
     }
 
-    @Disabled("As TransactionImpl.autoDispose is false")
     @Test
     void sendCommitSuccessAutoDispose() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.COMMIT,
@@ -364,7 +363,7 @@ class SqlServiceStubTest {
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTest(service);
-            var future = transaction.commit();
+            var future = transaction.commit(SqlRequest.CommitOption.newBuilder().setAutoDispose(true).build());
         ) {
             assertDoesNotThrow(() -> future.get());
         }

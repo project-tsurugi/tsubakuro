@@ -283,13 +283,29 @@ public interface Transaction extends ServerResourceNeedingDisposal {
 
     /**
      * Commits the current transaction.
+     * @deprecated use SqlRequest.CommitOption to specify CommitStatus
      * @param status the commit status which the request is waiting for
      * @return a future response of this action:
      *      the response will be returned after the transaction will reach the commit status,
      *      or raise error if the commit operation was failed
      * @throws IOException if I/O error was occurred while sending request
      */
+    @Deprecated
     default FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Commits the current transaction.
+     * @param option the commit option to specify details of the commit operation
+     * @return a future response of this action:
+     *      the response will be returned after the transaction will reach the commit status,
+     *      or raise error if the commit operation was failed
+     * @throws IOException if I/O error was occurred while sending request
+     *
+     * @since 1.10.0
+     */
+    default FutureResponse<Void> commit(@Nonnull SqlRequest.CommitOption option) throws IOException {
         throw new UnsupportedOperationException();
     }
 
