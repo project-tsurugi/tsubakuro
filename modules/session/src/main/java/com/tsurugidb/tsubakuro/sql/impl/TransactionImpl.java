@@ -339,7 +339,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    @Deprecated
     public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
 
