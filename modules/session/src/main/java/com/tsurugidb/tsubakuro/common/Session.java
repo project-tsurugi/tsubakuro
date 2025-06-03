@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -120,16 +121,29 @@ public interface Session extends ServerResource {
         }
 
     /**
-     * updates credential information of this session, and retries authenticate it.
-     * <p>
-     * This is designed for credentials with time limit, like as temporary token based credentials.
-     * </p>
-     * @param credential the new credential information
-     * @return a future of the authentication result:
-     *      it may throw {@link CoreServiceException} if authentication was failed.
-     * @throws IOException if I/O error was occurred while sending message
+     * Returns the expiration time of the current session credentials.
+     * @return the future of the response, which may raise an exception on waiting for completion
+     * @see #updateCredentials(Credential)
+     * @throws IOException if an I/O error occurs
+     * @throws InterruptedException if the operation is interrupted
+     * @throws ServerException if the server returns an error
      */
-    FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException;
+    default FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Update session credentials to prevent from expiration of the current session credentials.
+     * @param credential the new credential
+     * @return the future of the response, which may raise an exception on waiting for completion
+     * @see #getCredentialsExpirationTime()
+     * @throws IOException if an I/O error occurs
+     * @throws InterruptedException if the operation is interrupted
+     * @throws ServerException if the server returns an error
+     */
+    default FutureResponse<Void> updateCredentials(@Nonnull Credential credential) throws IOException, InterruptedException, ServerException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Requests to extend the session expiration time by the server default value.

@@ -52,8 +52,6 @@ public final class SessionBuilder {
 
     private String applicationName;
 
-    private String userName;
-
     private boolean doKeepAlive = true;
 
     private BlobPathMapping blobPathMapping = null;
