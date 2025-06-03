@@ -560,7 +560,7 @@ public class SessionImpl implements Session {
      */
     public void waitForCompletion() throws InterruptedException {
         if (!closeCleanUpRegistered.get()) {
-            throw new AssertionError("Session close is not submitted");
+            throw new IllegalStateException("Session close is not submitted");
         }
         while (!completed.get()) {
             Thread.sleep(100);

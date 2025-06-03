@@ -188,8 +188,7 @@ public class Disposer extends Thread {
         }
 
         if (exception != null) {
-            LOG.error(exception.getMessage());
-            exception.printStackTrace();
+            LOG.error(exception.getMessage(), exception);
             if (exception instanceof IOException) {
                 throw new UncheckedIOException((IOException) exception);
             } else {
