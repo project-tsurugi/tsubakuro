@@ -33,6 +33,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlService;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
@@ -47,6 +48,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     private final AtomicBoolean closed = new AtomicBoolean();
     private long timeout = 0;
     private TimeUnit unit;
+    private FutureResponse<Void> futureResponse = null;
     final SqlCommon.PreparedStatement handle;
     private final SqlRequest.Prepare request;
     private Disposer disposer = null;
@@ -105,8 +107,8 @@ public class PreparedStatementImpl implements PreparedStatement {
             } else {
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
-                    public void delayedClose() throws ServerException, IOException, InterruptedException {
-                        doClose();
+                    public boolean delayedClose() throws ServerException, IOException, InterruptedException {
+                        return doClose();
                     }
                 });
             }
@@ -115,16 +117,20 @@ public class PreparedStatementImpl implements PreparedStatement {
         doClose();
     }
 
-    private void doClose() throws IOException, ServerException, InterruptedException {
+    private boolean doClose() throws IOException, ServerException, InterruptedException {
         if (!closed.getAndSet(true) && service != null) {
-            try (var futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build())) {
+            if (futureResponse == null) {
+                futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
+            }
+            try {
                 if (timeout == 0) {
-                    futureResponse.get();
+                    futureResponse.get(100, TimeUnit.MICROSECONDS);
                 } else {
                     futureResponse.get(timeout, unit);
                 }
             } catch (TimeoutException e) {
                 LOG.warn("closing resource is timeout", e);
+                return false;
             }
         }
         if (closeHandler != null) {
@@ -132,6 +138,7 @@ public class PreparedStatementImpl implements PreparedStatement {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
+        return true;
     }
 
     /**

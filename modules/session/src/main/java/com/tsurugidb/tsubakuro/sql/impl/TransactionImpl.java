@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -71,6 +72,7 @@ public class TransactionImpl implements Transaction {
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     private FutureResponse<Void> commitResult;
+    private FutureResponse<Void> rollbackResult = null;
     private AtomicReference<State> state = new AtomicReference<>();
     private Disposer disposer = null;
     private boolean autoDispose = false;
@@ -512,8 +514,8 @@ public class TransactionImpl implements Transaction {
             } else {
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
-                    public void delayedClose() throws ServerException, IOException, InterruptedException {
-                        doClose();
+                    public boolean delayedClose() throws ServerException, IOException, InterruptedException {
+                        return doClose();
                     }
                 });
                 state.set(toBeClosed(state.get()));
@@ -536,7 +538,7 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private synchronized void doClose() throws IOException, ServerException, InterruptedException {
+    private synchronized boolean doClose() throws IOException, ServerException, InterruptedException {
         boolean needDispose = true;
         boolean needRollback = false;
 
@@ -548,14 +550,12 @@ public class TransactionImpl implements Transaction {
         case COMMITTED:
         case TO_BE_CLOSED_WITH_COMMIT:
             try {
-                if (timeout == null) {
-                    commitResult.get();
-                } else {
-                    timeout.waitFor(commitResult);
-                }
+                commitResult.get(100, TimeUnit.MICROSECONDS);
                 if (autoDispose) {
                     needDispose = false;
                 }
+            } catch (TimeoutException e) {
+                return false;
             } catch (IOException | ServerException | InterruptedException e) {
                 needDispose = true;
             }
@@ -564,19 +564,21 @@ public class TransactionImpl implements Transaction {
         case TO_BE_CLOSED_WITH_ROLLBACK:
             break;
         case CLOSED:
-            return;
+            return true;
         }
         try {
             if (needRollback) {
                 // FIXME need to consider rollback is suitable here
-                try (var rollback = submitRollback()) {
-                    if (timeout == null) {
-                        rollback.get();
-                    } else {
-                        timeout.waitFor(rollback);
-                    }
+                if (rollbackResult == null) {
+                    rollbackResult = submitRollback();
+                }
+                try {
+                    rollbackResult.get(100, TimeUnit.MICROSECONDS);
+                } catch (TimeoutException e) {
+                    return false;
                 }
             }
+            return true;
         } finally {
             if (closeHandler != null) {
                 Lang.suppress(
