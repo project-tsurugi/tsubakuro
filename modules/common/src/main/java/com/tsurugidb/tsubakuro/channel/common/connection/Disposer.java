@@ -76,11 +76,12 @@ public class Disposer extends Thread {
     public interface DelayedClose {
         /**
          * invoke the close() procedure of its belonging object.
+         * @return true if close operation is completes
          * @throws ServerException if error was occurred while disposing this session
          * @throws IOException if I/O error was occurred while disposing this session
          * @throws InterruptedException if interrupted while disposing this session
          */
-        void delayedClose() throws ServerException, IOException, InterruptedException;
+        boolean delayedClose() throws ServerException, IOException, InterruptedException;
     }
 
     /**
@@ -122,7 +123,11 @@ public class Disposer extends Thread {
             var serverResource = serverResourceQueue.poll();
             if (serverResource != null) {
                 try {
-                    serverResource.delayedClose();
+                    if (!serverResource.delayedClose()) {
+                        // The server response has not been received
+                        serverResourceQueue.add(serverResource);
+                        continue;
+                    }
                 } catch (ServerException | IOException | InterruptedException e) {
                     exception = addSuppressed(exception, e);
                 }
@@ -284,8 +289,9 @@ public class Disposer extends Thread {
                 }
                 close.set(new DelayedClose() {
                     @Override
-                    public void  delayedClose() {
+                    public boolean delayedClose() {
                         // do nothing
+                        return true;
                     }
                 });
             }

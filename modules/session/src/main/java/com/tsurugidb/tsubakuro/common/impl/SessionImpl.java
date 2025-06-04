@@ -438,7 +438,7 @@ public class SessionImpl implements Session {
     }
 
     class CloseCleanUp implements Disposer.DelayedClose {
-        public void delayedClose() throws ServerException, IOException, InterruptedException {
+        public boolean delayedClose() throws ServerException, IOException, InterruptedException {
             try {
                 doClose(0);
             } catch (ServerException | IOException | InterruptedException fe) {
@@ -449,6 +449,7 @@ public class SessionImpl implements Session {
                 }
             }
             throwException();
+            return true;
         }
     }
 
