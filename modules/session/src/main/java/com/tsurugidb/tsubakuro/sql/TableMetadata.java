@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.sql;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -49,4 +50,12 @@ public interface TableMetadata extends RelationMetadata {
      * @since 1.9.0
      */
     Optional<String> getDescription();
+
+    /**
+     * Returns the primary key information of the relation.
+     * @return the primaly key column name list
+     *
+     * @since 1.9.0
+     */
+    List<String> getPrimaryKeys();
 }
