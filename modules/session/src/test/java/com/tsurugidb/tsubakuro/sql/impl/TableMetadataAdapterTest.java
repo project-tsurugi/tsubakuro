@@ -18,11 +18,9 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 
 import org.junit.jupiter.api.Test;
-import org.w3c.dom.TypeInfo;
 
 import com.tsurugidb.sql.proto.SqlResponse.DescribeTable;
 
@@ -35,12 +33,17 @@ class TableMetadataAdapterTest {
                 .setSchemaName("schema")
                 .setTableName("table")
                 .setDescription("description")
+                .addPrimaryKey("pk1")
+                .addPrimaryKey("pk2")
                 .build();
         var table = new TableMetadataAdapter(proto);
         assertEquals("db", table.getDatabaseName().get());
         assertEquals("schema", table.getSchemaName().get());
         assertEquals("table", table.getTableName());
         assertEquals("description", table.getDescription().get());
+        assertEquals("pk1", table.getPrimaryKeys().get(0));
+        assertEquals("pk2", table.getPrimaryKeys().get(1));
+        assertEquals(2, table.getPrimaryKeys().size());
     }
 
     @Test

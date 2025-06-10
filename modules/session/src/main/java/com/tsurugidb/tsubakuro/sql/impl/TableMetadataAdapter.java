@@ -70,6 +70,11 @@ public class TableMetadataAdapter implements TableMetadata {
     }
 
     @Override
+    public List<String> getPrimaryKeys() {
+        return proto.getPrimaryKeyList();
+    }
+
+    @Override
     public String toString() {
         return proto.toString();
     }
