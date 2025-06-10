@@ -55,7 +55,7 @@ public interface TableMetadata extends RelationMetadata {
      * Returns the primary key information of the relation.
      * @return the primaly key column name list
      *
-     * @since 1.9.0
+     * @since 1.10.0
      */
     List<String> getPrimaryKeys();
 }
