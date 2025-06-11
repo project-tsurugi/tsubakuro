@@ -291,6 +291,24 @@ public final class SqlRequestUtils {
      * @return the delimited byte[]
      * @throws IOException if I/O error was occurred while converting SqlRequest.xxx request
      */
+    public static byte[] toSqlRequestDelimitedByteArray(@Nonnull SqlRequest.ExecuteDumpByText request) throws IOException {
+        return toDelimitedByteArray(toSqlRequest(request));
+    }
+    /**
+     * Set SqlRequest.xxx request into SqlRequest.Request request.
+     * @param request the SqlRequest.xxx request
+     * @return SqlRequest.Request request
+     */
+    public static SqlRequest.Request toSqlRequest(@Nonnull SqlRequest.ExecuteDumpByText request) {
+        return newRequest().setExecuteDumpByText(request).build();
+    }
+
+    /**
+     * Convert SqlRequest.xxx request to delimited byte[].
+     * @param request the SqlRequest.xxx request
+     * @return the delimited byte[]
+     * @throws IOException if I/O error was occurred while converting SqlRequest.xxx request
+     */
     public static byte[] toSqlRequestDelimitedByteArray(@Nonnull SqlRequest.ExecuteLoad request) throws IOException {
         return toDelimitedByteArray(toSqlRequest(request));
     }

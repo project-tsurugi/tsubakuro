@@ -210,6 +210,18 @@ public interface SqlService extends ServerResource {
     }
 
     /**
+     * Requests {@code ExecuteQuery} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     *      If the request was succeeded, future will returns a result set object which includes output file paths.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecuteDumpByText request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Requests {@code ExecuteLoad} to SQL service.
      * @param request the request
      * @return the future response of the request,
