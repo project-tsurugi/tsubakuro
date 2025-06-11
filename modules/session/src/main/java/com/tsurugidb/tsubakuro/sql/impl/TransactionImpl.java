@@ -244,11 +244,20 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeDump(@Nonnull String source, @Nonnull Path directory) throws IOException {
+    public FutureResponse<ResultSet> executeDump(
+            @Nonnull String source,
+            @Nonnull Path directory) throws IOException {
         Objects.requireNonNull(source);
         Objects.requireNonNull(directory);
-        // FIXME impl
-        throw new UnsupportedOperationException();
+        if (isCleanuped()) {
+            throw new IOException("transaction already closed");
+        }
+        var pb = SqlRequest.ExecuteDumpByText.newBuilder()
+                .setTransactionHandle(transaction.getTransactionHandle())
+                .setSql(source)
+                .setDirectory(directory.toString())
+                .setOption(SqlRequest.DumpOption.getDefaultInstance());
+        return service.send(pb.build());
     }
 
     @Override

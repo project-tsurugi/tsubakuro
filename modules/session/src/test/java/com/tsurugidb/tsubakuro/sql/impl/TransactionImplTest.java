@@ -243,46 +243,53 @@ class TransactionImplTest {
         assertEquals(1, count.get());
     }
 
-//    @Test
-//    void dump_text() throws Exception {
-//        var count = new AtomicInteger();
-//        try (
-//            var client = new TransactionImpl(SqlCommon.Transaction.newBuilder().setHandle(100).build(), new SqlService() {
-//                @Override
-//                public FutureResponse<ResultSet> send(Dump request) throws IOException {
-//                    count.incrementAndGet();
-//                    return FutureResponse.returns(Relation.of(new Object[][] {
-//                        {
-//                            request.getTransactionId(),
-//                            request.getSourceText(),
-//                            request.getDirectories(0),
-//                        }
-//                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
-//                            .addColumns(Types.column("transaction", Types.of(long.class)))
-//                            .addColumns(Types.column("text", Types.of(String.class)))
-//                            .addColumns(Types.column("path", Types.of(String.class)))
-//                            .build())));
-//                }
-//                @Override
-//                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
-//                    return FutureResponse.returns(null);
-//                }
-//            }, null);
-//            var rs = client.dump("SELECT 1", Path.of("/path/to/dump")).await();
-//        ) {
-//            assertTrue(rs.nextRow());
-//            assertTrue(rs.nextColumn());
-//            assertEquals(rs.fetchInt8Value(), 100);
-//            assertTrue(rs.nextColumn());
-//            assertEquals(rs.fetchCharacterValue(), "SELECT 1");
-//            assertTrue(rs.nextColumn());
-//            assertEquals(path(rs.fetchCharacterValue()), path("/path/to/dump"));
-//
-//            assertFalse(rs.nextColumn());
-//            assertFalse(rs.nextRow());
-//        }
-//        assertEquals(1, count.get());
-//    }
+    @Test
+    void dumpText() throws Exception {
+        var count = new AtomicInteger();
+        try (
+            var client = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                            .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100).build())
+                                            .build(),
+                                            new SqlService() {
+                @Override
+                public FutureResponse<ResultSet> send(SqlRequest.ExecuteDumpByText request) throws IOException {
+                    count.incrementAndGet();
+                    return FutureResponse.returns(Relation.of(new Object[][] {
+                        {
+                            request.getTransactionHandle().getHandle(),
+                            request.getSql(),
+                            request.getDirectory(),
+                        }
+                    }).getResultSet(new ResultSetMetadataAdapter(SqlResponse.ResultSetMetadata.newBuilder()
+                            .addColumns(Types.column("transaction", Types.of(long.class)))
+                            .addColumns(Types.column("text", Types.of(String.class)))
+                            .addColumns(Types.column("path", Types.of(String.class)))
+                            .build())));
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.Rollback request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
+                @Override
+                public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
+                    return FutureResponse.returns(null);
+                }
+            }, null, null);
+            var rs = client.executeDump("SELECT 1", Path.of("/path/to/dump")).await();
+        ) {
+            assertTrue(rs.nextRow());
+            assertTrue(rs.nextColumn());
+            assertEquals(rs.fetchInt8Value(), 100);
+            assertTrue(rs.nextColumn());
+            assertEquals(rs.fetchCharacterValue(), "SELECT 1");
+            assertTrue(rs.nextColumn());
+            assertEquals(path(rs.fetchCharacterValue()), path("/path/to/dump"));
+
+            assertFalse(rs.nextColumn());
+            assertFalse(rs.nextRow());
+        }
+        assertEquals(1, count.get());
+    }
 
     @Test
     void dumpStatement() throws Exception {

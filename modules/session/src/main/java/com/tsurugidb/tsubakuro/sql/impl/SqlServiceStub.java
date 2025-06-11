@@ -694,6 +694,19 @@ public class SqlServiceStub implements SqlService {
                 processor)));
     }
 
+    @Override
+    public FutureResponse<ResultSet> send(
+            @Nonnull SqlRequest.ExecuteDumpByText request) throws IOException {
+        Objects.requireNonNull(request);
+        LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
+        var processor = new QueryProcessor(request);
+        return processor.setFutureResponse(futureResponses.register(
+            session.send(
+                SERVICE_ID,
+                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                processor)));
+    }
+
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
         private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 

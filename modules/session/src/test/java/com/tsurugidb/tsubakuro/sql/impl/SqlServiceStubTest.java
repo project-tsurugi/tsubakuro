@@ -1499,6 +1499,75 @@ class SqlServiceStubTest {
     }
 
     @Test
+    void sendDumpByTextSuccess() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_DUMP_BY_TEXT,
+                RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder().setSuccess(newVoid()).build(),
+                        toResultSetMetadata(
+                            Types.column("path", Types.of(String.class))).toByteArray(),
+                        Relation.of(new Object[][] {
+                            { "a" },
+                            { "b" },
+                            { "c" },
+                        }))));
+
+        var message = SqlRequest.ExecuteDumpByText.newBuilder()
+                .setSql("SELECT 1")
+                .setDirectory("/path/to/dump")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+            var rs = future.await();
+        ) {
+            assertTrue(rs.nextRow());
+            assertTrue(rs.nextColumn());
+            assertEquals("a", rs.fetchCharacterValue());
+            assertFalse(rs.nextColumn());
+
+            assertTrue(rs.nextRow());
+            assertTrue(rs.nextColumn());
+            assertEquals("b", rs.fetchCharacterValue());
+            assertFalse(rs.nextColumn());
+
+            assertTrue(rs.nextRow());
+            assertTrue(rs.nextColumn());
+            assertEquals("c", rs.fetchCharacterValue());
+            assertFalse(rs.nextColumn());
+
+            assertFalse(rs.nextRow());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
+    void sendDumpByTextEngineError() throws Exception {
+        wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_DUMP_BY_TEXT,
+                    RequestHandler.returns(
+                        SqlResponse.ResultOnly.newBuilder()
+                            .setError(newEngineError())
+                        .build(),
+                    Relation.of(new Object[][] {
+                        { "a" },
+                        { "b" },
+                        { "c" },
+                    }))));
+
+        var message = SqlRequest.ExecuteDumpByText.newBuilder()
+                .setSql("SELECT 1")
+                .setDirectory("/path/to/dump")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var error = assertThrows(SqlServiceException.class, () -> future.await().close());
+            assertEquals(SqlServiceCode.SQL_SERVICE_EXCEPTION, error.getDiagnosticCode());
+        }
+        assertFalse(wire.hasRemaining());
+    }
+
+    @Test
     void sendLoadSuccess_deprecated() throws Exception {
         wire.next(accepts(SqlRequest.Request.RequestCase.EXECUTE_LOAD,
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
