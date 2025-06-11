@@ -53,7 +53,7 @@ public interface TableMetadata extends RelationMetadata {
 
     /**
      * Returns the primary key information of the relation.
-     * @return the primaly key column name list
+     * @return the primary key column name list
      *
      * @since 1.10.0
      */
