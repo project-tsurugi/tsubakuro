@@ -21,11 +21,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 
+import com.google.protobuf.TextFormat;
+import com.tsurugidb.sql.proto.SqlCommon;
+import com.tsurugidb.sql.proto.SqlCommon.AtomType;
+import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
@@ -33,8 +38,6 @@ import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Types;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.MappedFutureResponse;
-import com.tsurugidb.sql.proto.SqlCommon;
-import com.tsurugidb.sql.proto.SqlRequest;
 
 /**
  * Builds {@link Load} operations.
@@ -52,6 +55,8 @@ public class LoadBuilder {
     private static final Pattern PATTERN_REGULAR_IDENTIFIER = Pattern.compile("[A-Za-z_][0-9A-Za-z_]*"); //$NON-NLS-1$
 
     private static final Style DEFAULT_STYLE = Style.ERROR;
+
+    private static final Conversion DEFAULT_CONVERSION = Conversion.CAST;
 
     private static final Map<SqlCommon.AtomType, String> ATOM_TYPE_NAMES = Map.ofEntries(
             Map.entry(SqlCommon.AtomType.BIT, "VARBIT"), //$NON-NLS-1$
@@ -96,6 +101,34 @@ public class LoadBuilder {
          * Overwrites the row if the primary key is conflicted.
          */
         OVERWRITE,
+    }
+
+    /**
+     * Conversion rule for incompatible source and destination types.
+     * @since 1.10.0
+     */
+    public enum Conversion {
+
+        /**
+         * Raise {@link IllegalArgumentException} if the type is not compatible.
+         */
+        ERROR,
+
+        /**
+         * Don't do any conversion even if the type is not compatible.
+         */
+        NONE,
+
+        /**
+         * Cast the value to the target type.
+         */
+        CAST,
+
+        /**
+         * Apply Base64 encode/decode to the octet/character string values.
+         * Or raise {@link IllegalArgumentException} if the source or destination type is not compatible.
+         */
+        BASE64,
     }
 
     /**
@@ -155,6 +188,44 @@ public class LoadBuilder {
         return style(Style.OVERWRITE);
     }
 
+    private static void validateEntry(Entry entry) {
+        assert entry != null;
+        var printer = TextFormat.printer().escapingNonAscii(false);
+        if (entry.conversion == Conversion.ERROR && !entry.hasCompatibleType()) {
+            throw new IllegalArgumentException(MessageFormat.format(
+                    "The input is not compatible to the destination column type: {1} -> {2}",
+                    printer.shortDebugString(entry.from),
+                    printer.shortDebugString(entry.to)));
+        }
+        if (entry.conversion == Conversion.BASE64) {
+            var from = getAtomType(entry.from);
+            var to = getAtomType(entry.column);
+            if (!(from.equals(Optional.of(AtomType.CHARACTER)) && to.equals(Optional.of(AtomType.OCTET)))
+                    && !(from.equals(Optional.of(AtomType.OCTET)) && to.equals(Optional.of(AtomType.CHARACTER)))) {
+                throw new IllegalArgumentException(MessageFormat.format(
+                        "Base64 encode/decode is not supported for the types: {1} -> {2}",
+                        printer.shortDebugString(entry.from),
+                        printer.shortDebugString(entry.to)));
+            }
+        }
+    }
+
+    private static Optional<SqlCommon.AtomType> getAtomType(SqlCommon.Column entry) {
+        assert entry != null;
+        if (entry.getDimension() != 0 || entry.getTypeInfoCase() != SqlCommon.Column.TypeInfoCase.ATOM_TYPE) {
+            return Optional.empty();
+        }
+        return Optional.of(entry.getAtomType());
+    }
+
+    private static Optional<SqlCommon.AtomType> getAtomType(SqlRequest.Placeholder entry) {
+        assert entry != null;
+        if (entry.getDimension() != 0 || entry.getTypeInfoCase() != SqlRequest.Placeholder.TypeInfoCase.ATOM_TYPE) {
+            return Optional.empty();
+        }
+        return Optional.of(entry.getAtomType());
+    }
+
     /**
      * Declares a column mapping between the destination and source column.
      * <p>
@@ -174,11 +245,41 @@ public class LoadBuilder {
         Objects.requireNonNull(destinationColumn);
         Objects.requireNonNull(sourceColumnName);
         Objects.requireNonNull(sourceType);
+        return mapping(destinationColumn, sourceColumnName, sourceType, DEFAULT_CONVERSION);
+    }
+
+    /**
+     * Declares a column mapping between the destination and source column.
+     * <p>
+     * Note that, if the column types are inconsistent between destination and source columns,
+     * the load operation will automatically converts data type of input values into the destination column type.
+     * Or the conversion would be failure, the load operation also will be failure.
+     * </p>
+     * @param destinationColumn the destination table column
+     * @param sourceColumnName the source column on input files
+     * @param sourceType the source column type, resolved by {@link Types#typeOf(Class) Types.typeOf(aClass)}.
+     * @param conversion the conversion rule for incompatible source and destination types
+     * @return this
+     * @throws IllegalArgumentException if the the mapping type is not compatible for the conversion rule
+     * @since 1.10.0
+     */
+    public LoadBuilder mapping(
+            @Nonnull SqlCommon.Column destinationColumn,
+            @Nonnull String sourceColumnName,
+            @Nonnull Class<?> sourceType,
+            @Nonnull Conversion conversion) {
+        Objects.requireNonNull(destinationColumn);
+        Objects.requireNonNull(sourceColumnName);
+        Objects.requireNonNull(sourceType);
+        Objects.requireNonNull(conversion);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 Placeholders.of(name, sourceType),
-                Parameters.referenceColumn(name, sourceColumnName)));
+                Parameters.referenceColumn(name, sourceColumnName),
+                conversion);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -202,11 +303,42 @@ public class LoadBuilder {
         Objects.requireNonNull(destinationColumn);
         Objects.requireNonNull(sourceColumnName);
         Objects.requireNonNull(sourceType);
+        return mapping(destinationColumn, sourceColumnName, sourceType, DEFAULT_CONVERSION);
+    }
+
+    /**
+     * Declares a column mapping between the destination and source column.
+     * <p>
+     * Note that, if the column types are inconsistent between destination and source columns,
+     * the load operation will automatically converts data type of input values into the destination column type.
+     * Or the conversion would be failure, the load operation also will be failure.
+     * </p>
+     * @param destinationColumn the destination table column
+     * @param sourceColumnName the source column on input files
+     * @param sourceType the source column type
+     * @param conversion the conversion rule for incompatible source and destination types
+     * @return this
+     * @throws IllegalArgumentException if the the mapping type is not compatible for the conversion rule
+     * @throws IllegalArgumentException if the destination column information is not valid
+     * @since 1.10.0
+     */
+    public LoadBuilder mapping(
+            @Nonnull SqlCommon.Column destinationColumn,
+            @Nonnull String sourceColumnName,
+            @Nonnull SqlCommon.AtomType sourceType,
+            @Nonnull Conversion conversion) {
+        Objects.requireNonNull(destinationColumn);
+        Objects.requireNonNull(sourceColumnName);
+        Objects.requireNonNull(sourceType);
+        Objects.requireNonNull(conversion);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 Placeholders.of(name, sourceType),
-                Parameters.referenceColumn(name, sourceColumnName)));
+                Parameters.referenceColumn(name, sourceColumnName),
+                conversion);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -229,11 +361,41 @@ public class LoadBuilder {
             @Nonnull Class<?> sourceType) {
         Objects.requireNonNull(destinationColumn);
         Objects.requireNonNull(sourceType);
+        return mapping(destinationColumn, sourceColumnPosition, sourceType, DEFAULT_CONVERSION);
+    }
+
+    /**
+     * Declares a column mapping between the destination and source column.
+     * <p>
+     * Note that, if the column types are inconsistent between destination and source columns,
+     * the load operation will automatically converts data type of input values into the destination column type.
+     * Or the conversion would be failure, the load operation also will be failure.
+     * </p>
+     * @param destinationColumn the destination table column
+     * @param sourceColumnPosition the source column position (0-origin)
+     * @param sourceType the source column type, resolved by {@link Types#typeOf(Class) Types.typeOf(aClass)}.
+     * @param conversion the conversion rule for incompatible source and destination types
+     * @return this
+     * @throws IllegalArgumentException if the the mapping type is not compatible for the conversion rule
+     * @throws IllegalArgumentException if the destination column information is not valid
+     * @since 1.10.0
+     */
+    public LoadBuilder mapping(
+            @Nonnull SqlCommon.Column destinationColumn,
+            int sourceColumnPosition,
+            @Nonnull Class<?> sourceType,
+            @Nonnull Conversion conversion) {
+        Objects.requireNonNull(destinationColumn);
+        Objects.requireNonNull(sourceType);
+        Objects.requireNonNull(conversion);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 Placeholders.of(name, sourceType),
-                Parameters.referenceColumn(name, sourceColumnPosition)));
+                Parameters.referenceColumn(name, sourceColumnPosition),
+                conversion);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -256,11 +418,41 @@ public class LoadBuilder {
             @Nonnull SqlCommon.AtomType sourceType) {
         Objects.requireNonNull(destinationColumn);
         Objects.requireNonNull(sourceType);
+        return mapping(destinationColumn, sourceColumnPosition, sourceType, DEFAULT_CONVERSION);
+    }
+
+    /**
+     * Declares a column mapping between the destination and source column.
+     * <p>
+     * Note that, if the column types are inconsistent between destination and source columns,
+     * the load operation will automatically converts data type of input values into the destination column type.
+     * Or the conversion would be failure, the load operation also will be failure.
+     * </p>
+     * @param destinationColumn the destination table column
+     * @param sourceColumnPosition the source column position (0-origin)
+     * @param sourceType the source column type
+     * @param conversion the conversion rule for incompatible source and destination types
+     * @return this
+     * @throws IllegalArgumentException if the the mapping type is not compatible for the conversion rule
+     * @throws IllegalArgumentException if the destination column information is not valid
+     * @since 1.10.0
+     */
+    public LoadBuilder mapping(
+            @Nonnull SqlCommon.Column destinationColumn,
+            int sourceColumnPosition,
+            @Nonnull SqlCommon.AtomType sourceType,
+            @Nonnull Conversion conversion) {
+        Objects.requireNonNull(destinationColumn);
+        Objects.requireNonNull(sourceType);
+        Objects.requireNonNull(conversion);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 Placeholders.of(name, sourceType),
-                Parameters.referenceColumn(name, sourceColumnPosition)));
+                Parameters.referenceColumn(name, sourceColumnPosition),
+                conversion);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -281,10 +473,13 @@ public class LoadBuilder {
         Objects.requireNonNull(destinationColumn);
         Objects.requireNonNull(sourceColumnName);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 createPlaceHolder(name, destinationColumn),
-                Parameters.referenceColumn(name, sourceColumnName)));
+                Parameters.referenceColumn(name, sourceColumnName),
+                DEFAULT_CONVERSION);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -304,10 +499,13 @@ public class LoadBuilder {
             int sourceColumnPosition) {
         Objects.requireNonNull(destinationColumn);
         String name = createPlaceHolderName(destinationColumn, entries.size());
-        this.entries.add(new Entry(
+        var entry = new Entry(
                 destinationColumn,
                 createPlaceHolder(name, destinationColumn),
-                Parameters.referenceColumn(name, sourceColumnPosition)));
+                Parameters.referenceColumn(name, sourceColumnPosition),
+                DEFAULT_CONVERSION);
+        validateEntry(entry);
+        this.entries.add(entry);
         return this;
     }
 
@@ -466,13 +664,46 @@ public class LoadBuilder {
         if (entry.hasCompatibleType()) {
             return String.format(":%s", entry.from.getName()); //$NON-NLS-1$
         }
-        var buf = new StringBuilder();
-        buf.append("CAST(:"); //$NON-NLS-1$
-        buf.append(entry.from.getName());
-        buf.append(" AS "); //$NON-NLS-1$
-        buildTypeName(entry.column, buf);
-        buf.append(')');
-        return buf.toString();
+        switch (entry.conversion) {
+            case ERROR:
+                break;
+            case NONE:
+                return String.format(":%s", entry.from.getName()); //$NON-NLS-1$
+            case CAST: {
+                var buf = new StringBuilder();
+                buf.append("CAST(:"); //$NON-NLS-1$
+                buf.append(entry.from.getName());
+                buf.append(" AS "); //$NON-NLS-1$
+                buildTypeName(entry.column, buf);
+                buf.append(')');
+                return buf.toString();
+            }
+            case BASE64: {
+                if (entry.from.getAtomType() == SqlCommon.AtomType.CHARACTER && entry.column.getAtomType() == SqlCommon.AtomType.OCTET) {
+                    // VARCHAR -> VARBINARY - invoke decode(x, 'base64')
+                    var buf = new StringBuilder();
+                    buf.append("decode(:"); //$NON-NLS-1$
+                    buf.append(entry.from.getName());
+                    buf.append(", 'base64')"); //$NON-NLS-1$
+                    return buf.toString();
+                }
+                if (entry.from.getAtomType() == SqlCommon.AtomType.OCTET && entry.column.getAtomType() == SqlCommon.AtomType.CHARACTER) {
+                    // VARBINARY -> VARCHAR - invoke encode(x, 'base64')
+                    var buf = new StringBuilder();
+                    buf.append("encode(:"); //$NON-NLS-1$
+                    buf.append(entry.from.getName());
+                    buf.append(", 'base64')"); //$NON-NLS-1$
+                    return buf.toString();
+                }
+                break;
+            }
+        }
+        // may not come here because check types in each mapping() method
+        throw new IllegalStateException(MessageFormat.format(
+                "conversion \"{0}\" does not support the types: {1} -> {2}",
+                entry.conversion,
+                entry.from.getTypeInfoCase(),
+                entry.column.getTypeInfoCase()));
     }
 
     private void buildTypeName(@Nonnull SqlCommon.Column column, @Nonnull StringBuilder buf) {
@@ -525,16 +756,21 @@ public class LoadBuilder {
 
         final SqlRequest.Parameter to;
 
+        final Conversion conversion;
+
         Entry(
                 @Nonnull SqlCommon.Column column,
                 @Nonnull SqlRequest.Placeholder from,
-                @Nonnull SqlRequest.Parameter to) {
+                @Nonnull SqlRequest.Parameter to,
+                @Nonnull Conversion conversion) {
             assert column != null;
             assert from != null;
             assert to != null;
+            assert conversion != null;
             this.column = column;
             this.from = from;
             this.to = to;
+            this.conversion = conversion;
         }
 
         boolean hasCompatibleType() {
