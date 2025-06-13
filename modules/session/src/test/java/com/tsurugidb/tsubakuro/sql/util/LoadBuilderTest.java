@@ -15,7 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.sql.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,19 +28,19 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tsubakuro.sql.impl.TableMetadataAdapter;
-import com.tsurugidb.tsubakuro.sql.PreparedStatement;
-import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.Transaction;
-import com.tsurugidb.tsubakuro.sql.ExecuteResult;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.PreparedStatement;
+import com.tsurugidb.tsubakuro.sql.SqlClient;
+import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.impl.TableMetadataAdapter;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 class LoadBuilderTest {
 
-    private static final Pattern PATTERN_TOKEN = Pattern.compile("(\\w+|[(),\\.]|\".*\"|:\\w+)|[ \\t\\n\\r]+");
+    private static final Pattern PATTERN_TOKEN = Pattern.compile("(\\w+|[(),\\.]|\".*\"|'.*?'|:\\w+)|[ \\t\\n\\r]+");
 
     private final SqlResponse.DescribeTable.Success table = SqlResponse.DescribeTable.Success.newBuilder()
             .setTableName("T")
@@ -55,6 +55,18 @@ class LoadBuilderTest {
             .addColumns(SqlCommon.Column.newBuilder()
                     .setName("C3")
                     .setAtomType(SqlCommon.AtomType.DECIMAL))
+            .build();
+    
+    private final SqlResponse.DescribeTable.Success base64Table = SqlResponse.DescribeTable.Success.newBuilder()
+            .setTableName("B")
+            .setSchemaName("S")
+            .setDatabaseName("D")
+            .addColumns(SqlCommon.Column.newBuilder()
+                    .setName("C")
+                    .setAtomType(SqlCommon.AtomType.CHARACTER))
+            .addColumns(SqlCommon.Column.newBuilder()
+                    .setName("O")
+                    .setAtomType(SqlCommon.AtomType.OCTET))
             .build();
 
     private final SqlClient client = new SqlClient() {
@@ -270,6 +282,122 @@ class LoadBuilderTest {
                 captureSource);
 
         assertEquals(List.of(Path.of("testing")), captureFiles);
+    }
+
+    @Test
+    void testMappingInconsistentError() throws Exception {
+        var cols = table.getColumnsList();
+        var builder = LoadBuilder.loadTo(new TableMetadataAdapter(table));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.mapping(cols.get(0), "L0", String.class, LoadBuilder.Conversion.ERROR));
+    }
+
+    @Test
+    void testMappingInconsistentNone() throws Exception {
+        var cols = table.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
+                    .mapping(cols.get(0), "L0", String.class, LoadBuilder.Conversion.NONE)
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        var as = captureParameters;
+        assertEquals(1, ps.size());
+        assertEquals(ps.size(), as.size());
+
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getAtomType());
+        assertEquals("L0", as.get(0).getReferenceColumnName());
+
+        assertEquals(
+                tokenize("INSERT INTO D.S.T (C1) VALUES(", ph(ps.get(0)), ")"),
+                captureSource);
+
+        assertEquals(List.of(Path.of("testing")), captureFiles);
+    }
+
+    @Test
+    void testMappingInconsistentCast() throws Exception {
+        var cols = table.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(table))
+                    .mapping(cols.get(0), "L0", String.class, LoadBuilder.Conversion.CAST)
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        var as = captureParameters;
+        assertEquals(1, ps.size());
+        assertEquals(ps.size(), as.size());
+
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getAtomType());
+        assertEquals("L0", as.get(0).getReferenceColumnName());
+
+        assertEquals(
+                tokenize("INSERT INTO D.S.T (C1) VALUES(CAST(", ph(ps.get(0)), " AS INT))"),
+                captureSource);
+
+        assertEquals(List.of(Path.of("testing")), captureFiles);
+    }
+
+    @Test
+    void testMappingInconsistentBase64Decode() throws Exception {
+        var cols = base64Table.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(base64Table))
+                    .mapping(cols.get(1), "L0", String.class,  LoadBuilder.Conversion.BASE64)
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        var as = captureParameters;
+        assertEquals(1, ps.size());
+        assertEquals(ps.size(), as.size());
+
+        assertEquals(SqlCommon.AtomType.CHARACTER, ps.get(0).getAtomType());
+        assertEquals("L0", as.get(0).getReferenceColumnName());
+
+        assertEquals(
+                tokenize("INSERT INTO D.S.B (O) VALUES(decode(", ph(ps.get(0)), ", 'base64'))"),
+                captureSource);
+
+        assertEquals(List.of(Path.of("testing")), captureFiles);
+    }
+
+    @Test
+    void testMappingInconsistentBase64Encode() throws Exception {
+        var cols = base64Table.getColumnsList();
+        try (
+            var load = LoadBuilder.loadTo(new TableMetadataAdapter(base64Table))
+                    .mapping(cols.get(0), "L0", byte[].class,  LoadBuilder.Conversion.BASE64)
+                    .build(client).await();
+        ) {
+            load.submit(transaction, Path.of("testing")).await();
+        }
+        var ps = capturePlaceholders;
+        var as = captureParameters;
+        assertEquals(1, ps.size());
+        assertEquals(ps.size(), as.size());
+
+        assertEquals(SqlCommon.AtomType.OCTET, ps.get(0).getAtomType());
+        assertEquals("L0", as.get(0).getReferenceColumnName());
+
+        assertEquals(
+                tokenize("INSERT INTO D.S.B (C) VALUES(encode(", ph(ps.get(0)), ", 'base64'))"),
+                captureSource);
+
+        assertEquals(List.of(Path.of("testing")), captureFiles);
+    }
+
+    @Test
+    void testMappingInconsistentBase64Mismatch() throws Exception {
+        var cols = table.getColumnsList();
+        var builder = LoadBuilder.loadTo(new TableMetadataAdapter(table));
+        assertThrows(IllegalArgumentException.class,
+                () -> builder.mapping(cols.get(0), "L0", String.class, LoadBuilder.Conversion.BASE64));
     }
 
     @Test
