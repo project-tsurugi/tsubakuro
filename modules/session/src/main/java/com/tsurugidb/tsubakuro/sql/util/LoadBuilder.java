@@ -195,7 +195,7 @@ public class LoadBuilder {
             throw new IllegalArgumentException(MessageFormat.format(
                     "The input is not compatible to the destination column type: {0} -> {1}",
                     printer.shortDebugString(entry.from),
-                    printer.shortDebugString(entry.to)));
+                    printer.shortDebugString(entry.column)));
         }
         if (entry.conversion == Conversion.BASE64) {
             var from = getAtomType(entry.from);
