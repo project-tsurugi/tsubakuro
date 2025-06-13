@@ -193,7 +193,7 @@ public class LoadBuilder {
         var printer = TextFormat.printer().escapingNonAscii(false);
         if (entry.conversion == Conversion.ERROR && !entry.hasCompatibleType()) {
             throw new IllegalArgumentException(MessageFormat.format(
-                    "The input is not compatible to the destination column type: {1} -> {2}",
+                    "The input is not compatible to the destination column type: {0} -> {1}",
                     printer.shortDebugString(entry.from),
                     printer.shortDebugString(entry.to)));
         }
@@ -203,7 +203,7 @@ public class LoadBuilder {
             if (!(from.equals(Optional.of(AtomType.CHARACTER)) && to.equals(Optional.of(AtomType.OCTET)))
                     && !(from.equals(Optional.of(AtomType.OCTET)) && to.equals(Optional.of(AtomType.CHARACTER)))) {
                 throw new IllegalArgumentException(MessageFormat.format(
-                        "Base64 encode/decode is not supported for the types: {1} -> {2}",
+                        "Base64 encode/decode is not supported for the types: {0} -> {1}",
                         printer.shortDebugString(entry.from),
                         printer.shortDebugString(entry.to)));
             }
