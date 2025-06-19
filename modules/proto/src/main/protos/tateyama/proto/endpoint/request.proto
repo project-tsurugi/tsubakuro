@@ -7,6 +7,7 @@ option java_package = "com.tsurugidb.endpoint.proto";
 option java_outer_classname = "EndpointRequest";
 
 // the request message to endpoint pseudo service.
+// Service Message Version = 0.1
 message Request {
     // service message version (major)
     uint64 service_message_version_major = 1;
@@ -24,8 +25,17 @@ message Request {
 
         // cancel operation.
         Cancel cancel = 12;
+
+        // get the encryption key
+        EncryptionKey encryption_key = 13;
+
+        // update the credential
+        UpdateCredential update_credential = 14;
+
+        // get the expiration time of the current session credential
+        GetCredentialsExpirationTime get_credential_expiration_time = 15;
     }
-    reserved 13 to 99;
+    reserved 16 to 99;
 }
 
 // handshake operation.
@@ -54,7 +64,14 @@ message ClientInformation {
 
 // the credential
 message Credential {
-    // FIXME (T.B.D.)
+    // credential_opt may be empty
+    oneof credential_opt {
+        // the encrypted_credential consists of encrypted and base64 encoded username and password
+        string encrypted_credential = 1;
+
+        // the token issued by authentication manager
+        string remember_me_credential = 2;
+    }
 }
 
 // wire information
@@ -79,5 +96,21 @@ message WireInformation {
 
 // cancel operation.
 message Cancel {
+    // no special properties.
+}
+
+// get the encryption key.
+message EncryptionKey {
+    // no special properties.
+}
+
+// update the credential
+message UpdateCredential {
+    // the credential.
+    Credential credential = 1;
+}
+
+// get the expiration time of the current session credential
+message GetCredentialsExpirationTime {
     // no special properties.
 }
