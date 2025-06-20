@@ -42,6 +42,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
@@ -119,7 +120,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
+    public synchronized FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (isCleanuped()) {
             throw new IOException("transaction already closed");
@@ -131,7 +132,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
+    public synchronized FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (isCleanuped()) {
             throw new IOException("transaction already closed");
@@ -143,7 +144,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> executeStatement(
+    public synchronized FutureResponse<ExecuteResult> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -166,7 +167,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeQuery(
+    public synchronized FutureResponse<ResultSet> executeQuery(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -246,7 +247,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeDump(
+    public synchronized FutureResponse<ResultSet> executeDump(
             @Nonnull String source,
             @Nonnull Path directory) throws IOException {
         Objects.requireNonNull(source);
@@ -263,7 +264,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> batch(
+    public synchronized FutureResponse<ExecuteResult> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {
@@ -285,7 +286,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeDump(
+    public synchronized FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory) throws IOException {
@@ -296,7 +297,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ResultSet> executeDump(
+    public synchronized FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory,
@@ -320,7 +321,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<ExecuteResult> executeLoad(
+    public synchronized FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
@@ -563,7 +564,7 @@ public class TransactionImpl implements Transaction {
                 if (autoDispose) {
                     needDispose = false;
                 }
-            } catch (TimeoutException e) {
+            } catch (ResponseTimeoutException | TimeoutException e) {
                 return false;
             } catch (IOException | ServerException | InterruptedException e) {
                 needDispose = true;
@@ -583,7 +584,7 @@ public class TransactionImpl implements Transaction {
                 }
                 try {
                     rollbackResult.get(100, TimeUnit.MICROSECONDS);
-                } catch (TimeoutException e) {
+                } catch (ResponseTimeoutException | TimeoutException e) {
                     return false;
                 }
             }
