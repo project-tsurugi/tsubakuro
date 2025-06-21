@@ -31,6 +31,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.NullCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.protos.ProtosForTest;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -112,7 +113,7 @@ class SessionWireTest {
 
         var start = System.currentTimeMillis();
         // client side receive Response, ends up with timeout error
-        Throwable exception = assertThrows(TimeoutException.class, () -> {
+        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
             var response = futureResponse.get();
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(1, TimeUnit.SECONDS)));
         });

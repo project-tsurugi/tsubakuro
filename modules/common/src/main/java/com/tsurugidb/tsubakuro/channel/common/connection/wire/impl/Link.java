@@ -76,7 +76,7 @@ public abstract class Link implements ServerResource {
                         throw new IOException(linkLostMessage());
                     }
                     receivedMessageNumber++;
-                } catch (IOException e) {
+                } catch (IOException | TimeoutException e) {
                     throw e;
                 } finally {
                     useLink.set(false);

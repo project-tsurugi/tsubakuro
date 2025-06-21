@@ -165,17 +165,22 @@ public class ChannelResponse implements Response {
             if (main.get() != null) {
                 return main.get();
             }
-            var e = exceptionMain.get();
-            if (e != null) {
-                if (canceled.get() && e instanceof CoreServiceException) {
-                    if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
+            var ex = exceptionMain.get();
+            if (ex != null) {
+                if (canceled.get() && ex instanceof CoreServiceException) {
+                    if (((CoreServiceException) ex).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
                         throw new AlreadyCanceledException();
                     }
                 }
-                wrapAndThrow(e);
-                throw new IOException(e.getMessage(), e);
+                wrapAndThrow(ex);
+                throw new IOException(ex.getMessage(), ex);
             }
-            link.pullMessage(n, timeout, unit);
+            try {
+                link.pullMessage(n, timeout, unit);
+            } catch (IOException | TimeoutException e) {
+                // serious error, cannot pull message
+                exceptionMain.set(e);
+            }
         }
     }
 
