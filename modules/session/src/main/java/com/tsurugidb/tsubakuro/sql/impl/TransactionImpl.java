@@ -74,6 +74,8 @@ public class TransactionImpl implements Transaction {
     private final ServerResource.CloseHandler closeHandler;
     private FutureResponse<Void> commitResult;
     private FutureResponse<Void> rollbackResult = null;
+    private FutureResponse<Void> disposeResult = null;
+    private int disposeRetry = 10;
     private AtomicReference<State> state = new AtomicReference<>();
     private Disposer disposer = null;
     private boolean autoDispose = false;
@@ -574,7 +576,13 @@ public class TransactionImpl implements Transaction {
         case TO_BE_CLOSED_WITH_ROLLBACK:
             break;
         case CLOSED:
-            return true;
+            if (careDisposeResult()) {
+                return true;
+            }
+            if (--disposeRetry > 0) {
+                return false;
+            }
+            throw new IOException("server does not reply the dispose request and give up waiting for reply");
         }
         try {
             if (needRollback) {
@@ -590,24 +598,36 @@ public class TransactionImpl implements Transaction {
             }
             return true;
         } finally {
-            if (closeHandler != null) {
-                Lang.suppress(
-                              e -> LOG.warn("error occurred while collecting garbage", e),
-                              () -> closeHandler.onClosed(this));
-            }
             if (needDispose) {
-                try (var futureResponse = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                                                       .setTransactionHandle(transaction.getTransactionHandle())
-                                                       .build())) {
-                    if (timeout == null) {
-                        futureResponse.get();
-                    } else {
-                        timeout.waitFor(futureResponse);
-                    }
+                if (disposeResult == null) {
+                    disposeResult = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                                                    .setTransactionHandle(transaction.getTransactionHandle())
+                                                    .build());
                 }
             }
             state.set(State.CLOSED);
+            return careDisposeResult();
         }
+    }
+
+    private boolean careDisposeResult() throws IOException, ServerException, InterruptedException {
+        if (disposeResult != null) {
+            try {
+                if (timeout == null) {
+                    disposeResult.get(100, TimeUnit.MICROSECONDS);
+                } else {
+                    timeout.waitFor(disposeResult);
+                }
+            } catch (ResponseTimeoutException | TimeoutException e) {
+                    return false;
+            }
+            disposeResult = null;
+        }
+        if (closeHandler != null) {
+            Lang.suppress(e -> LOG.warn("error occurred while collecting garbage", e),
+                          () -> closeHandler.onClosed(this));
+        }
+        return true;
     }
 
     /**
