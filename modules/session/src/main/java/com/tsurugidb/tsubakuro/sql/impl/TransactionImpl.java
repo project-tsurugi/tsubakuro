@@ -122,7 +122,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
+    public FutureResponse<ExecuteResult> executeStatement(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (isCleanuped()) {
             throw new IOException("transaction already closed");
@@ -134,7 +134,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
+    public FutureResponse<ResultSet> executeQuery(@Nonnull String source) throws IOException {
         Objects.requireNonNull(source);
         if (isCleanuped()) {
             throw new IOException("transaction already closed");
@@ -146,7 +146,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ExecuteResult> executeStatement(
+    public FutureResponse<ExecuteResult> executeStatement(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -169,7 +169,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ResultSet> executeQuery(
+    public FutureResponse<ResultSet> executeQuery(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters) throws IOException {
         Objects.requireNonNull(statement);
@@ -249,7 +249,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ResultSet> executeDump(
+    public FutureResponse<ResultSet> executeDump(
             @Nonnull String source,
             @Nonnull Path directory) throws IOException {
         Objects.requireNonNull(source);
@@ -266,7 +266,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ExecuteResult> batch(
+    public FutureResponse<ExecuteResult> batch(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends Collection<? extends SqlRequest.Parameter>> parameterTable)
                     throws IOException {
@@ -288,7 +288,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ResultSet> executeDump(
+    public FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory) throws IOException {
@@ -299,7 +299,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ResultSet> executeDump(
+    public FutureResponse<ResultSet> executeDump(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Path directory,
@@ -323,7 +323,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public synchronized FutureResponse<ExecuteResult> executeLoad(
+    public FutureResponse<ExecuteResult> executeLoad(
             @Nonnull PreparedStatement statement,
             @Nonnull Collection<? extends SqlRequest.Parameter> parameters,
             @Nonnull Collection<? extends Path> files) throws IOException {
@@ -348,12 +348,12 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<TransactionStatus.TransactionStatusWithMessage> getStatus() throws IOException {
         var pb = SqlRequest.GetTransactionStatus.newBuilder()
-        .setTransactionHandle(transaction.getTransactionHandle());
+                    .setTransactionHandle(transaction.getTransactionHandle());
         return service.send(pb.build());
     }
 
     @Override
-    public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
+    public FutureResponse<Void> commit(@Nonnull SqlRequest.CommitStatus status) throws IOException {
         Objects.requireNonNull(status);
 
         return commit(SqlRequest.CommitOption.newBuilder().setNotificationType(status).build());
@@ -384,27 +384,25 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public FutureResponse<Void> rollback() throws IOException {
-        synchronized (this) {
-            switch (state.get()) {
-                case INITIAL:
-                    state.set(State.ROLLBACKED);
-                    return submitRollback();
-                case COMMITTED:
-                    if (commitResult.isDone()) {
-                        try {
-                            commitResult.get();
-                            throw new IOException("transaction already committed and succeeded");
-                        } catch (IOException | ServerException | InterruptedException e) {
-                            return submitRollback();
-                        }
+    public synchronized FutureResponse<Void> rollback() throws IOException {
+        switch (state.get()) {
+            case INITIAL:
+                state.set(State.ROLLBACKED);
+                return submitRollback();
+            case COMMITTED:
+                if (commitResult.isDone()) {
+                    try {
+                        commitResult.get();
+                        throw new IOException("transaction already committed and succeeded");
+                    } catch (IOException | ServerException | InterruptedException e) {
+                        return submitRollback();
                     }
-                    throw new IOException("transaction already committed");
-                case ROLLBACKED:
-                    return FutureResponse.returns(null);
-                default:
-                    throw new IOException("transaction already closed");
-            }
+                }
+                throw new IOException("transaction already committed");
+            case ROLLBACKED:
+                return FutureResponse.returns(null);
+            default:
+                throw new IOException("transaction already closed");
         }
     }
 
