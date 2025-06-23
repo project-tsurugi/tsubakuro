@@ -295,7 +295,16 @@ public interface Transaction extends ServerResourceNeedingDisposal {
 
     /**
      * Commits the current transaction.
-     * @param option the commit option to specify details of the commit operation
+     * @param option the commit option to specify details of the commit operation, consisting of the following:
+     *    bool auto_dispose: if true, the transaction resource on the server will be disposed after a successful
+     *      commit operation. In this case, {@link #getStatus()} and {@link #getSqlServiceException()} will not
+     *      be available after the successful commit.
+     *      If false, the transaction resource on the server will not be disposed after the commit operation
+     *      regardless of whether the commit succeeded or failed. In this case, {@link #getStatus()} and
+     *      {@link #getSqlServiceException()} are available until transaction resource on the server is disposed.
+     *      Note that tsubakuro's client program does not need to be explicitly aware of the dispose operation,
+     *      as a dispose transaction request to the server is automatically made in {@link #close()}.
+     *    CommitStatus notification_type: the commit status which the request is waiting for.
      * @return a future response of this action:
      *      the response will be returned after the transaction will reach the commit status,
      *      or raise error if the commit operation was failed
