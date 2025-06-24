@@ -245,7 +245,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+    public FutureResponse<Void> updateCredentials(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
         return wire.updateCredential(credential);
     }

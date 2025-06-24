@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
@@ -39,7 +41,10 @@ import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.FileCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
+import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
@@ -74,7 +79,7 @@ public class WireImpl implements Wire {
     /**
      * The minor service message version for EndpointRequest.
      */
-    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 0;
+    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * The service id for endpoint broker.
@@ -288,10 +293,8 @@ public class WireImpl implements Wire {
                 switch (errMessage.getCode()) {
                 case RESOURCE_LIMIT_REACHED:
                     throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
-                case AUTHENTICATION_ERROR:
-                    throw newUnknown();  // FIXME
                 default:
-                    break;
+                    throw newCoreServiceException(errMessage);
                 }
             default:
                 break;
@@ -301,12 +304,48 @@ public class WireImpl implements Wire {
     }
 
     public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
+        return handshake(clientInformation, wireInformation, 0, null);
+    }
+    public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation, long timeout, TimeUnit unit) throws IOException {
         var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
-        if (wireInformation != null) {
-            handshakeMessageBuilder.setWireInformation(wireInformation);
+        var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();
+
+        try {
+            // handle credential in clientInformation
+            var credential = clientInformation.getCredential();
+            var credentialBuilder = EndpointRequest.Credential.newBuilder();
+            if (credential instanceof UsernamePasswordCredential) {
+                var ci = (UsernamePasswordCredential) credential;
+                var po = ci.getPassword();
+                if (!po.isPresent()) {
+                    throw new IllegalArgumentException("password is empty");
+                }
+                try {
+                    var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
+                    var crypto = new Crypto(encryptionKey);
+                    var co = new FileCredential(crypto.encryptByPublicKey(ci.getName()), crypto.encryptByPublicKey(po.get()));
+                    credentialBuilder.setEncryptedCredential(co.getEncryptedName() + "." + co.getEncryptedPassword());
+                    clientInformationBuilder.setCredential(credentialBuilder);
+                } catch (CoreServiceException e) {
+                    if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
+                        throw new IOException("encryption key not found, please check the server configuration", e);
+                    }
+                }
+            } else if (credential instanceof FileCredential) {
+                var co = (FileCredential) credential;
+                credentialBuilder.setEncryptedCredential(co.getEncryptedName() + "." + co.getEncryptedPassword());
+                clientInformationBuilder.setCredential(credentialBuilder);
+            } else if (credential instanceof RememberMeCredential) {
+                var co = (RememberMeCredential) credential;
+                credentialBuilder.setRememberMeCredential(co.getToken());
+                clientInformationBuilder.setCredential(credentialBuilder);
+            }
+
+        } catch (InterruptedException | ServerException | TimeoutException e) {
+            throw new IOException(e);
         }
 
-        var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();
+        // handle connectionLabel and applicationName in clientInformation
         if (clientInformation.getConnectionLabel() != null) {
             clientInformationBuilder.setConnectionLabel(clientInformation.getConnectionLabel());
         }
@@ -314,6 +353,11 @@ public class WireImpl implements Wire {
             clientInformationBuilder.setApplicationName(clientInformation.getApplicationName());
         }
         handshakeMessageBuilder.setClientInformation(clientInformationBuilder);
+
+        // handle wireInformation
+        if (wireInformation != null) {
+            handshakeMessageBuilder.setWireInformation(wireInformation);
+        }
 
         FutureResponse<? extends Response> future = send(
             SERVICE_ID_ENDPOINT_BROKER,
@@ -330,6 +374,36 @@ public class WireImpl implements Wire {
         }
     }
 
+    static class EncryptionKeyProcessor implements MainResponseProcessor<String> {
+        @Override
+        public String process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = EndpointResponse.EncryptionKey.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return message.getSuccess().getEncryptionKey();
+
+            case ERROR:
+                throw newCoreServiceException(message.getError());
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    private FutureResponse<String> encryptionKey() throws IOException {
+        var encryptionKeyBuilder = EndpointRequest.EncryptionKey.newBuilder();
+
+        FutureResponse<? extends Response> future = send(
+            SERVICE_ID_ENDPOINT_BROKER,
+                toDelimitedByteArray(newRequest()
+                    .setEncryptionKey(encryptionKeyBuilder)
+                    .build())
+            );
+        return new ForegroundFutureResponse<>(future, new EncryptionKeyProcessor().asResponseProcessor(), null);
+    }
+
     static byte[] toDelimitedByteArray(Message request) throws IOException {
         try (var buffer = new ByteArrayOutputStream()) {
             request.writeDelimitedTo(buffer);
@@ -337,13 +411,9 @@ public class WireImpl implements Wire {
         }
     }
 
-    static CoreServiceException newUnknown(@Nonnull EndpointResponse.Error message) {
+    static CoreServiceException newCoreServiceException(@Nonnull EndpointResponse.Error message) {
         assert message != null;
-        return new CoreServiceException(CoreServiceCode.UNKNOWN, message.getMessage());
-    }
-
-    static CoreServiceException newUnknown() {
-        return new CoreServiceException(CoreServiceCode.UNKNOWN);
+        return new CoreServiceException(CoreServiceCode.valueOf(message.getCode()), message.getMessage());
     }
 
     // for diagnostic

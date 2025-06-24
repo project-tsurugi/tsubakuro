@@ -67,57 +67,10 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
-        if (connectException) {
-            throw new ConnectException("the server has declined the connection request");
-        }
-        while (true) {
-            var wire = result.get();
-            if (wire != null) {
-                return wire;
-            }
-            lock.lock();
-            try {
-                wire = result.get();
-                if (wire != null) {
-                    return wire;
-                }
-                if (!gotton.getAndSet(true)) {
-                    WireImpl wireImpl = null;
-                    FutureResponse<Long> futureSessionId = null;
-                    try {
-                        wireImpl = connector.getSessionWire(id);
-                        futureSessionId = wireImpl.handshake(clientInformation, wireInformation());
-                        wireImpl.checkSessionId(futureSessionId.get());
-                        result.set(wireImpl);
-                        return wireImpl;
-                    } catch (IOException | ServerException | InterruptedException e) {
-                        closed = true;
-                        try {
-                            if (futureSessionId != null) {
-                                futureSessionId.close();
-                            }
-                        } catch (Exception suppress) {
-                            // the exception in closing wireImpl should be suppressed
-                            e.addSuppressed(suppress);
-                        } finally {
-                            if (wireImpl != null) {
-                                try {
-                                    wireImpl.close();
-                                } catch (Exception suppress) {
-                                    // the exception in closing wireImpl should be suppressed
-                                    e.addSuppressed(suppress);
-                                }
-                            }
-                        }
-                        throw e;
-                    }
-                }
-            } finally {
-                lock.unlock();
-            }
-            if (closed) {
-                throw new IOException("FutureIpcWireImpl is already closed");
-            }
+        try {
+            return get(0, null);
+        } catch (TimeoutException e) {
+            throw new AssertionError("TimeoutException should not have arisen, but it did.");
         }
     }
 
@@ -131,7 +84,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
             if (wire != null) {
                 return wire;
             }
-            if (lock.tryLock(timeout, unit)) {
+            if (unit != null ? lock.tryLock(timeout, unit) : lock.tryLock()) {
                 try {
                     wire = result.get();
                     if (wire != null) {
@@ -141,9 +94,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                         WireImpl wireImpl = null;
                         FutureResponse<Long> futureSessionId = null;
                         try {
-                            wireImpl = connector.getSessionWire(id, timeout, unit);
+                            wireImpl = unit != null ? connector.getSessionWire(id, timeout, unit) : connector.getSessionWire(id);
                             futureSessionId = wireImpl.handshake(clientInformation, wireInformation());
-                            wireImpl.checkSessionId(futureSessionId.get(timeout, unit));
+                            wireImpl.checkSessionId(unit != null ? futureSessionId.get(timeout, unit) : futureSessionId.get());
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
