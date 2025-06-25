@@ -165,7 +165,7 @@ public class ChannelResponse implements Response {
             if (main.get() != null) {
                 return main.get();
             }
-            var ex = exceptionMain.get();
+            var ex = exceptionMain.getAndSet(null);
             if (ex != null) {
                 if (canceled.get() && ex instanceof CoreServiceException) {
                     if (((CoreServiceException) ex).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
@@ -471,9 +471,10 @@ public class ChannelResponse implements Response {
 
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
-        var e = exceptionMain.get();
+        var e = exceptionMain.getAndSet(null);
         if (e != null) {
             e.addSuppressed(exception);
+            exceptionMain.set(e);
             return;
         }
         responseArrive(false);
