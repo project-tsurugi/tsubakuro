@@ -123,7 +123,7 @@ public interface Session extends ServerResource {
     /**
      * Returns the expiration time of the current session credentials.
      * @return the future of the response, which may raise an exception on waiting for completion
-     * @see #updateCredentials(Credential)
+     * @see #updateCredential(Credential)
      * @throws IOException if an I/O error occurs
      * @throws InterruptedException if the operation is interrupted
      * @throws ServerException if the server returns an error
@@ -133,17 +133,16 @@ public interface Session extends ServerResource {
     }
 
     /**
-     * Update session credentials to prevent from expiration of the current session credentials.
-     * @param credential the new credential
-     * @return the future of the response, which may raise an exception on waiting for completion
-     * @see #getCredentialsExpirationTime()
-     * @throws IOException if an I/O error occurs
-     * @throws InterruptedException if the operation is interrupted
-     * @throws ServerException if the server returns an error
+     * updates credential information of this session, and retries authenticate it.
+     * <p>
+     * This is designed for credentials with time limit, like as temporary token based credentials.
+     * </p>
+     * @param credential the new credential information
+     * @return a future of the authentication result:
+     *      it may throw {@link CoreServiceException} if authentication was failed.
+     * @throws IOException if I/O error was occurred while sending message
      */
-    default FutureResponse<Void> updateCredentials(@Nonnull Credential credential) throws IOException, InterruptedException, ServerException {
-        throw new UnsupportedOperationException();
-    }
+    FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException;
 
     /**
      * Requests to extend the session expiration time by the server default value.
