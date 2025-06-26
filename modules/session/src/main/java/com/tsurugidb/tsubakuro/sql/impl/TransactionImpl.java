@@ -76,6 +76,7 @@ public class TransactionImpl implements Transaction {
     private FutureResponse<Void> rollbackResult = null;
     private FutureResponse<Void> disposeResult = null;
     private int disposeRetry = 10;
+    private int commitRetry = 10;
     private AtomicReference<State> state = new AtomicReference<>();
     private Disposer disposer = null;
     private boolean autoDispose = false;
@@ -560,11 +561,15 @@ public class TransactionImpl implements Transaction {
         case COMMITTED:
         case TO_BE_CLOSED_WITH_COMMIT:
             try {
-                commitResult.get(100, TimeUnit.MICROSECONDS);
+                commitResult.get(1000, TimeUnit.MICROSECONDS);
                 if (autoDispose) {
                     needDispose = false;
                 }
             } catch (ResponseTimeoutException | TimeoutException e) {
+                if (--commitRetry > 0 || timeout == null) {
+                    return false;
+                }
+                timeout.waitFor(commitResult);
                 return false;
             } catch (IOException | ServerException | InterruptedException e) {
                 needDispose = true;
@@ -589,7 +594,7 @@ public class TransactionImpl implements Transaction {
                     rollbackResult = submitRollback();
                 }
                 try {
-                    rollbackResult.get(100, TimeUnit.MICROSECONDS);
+                    rollbackResult.get(1000, TimeUnit.MICROSECONDS);
                 } catch (ResponseTimeoutException | TimeoutException e) {
                     return false;
                 }
@@ -612,7 +617,7 @@ public class TransactionImpl implements Transaction {
         if (disposeResult != null) {
             try {
                 if (timeout == null) {
-                    disposeResult.get(100, TimeUnit.MICROSECONDS);
+                    disposeResult.get(1000, TimeUnit.MICROSECONDS);
                 } else {
                     timeout.waitFor(disposeResult);
                 }
