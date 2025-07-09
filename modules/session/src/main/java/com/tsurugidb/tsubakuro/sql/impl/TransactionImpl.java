@@ -504,21 +504,28 @@ public class TransactionImpl implements Transaction {
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         switch (state.get()) {
-            case INITIAL:
-            case ROLLBACKED:
-                break;
-            case COMMITTED:
-                if (commitResult.isDone()) {
-                    doClose();
+        case INITIAL:
+            // FIXME need to consider rollback is suitable here
+            submitRollback();
+            submitDisposeRequest();
+            break;
+        case ROLLBACKED:
+            submitDisposeRequest();
+            break;
+        case COMMITTED:
+            if (commitResult.isDone()) {
+                if (doClose()) {
                     return;
                 }
-                break;
-            case TO_BE_CLOSED:
-            case TO_BE_CLOSED_WITH_COMMIT:
-            case TO_BE_CLOSED_WITH_ROLLBACK:
-            case CLOSED:
-                return;
+            }
+            break;
+        case TO_BE_CLOSED:
+        case TO_BE_CLOSED_WITH_COMMIT:
+        case TO_BE_CLOSED_WITH_ROLLBACK:
+        case CLOSED:
+            return;
         }
+
         if (disposer != null) {
             if (disposer.isClosingNow()) {
                 doClose();
@@ -536,6 +543,23 @@ public class TransactionImpl implements Transaction {
         doClose();
     }
 
+    private FutureResponse<Void> submitRollback() throws IOException {
+        if (rollbackResult == null) {
+            rollbackResult = service.send(SqlRequest.Rollback.newBuilder()
+                                .setTransactionHandle(transaction.getTransactionHandle())
+                                .build());
+        }
+        return rollbackResult;
+    }
+
+    private void submitDisposeRequest() throws IOException {
+        if (disposeResult == null) {
+            disposeResult = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                                .setTransactionHandle(transaction.getTransactionHandle())
+                                .build());
+        }
+    }
+
     private State toBeClosed(State s) {
         switch (s) {
         case INITIAL:
@@ -550,20 +574,18 @@ public class TransactionImpl implements Transaction {
     }
 
     private synchronized boolean doClose() throws IOException, ServerException, InterruptedException {
-        boolean needDispose = true;
-        boolean needRollback = false;
+        boolean needDispose = false;
 
         switch (state.get()) {
         case INITIAL:
         case TO_BE_CLOSED:
-            needRollback = true;
             break;
         case COMMITTED:
         case TO_BE_CLOSED_WITH_COMMIT:
             try {
                 commitResult.get(1000, TimeUnit.MICROSECONDS);
-                if (autoDispose) {
-                    needDispose = false;
+                if (!autoDispose) {
+                    needDispose = true;
                 }
             } catch (ResponseTimeoutException | TimeoutException e) {
                 if (--commitRetry > 0 || timeout == null) {
@@ -587,29 +609,20 @@ public class TransactionImpl implements Transaction {
             }
             throw new IOException("server does not reply the dispose request and give up waiting for reply");
         }
+        if (needDispose) {
+            submitDisposeRequest();
+        }
         try {
-            if (needRollback) {
-                // FIXME need to consider rollback is suitable here
-                if (rollbackResult == null) {
-                    rollbackResult = submitRollback();
-                }
+            if (rollbackResult != null) {
                 try {
                     rollbackResult.get(1000, TimeUnit.MICROSECONDS);
                 } catch (ResponseTimeoutException | TimeoutException e) {
                     return false;
                 }
             }
-            return true;
-        } finally {
-            if (needDispose) {
-                if (disposeResult == null) {
-                    disposeResult = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                                                    .setTransactionHandle(transaction.getTransactionHandle())
-                                                    .build());
-                }
-            }
-            state.set(State.CLOSED);
             return careDisposeResult();
+        } finally {
+            state.set(State.CLOSED);
         }
     }
 
@@ -643,12 +656,6 @@ public class TransactionImpl implements Transaction {
             return OptionalLong.of(((TransactionImpl) transaction).transaction.getTransactionHandle().getHandle());
         }
         return OptionalLong.empty();
-    }
-
-    private FutureResponse<Void> submitRollback() throws IOException {
-        return service.send(SqlRequest.Rollback.newBuilder()
-                .setTransactionHandle(transaction.getTransactionHandle())
-                .build());
     }
 
     // for diagnostic
