@@ -505,7 +505,9 @@ public class TransactionImpl implements Transaction {
     public synchronized void close() throws IOException, ServerException, InterruptedException {
         switch (state.get()) {
             case INITIAL:
+                break;
             case ROLLBACKED:
+                sendDisposeRequest();
                 break;
             case COMMITTED:
                 if (commitResult.isDone()) {
@@ -534,6 +536,14 @@ public class TransactionImpl implements Transaction {
             return;
         }
         doClose();
+    }
+
+    private void sendDisposeRequest() throws IOException {
+        if (disposeResult == null) {
+            disposeResult = service.send(SqlRequest.DisposeTransaction.newBuilder()
+                                        .setTransactionHandle(transaction.getTransactionHandle())
+                                        .build());
+        }
     }
 
     private State toBeClosed(State s) {
@@ -602,14 +612,13 @@ public class TransactionImpl implements Transaction {
             return true;
         } finally {
             if (needDispose) {
-                if (disposeResult == null) {
-                    disposeResult = service.send(SqlRequest.DisposeTransaction.newBuilder()
-                                                    .setTransactionHandle(transaction.getTransactionHandle())
-                                                    .build());
+                try {
+                    sendDisposeRequest();
+                    return careDisposeResult();
+                } finally {
+                    state.set(State.CLOSED);
                 }
             }
-            state.set(State.CLOSED);
-            return careDisposeResult();
         }
     }
 
