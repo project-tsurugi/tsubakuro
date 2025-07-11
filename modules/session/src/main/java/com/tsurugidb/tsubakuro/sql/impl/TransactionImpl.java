@@ -503,7 +503,8 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
-        switch (state.get()) {
+        var s = state.get();
+        switch (s) {
         case INITIAL:
             // FIXME need to consider rollback is suitable here
             submitRollback();
@@ -530,13 +531,13 @@ public class TransactionImpl implements Transaction {
             if (disposer.isClosingNow()) {
                 doClose();
             } else {
+                state.set(toBeClosed(s));
                 disposer.add(new Disposer.DelayedClose() {
                     @Override
                     public boolean delayedClose() throws ServerException, IOException, InterruptedException {
                         return doClose();
                     }
                 });
-                state.set(toBeClosed(state.get()));
             }
             return;
         }
@@ -569,7 +570,7 @@ public class TransactionImpl implements Transaction {
         case ROLLBACKED:
             return State.TO_BE_CLOSED_WITH_ROLLBACK;
         default:
-            throw new AssertionError("inproper state given");
+            throw new AssertionError("inproper state given, state: " + s);
         }
     }
 
