@@ -76,9 +76,11 @@ public class PreparedStatementImpl implements PreparedStatement {
     }
 
     /**
-     * Creates a new instance without service, closeHandle, request for test purpose, and disposer.
+     * Creates a new instance for test purpose without service, closeHandle, request, and disposer.
      * @param handle the handle of the PreparedStatement
+     * @deprecated as tests now always use disposer.
      */
+    @Deprecated
     public PreparedStatementImpl(SqlCommon.PreparedStatement handle) {
         this(handle, null, null, null, null);
     }

@@ -39,7 +39,7 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
@@ -59,11 +59,14 @@ class SqlServiceStubLobTest {
 
     private Session session = null;
 
+    private Disposer disposer = null;
+
     SqlServiceStubLobTest() {
         try {
             wire = new WireImpl(link);
             session = new SessionImpl();
             session.connect(wire);
+            disposer = new Disposer();
      } catch (IOException e) {
             System.err.println(e);
             fail("fail to create WireImpl");
@@ -174,9 +177,10 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
-            transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
+            var disposer = new Disposer();
+            transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
                                             Parameters.clobOf(parameterName2, file2)).await();
                                             var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
@@ -193,6 +197,7 @@ class SqlServiceStubLobTest {
                 }
             }
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 
@@ -219,13 +224,15 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
+            var disposer = new Disposer();
             assertThrows(BlobException.class, () ->
-                transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build()),
+                transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                                 Parameters.blobOf(parameterName1, file1),
                                                 Parameters.clobOf(parameterName2, file2)));
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 
@@ -265,7 +272,7 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
             var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
             var pathOpt = largeObjectCache.find();
@@ -276,6 +283,7 @@ class SqlServiceStubLobTest {
                 assertEquals(data[i], obtainedData[i]);
             }
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 
@@ -314,12 +322,13 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
             var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
             var pathOpt = largeObjectCache.find();
             assertFalse(pathOpt.isPresent());
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 
@@ -356,12 +365,13 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
             assertThrows(BlobException.class, () ->
                 transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await());
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 
@@ -401,7 +411,7 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              null);
+                                              disposer);
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
             var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await();
@@ -412,6 +422,7 @@ class SqlServiceStubLobTest {
                 assertEquals(data[i], obtainedData[i]);
             }
         }
+        disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }
 }

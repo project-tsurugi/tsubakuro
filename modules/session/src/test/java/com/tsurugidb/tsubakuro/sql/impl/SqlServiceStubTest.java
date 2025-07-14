@@ -36,7 +36,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.sql.proto.SqlCommon;
@@ -44,6 +43,7 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -347,9 +347,9 @@ class SqlServiceStubTest {
         assertFalse(wire.hasRemaining());
     }
 
-    static class TransactionImplTest extends TransactionImpl {
-        TransactionImplTest(SqlService service) {
-            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, null);
+    static class TransactionImplTestInSqlServiceStubTest extends TransactionImpl {
+        TransactionImplTestInSqlServiceStubTest(SqlService service, Disposer disposer) {
+            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, disposer);
         }
     }
 
@@ -359,10 +359,10 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-
+        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTest(service);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
             var future = transaction.commit(SqlRequest.CommitOption.newBuilder().setAutoDispose(true).build());
         ) {
             assertDoesNotThrow(() -> future.get());
@@ -380,10 +380,10 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-
+        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTest(service);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
             var future = transaction.commit();
         ) {
             assertDoesNotThrow(() -> future.get());
@@ -401,9 +401,10 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
+        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTest(service);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
             var future = transaction.commit();
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
@@ -426,9 +427,10 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
+        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTest(service);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
         ) {
             try {
                 transaction.commit().await();
