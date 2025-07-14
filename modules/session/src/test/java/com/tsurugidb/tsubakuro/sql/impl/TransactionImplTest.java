@@ -33,11 +33,13 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.Types;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 class TransactionImplTest {
+    Disposer disposer = new Disposer();
 
     @Test
     void commit() throws Exception {
@@ -58,7 +60,7 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, null)
+            }, disposer)
         ) {
             client.commit().await();
         }
@@ -86,10 +88,11 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, null)
+            }, disposer)
         ) {
             client.rollback().await();
         }
+        disposer.waitForEmpty();
         assertEquals(1, rollbackCount.get());
         assertEquals(1, closeCount.get());
     }
@@ -117,7 +120,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
+            }, null, disposer);
         ) {
             client.executeStatement("SELECT 100").await();
         }
@@ -147,9 +150,9 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
+            }, null, disposer);
         ) {
-            client.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(100).build()),
+            client.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(100).build(), null, null, null, disposer),
             List.of()).await();
         }
         assertEquals(1, count.get());
@@ -184,7 +187,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
+            }, null, disposer);
             var rs = client.executeQuery("SELECT 1").await();
         ) {
             assertTrue(rs.nextRow());
@@ -228,8 +231,8 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
-            var rs = client.executeQuery(prepared(200)).await();
+            }, null, disposer);
+            var rs = client.executeQuery(prepared(200, disposer)).await();
         ) {
             assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
@@ -274,7 +277,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
+            }, null, disposer);
             var rs = client.executeDump("SELECT 1", Path.of("/path/to/dump")).await();
         ) {
             assertTrue(rs.nextRow());
@@ -322,8 +325,8 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
-            var rs = client.executeDump(prepared(200), List.of(), Path.of("/path/to/dump")).await();
+            }, null, disposer);
+            var rs = client.executeDump(prepared(200, disposer), List.of(), Path.of("/path/to/dump")).await();
         ) {
             assertTrue(rs.nextRow());
             assertTrue(rs.nextColumn());
@@ -363,9 +366,9 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, null);
+            }, null, disposer);
         ) {
-            client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build()),
+            client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build(), null, null, null, disposer),
                                                             List.of(), Path.of("/path/to/load")).await();
         }
         assertEquals(1, count.get());
@@ -393,10 +396,11 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, null)
+            }, disposer)
         ) {
             assertEquals(0, closeCount.get());  // to eliminate checkstyle warning
         }
+        disposer.waitForEmpty();
         assertEquals(1, rollbackCount.get());
         assertEquals(1, closeCount.get());
     }
@@ -422,17 +426,18 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, null)
+            }, disposer)
         ) {
             client.close();
             client.close();
         }
+        disposer.waitForEmpty();
         assertEquals(1, rollbackCount.get());
         assertEquals(1, closeCount.get());
     }
 
-    private static PreparedStatementImpl prepared(long id) {
-        return new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(id).build());
+    private static PreparedStatementImpl prepared(long id, Disposer disposer) {
+        return new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(id).build(), null, null, null, disposer);
     }
 
     private static String path(String string) {
