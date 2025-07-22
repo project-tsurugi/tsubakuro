@@ -603,8 +603,7 @@ public class SqlServiceStub implements SqlService {
                         try {
                             metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID, timeoutHere.value(), timeoutHere.unit());
                         } catch (TimeoutException e) {
-                            throw new ResponseTimeoutException(MessageFormat.format(
-                                    "ResultSet transfer was not initiated by the server for {0} {1}", timeoutHere.value(), timeoutHere.unit()), e);
+                            throw new ResponseTimeoutException( "ResultSet transfer was not initiated by the server for " + timeoutHere.value() + " " + timeoutHere.unit(), e);
                         }
                     } else {
                         metadataInput = response.openSubResponse(ChannelResponse.METADATA_CHANNEL_ID);
