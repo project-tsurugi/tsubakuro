@@ -116,7 +116,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                     lock.unlock();
                 }
             } else {
-                throw new TimeoutException("get() by another thread has not returned within the specifined time");
+                throw new TimeoutException("get() by another thread has not returned within the specifined time (" + timeout + " " + unit + ")");
             }
             if (closed) {
                 throw new IOException("FutureStreamWireImpl is already closed");
