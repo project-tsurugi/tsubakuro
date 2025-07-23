@@ -126,7 +126,7 @@ public class PreparedStatementImpl implements PreparedStatement {
             }
             try {
                 if (timeout == 0) {
-                    futureResponse.get(120, TimeUnit.SECONDS);
+                    futureResponse.get();
                 } else {
                     futureResponse.get(timeout, unit);
                 }
