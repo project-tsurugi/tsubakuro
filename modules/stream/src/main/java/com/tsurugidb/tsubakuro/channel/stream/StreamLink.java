@@ -114,7 +114,7 @@ public final class StreamLink extends Link {
         } catch (SocketAlreadyClosedException e) {  // Someone closed the socket, meaning Session is terminated. It's OK.
             return false;
         } catch (SocketTimeoutException e) {
-            throw new TimeoutException("response has not been received within the specified time");
+            throw new TimeoutException("response has not been received within the specified time (" + timeout + " " + unit + ")");
         } catch (EOFException e) {   // imply session close
             closeBoxes(true);
             return false;

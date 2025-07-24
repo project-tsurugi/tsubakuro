@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -46,6 +47,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     private final AtomicBoolean closed = new AtomicBoolean();
+    // timeout == 0 means no timeout is applied when closing (waits indefinitely)
     private long timeout = 0;
     private TimeUnit unit;
     private FutureResponse<Void> futureResponse = null;
@@ -125,12 +127,12 @@ public class PreparedStatementImpl implements PreparedStatement {
                 futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
             }
             try {
-                if (timeout == 0) {
+                if (timeout == 0 || unit == null) {
                     futureResponse.get();
                 } else {
                     futureResponse.get(timeout, unit);
                 }
-            } catch (TimeoutException e) {
+            } catch (ResponseTimeoutException | TimeoutException e) {
                 LOG.warn("closing resource is timeout", e);
                 return false;
             }
