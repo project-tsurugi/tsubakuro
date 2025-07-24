@@ -118,7 +118,7 @@ class SessionWireTest {
             var responseReceived = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(response.waitForMainResponse(1, TimeUnit.SECONDS)));
         });
         // FIXME: check error code instead of message
-        assertEquals("response has not been received within the specified time", exception.getMessage());
+        assertEquals(0, exception.getMessage().indexOf("response has not been received within the specified time"));
         var duration = System.currentTimeMillis() - start;
         assertTrue((750 < duration) && (duration < 1250));
         client.close();

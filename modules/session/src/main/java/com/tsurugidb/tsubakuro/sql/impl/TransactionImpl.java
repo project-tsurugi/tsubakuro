@@ -97,8 +97,8 @@ public class TransactionImpl implements Transaction {
         return state.get() != State.INITIAL;
     }
 
-    private static AtomicLong blobNumber = new AtomicLong();
-    private static AtomicLong clobNumber = new AtomicLong();
+    private static AtomicLong blobNumber = new AtomicLong(1);
+    private static AtomicLong clobNumber = new AtomicLong(1);
 
     /**
      * Creates a new instance.
@@ -204,7 +204,7 @@ public class TransactionImpl implements Transaction {
                     String channelName = "ClobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
                     channelName += "-";
-                    channelName += Long.valueOf(clobNumber.getAndIncrement() + 1).toString();
+                    channelName += Long.valueOf(clobNumber.getAndIncrement()).toString();
                     if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
@@ -230,7 +230,7 @@ public class TransactionImpl implements Transaction {
                     String channelName = "BlobChannel-";
                     channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
                     channelName += "-";
-                    channelName += Long.valueOf(blobNumber.getAndIncrement() + 1).toString();
+                    channelName += Long.valueOf(blobNumber.getAndIncrement()).toString();
                     if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
@@ -570,7 +570,7 @@ public class TransactionImpl implements Transaction {
         case ROLLBACKED:
             return State.TO_BE_CLOSED_WITH_ROLLBACK;
         default:
-            throw new AssertionError("inproper state given, state: " + s);
+            throw new AssertionError("improper state given, state: " + s);
         }
     }
 
@@ -641,8 +641,10 @@ public class TransactionImpl implements Transaction {
             disposeResult = null;
         }
         if (closeHandler != null) {
-            Lang.suppress(e -> LOG.warn("error occurred while collecting garbage", e),
-                          () -> closeHandler.onClosed(this));
+            Lang.suppress(
+                e -> LOG.warn("error occurred while collecting garbage", e),
+                () -> closeHandler.onClosed(this)
+            );
         }
         return true;
     }
@@ -662,7 +664,7 @@ public class TransactionImpl implements Transaction {
     // for diagnostic
     String diagnosticInfo() {
         if (state.get() != State.CLOSED) {
-            return " +Transaction (universal ID = " + transaction.getTransactionId().getId() + ", handle = " + transaction.getTransactionHandle().getHandle() + ")" + System.getProperty("line.separator");
+            return " +Transaction (universal ID = " + transaction.getTransactionId().getId() + ", handle = " + transaction.getTransactionHandle().getHandle() + ")" + System.lineSeparator();
         }
         return "";
     }
