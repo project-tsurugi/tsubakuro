@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -110,6 +111,7 @@ public class WireImpl implements Wire {
     private BlobPathMapping blobPathMapping = null;
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
+    private Credential credentialForUpdate = null;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -387,6 +389,14 @@ public class WireImpl implements Wire {
         return credentialBuilder.build();
     }
 
+    /**
+     * Provides Credential to implement UpdateCredentialTask.
+     * @return the Credential used in the handshake process
+     */
+    public Credential getCredential() {
+        return credentialForUpdate;
+    }
+
     public void checkSessionId(long id) throws IOException {
         if (sessionId() != id) {
             throw new IOException(MessageFormat.format("handshake error (inconsistent session ID), {0} not equal {1}", sessionId(), id));
@@ -434,6 +444,43 @@ public class WireImpl implements Wire {
             return FutureResponse.raises(authenticationException);
         }
         return FutureResponse.returns(userNameOptional);
+    }
+
+    static class UpdateCredentialProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = EndpointResponse.EncryptionKey.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case ERROR:
+                throw newCoreServiceException(message.getError());
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    /**
+     * Update credential information of this connection, and retries authenticate it.
+     * @param credential the new credential information
+     * @return a future of the authentication result:
+     *      it may throw {@link CoreServiceException} if authentication was failed.
+     * @throws IOException if I/O error was occurred while sending message
+     */
+    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+        Objects.requireNonNull(credential);
+        FutureResponse<? extends Response> future = sendUrgent(
+            SERVICE_ID_ENDPOINT_BROKER,
+                toDelimitedByteArray(newRequest()
+                    .setUpdateCredential(EndpointRequest.UpdateCredential.newBuilder()
+                        .setCredential(buildCredential(credential)))
+                    .build())
+        );
+        return new ForegroundFutureResponse<>(future, new UpdateCredentialProcessor().asResponseProcessor(), null);
     }
 
     static byte[] toDelimitedByteArray(Message request) throws IOException {

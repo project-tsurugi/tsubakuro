@@ -115,6 +115,34 @@ public class SessionImpl implements Session {
     }
 
     /**
+     * The update credential interval in milliseconds.
+     */
+    public static final int UPDATE_CREDENTIAL_INTERVAL = 60000;
+    private final Timer updateCredentialTimer = new Timer();
+
+    private class UpdateCredentialTask extends TimerTask {
+        final Timer timer;
+        final Credential credential;
+
+        UpdateCredentialTask(Timer timer, @Nonnull Credential credential) {
+            this.timer = timer;
+            this.credential = Objects.requireNonNull(credential);
+        }
+
+        public void run() {
+            try {
+                if (closed.get() != SESSION_CLOSED) {
+                    updateCredential(credential).get();
+                } else {
+                    timer.cancel();
+                }
+            } catch (Exception ex) {
+                timer.cancel();
+            }
+        }
+    }
+
+    /**
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
@@ -185,7 +213,12 @@ public class SessionImpl implements Session {
             timer.scheduleAtFixedRate(new KeepAliveTask(timer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
         if (wire instanceof WireImpl) {
-            ((WireImpl) wire).setBlobPathMapping(blobPathMapping);
+            var wireImpl = (WireImpl) wire;
+            wireImpl.setBlobPathMapping(blobPathMapping);
+            var credential = wireImpl.getCredential();
+            if (credential != null) {
+                updateCredentialTimer.scheduleAtFixedRate(new UpdateCredentialTask(updateCredentialTimer, credential), UPDATE_CREDENTIAL_INTERVAL, UPDATE_CREDENTIAL_INTERVAL);
+            }
         }
     }
 
