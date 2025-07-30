@@ -414,8 +414,8 @@ public class WireImpl implements Wire {
     }
 
     /**
-     * retrieves the current log-in user name of this session.
-     * @return a future of the log-in user name, or empty if authentication was not performed:
+     * retrieves the current logged-in user name of this session.
+     * @return a future of the logged-in user name, or empty if authentication was not performed:
      * @since 1.11.0
      */
     public FutureResponse<Optional<String>> getUserName() {

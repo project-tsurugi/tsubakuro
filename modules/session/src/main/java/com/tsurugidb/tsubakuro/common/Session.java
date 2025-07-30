@@ -186,8 +186,8 @@ public interface Session extends ServerResource {
     }
 
     /**
-     * retrieves the current log-in user name of this session.
-     * @return a future of the log-in user name, or empty if authentication was not performed:
+     * retrieves the current logged-in user name of this session.
+     * @return a future of the logged-in user name, or empty if authentication was not performed:
      *      it may throw {@link CoreServiceException} if authentication was failed.
      * @throws IOException if I/O error was occurred while sending message
      * @since 1.11.0
