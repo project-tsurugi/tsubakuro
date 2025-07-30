@@ -42,6 +42,7 @@ import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.FileCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.ForegroundFutureResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
@@ -322,7 +323,6 @@ public class WireImpl implements Wire {
         try {
             // handle credential in clientInformation
             var credential = clientInformation.getCredential();
-            var credentialBuilder = EndpointRequest.Credential.newBuilder();
             if (credential instanceof UsernamePasswordCredential) {
                 var ci = (UsernamePasswordCredential) credential;
                 var po = ci.getPassword();
@@ -332,22 +332,14 @@ public class WireImpl implements Wire {
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     var crypto = new Crypto(encryptionKey);
-                    var co = new FileCredential(crypto.encryptByPublicKey(ci.getName()), crypto.encryptByPublicKey(po.get()));
-                    credentialBuilder.setEncryptedCredential(co.getEncryptedName() + "." + co.getEncryptedPassword());
-                    clientInformationBuilder.setCredential(credentialBuilder);
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + po.get()), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
                         throw new IOException("encryption key not found, please check the server configuration", e);
                     }
                 }
-            } else if (credential instanceof FileCredential) {
-                var co = (FileCredential) credential;
-                credentialBuilder.setEncryptedCredential(co.getEncryptedName() + "." + co.getEncryptedPassword());
-                clientInformationBuilder.setCredential(credentialBuilder);
-            } else if (credential instanceof RememberMeCredential) {
-                var co = (RememberMeCredential) credential;
-                credentialBuilder.setRememberMeCredential(co.getToken());
-                clientInformationBuilder.setCredential(credentialBuilder);
+            } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
+                clientInformationBuilder.setCredential(buildCredential(credential));
             }
 
         } catch (InterruptedException | ServerException | TimeoutException e) {
@@ -375,6 +367,18 @@ public class WireImpl implements Wire {
                     .build())
             );
         return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor(), null);
+    }
+
+    private EndpointRequest.Credential buildCredential(Credential credential) throws IOException {
+        var credentialBuilder = EndpointRequest.Credential.newBuilder();
+        if (credential instanceof FileCredential) {
+            var co = (FileCredential) credential;
+            credentialBuilder.setEncryptedCredential(co.getEncrypted());
+        } else if (credential instanceof RememberMeCredential) {
+            var co = (RememberMeCredential) credential;
+            credentialBuilder.setRememberMeCredential(co.getToken());
+        }
+        return credentialBuilder.build();
     }
 
     public void checkSessionId(long id) throws IOException {
