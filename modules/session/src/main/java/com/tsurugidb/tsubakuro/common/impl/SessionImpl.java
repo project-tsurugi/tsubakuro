@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -302,6 +303,17 @@ public class SessionImpl implements Session {
                     .setExpirationTime(u.toMillis(t)))
                 .build()),
             new UpdateExpirationTimeProcessor().asResponseProcessor());
+    }
+
+    @Override
+    public FutureResponse<Optional<String>> getUserName() throws IOException {
+        if (wire instanceof WireImpl) {
+            return ((WireImpl) wire).getUserName();
+        }
+        // if wire is not WireImpl, it does not support getUserName
+        LOG.warn("getUserName is not supported by the wire: {}", wire.getClass().getName());
+        // return empty Optional
+        return FutureResponse.returns(Optional.empty());
     }
 
     static class ShutdownProcessor implements MainResponseProcessor<Void> {

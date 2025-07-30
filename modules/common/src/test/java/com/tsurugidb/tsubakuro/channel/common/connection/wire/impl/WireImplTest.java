@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.channels.Channel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,19 +34,22 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nonnull;
-
 import org.junit.jupiter.api.Test;
 
 import com.google.protobuf.Message;
+
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
+import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
-import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
@@ -169,6 +171,55 @@ class WireImplTest {
         } catch (Exception e) {
             fail("response is not ready");
         }
+    }
+
+    @Test
+    void handshake_without_name() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder()
+                                    .setSessionId(123))
+                    .build());
+
+        // send request via product functionality
+        long sessionId = wire.handshake(new ClientInformation(), null).get();
+
+        // check the situation when the response is received
+        assertEquals(sessionId, 123);
+        assertEquals(wire.getUserName().get(), Optional.empty());
+    }
+
+    @Test
+    void handshake_with_name() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder()
+                                    .setSessionId(123)
+                                    .setUserName("TestUser"))
+                    .build());
+
+        // send request via product functionality
+        long sessionId = wire.handshake(new ClientInformation(), null).get();
+
+        // check the situation when the response is received
+        assertEquals(sessionId, 123);
+        assertEquals(wire.getUserName().get().get(), "TestUser");
+    }
+
+    @Test
+    void handshake_authentication_error() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                    .setCode(Diagnostics.Code.AUTHENTICATION_ERROR)
+                                    .setMessage("Authentication failed"))
+                    .build());
+
+        var future = wire.handshake(new ClientInformation(), null);
+        CoreServiceException e = assertThrows(CoreServiceException.class, () -> future.get());
+        assertEquals(e.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
+        CoreServiceException eun = assertThrows(CoreServiceException.class, () -> wire.getUserName().get());
+        assertEquals(eun.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
     }
 
     @Test
