@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
@@ -182,6 +183,17 @@ public interface Session extends ServerResource {
      */
     default FutureResponse<Void> updateExpirationTime(long time, @Nonnull TimeUnit unit) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * retrieves the current log-in user name of this session.
+     * @return a future of the log-in user name, or empty if authentication was not performed:
+     *      it may throw {@link CoreServiceException} if authentication was failed.
+     * @throws IOException if I/O error was occurred while sending message
+     * @since 1.11.0
+     */
+    default FutureResponse<Optional<String>> getUserName() throws IOException {
+        throw new UnsupportedOperationException("getUserName is not implemented in this session");
     }
 
     /**

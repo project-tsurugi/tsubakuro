@@ -37,6 +37,11 @@ message Handshake {
     message Success {
         // the session id.
         uint64 session_id = 11;
+
+        // the user name.
+        oneof user_name_opt {
+            string user_name = 12;
+        }
     }
 }
 

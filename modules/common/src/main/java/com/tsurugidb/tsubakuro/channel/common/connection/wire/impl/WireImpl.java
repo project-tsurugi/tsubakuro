@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,7 +97,9 @@ public class WireImpl implements Wire {
     private final Link link;
     private final AtomicBoolean closed = new AtomicBoolean();
     private BlobPathMapping blobPathMapping = null;
-    
+    private Optional<String> userNameOptional = Optional.empty();
+    private CoreServiceException authenticationException = null;
+
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
      * @param link the stream object by which this WireImpl is connected to the SQL server
@@ -279,13 +282,16 @@ public class WireImpl implements Wire {
                 .setServiceMessageVersionMinor(ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR);
     }
 
-    static class HandshakeProcessor implements MainResponseProcessor<Long> {
+    class HandshakeProcessor implements MainResponseProcessor<Long> {
         @Override
         public Long process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = EndpointResponse.Handshake.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
+                if (message.getSuccess().getUserNameOptCase() == EndpointResponse.Handshake.Success.UserNameOptCase.USER_NAME) {
+                    userNameOptional = Optional.of(message.getSuccess().getUserName());
+                }
                 return message.getSuccess().getSessionId();
 
             case ERROR:
@@ -293,6 +299,9 @@ public class WireImpl implements Wire {
                 switch (errMessage.getCode()) {
                 case RESOURCE_LIMIT_REACHED:
                     throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                case AUTHENTICATION_ERROR:
+                    authenticationException = newCoreServiceException(errMessage);
+                    throw authenticationException;
                 default:
                     throw newCoreServiceException(errMessage);
                 }
@@ -402,6 +411,19 @@ public class WireImpl implements Wire {
                     .build())
             );
         return new ForegroundFutureResponse<>(future, new EncryptionKeyProcessor().asResponseProcessor(), null);
+    }
+
+    /**
+     * retrieves the current log-in user name of this session.
+     * @return a future of the log-in user name, or empty if authentication was not performed:
+     * @since 1.11.0
+     */
+    public FutureResponse<Optional<String>> getUserName() {
+        if (authenticationException != null) {
+            // if handshake failed, return the exception
+            return FutureResponse.raises(authenticationException);
+        }
+        return FutureResponse.returns(userNameOptional);
     }
 
     static byte[] toDelimitedByteArray(Message request) throws IOException {
