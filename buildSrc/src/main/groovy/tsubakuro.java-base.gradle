@@ -22,6 +22,7 @@ task showToolchainJavaHome {
 ext {
     tsubakuroVersion = "${project.version}"
     isReleaseVersion = !version.endsWith("SNAPSHOT")
+    isSignEnabled = project.hasProperty('enableSign')
     buildTimestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     buildRevision = System.getenv("GITHUB_SHA") ?: ""
     createdBy = "Gradle ${gradle.gradleVersion}"
