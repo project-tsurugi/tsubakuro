@@ -5,13 +5,12 @@ plugins {
     id 'tsubakuro.java-conventions'
 }
 
-import com.vanniktech.maven.publish.SonatypeHost
 import com.vanniktech.maven.publish.JavaLibrary
 import com.vanniktech.maven.publish.JavadocJar
 
 mavenPublishing {
     configure(new JavaLibrary(new JavadocJar.None(), true))
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
 
     if (isReleaseVersion) {
         signAllPublications()
