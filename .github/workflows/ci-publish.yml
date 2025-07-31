@@ -30,7 +30,7 @@ jobs:
 
       - name: Publish
         run: |
-          ./gradlew -i clean publish
+          ./gradlew -i clean publish -PenableSign
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.CENTRAL_PORTAL_USER }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}

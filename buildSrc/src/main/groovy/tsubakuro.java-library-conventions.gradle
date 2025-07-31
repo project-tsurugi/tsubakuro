@@ -12,7 +12,7 @@ mavenPublishing {
     configure(new JavaLibrary(new JavadocJar.None(), true))
     publishToMavenCentral()
 
-    if (isReleaseVersion) {
+    if (isReleaseVersion && isSignEnabled) {
         signAllPublications()
     }
 
