@@ -120,8 +120,8 @@ public class FileCredential implements Credential {
 
         LOG.trace("writing credential file: {}", file); //$NON-NLS-1$
 
-        FileWriter filewriter = new FileWriter(file.toString(), StandardCharsets.UTF_8, false);
-        try (var writer = filewriter) {
+        FileWriter fileWriter = new FileWriter(file.toString(), StandardCharsets.UTF_8, false);
+        try (var writer = fileWriter) {
             writer.write(encrypted + "\n"); //$NON-NLS-1$
             for (String comment : comments) {
                 writer.write(comment + "\n"); //$NON-NLS-1$
@@ -134,6 +134,7 @@ public class FileCredential implements Credential {
 
     @Override
     public int hashCode() {
+        // hashCode is spec'd to compare only encrypted
         return Objects.hash(encrypted);
     }
 
@@ -154,6 +155,6 @@ public class FileCredential implements Credential {
 
     @Override
     public String toString() {
-        return comments.toString();
+        return String.format("FileCredential{commentsCount=%d}", comments.size());
     }
 }
