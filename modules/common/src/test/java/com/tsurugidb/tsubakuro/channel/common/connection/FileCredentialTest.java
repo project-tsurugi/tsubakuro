@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -28,19 +29,19 @@ class FileCredentialTest {
 
     @Test
     void restore(@TempDir Path dir) throws Exception {
-        Path file = dir.resolve("tmp.json");
+        Path file = dir.resolve("tmp");
 
-        var creds = new FileCredential("A", "B");
+        var creds = new FileCredential("A", List.of("B", "C"));
         creds.dump(file);
 
         var restored = FileCredential.load(file);
-        assertEquals(restored.getEncryptedName(), "A");
-        assertEquals(restored.getEncryptedPassword(), "B");
+        assertEquals(restored.getEncrypted(), "A");
+        assertEquals(restored.getComments(), List.of("B", "C"));
     }
 
     @Test
     void loadMissing(@TempDir Path dir) throws Exception {
-        Path file = dir.resolve("tmp.json");
+        Path file = dir.resolve("tmp");
         assertThrows(FileNotFoundException.class, () -> FileCredential.load(file));
     }
 }

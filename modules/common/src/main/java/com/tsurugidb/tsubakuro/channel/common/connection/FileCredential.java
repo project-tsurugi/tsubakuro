@@ -16,10 +16,13 @@
 package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -28,38 +31,13 @@ import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonFactoryBuilder;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * Credentials information from credential files.
  *
- * <p>
- * Each credential file is JSON formatted and has the following fields:
- * </p>
- * <ul>
- * <li> {@code "user"} - {@link #getEncryptedName() encrypted user name} </li>
- * <li> {@code "user"} - {@link #getEncryptedPassword() encrypted password} </li>
- * </ul>
- *
- * Each field value will be encrypted using public key file.
  */
 public class FileCredential implements Credential {
 
     private static final Logger LOG = LoggerFactory.getLogger(FileCredential.class);
-
-    /**
-     * The encrypted user name field name in credential file.
-     */
-    public static final String KEY_USER = "user"; //$NON-NLS-1$
-
-    /**
-     * The encrypted password field name in credential file.
-     */
-    public static final String KEY_PASSWORD = "password"; //$NON-NLS-1$
 
     /**
      * The default credential path.
@@ -67,47 +45,37 @@ public class FileCredential implements Credential {
     public static final Optional<Path> DEFAULT_CREDENTIAL_PATH = Optional.ofNullable(System.getProperty("user.home")) //$NON-NLS-1$
             .filter(it -> !it.isBlank())
             .map(Path::of)
-            .map(it -> it.resolve(".tsurugidb/credentials.json")); //$NON-NLS-1$
+            .map(it -> it.resolve(".tsurugidb/credentials.key")); //$NON-NLS-1$
 
-    private static final JsonFactory JSON = new JsonFactoryBuilder()
-            .build();
+    private final String encrypted;
 
-    private final String encryptedName;
-
-    private final String encryptedPassword;
+    private final List<String> comments;
 
     /**
-     * Creates a new instance.
-     * @param encryptedName the encrypted user name
-     * @param encryptedPassword the encrypted password
-     * @see #load(Path)
+     * @param encrypted the encrypted credential string
+     * @param comments the optional comment lines for the credential
      */
-    public FileCredential(@Nonnull String encryptedName, @Nonnull String encryptedPassword) {
-        Objects.requireNonNull(encryptedName);
-        Objects.requireNonNull(encryptedPassword);
-        this.encryptedName = encryptedName;
-        this.encryptedPassword = encryptedPassword;
+    public FileCredential(@Nonnull String encrypted, @Nonnull List<String> comments) {
+        Objects.requireNonNull(encrypted);
+        Objects.requireNonNull(comments);
+        this.encrypted = encrypted;
+        this.comments = List.copyOf(comments);
     }
 
     /**
-     * Returns the encrypted user name.
-     * @return the encrypted user name.
+     * Returns the encrypted credential string.
+     * @return the encrypted credential string
      */
-    public String getEncryptedName() {
-        return encryptedName;
+    public String getEncrypted() {
+        return encrypted;
     }
 
     /**
-     * Returns the encrypted password.
-     * @return the encrypted password
+     * Returns the comment lines for the credential.
+     * @return the comment lines, or empty list if no comments are specified
      */
-    public String getEncryptedPassword() {
-        return encryptedPassword;
-    }
-
-    @Override
-    public String toString() {
-        return "FileCredential()";
+    public List<String> getComments() {
+        return comments;
     }
 
     /**
@@ -121,33 +89,23 @@ public class FileCredential implements Credential {
      */
     public static FileCredential load(@Nonnull Path file) throws IOException {
         Objects.requireNonNull(file);
+
         LOG.trace("loading credential file: {}", file); //$NON-NLS-1$
         if (!Files.isRegularFile(file)) {
             throw new FileNotFoundException(MessageFormat.format(
                     "credential file is not found: {0}",
                     file));
         }
-        var mapper = new ObjectMapper(JSON);
-        var tree = mapper.readTree(file.toFile());
-
-        var user = extractField(tree, KEY_USER, file);
-        var password = extractField(tree, KEY_PASSWORD, file);
-
-        return new FileCredential(user, password);
-    }
-
-    private static String extractField(JsonNode node, String key, Path file) throws IOException {
-        assert node != null;
-        assert key != null;
-        assert file != null;
-        var field = node.get(key);
-        if (field == null || !field.isTextual()) {
-            throw new IOException(MessageFormat.format(
-                    "missing field ''{0}'' in credential file: {1}",
-                    key,
+        var lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        if (lines.isEmpty()) {
+            throw new FileNotFoundException(MessageFormat.format(
+                    "credential file is empty: {0}",
                     file));
         }
-        return field.asText();
+        if (lines.size() == 1) {
+            return new FileCredential(lines.get(0), List.of());
+        }
+        return new FileCredential(lines.get(0), lines.subList(1, lines.size()));
     }
 
     /**
@@ -159,15 +117,44 @@ public class FileCredential implements Credential {
      */
     public void dump(@Nonnull Path file) throws IOException {
         Objects.requireNonNull(file);
+
         LOG.trace("writing credential file: {}", file); //$NON-NLS-1$
 
-        try (var writer = JSON.createGenerator(file.toFile(), JsonEncoding.UTF8)) {
-            writer.writeStartObject();
-            writer.writeFieldName(KEY_USER);
-            writer.writeString(getEncryptedName());
-            writer.writeFieldName(KEY_PASSWORD);
-            writer.writeString(getEncryptedPassword());
-            writer.writeEndObject();
+        FileWriter fileWriter = new FileWriter(file.toString(), StandardCharsets.UTF_8, false);
+        try (var writer = fileWriter) {
+            writer.write(encrypted + "\n"); //$NON-NLS-1$
+            for (String comment : comments) {
+                writer.write(comment + "\n"); //$NON-NLS-1$
+            }
+        } catch (IOException e) {
+            LOG.error("Failed to write credential file: {}", file, e); //$NON-NLS-1$
+            throw e;
         }
+    }
+
+    @Override
+    public int hashCode() {
+        // hashCode is spec'd to compare only encrypted
+        return Objects.hash(encrypted);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        FileCredential other = (FileCredential) obj;
+        return encrypted.equals(other.encrypted);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("FileCredential{commentsCount=%d}", comments.size());
     }
 }
