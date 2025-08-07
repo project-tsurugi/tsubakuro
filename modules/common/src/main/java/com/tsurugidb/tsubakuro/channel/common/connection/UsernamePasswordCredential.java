@@ -55,7 +55,7 @@ public class UsernamePasswordCredential implements Credential {
      * @return the password
      */
     public Optional<String> getPassword() {
-        return Optional.of(password);
+        return Optional.ofNullable(password);
     }
 
     @Override

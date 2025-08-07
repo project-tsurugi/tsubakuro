@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Console;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
@@ -325,14 +326,13 @@ public class WireImpl implements Wire {
             var credential = clientInformation.getCredential();
             if (credential instanceof UsernamePasswordCredential) {
                 var ci = (UsernamePasswordCredential) credential;
-                var po = ci.getPassword();
-                if (!po.isPresent()) {
-                    throw new IllegalArgumentException("password is empty");
-                }
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     var crypto = new Crypto(encryptionKey);
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + po.get()), List.of())));
+                    var passwordOpt = ci.getPassword();
+                    var password = passwordOpt.isPresent() ? passwordOpt.get() : "";
+                    // encrypt the password with the public key
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + password), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
                         throw new IOException("encryption key not found, please check the server configuration", e);
@@ -341,7 +341,6 @@ public class WireImpl implements Wire {
             } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
                 clientInformationBuilder.setCredential(buildCredential(credential));
             }
-
         } catch (InterruptedException | ServerException | TimeoutException e) {
             throw new IOException(e);
         }
