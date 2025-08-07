@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Console;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
@@ -325,14 +326,12 @@ public class WireImpl implements Wire {
             var credential = clientInformation.getCredential();
             if (credential instanceof UsernamePasswordCredential) {
                 var ci = (UsernamePasswordCredential) credential;
-                var po = ci.getPassword();
-                if (!po.isPresent()) {
-                    throw new IllegalArgumentException("password is empty");
-                }
+                String pw = getPasswordString(ci);
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     var crypto = new Crypto(encryptionKey);
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + po.get()), List.of())));
+                    // encrypt the password with the public key
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + pw), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
                         throw new IOException("encryption key not found, please check the server configuration", e);
@@ -367,6 +366,26 @@ public class WireImpl implements Wire {
                     .build())
             );
         return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor(), null);
+    }
+
+    private String getPasswordString(@Nonnull UsernamePasswordCredential credential) throws IOException {   
+        var po = credential.getPassword();
+        if (po.isPresent()) {
+            return po.get();
+        } else {
+            // if password is not set, read from console
+            Console console = System.console();
+            if (console == null) {
+                throw new IllegalArgumentException("password is empty");
+            }
+            if (console.reader() == null) {
+                throw new IllegalArgumentException("password is empty");
+            }
+            // read password from console
+            // this is a blocking call, so it should be used in a foreground thread
+            char[] inChars = console.readPassword("password: ");
+            return new String(inChars);
+        }
     }
 
     private EndpointRequest.Credential buildCredential(Credential credential) throws IOException {
