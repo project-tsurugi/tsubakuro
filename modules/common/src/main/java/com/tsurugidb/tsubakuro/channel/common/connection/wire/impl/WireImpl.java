@@ -16,7 +16,6 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Console;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
