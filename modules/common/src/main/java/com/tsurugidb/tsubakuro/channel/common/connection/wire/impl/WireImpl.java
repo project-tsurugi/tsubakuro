@@ -21,6 +21,7 @@ import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +93,11 @@ public class WireImpl implements Wire {
      * The maximum timeout in days.
      */
     public static final long MAX_TIMEOUT_DAYS = (10 * 365);
+
+    /**
+     * The validity period for UserPasswordCredential in seconds.
+     */
+    private long validityPeriodInSeconds = 300;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
@@ -328,10 +334,8 @@ public class WireImpl implements Wire {
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     var crypto = new Crypto(encryptionKey);
-                    var passwordOpt = ci.getPassword();
-                    var password = passwordOpt.isPresent() ? passwordOpt.get() : "";
-                    // encrypt the password with the public key
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getName() + "\n" + password), List.of())));
+                    Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
                         throw new IOException("encryption key not found, please check the server configuration", e);

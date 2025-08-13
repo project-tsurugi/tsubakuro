@@ -15,12 +15,18 @@
  */
 package  com.tsurugidb.tsubakuro.channel.common.connection;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonFactoryBuilder;
 
 /**
  * A credential by user name and password.
@@ -30,6 +36,34 @@ public class UsernamePasswordCredential implements Credential {
     private final String name;
 
     private final String password;
+
+    /**
+     * The format version field name in credential file.
+     */
+    public static final String KEY_FORMAT_VERSION = "format_version"; //$NON-NLS-1$
+
+    /**
+     * The encrypted user name field name in credential file.
+     */
+    public static final String KEY_USER = "user"; //$NON-NLS-1$
+
+    /**
+     * The encrypted password field name in credential file.
+     */
+    public static final String KEY_PASSWORD = "password"; //$NON-NLS-1$
+
+    /**
+     * The expiration date field name in credential file.
+     */
+    public static final String KEY_EXPIRATION_DATE = "expiration_date"; //$NON-NLS-1$
+
+    /**
+     * The current format version.
+     */
+    private static final int FORMAT_VERSION = 1;
+
+    private static final JsonFactory JSON = new JsonFactoryBuilder()
+            .build();
 
     /**
      * Creates a new instance.
@@ -63,5 +97,30 @@ public class UsernamePasswordCredential implements Credential {
         return MessageFormat.format(
                 "UsernamePasswordCredential(name={0})",
                 name);
+    }
+
+    /**
+     * Returns the JSON representation of this credential.
+     * @param dueInstant the expiration date of the credential, or null if no expiration date is set
+     * @return the JSON string
+     * @throws IOException error occurred in write json to a StringWriter
+     */
+    public String getJsonText(Instant dueInstant) throws IOException {
+        StringWriter stringWriter = new StringWriter();
+        try (var writer = JSON.createGenerator(stringWriter)) {
+            writer.writeStartObject();
+            writer.writeFieldName(KEY_FORMAT_VERSION);
+            writer.writeNumber(FORMAT_VERSION);
+            writer.writeFieldName(KEY_USER);
+            writer.writeString(name);
+            writer.writeFieldName(KEY_PASSWORD);
+            writer.writeString(password != null ? password : "");
+            if (dueInstant != null) {
+                writer.writeFieldName(KEY_EXPIRATION_DATE);
+                writer.writeString(dueInstant.toString());
+            }
+            writer.writeEndObject();
+        }
+        return stringWriter.toString();
     }
 }
