@@ -65,6 +65,8 @@ public class UsernamePasswordCredential implements Credential {
     private static final JsonFactory JSON = new JsonFactoryBuilder()
             .build();
 
+    private static final int INITIAL_CAPACITY_FOR_JSON_STRING_WRITER = 256;
+
     /**
      * Creates a new instance.
      * @param name the user name
@@ -106,7 +108,7 @@ public class UsernamePasswordCredential implements Credential {
      * @throws IOException error occurred in write json to a StringWriter
      */
     public String getJsonText(Instant dueInstant) throws IOException {
-        StringWriter stringWriter = new StringWriter();
+        StringWriter stringWriter = new StringWriter(INITIAL_CAPACITY_FOR_JSON_STRING_WRITER);
         try (var writer = JSON.createGenerator(stringWriter)) {
             writer.writeStartObject();
             writer.writeFieldName(KEY_FORMAT_VERSION);

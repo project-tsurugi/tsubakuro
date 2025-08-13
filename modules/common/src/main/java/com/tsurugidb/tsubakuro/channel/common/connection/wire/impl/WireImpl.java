@@ -95,9 +95,13 @@ public class WireImpl implements Wire {
     public static final long MAX_TIMEOUT_DAYS = (10 * 365);
 
     /**
+     * The default validity period for UserPasswordCredential in seconds.
+     */
+    private static final long DEFAULT_VALIDITY_PERIOD_SECONDS = 300;
+    /**
      * The validity period for UserPasswordCredential in seconds.
      */
-    private long validityPeriodInSeconds = 300;
+    private long validityPeriodInSeconds = DEFAULT_VALIDITY_PERIOD_SECONDS;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
