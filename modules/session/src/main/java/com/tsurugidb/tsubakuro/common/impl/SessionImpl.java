@@ -136,16 +136,21 @@ public class SessionImpl implements Session {
     private class UpdateCredentialTask extends Thread {
         @Override
         public void run() {
-            while (closed.get() != SESSION_CLOSED) {
-                try {
-                    var margin = (getCredentialsExpirationTime().get().toEpochMilli() - Instant.now().toEpochMilli()) - UPDATE_CREDENTIAL_MARGIN;
+            try {
+                // Cache the expiration time after each credential update
+                long expirationTime = getCredentialsExpirationTime().get().toEpochMilli();
+                while (closed.get() != SESSION_CLOSED) {
+                    long margin = (expirationTime - Instant.now().toEpochMilli()) - UPDATE_CREDENTIAL_MARGIN;
                     if (margin > 0) {
                         Thread.sleep(margin);
                     }
                     updateCredential(getCredential()).get();
-                } catch (IOException | InterruptedException | ServerException ex) {
-                    return;  // If some error occurs, just return.
+                    // Update cached expiration time after credential update
+                    expirationTime = getCredentialsExpirationTime().get(UPDATE_CREDENTIAL_MARGIN / 2, TimeUnit.MILLISECONDS).toEpochMilli();
                 }
+            } catch (IOException | InterruptedException | ServerException | TimeoutException ex) {
+                LOG.error("UpdateCredentialTask terminated due to exception", ex);
+                return;
             }
         }
     }
@@ -223,8 +228,14 @@ public class SessionImpl implements Session {
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             wireImpl.setBlobPathMapping(blobPathMapping);
-            if (getCredential() != null) {
-                updateCredentialTask.start();
+            try {
+                if (getCredential() != null) {
+                    if (!updateCredentialTask.isAlive()) {
+                        updateCredentialTask.start();
+                    }
+                }
+            } catch (IOException e) {
+                LOG.error("Failed to get credential for update", e);
             }
         }
     }
@@ -234,7 +245,7 @@ public class SessionImpl implements Session {
      * This method is used by WireImpl to get the credential for update.
      * @return the credential for update, or null if not set
      */
-    private Credential getCredential() {
+    private Credential getCredential() throws IOException {
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             // getCredential() returns the credential for update

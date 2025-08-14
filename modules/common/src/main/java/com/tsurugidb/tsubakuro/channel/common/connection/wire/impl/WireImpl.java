@@ -393,20 +393,17 @@ public class WireImpl implements Wire {
     /**
      * Provides Credential to implement UpdateCredentialTask.
      * @return the Credential used in the handshake process
+     * @throws IOException if I/O error was occurred while obtaining a credential
      */
-    public Credential getCredential() {
+    public Credential getCredential() throws IOException {
         if (credentialForUpdate instanceof UsernamePasswordCredential) {
             var ci = (UsernamePasswordCredential) credentialForUpdate;
             Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-            try {
-                return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
-            } catch (IOException e) {
-                return null;  // if encryption failed, return null to indicate that the credential cannot be updated
-            }
+            return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
         } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
             return credentialForUpdate;
         }
-        return null; // if credentialForUpdate is not set, return null
+        throw new IOException("A valid credential could not be obtained through the handshake");
     }
 
     public void checkSessionId(long id) throws IOException {
@@ -490,7 +487,7 @@ public class WireImpl implements Wire {
     static class UpdateCredentialProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = EndpointResponse.EncryptionKey.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = EndpointResponse.UpdateCredential.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
