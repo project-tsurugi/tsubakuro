@@ -102,9 +102,10 @@ public class FileCredential implements Credential {
                     "credential file is empty: {0}",
                     file));
         }
-        var first = lines.get(0);
-        Optional<String> second = lines.size() > 1 ? Optional.of(lines.get(1)) : Optional.empty();
-        return new FileCredential(first, second);
+        if (lines.size() == 1) {
+            return new FileCredential(lines.get(0), List.of());
+        }
+        return new FileCredential(lines.get(0), lines.subList(1, lines.size()));
     }
 
     /**
