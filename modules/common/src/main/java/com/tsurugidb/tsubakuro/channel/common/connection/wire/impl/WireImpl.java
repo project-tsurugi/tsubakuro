@@ -112,6 +112,7 @@ public class WireImpl implements Wire {
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
     private Credential credentialForUpdate = null;
+    private Crypto cryptoForUpdate = null;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -334,21 +335,21 @@ public class WireImpl implements Wire {
 
         try {
             // handle credential in clientInformation
-            var credential = clientInformation.getCredential();
-            if (credential instanceof UsernamePasswordCredential) {
-                var ci = (UsernamePasswordCredential) credential;
+            credentialForUpdate = clientInformation.getCredential();
+            if (credentialForUpdate instanceof UsernamePasswordCredential) {
+                var ci = (UsernamePasswordCredential) credentialForUpdate;
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
-                    var crypto = new Crypto(encryptionKey);
+                    cryptoForUpdate = new Crypto(encryptionKey);
                     Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(crypto.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
                         throw new IOException("encryption key not found, please check the server configuration", e);
                     }
                 }
-            } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
-                clientInformationBuilder.setCredential(buildCredential(credential));
+            } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
+                clientInformationBuilder.setCredential(buildCredential(credentialForUpdate));
             }
         } catch (InterruptedException | ServerException | TimeoutException e) {
             throw new IOException(e);
@@ -394,7 +395,18 @@ public class WireImpl implements Wire {
      * @return the Credential used in the handshake process
      */
     public Credential getCredential() {
-        return credentialForUpdate;
+        if (credentialForUpdate instanceof UsernamePasswordCredential) {
+            var ci = (UsernamePasswordCredential) credentialForUpdate;
+            Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
+            try {
+                return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
+            } catch (IOException e) {
+                return null;  // if encryption failed, return null to indicate that the credential cannot be updated
+            }
+        } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
+            return credentialForUpdate;
+        }
+        return null; // if credentialForUpdate is not set, return null
     }
 
     public void checkSessionId(long id) throws IOException {
@@ -446,6 +458,35 @@ public class WireImpl implements Wire {
         return FutureResponse.returns(userNameOptional);
     }
 
+    static class CredentialsExpirationTimeProcessor implements MainResponseProcessor<Instant> {
+        @Override
+        public Instant process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = EndpointResponse.GetCredentialsExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                long expirationTime = message.getSuccess().getExpirationTime();
+                return Instant.ofEpochMilli(expirationTime);
+            case ERROR:
+                throw newCoreServiceException(message.getError());
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Instant> getCredentialsExpirationTime() throws IOException {
+        FutureResponse<? extends Response> future = sendUrgent(
+            SERVICE_ID_ENDPOINT_BROKER,
+                toDelimitedByteArray(newRequest()
+                    .setGetCredentialExpirationTime(EndpointRequest.GetCredentialsExpirationTime.newBuilder())
+                    .build())
+        );
+        return new ForegroundFutureResponse<>(future, new CredentialsExpirationTimeProcessor().asResponseProcessor(), null);
+    }
+
     static class UpdateCredentialProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
@@ -464,13 +505,7 @@ public class WireImpl implements Wire {
         }
     }
 
-    /**
-     * Update credential information of this connection, and retries authenticate it.
-     * @param credential the new credential information
-     * @return a future of the authentication result:
-     *      it may throw {@link CoreServiceException} if authentication was failed.
-     * @throws IOException if I/O error was occurred while sending message
-     */
+    @Override
     public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
         FutureResponse<? extends Response> future = sendUrgent(

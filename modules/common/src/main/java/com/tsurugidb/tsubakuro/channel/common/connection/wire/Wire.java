@@ -17,6 +17,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -119,6 +120,18 @@ public interface Wire extends ServerResource {
     default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
         Objects.requireNonNull(payload);
         return send(serviceId, ByteBuffer.wrap(payload), blobs);
+    }
+
+    /**
+     * Returns the expiration time of the current session credentials.
+     * @return the future of the response, which may raise an exception on waiting for completion
+     * @see #updateCredential(Credential)
+     * @throws IOException if an I/O error occurs
+     * @throws InterruptedException if the operation is interrupted
+     * @throws ServerException if the server returns an error
+     */
+    default FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
+        throw new UnsupportedOperationException();
     }
 
     /**

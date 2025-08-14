@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.common.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,9 +92,14 @@ public class SessionImpl implements Session {
      * The keep alive interval in milliseconds.
      */
     public static final int KEEP_ALIVE_INTERVAL = 60000;
-    private final Timer timer = new Timer();
+    private final Timer keepAliveTimer = new Timer();
     private boolean doKeepAlive = false;
 
+    /**
+     * The keep alive task.
+     * This task is used to send a keep alive message to the server periodically.
+     * It is used to keep the session alive.
+     */
     private class KeepAliveTask extends TimerTask {
         final Timer timer;
 
@@ -115,29 +121,31 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * The update credential interval in milliseconds.
+     * The update credential margin in milliseconds.
      */
-    public static final int UPDATE_CREDENTIAL_INTERVAL = 60000;
-    private final Timer updateCredentialTimer = new Timer();
+    private static final int UPDATE_CREDENTIAL_MARGIN = 60000;  // in milliseconds
+    private final UpdateCredentialTask updateCredentialTask = new UpdateCredentialTask();
 
-    private class UpdateCredentialTask extends TimerTask {
-        final Timer timer;
-        final Credential credential;
-
-        UpdateCredentialTask(Timer timer, @Nonnull Credential credential) {
-            this.timer = timer;
-            this.credential = Objects.requireNonNull(credential);
-        }
-
+    /**
+     * The update credential task.
+     * This task is used to update the credential before it expires.
+     * It runs in a separate thread and checks the expiration time of the credential.
+     * If the expiration time is within the margin, it updates the credential.
+     * The task is started when the wire is connected.
+     */
+    private class UpdateCredentialTask extends Thread {
+        @Override
         public void run() {
-            try {
-                if (closed.get() != SESSION_CLOSED) {
-                    updateCredential(credential).get();
-                } else {
-                    timer.cancel();
+            while (closed.get() != SESSION_CLOSED) {
+                try {
+                    var margin = (getCredentialsExpirationTime().get().toEpochMilli() - Instant.now().toEpochMilli()) - UPDATE_CREDENTIAL_MARGIN;
+                    if (margin > 0) {
+                        Thread.sleep(margin);
+                    }
+                    updateCredential(getCredential()).get();
+                } catch (IOException | InterruptedException | ServerException ex) {
+                    return;  // If some error occurs, just return.
                 }
-            } catch (Exception ex) {
-                timer.cancel();
             }
         }
     }
@@ -203,23 +211,39 @@ public class SessionImpl implements Session {
      * Note. How to connect to a SQL server is implementation dependent.
      * This implementation assumes that the session wire connected to the database is given.
      *
-     * @param w the wire that connects to the Database
+     * @param w the wire connected to the Database
      */
     @Override
     public void connect(@Nonnull Wire w) {
         Objects.requireNonNull(w);
         wire = w;
         if (doKeepAlive) {
-            timer.scheduleAtFixedRate(new KeepAliveTask(timer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
+            keepAliveTimer.scheduleAtFixedRate(new KeepAliveTask(keepAliveTimer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             wireImpl.setBlobPathMapping(blobPathMapping);
-            var credential = wireImpl.getCredential();
-            if (credential != null) {
-                updateCredentialTimer.scheduleAtFixedRate(new UpdateCredentialTask(updateCredentialTimer, credential), UPDATE_CREDENTIAL_INTERVAL, UPDATE_CREDENTIAL_INTERVAL);
+            if (getCredential() != null) {
+                updateCredentialTask.start();
             }
         }
+    }
+
+    /**
+     * Returns the credential for update.
+     * This method is used by WireImpl to get the credential for update.
+     * @return the credential for update, or null if not set
+     */
+    private Credential getCredential() {
+        if (wire instanceof WireImpl) {
+            var wireImpl = (WireImpl) wire;
+            // getCredential() returns the credential for update
+            // so it is not null if the credential is set.
+            return wireImpl.getCredential();
+        }
+        // if wire is not WireImpl, it does not support getCredential
+        LOG.warn("getCredential is not supported by the wire: {}", wire.getClass().getName());
+        return null;
     }
 
     @Override
@@ -276,6 +300,11 @@ public class SessionImpl implements Session {
         return CoreRequest.Request.newBuilder()
                 .setServiceMessageVersionMajor(Session.SERVICE_MESSAGE_VERSION_MAJOR)
                 .setServiceMessageVersionMinor(Session.SERVICE_MESSAGE_VERSION_MINOR);
+    }
+
+    @Override
+    public FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
+        return wire.getCredentialsExpirationTime();
     }
 
     @Override
@@ -573,7 +602,8 @@ public class SessionImpl implements Session {
             if (expected == d) {
                 try {
                     if (closed.compareAndSet(expected, SESSION_CLOSED)) {
-                        timer.cancel();  // does not throw any exception
+                        keepAliveTimer.cancel();  // does not throw any exception
+                        updateCredentialTask.interrupt();
                         wireClose();
                         return;
                     }
