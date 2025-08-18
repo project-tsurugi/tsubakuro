@@ -149,7 +149,9 @@ public class SessionImpl implements Session {
                     expirationTime = getCredentialsExpirationTime().get(UPDATE_CREDENTIAL_MARGIN / 2, TimeUnit.MILLISECONDS).toEpochMilli();
                 }
             } catch (IOException | InterruptedException | ServerException | TimeoutException ex) {
-                LOG.error("UpdateCredentialTask terminated due to exception", ex);
+                if (closed.get() != SESSION_CLOSED) {
+                    LOG.error("UpdateCredentialTask terminated due to exception", ex);
+                }
                 return;
             }
         }
