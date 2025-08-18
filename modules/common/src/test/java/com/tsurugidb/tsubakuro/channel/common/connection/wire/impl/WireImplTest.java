@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
@@ -30,6 +31,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -44,10 +46,12 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
@@ -220,6 +224,35 @@ class WireImplTest {
         assertEquals(e.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
         CoreServiceException eun = assertThrows(CoreServiceException.class, () -> wire.getUserName().get());
         assertEquals(eun.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
+    }
+
+    @Test
+    void getCredentialsExpirationTime_success() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.GetCredentialsExpirationTime.newBuilder()
+                    .setSuccess(EndpointResponse.GetCredentialsExpirationTime.Success.newBuilder()
+                                    .setExpirationTime(Instant.now().plusSeconds(60).toEpochMilli()))
+                    .build());
+
+        var future = wire.getCredentialsExpirationTime();
+        assertNotNull(future);
+        var expirationTime = future.get();
+        assertNotNull(expirationTime);
+        assertTrue(expirationTime.isAfter(Instant.now().plusSeconds(50)));
+        assertTrue(expirationTime.isBefore(Instant.now().plusSeconds(70)));
+    }
+
+    @Test
+    void updateCredential_success() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.UpdateCredential.newBuilder()
+                    .setSuccess(EndpointResponse.UpdateCredential.Success.newBuilder())
+                    .build());
+
+        // send request via product functionality
+        var future = wire.updateCredential(new UsernamePasswordCredential("tsurugi", "password"));
+        assertNotNull(future);
+        future.get(); // should not throw an exception
     }
 
     @Test
