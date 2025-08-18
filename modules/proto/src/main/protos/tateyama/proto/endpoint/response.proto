@@ -99,7 +99,7 @@ message GetCredentialsExpirationTime {
 
     // request is successfully completed.
     message Success {
-        // expiration time of the session. (The meaning of the value is T.B.D.)
+        // expiration time of the session, expressed as the number of milliseconds since epoch 1970-01-01T00:00:00Z.
         uint64 expiration_time = 1;
     }
 }
