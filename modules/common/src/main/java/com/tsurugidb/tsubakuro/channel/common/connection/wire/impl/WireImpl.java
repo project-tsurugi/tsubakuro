@@ -111,8 +111,6 @@ public class WireImpl implements Wire {
     private BlobPathMapping blobPathMapping = null;
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
-    private Credential credentialForUpdate = null;
-    private Crypto cryptoForUpdate = null;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -335,22 +333,20 @@ public class WireImpl implements Wire {
 
         try {
             // handle credential in clientInformation
-            credentialForUpdate = clientInformation.getCredential();
-            if (credentialForUpdate instanceof UsernamePasswordCredential) {
-                var ci = (UsernamePasswordCredential) credentialForUpdate;
+            var credential = clientInformation.getCredential();
+            if (credential instanceof UsernamePasswordCredential) {
+                var ci = (UsernamePasswordCredential) credential;
                 try {
                     var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
-                    cryptoForUpdate = new Crypto(encryptionKey);
                     Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
+                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(new Crypto(encryptionKey).encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {  // for servers with authentication disabled
-                        credentialForUpdate = null; // reset credentialForUpdate if encryption key is not supported
                         throw new IOException("encryption key not found, please check the server configuration", e);
                     }
                 }
-            } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
-                clientInformationBuilder.setCredential(buildCredential(credentialForUpdate));
+            } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
+                clientInformationBuilder.setCredential(buildCredential(credential));
             }
         } catch (InterruptedException | ServerException | TimeoutException e) {
             throw new IOException(e);
@@ -389,30 +385,6 @@ public class WireImpl implements Wire {
             credentialBuilder.setRememberMeCredential(co.getToken());
         }
         return credentialBuilder.build();
-    }
-
-    /**
-     * Provides Credential to implement UpdateCredentialTask.
-     * @return the Credential used in the handshake process, or null if no credential was set
-     */
-    public Credential getCredential() {
-        if (credentialForUpdate != null) {
-            if (credentialForUpdate instanceof UsernamePasswordCredential) {
-                var ci = (UsernamePasswordCredential) credentialForUpdate;
-                Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-                if (cryptoForUpdate != null) {
-                    try {
-                        return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
-                    } catch (IOException e) {
-                        LOG.error("Failed to encrypt credential", e);
-                        return null; // return null if encryption fails
-                    }
-                }
-            } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
-                return credentialForUpdate;
-            }
-        }
-        return null;
     }
 
     public void checkSessionId(long id) throws IOException {
