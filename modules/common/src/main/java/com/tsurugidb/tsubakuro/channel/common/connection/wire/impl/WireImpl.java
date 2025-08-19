@@ -344,7 +344,8 @@ public class WireImpl implements Wire {
                     Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
                     clientInformationBuilder.setCredential(buildCredential(new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
                 } catch (CoreServiceException e) {
-                    if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
+                    if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {  // for servers with authentication disabled
+                        credentialForUpdate = null; // reset credentialForUpdate if encryption key is not supported
                         throw new IOException("encryption key not found, please check the server configuration", e);
                     }
                 }
@@ -392,18 +393,26 @@ public class WireImpl implements Wire {
 
     /**
      * Provides Credential to implement UpdateCredentialTask.
-     * @return the Credential used in the handshake process
-     * @throws IOException if I/O error was occurred while obtaining a credential
+     * @return the Credential used in the handshake process, or null if no credential was set
      */
-    public Credential getCredential() throws IOException {
-        if (credentialForUpdate instanceof UsernamePasswordCredential) {
-            var ci = (UsernamePasswordCredential) credentialForUpdate;
-            Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-            return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
-        } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
-            return credentialForUpdate;
+    public Credential getCredential() {
+        if (credentialForUpdate != null) {
+            if (credentialForUpdate instanceof UsernamePasswordCredential) {
+                var ci = (UsernamePasswordCredential) credentialForUpdate;
+                Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
+                if (cryptoForUpdate != null) {
+                    try {
+                        return new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of());
+                    } catch (IOException e) {
+                        LOG.error("Failed to encrypt credential", e);
+                        return null; // return null if encryption fails
+                    }
+                }
+            } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
+                return credentialForUpdate;
+            }
         }
-        throw new IOException("A valid credential could not be obtained through the handshake");
+        return null;
     }
 
     public void checkSessionId(long id) throws IOException {
