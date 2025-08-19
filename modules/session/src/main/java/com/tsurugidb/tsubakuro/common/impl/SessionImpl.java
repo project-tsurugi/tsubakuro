@@ -230,14 +230,11 @@ public class SessionImpl implements Session {
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             wireImpl.setBlobPathMapping(blobPathMapping);
-            try {
-                if (getCredential() != null) {
-                    if (!updateCredentialTask.isAlive()) {
-                        updateCredentialTask.start();
-                    }
+            if (getCredential() != null) {
+                if (!updateCredentialTask.isAlive()) {
+                    // if the credential is set, start the update credential task
+                    updateCredentialTask.start();
                 }
-            } catch (IOException e) {
-                LOG.error("Failed to get credential for update", e);
             }
         }
     }
@@ -247,7 +244,7 @@ public class SessionImpl implements Session {
      * This method is used by WireImpl to get the credential for update.
      * @return the credential for update, or null if not set
      */
-    private Credential getCredential() throws IOException {
+    private Credential getCredential() {
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             // getCredential() returns the credential for update
