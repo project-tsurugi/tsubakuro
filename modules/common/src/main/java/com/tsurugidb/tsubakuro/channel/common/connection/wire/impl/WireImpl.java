@@ -368,7 +368,7 @@ public class WireImpl implements Wire {
                                 }
                             };
                         }
-                        throw e;
+                        return FutureResponse.raises(e);
                     }
                 }
             } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
@@ -401,15 +401,13 @@ public class WireImpl implements Wire {
         return new ForegroundFutureResponse<>(future, new HandshakeProcessor().asResponseProcessor(), null);
     }
 
-    private EndpointRequest.Credential buildCredential(Credential credential) throws IOException {
+    private EndpointRequest.Credential buildCredential(Credential credential) throws IOException, ServerException, InterruptedException {
         var credentialBuilder = EndpointRequest.Credential.newBuilder();
         if (credential instanceof UsernamePasswordCredential) {
             var co = (UsernamePasswordCredential) credential;
             if (encryptionKey == null) {
                 try {
                     encryptionKey = encryptionKey().get(GET_ENCRYPTION_KEY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                } catch (InterruptedException | ServerException e) {
-                    throw new IOException(e);
                 } catch (TimeoutException e) {
                     throw new IOException("timeout in getting encryption key", e);
                 }
@@ -478,7 +476,7 @@ public class WireImpl implements Wire {
         return FutureResponse.returns(userNameOptional);
     }
 
-    static class CredentialsExpirationTimeProcessor implements MainResponseProcessor<Instant> {
+    static class AuthenticationExpirationTimeProcessor implements MainResponseProcessor<Instant> {
         @Override
         public Instant process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = EndpointResponse.GetAuthenticationExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -504,7 +502,7 @@ public class WireImpl implements Wire {
                     .setGetAuthenticationExpirationTime(EndpointRequest.GetAuthenticationExpirationTime.newBuilder())
                     .build())
         );
-        return new ForegroundFutureResponse<>(future, new CredentialsExpirationTimeProcessor().asResponseProcessor(), null);
+        return new ForegroundFutureResponse<>(future, new AuthenticationExpirationTimeProcessor().asResponseProcessor(), null);
     }
 
     static class UpdateAuthenticationProcessor implements MainResponseProcessor<Void> {
@@ -528,14 +526,37 @@ public class WireImpl implements Wire {
     @Override
     public FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
-        FutureResponse<? extends Response> future = sendUrgent(
-            SERVICE_ID_ENDPOINT_BROKER,
-                toDelimitedByteArray(newRequest()
-                    .setUpdateAuthentication(EndpointRequest.UpdateAuthentication.newBuilder()
-                        .setCredential(buildCredential(credential)))
-                    .build())
-        );
-        return new ForegroundFutureResponse<>(future, new UpdateAuthenticationProcessor().asResponseProcessor(), null);
+        try {
+            var buildedCredential = buildCredential(credential);
+            FutureResponse<? extends Response> future = sendUrgent(
+                SERVICE_ID_ENDPOINT_BROKER,
+                    toDelimitedByteArray(newRequest()
+                        .setUpdateAuthentication(EndpointRequest.UpdateAuthentication.newBuilder()
+                            .setCredential(buildedCredential))
+                        .build())
+            );
+            return new ForegroundFutureResponse<>(future, new UpdateAuthenticationProcessor().asResponseProcessor(), null);
+        } catch (ServerException e) {
+            return FutureResponse.raises(e);
+        } catch (InterruptedException e) {
+            return new FutureResponse<Void>() {
+                @Override
+                public Void get() throws IOException {
+                    throw new IOException(e);
+                }
+                @Override
+                public Void get(long timeout, TimeUnit unit) throws IOException {
+                    return get();
+                }
+                @Override
+                public boolean isDone() {
+                    return true;
+                }
+                @Override
+                public void close() {
+                }
+            };
+        }
     }
 
     static byte[] toDelimitedByteArray(Message request) throws IOException {

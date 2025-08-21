@@ -191,7 +191,9 @@ class WireImplTest {
                     .build());
 
         // send request via product functionality
-        long sessionId = wire.handshake(new ClientInformation(), null).get();
+        var future = wire.handshake(new ClientInformation(), null);
+        assertNotNull(future);
+        long sessionId = future.get();
 
         // check the situation when the response is received
         assertEquals(sessionId, 123);
@@ -208,7 +210,9 @@ class WireImplTest {
                     .build());
 
         // send request via product functionality
-        long sessionId = wire.handshake(new ClientInformation(), null).get();
+        var future = wire.handshake(new ClientInformation(), null);
+        assertNotNull(future);
+        long sessionId = future.get();
 
         // check the situation when the response is received
         assertEquals(sessionId, 123);
@@ -225,6 +229,7 @@ class WireImplTest {
                     .build());
 
         var future = wire.handshake(new ClientInformation(), null);
+        assertNotNull(future);
         CoreServiceException e = assertThrows(CoreServiceException.class, () -> future.get());
         assertEquals(e.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
         CoreServiceException eun = assertThrows(CoreServiceException.class, () -> wire.getUserName().get());
@@ -246,6 +251,7 @@ class WireImplTest {
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
         var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
         future.get();
 
         assertFalse(link.hasRemaining());
@@ -254,8 +260,10 @@ class WireImplTest {
     @Test
     void handshake_authentication_userPassword_UNSUPPORTED_OPERATION() throws Exception {
         // push response message via test functionality
-        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
-                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.UNSUPPORTED_OPERATION).build());
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                   .setCode(Diagnostics.Code.UNSUPPORTED_OPERATION))
+                    .build());
 
         link.next(EndpointResponse.Handshake.newBuilder()
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
@@ -263,6 +271,7 @@ class WireImplTest {
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
         var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
         future.get();
 
         assertFalse(link.hasRemaining());
@@ -271,12 +280,29 @@ class WireImplTest {
     @Test
     void handshake_authentication_userPassword_RESOURCE_LIMIT_REACHED() throws Exception {
         // push response message via test functionality
-        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
-                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED).build());
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                   .setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED))
+                    .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
         var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
+
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void handshake_authentication_userPassword_ILLEGAL_ARGUMENT() throws Exception {
+        // push response message via test functionality
+        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
+                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
+
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
+        assertThrows(CoreServiceException.class, () -> future.get());
 
         assertFalse(link.hasRemaining());
     }
@@ -291,6 +317,7 @@ class WireImplTest {
 
         var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
         var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
         future.get();
 
         assertFalse(link.hasRemaining());
@@ -306,7 +333,21 @@ class WireImplTest {
 
         var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
         var future = wire.handshake(clientInformation, null);
+        assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
+
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void handshake_authentication_rememberMe_ILLEGAL_ARGUMENT() throws Exception {
+        // push response message via test functionality
+        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
+                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
+
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var future = wire.handshake(clientInformation, null);
+        assertThrows(CoreServiceException.class, () -> future.get());
 
         assertFalse(link.hasRemaining());
     }
@@ -328,6 +369,19 @@ class WireImplTest {
     }
 
     @Test
+    void getAuthenticationExpirationTime_ILLEGAL_ARGUMENT() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.GetAuthenticationExpirationTime.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                    .setCode(Diagnostics.Code.INVALID_REQUEST))
+                    .build());
+
+        var future = wire.getAuthenticationExpirationTime();
+        assertNotNull(future);
+        assertThrows(CoreServiceException.class, () -> future.get());
+    }
+
+    @Test
     void updateAuthentication_success() throws Exception {
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -344,6 +398,40 @@ class WireImplTest {
         var future = wire.updateAuthentication(new UsernamePasswordCredential("tsurugi", "password"));
         assertNotNull(future);
         future.get(); // should not throw an exception
+    }
+
+    @Test
+    void updateAuthentication_ILLEGAL_ARGUMENT_1st() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                    .setCode(Diagnostics.Code.INVALID_REQUEST))
+                    .build());
+
+        // send request via product functionality
+        var future = wire.updateAuthentication(new UsernamePasswordCredential("tsurugi", "password"));
+        assertNotNull(future);
+        assertThrows(CoreServiceException.class, () -> future.get());
+    }
+
+    @Test
+    void updateAuthentication_ILLEGAL_ARGUMENT_2nd() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
+                                    .setEncryptionKey(ResponseProtoForTests.encryptionKey()))
+                    .build());
+
+        // push response message via test functionality
+        link.next(EndpointResponse.UpdateAuthentication.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                    .setCode(Diagnostics.Code.INVALID_REQUEST))
+                    .build());
+
+        // send request via product functionality
+        var future = wire.updateAuthentication(new UsernamePasswordCredential("tsurugi", "password"));
+        assertNotNull(future);
+        assertThrows(CoreServiceException.class, () -> future.get());
     }
 
     @Test

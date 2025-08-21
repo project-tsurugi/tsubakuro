@@ -66,6 +66,8 @@ class SqlServiceStubTest {
 
     private final Session session = new SessionImpl();
 
+    private final Disposer disposer = ((SessionImpl) session).disposer();
+
     public SqlServiceStubTest() {
         session.connect(wire);
     }
@@ -359,7 +361,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
@@ -380,7 +381,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
@@ -401,7 +401,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
@@ -427,7 +426,6 @@ class SqlServiceStubTest {
                 RequestHandler.returns(SqlResponse.ResultOnly.newBuilder()
                         .setSuccess(newVoid())
                         .build())));
-        var disposer = new Disposer();
         try (
             var service = new SqlServiceStub(session);
             var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);

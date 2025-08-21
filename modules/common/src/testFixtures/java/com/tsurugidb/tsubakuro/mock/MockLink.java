@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
 import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
@@ -48,9 +49,11 @@ public final class MockLink extends Link {
     private byte[] justBeforeHeader;
     private byte[] justBeforePayload;
     private boolean alive;
+    private MockResultSetWire resultSetWire;
+
 
     public MockLink() {
-        alive = true;
+        this.alive = true;
     }
 
     @Override
@@ -78,24 +81,29 @@ public final class MockLink extends Link {
 
     @Override
     public boolean doPull(long timeout, TimeUnit unit) throws IOException {
-        currentMessage = readyMessages.poll();
+        currentMessage = readyMessages.peek();
         if (currentMessage != null) {
             if (currentMessage.getIOException() != null) {
+                readyMessages.poll();
                 throw currentMessage.getIOException();
+            }
+            if (currentMessage.hasBodyHead()) {
+                pushHead(currentMessage.getSlot(), currentMessage.getBodyHead(), createResultSetWire());
+                return true;
             }
             if (currentMessage.getInfo() == RESPONSE_PAYLOAD) {
                 push(currentMessage.getSlot(), currentMessage.getBytes());
-            } else {
-                pushHead(currentMessage.getSlot(), currentMessage.getBytes(), createResultSetWire());
+                readyMessages.poll();
+                return true;
             }
-            return true;
         }
         return false;
     }
 
     @Override
     public ResultSetWire createResultSetWire() {
-        return null;
+        this.resultSetWire = new MockResultSetWire();
+        return resultSetWire;
     }
 
     @Override
@@ -113,15 +121,52 @@ public final class MockLink extends Link {
         alive = false;
     }
 
-    public boolean next(@Nonnull Message payload) throws IOException {
-        return next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT).build(), payload);
+    public MockResultSetWire getResultSetWire() {
+        return resultSetWire;
     }
 
-    public boolean next(@Nonnull Message header, @Nonnull Message payload) {
+    public boolean next(@Nonnull Message payload) throws IOException {
+        return next(toByteArray(payload));
+    }
+
+    public boolean next(@Nonnull Message payload, @Nonnull String name, @Nonnull SqlResponse.ResultSetMetadata metadata) throws IOException {
+        return registerdMessages.offer(new ResponseMessage(toByteArray(payload),
+                                                            toByteArray(SqlResponse.Response.newBuilder()
+                                                                            .setExecuteQuery(SqlResponse.ExecuteQuery.newBuilder()
+                                                                                                .setName(name)
+                                                                                                .setRecordMeta(metadata))
+                                                                            .build())));
+    }
+
+    private byte[] toByteArray(@Nonnull Message payload) {
+        var header = FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT).build();
         try (var buffer = new ByteArrayOutputStream()) {
             header.writeDelimitedTo(buffer);
             payload.writeDelimitedTo(buffer);
-            return next(buffer.toByteArray());
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new AssertionError(e.getMessage());
+        }
+    }
+
+    public boolean next(@Nonnull Message header, @Nonnull Message payload) {
+        return next(toByteArray(header, payload));
+    }
+
+    public boolean next(@Nonnull Message header, @Nonnull Message payload, @Nonnull String name, @Nonnull SqlResponse.ResultSetMetadata metadata) throws IOException {
+        return registerdMessages.offer(new ResponseMessage(toByteArray(header, payload),
+                                                    toByteArray(SqlResponse.Response.newBuilder()
+                                                                    .setExecuteQuery(SqlResponse.ExecuteQuery.newBuilder()
+                                                                                        .setName(name)
+                                                                                        .setRecordMeta(metadata))
+                                                                    .build())));
+    }
+
+    private byte[] toByteArray(@Nonnull Message header, @Nonnull Message payload) {
+        try (var buffer = new ByteArrayOutputStream()) {
+            header.writeDelimitedTo(buffer);
+            payload.writeDelimitedTo(buffer);
+            return buffer.toByteArray();
         } catch (IOException e) {
             throw new AssertionError(e.getMessage());
         }

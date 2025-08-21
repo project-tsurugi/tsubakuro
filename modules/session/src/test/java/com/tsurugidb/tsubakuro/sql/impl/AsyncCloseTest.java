@@ -475,4 +475,81 @@ class AsyncCloseTest {
         }
         assertFalse(link.hasRemaining());
     }
+
+    @Test
+    void preparedStatementClose_close() throws Exception {
+        // add response for Prepare
+        link.next(SqlResponse.Response.newBuilder()
+                    .setPrepare(SqlResponse.Prepare.newBuilder()
+                                    .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder()
+                                                                  .setHandle(100)))
+                        .build());
+
+        // add delay for DisposePreparedStatement
+        link.next(new ResponseTimeoutException());
+        // add handler for DisposeTransaction
+        link.next(SqlResponse.Response.newBuilder()
+                    .setResultOnly(SqlResponse.ResultOnly.newBuilder()
+                                    .setSuccess(SqlResponse.Success.newBuilder()))
+                    .build());
+
+        var message = SqlRequest.Prepare.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var stmt = future.await();
+            assertEquals(100, ((PreparedStatementImpl) stmt).getHandle().getHandle());
+
+            stmt.close();
+        }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void preparedStatementClose_withoutClose() throws Exception {
+        // add response for Prepare
+        link.next(SqlResponse.Response.newBuilder()
+                    .setPrepare(SqlResponse.Prepare.newBuilder()
+                                    .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder()
+                                                                  .setHandle(100)))
+                        .build());
+
+        // add delay for DisposePreparedStatement
+        link.next(new ResponseTimeoutException());
+        // add handler for DisposeTransaction
+        link.next(SqlResponse.Response.newBuilder()
+                    .setResultOnly(SqlResponse.ResultOnly.newBuilder()
+                                    .setSuccess(SqlResponse.Success.newBuilder()))
+                    .build());
+
+        var message = SqlRequest.Prepare.newBuilder()
+                .setSql("SELECT 1")
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+        ) {
+            var stmt = future.await();
+            assertEquals(100, ((PreparedStatementImpl) stmt).getHandle().getHandle());
+
+            // don't close prepared statement
+            // stmt.close();
+        }
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        session.close();
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
 }

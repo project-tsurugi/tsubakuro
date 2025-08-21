@@ -61,7 +61,7 @@ class SqlServiceStubLobWithMappingTest {
 
     private Session session = null;
 
-    private Disposer disposer = new Disposer();
+    private Disposer disposer = null;
 
     private final String ServerReceiveDirectory = "ServerReceiveDirectory";
     private final String ClientSendDirectory = "ClientSendDirectory";  
@@ -82,6 +82,7 @@ class SqlServiceStubLobWithMappingTest {
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
             session = new SessionImpl(false, blobPathMapping);
+            disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
             System.err.println(e);
@@ -217,7 +218,6 @@ class SqlServiceStubLobWithMappingTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), null, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
                                             Parameters.clobOf(parameterName2, file2)).await();
@@ -293,7 +293,6 @@ class SqlServiceStubLobWithMappingTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
                                             Parameters.clobOf(parameterName2, file2)).await();
@@ -345,7 +344,6 @@ class SqlServiceStubLobWithMappingTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             assertThrows(BlobException.class, () ->
                 transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                                 Parameters.blobOf(parameterName1, file1),
@@ -492,6 +490,7 @@ class SqlServiceStubLobWithMappingTest {
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
             session = new SessionImpl(false, blobPathMapping);
+            disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
             System.err.println(e);
@@ -729,6 +728,7 @@ class SqlServiceStubLobWithMappingTest {
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
             session = new SessionImpl(false, blobPathMapping);
+            disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
             System.err.println(e);
@@ -776,7 +776,6 @@ class SqlServiceStubLobWithMappingTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
                                             Parameters.clobOf(parameterName2, file2)).await();
@@ -822,6 +821,7 @@ class SqlServiceStubLobWithMappingTest {
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
             session = new SessionImpl(false, blobPathMapping);
+            disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
             System.err.println(e);
