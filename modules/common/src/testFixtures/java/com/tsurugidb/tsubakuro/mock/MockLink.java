@@ -64,15 +64,25 @@ public final class MockLink extends Link {
         if (registerdMessages.isEmpty()) {
             throw new AssertionError("no more response message registered");
         }
-        readyMessages.offer(new ResponseMessage(s, registerdMessages.poll()));
-        LOG.trace("send {}", payload);
+        while (true) {
+            var message = registerdMessages.poll();
+            message.assignSlot(s);
+            readyMessages.offer(message);
+            if (message.getIOException() != null) {
+                continue;
+            }
+            LOG.trace("send {}", payload);
+            break;
+        }
     }
 
     @Override
     public boolean doPull(long timeout, TimeUnit unit) throws IOException {
-        currentMessage =  readyMessages.poll();
-
+        currentMessage = readyMessages.poll();
         if (currentMessage != null) {
+            if (currentMessage.getIOException() != null) {
+                throw currentMessage.getIOException();
+            }
             if (currentMessage.getInfo() == RESPONSE_PAYLOAD) {
                 push(currentMessage.getSlot(), currentMessage.getBytes());
             } else {
@@ -119,6 +129,10 @@ public final class MockLink extends Link {
 
     private boolean next(byte [] responseMessage) {
         return registerdMessages.offer(new ResponseMessage(responseMessage));
+    }
+
+    public boolean next(IOException e) {
+        return registerdMessages.offer(new ResponseMessage(e));
     }
 
     public byte[] getJustBeforeHeader() {

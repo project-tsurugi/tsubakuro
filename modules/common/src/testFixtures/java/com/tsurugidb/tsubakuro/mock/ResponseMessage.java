@@ -15,25 +15,34 @@
  */
 package com.tsurugidb.tsubakuro.mock;
 
+import java.io.IOException;
+
 /**
  * ResponseMessage type.
  */
 public final class ResponseMessage {
 
-    private final int slot;
+    private int slot;
     private final byte info;
     private final byte[] responseMessage;
+    private final IOException e;
 
-    public ResponseMessage(byte[] responseMessage) {
+    ResponseMessage(byte[] responseMessage) {
         this.slot = -1;
         this.responseMessage = responseMessage;
         this.info = MockLink.RESPONSE_PAYLOAD;
+        this.e = null;
     }
 
-    public ResponseMessage(int slot, ResponseMessage responseMessage) {
+    ResponseMessage(IOException e) {
+        this.slot = -1;
+        this.responseMessage = null;
+        this.info = MockLink.RESPONSE_NULL;
+        this.e = e;
+    }
+
+    void assignSlot(int slot) {
         this.slot = slot;
-        this.info = responseMessage.getInfo();
-        this.responseMessage = responseMessage.getBytes();
     }
 
     int getSlot() {
@@ -46,5 +55,9 @@ public final class ResponseMessage {
 
     byte[] getBytes() {
         return responseMessage;
+    }
+
+    IOException getIOException() {
+        return e;
     }
 }

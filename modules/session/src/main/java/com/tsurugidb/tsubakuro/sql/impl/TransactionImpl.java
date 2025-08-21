@@ -363,7 +363,6 @@ public class TransactionImpl implements Transaction {
     @Override
     public synchronized FutureResponse<Void> commit(@Nonnull SqlRequest.CommitOption option) throws IOException {
         Objects.requireNonNull(option);
-
         switch (state.get()) {
             case INITIAL:
                 autoDispose = option.getAutoDispose();
@@ -613,18 +612,14 @@ public class TransactionImpl implements Transaction {
         if (needDispose) {
             submitDisposeRequest();
         }
-        try {
-            if (rollbackResult != null) {
-                try {
-                    rollbackResult.get(1000, TimeUnit.MICROSECONDS);
-                } catch (ResponseTimeoutException | TimeoutException e) {
-                    return false;
-                }
+        if (rollbackResult != null) {
+            try {
+                rollbackResult.get(1000, TimeUnit.MICROSECONDS);
+            } catch (ResponseTimeoutException | TimeoutException e) {
+                return false;
             }
-            return careDisposeResult();
-        } finally {
-            state.set(State.CLOSED);
         }
+        return careDisposeResult();
     }
 
     private boolean careDisposeResult() throws IOException, ServerException, InterruptedException {
@@ -646,6 +641,7 @@ public class TransactionImpl implements Transaction {
                 () -> closeHandler.onClosed(this)
             );
         }
+        state.set(State.CLOSED);
         return true;
     }
 
