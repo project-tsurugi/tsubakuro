@@ -193,7 +193,7 @@ public final class IpcLink extends Link {
             if (closed.get() || (wireHandle == 0)) {
                 return "IPC link already closed";
             }
-            return isShutdownNative(wireHandle) ? "Session already shutdown" : "IPC connection failure";
+            return isShutdownNative(wireHandle) ? "Session has already been shutdown at the request of this client" : "Session was shutdown by an operation other than this client";
         } finally {
             rwl.readLock().unlock();
         }
