@@ -41,7 +41,7 @@ final class Crypto {
         try {
             String keyPem = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replaceAll(System.lineSeparator(), "")
+                .replaceAll("[\\r\\n]+", "")
                 .replace("-----END PUBLIC KEY-----", "");
 
             byte[] encoded = Base64.getDecoder().decode(keyPem);
