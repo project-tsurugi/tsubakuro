@@ -99,10 +99,17 @@ public class WireImpl implements Wire {
      * The default validity period for UserPasswordCredential in seconds.
      */
     private static final long DEFAULT_VALIDITY_PERIOD_SECONDS = 300;
+
     /**
      * The validity period for UserPasswordCredential in seconds.
      */
     private long validityPeriodInSeconds = DEFAULT_VALIDITY_PERIOD_SECONDS;
+
+    /**
+     * The timeou period for encryptionKey() in seconds.
+     * Used only when encryptionKey is not set at updateCredential().
+     */
+    private static final long GET_ENCRYPTION_KEY_TIMEOUT_SECONDS = 10;
 
     static final Logger LOG = LoggerFactory.getLogger(WireImpl.class);
 
@@ -111,6 +118,7 @@ public class WireImpl implements Wire {
     private BlobPathMapping blobPathMapping = null;
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
+    private String encryptionKey = null;
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -337,9 +345,8 @@ public class WireImpl implements Wire {
             if (credential instanceof UsernamePasswordCredential) {
                 var ci = (UsernamePasswordCredential) credential;
                 try {
-                    var encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
-                    Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-                    clientInformationBuilder.setCredential(buildCredential(new FileCredential(new Crypto(encryptionKey).encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
+                    encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
+                    clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {  // for servers with authentication disabled
                         throw new IOException("encryption key not found, please check the server configuration", e);
@@ -377,7 +384,23 @@ public class WireImpl implements Wire {
 
     private EndpointRequest.Credential buildCredential(Credential credential) throws IOException {
         var credentialBuilder = EndpointRequest.Credential.newBuilder();
-        if (credential instanceof FileCredential) {
+        if (credential instanceof UsernamePasswordCredential) {
+            var co = (UsernamePasswordCredential) credential;
+            if (encryptionKey == null) {
+                try {
+                    encryptionKey = encryptionKey().get(GET_ENCRYPTION_KEY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                } catch (InterruptedException | ServerException e) {
+                    throw new IOException(e);
+                } catch (TimeoutException e) {
+                    throw new IOException("timeout in getting encryption key", e);
+                }
+                if (encryptionKey == null) {
+                    throw new IllegalStateException("encryptionKey is not set");
+                }
+            }
+            Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
+            credentialBuilder.setEncryptedCredential((new FileCredential(new Crypto(encryptionKey).encryptByPublicKey(co.getJsonText(dueInstant)), List.of())).getEncrypted());
+        } else if (credential instanceof FileCredential) {
             var co = (FileCredential) credential;
             credentialBuilder.setEncryptedCredential(co.getEncrypted());
         } else if (credential instanceof RememberMeCredential) {

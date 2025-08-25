@@ -31,7 +31,9 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -244,6 +246,12 @@ class WireImplTest {
 
     @Test
     void updateCredential_success() throws Exception {
+        // push response massage via test functionality
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
+                                    .setEncryptionKey(new String(Base64.getDecoder().decode("LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFsVjAzbUJISU9LNjBCVm5nVWJvcGUvbVVPRHVSQ2FvZVVqY2hZbEMzMFRhbGFpRklIdjRMRHBqL1pMRDJGdVQwUFNDNE56aWF1c2Q0TGhDaXp5REk2VGUzMTVXZHhxSXl1dkZQV3lPdGtMdTgzcjVuYnJqT0pqaWVYd3BUejdLdk9iYmRqRjVjWFdKRnlzU1UvaGRwUDdOMTRZVXhpVkpuUTZIWk56VTRSNjVhRDdrU1NNL2MzK1h4czFndEpFUzlDSEV3R1kxU0JnUlA4UWx2V1o2QkQzak1WQm0xUVkyY00xS0lrZ1RDZFJNRWRSWWtoTTFSYk9EU0VHZzBXN3dIaXRpUUlVOE83M0I1cElRcE96OXNWS0V4N28ySXk5L2RhbzVTaG5iRTdHWUt2UzlXZXFpbHAxMmF5U1pKeWlQaklLc1VnMWc1N3NBMEVDKzRxZGhHbFFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t"), StandardCharsets.US_ASCII)))
+                    .build());
+
         // push response massage via test functionality
         link.next(EndpointResponse.UpdateCredential.newBuilder()
                     .setSuccess(EndpointResponse.UpdateCredential.Success.newBuilder())
