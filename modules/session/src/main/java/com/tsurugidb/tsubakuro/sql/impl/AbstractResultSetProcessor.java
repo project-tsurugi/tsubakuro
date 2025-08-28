@@ -101,6 +101,7 @@ abstract class AbstractResultSetProcessor<T extends Message>
             passed.set(true);
         } catch (ServerException e) {
             cachedException.set(e);
+            throw e;
         }
     }
 
@@ -124,12 +125,12 @@ abstract class AbstractResultSetProcessor<T extends Message>
                 }
                 cache.compareAndSet(null, message);
             }
+            doTest(cache.get());
+            passed.set(true);
         } catch (ServerException e) {
             cachedException.set(e);
             throw e;
         }
-        doTest(cache.get());
-        passed.set(true);
     }
 
     abstract T parse(@Nonnull ByteBuffer payload) throws IOException;
