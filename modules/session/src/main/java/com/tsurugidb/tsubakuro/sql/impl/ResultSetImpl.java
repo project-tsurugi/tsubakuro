@@ -419,7 +419,9 @@ public class ResultSetImpl implements ResultSet {
             cursor.close();
         } catch (Exception suppress) {
             // the exception in closing stream should be suppressed
-            e.addSuppressed(suppress);
+            if (e != suppress) {
+                e.addSuppressed(suppress);
+            }
         }
         try {
             // then, check the main response
@@ -427,7 +429,9 @@ public class ResultSetImpl implements ResultSet {
             tester.test(response);
         } catch (Throwable inMain) {
             // throw exceptions in main response instead of
-            inMain.addSuppressed(e);
+            if (e != inMain) {
+                inMain.addSuppressed(e);
+            }
             throw inMain;
         }
     }
