@@ -107,7 +107,7 @@ public class WireImpl implements Wire {
 
     /**
      * The timeou period for encryptionKey() in seconds.
-     * Used only when encryptionKey is not set at updateCredential().
+     * Used only when encryptionKey is not set at updateAuthentication().
      */
     private static final long GET_ENCRYPTION_KEY_TIMEOUT_SECONDS = 10;
 
@@ -462,7 +462,7 @@ public class WireImpl implements Wire {
     static class CredentialsExpirationTimeProcessor implements MainResponseProcessor<Instant> {
         @Override
         public Instant process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = EndpointResponse.GetCredentialsExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = EndpointResponse.GetAuthenticationExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -478,20 +478,20 @@ public class WireImpl implements Wire {
     }
 
     @Override
-    public FutureResponse<Instant> getCredentialsExpirationTime() throws IOException {
+    public FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
         FutureResponse<? extends Response> future = sendUrgent(
             SERVICE_ID_ENDPOINT_BROKER,
                 toDelimitedByteArray(newRequest()
-                    .setGetCredentialExpirationTime(EndpointRequest.GetCredentialsExpirationTime.newBuilder())
+                    .setGetAuthenticationExpirationTime(EndpointRequest.GetAuthenticationExpirationTime.newBuilder())
                     .build())
         );
         return new ForegroundFutureResponse<>(future, new CredentialsExpirationTimeProcessor().asResponseProcessor(), null);
     }
 
-    static class UpdateCredentialProcessor implements MainResponseProcessor<Void> {
+    static class UpdateAuthenticationProcessor implements MainResponseProcessor<Void> {
         @Override
         public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = EndpointResponse.UpdateCredential.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            var message = EndpointResponse.UpdateAuthentication.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -507,16 +507,16 @@ public class WireImpl implements Wire {
     }
 
     @Override
-    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+    public FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
         FutureResponse<? extends Response> future = sendUrgent(
             SERVICE_ID_ENDPOINT_BROKER,
                 toDelimitedByteArray(newRequest()
-                    .setUpdateCredential(EndpointRequest.UpdateCredential.newBuilder()
+                    .setUpdateAuthentication(EndpointRequest.UpdateAuthentication.newBuilder()
                         .setCredential(buildCredential(credential)))
                     .build())
         );
-        return new ForegroundFutureResponse<>(future, new UpdateCredentialProcessor().asResponseProcessor(), null);
+        return new ForegroundFutureResponse<>(future, new UpdateAuthenticationProcessor().asResponseProcessor(), null);
     }
 
     static byte[] toDelimitedByteArray(Message request) throws IOException {

@@ -66,7 +66,7 @@ message EncryptionKey {
 }
 
 // update the credential
-message UpdateCredential {
+message UpdateAuthentication {
     reserved 1 to 10;
 
     // the response body.
@@ -85,7 +85,7 @@ message UpdateCredential {
 }
 
 // get the expiration time of the current session credential
-message GetCredentialsExpirationTime {
+message GetAuthenticationExpirationTime {
     reserved 1 to 10;
 
     // the response body.
