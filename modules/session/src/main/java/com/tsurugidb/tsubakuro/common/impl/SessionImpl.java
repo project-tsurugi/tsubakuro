@@ -253,7 +253,7 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException, InterruptedException, ServerException {
+    public FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
         return wire.getAuthenticationExpirationTime();
     }
 

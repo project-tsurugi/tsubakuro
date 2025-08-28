@@ -127,10 +127,8 @@ public interface Wire extends ServerResource {
      * @return the future of the response, which may raise an exception on waiting for completion
      * @see #updateAuthentication(Credential)
      * @throws IOException if an I/O error occurs
-     * @throws InterruptedException if the operation is interrupted
-     * @throws ServerException if the server returns an error
      */
-    default FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException, InterruptedException, ServerException {
+    default FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
         throw new UnsupportedOperationException();
     }
 
