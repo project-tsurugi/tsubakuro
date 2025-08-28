@@ -56,5 +56,5 @@
   // ...
 
   ticket = ticket.refresh(ticket, 10, TimeUnit.MINUTES);
-  session.updateCredential(ticket.toCredential(TokenKind.ACCESS)).await();
+  session.updateAuthentication(ticket.toCredential(TokenKind.ACCESS)).await();
   ```

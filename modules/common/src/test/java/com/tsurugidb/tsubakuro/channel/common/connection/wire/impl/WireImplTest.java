@@ -229,14 +229,14 @@ class WireImplTest {
     }
 
     @Test
-    void getCredentialsExpirationTime_success() throws Exception {
+    void getAuthenticationExpirationTime_success() throws Exception {
         // push response message via test functionality
-        link.next(EndpointResponse.GetCredentialsExpirationTime.newBuilder()
-                    .setSuccess(EndpointResponse.GetCredentialsExpirationTime.Success.newBuilder()
+        link.next(EndpointResponse.GetAuthenticationExpirationTime.newBuilder()
+                    .setSuccess(EndpointResponse.GetAuthenticationExpirationTime.Success.newBuilder()
                                     .setExpirationTime(Instant.now().plusSeconds(60).toEpochMilli()))
                     .build());
 
-        var future = wire.getCredentialsExpirationTime();
+        var future = wire.getAuthenticationExpirationTime();
         assertNotNull(future);
         var expirationTime = future.get();
         assertNotNull(expirationTime);
@@ -245,7 +245,7 @@ class WireImplTest {
     }
 
     @Test
-    void updateCredential_success() throws Exception {
+    void updateAuthentication_success() throws Exception {
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
                     .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
@@ -253,12 +253,12 @@ class WireImplTest {
                     .build());
 
         // push response message via test functionality
-        link.next(EndpointResponse.UpdateCredential.newBuilder()
-                    .setSuccess(EndpointResponse.UpdateCredential.Success.newBuilder())
+        link.next(EndpointResponse.UpdateAuthentication.newBuilder()
+                    .setSuccess(EndpointResponse.UpdateAuthentication.Success.newBuilder())
                     .build());
 
         // send request via product functionality
-        var future = wire.updateCredential(new UsernamePasswordCredential("tsurugi", "password"));
+        var future = wire.updateAuthentication(new UsernamePasswordCredential("tsurugi", "password"));
         assertNotNull(future);
         future.get(); // should not throw an exception
     }

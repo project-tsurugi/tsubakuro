@@ -253,14 +253,14 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
-        return wire.getCredentialsExpirationTime();
+    public FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
+        return wire.getAuthenticationExpirationTime();
     }
 
     @Override
-    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+    public FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
-        return wire.updateCredential(credential);
+        return wire.updateAuthentication(credential);
     }
 
     static class UpdateExpirationTimeProcessor implements MainResponseProcessor<Void> {
