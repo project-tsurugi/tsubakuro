@@ -44,6 +44,7 @@ abstract class AbstractResultSetProcessor<T extends Message>
     private final ServerResourceHolder resources;
 
     protected final AtomicReference<T> cache = new AtomicReference<>();
+    protected final AtomicReference<ServerException> cachedException = new AtomicReference<>(null);
 
     private final AtomicBoolean passed = new AtomicBoolean();
 
@@ -88,12 +89,20 @@ abstract class AbstractResultSetProcessor<T extends Message>
             // already passed
             return;
         }
-        if (cache.get() == null) {
-            var message = parse(response.waitForMainResponse());
-            cache.compareAndSet(null, message);
+        if (cachedException.get() != null) {
+            throw cachedException.get();
         }
-        doTest(cache.get());
-        passed.set(true);
+        try {
+            if (cache.get() == null) {
+                var message = parse(response.waitForMainResponse());
+                cache.compareAndSet(null, message);
+            }
+            doTest(cache.get());
+            passed.set(true);
+        } catch (ServerException e) {
+            cachedException.set(e);
+            throw e;
+        }
     }
 
     @Override
@@ -103,17 +112,25 @@ abstract class AbstractResultSetProcessor<T extends Message>
             // already passed
             return;
         }
-        if (cache.get() == null) {
-            T message;
-            if (timeout > 0) {
-                message = parse(response.waitForMainResponse(timeout, unit));
-            } else {
-                message = parse(response.waitForMainResponse());
-            }
-            cache.compareAndSet(null, message);
+        if (cachedException.get() != null) {
+            throw cachedException.get();
         }
-        doTest(cache.get());
-        passed.set(true);
+        try {
+            if (cache.get() == null) {
+                T message;
+                if (timeout > 0) {
+                    message = parse(response.waitForMainResponse(timeout, unit));
+                } else {
+                    message = parse(response.waitForMainResponse());
+                }
+                cache.compareAndSet(null, message);
+            }
+            doTest(cache.get());
+            passed.set(true);
+        } catch (ServerException e) {
+            cachedException.set(e);
+            throw e;
+        }
     }
 
     abstract T parse(@Nonnull ByteBuffer payload) throws IOException;
