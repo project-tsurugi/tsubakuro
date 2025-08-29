@@ -345,7 +345,10 @@ public class WireImpl implements Wire {
                     clientInformationBuilder.setCredential(buildCredential(new FileCredential(cryptoForUpdate.encryptByPublicKey(ci.getJsonText(dueInstant)), List.of())));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
-                        throw new IOException("encryption key not found, please check the server configuration", e);
+                        if (e.getDiagnosticCode() == CoreServiceCode.SYSTEM_ERROR) {
+                            throw new IOException("encryption key not found, please check the server configuration", e);
+                        }
+                        throw e;
                     }
                 }
             } else if (credentialForUpdate instanceof FileCredential || credentialForUpdate instanceof RememberMeCredential) {
