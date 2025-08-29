@@ -348,8 +348,8 @@ public class WireImpl implements Wire {
                     encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
-                    if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {  // for servers with authentication disabled
-                        throw new IOException("encryption key not found, please check the server configuration", e);
+                    if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
+                        throw e;
                     }
                 }
             } else if (credential instanceof FileCredential || credential instanceof RememberMeCredential) {
