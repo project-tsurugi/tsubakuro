@@ -122,28 +122,25 @@ public interface Session extends ServerResource {
         }
 
     /**
-     * Returns the expiration time of the current session credentials.
-     * @return the future of the response, which may raise an exception on waiting for completion
-     * @see #updateCredential(Credential)
+     * Returns the expiration time of the current session authentication.
+     * @return the future of the response, which may raise an exception, including ServerException, on waiting for completion
+     * @see #updateAuthentication(Credential)
      * @throws IOException if an I/O error occurs
-     * @throws InterruptedException if the operation is interrupted
-     * @throws ServerException if the server returns an error
      */
-    default FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
+    default FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * updates credential information of this session, and retries authenticate it.
-     * <p>
-     * This is designed for credentials with time limit, like as temporary token based credentials.
-     * </p>
-     * @param credential the new credential information
-     * @return a future of the authentication result:
-     *      it may throw {@link CoreServiceException} if authentication was failed.
-     * @throws IOException if I/O error was occurred while sending message
+     * Update session authentication to prevent from expiration of the current session authentication.
+     * @param credential the new credential
+     * @return the future of the response, which may raise an exception, including ServerException, on waiting for completion
+     * @see #getAuthenticationExpirationTime()
+     * @throws IOException if an I/O error occurs
      */
-    FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException;
+    default FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Requests to extend the session expiration time by the server default value.

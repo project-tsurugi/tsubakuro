@@ -26,7 +26,7 @@ Session session = SessionBuilder.connect("...")
 
 // update access token on the ticket
 ticket = provider.refresh(ticket, 10, TimeUnit.MINUTES);
-session.updateCredential(ticket.toCredential(TokenKind.ACCESS)).await();
+session.updateAuthentication(ticket.toCredential(TokenKind.ACCESS)).await();
 ```
 
 ## 設定方法

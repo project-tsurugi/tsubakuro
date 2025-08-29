@@ -121,41 +121,6 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * The update credential margin in milliseconds.
-     */
-    private static final int UPDATE_CREDENTIAL_MARGIN = 60000;  // in milliseconds
-    private final UpdateCredentialTask updateCredentialTask = new UpdateCredentialTask();
-
-    /**
-     * The update credential task.
-     * This task is used to update the credential before it expires.
-     * It runs in a separate thread and checks the expiration time of the credential.
-     * If the expiration time is within the margin, it updates the credential.
-     * The task is started when the wire is connected.
-     */
-    private class UpdateCredentialTask extends Thread {
-        @Override
-        public void run() {
-            try {
-                // Cache the expiration time after each credential update
-                long expirationTime = getCredentialsExpirationTime().get().toEpochMilli();
-                while (closed.get() != SESSION_CLOSED) {
-                    long margin = (expirationTime - Instant.now().toEpochMilli()) - UPDATE_CREDENTIAL_MARGIN;
-                    if (margin > 0) {
-                        Thread.sleep(margin);
-                    }
-                    updateCredential(getCredential()).get();
-                    // Update cached expiration time after credential update
-                    expirationTime = getCredentialsExpirationTime().get(UPDATE_CREDENTIAL_MARGIN / 2, TimeUnit.MILLISECONDS).toEpochMilli();
-                }
-            } catch (IOException | InterruptedException | ServerException | TimeoutException ex) {
-                LOG.error("UpdateCredentialTask terminated due to exception", ex);
-                return;
-            }
-        }
-    }
-
-    /**
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
@@ -228,33 +193,7 @@ public class SessionImpl implements Session {
         if (wire instanceof WireImpl) {
             var wireImpl = (WireImpl) wire;
             wireImpl.setBlobPathMapping(blobPathMapping);
-            try {
-                if (getCredential() != null) {
-                    if (!updateCredentialTask.isAlive()) {
-                        updateCredentialTask.start();
-                    }
-                }
-            } catch (IOException e) {
-                LOG.error("Failed to get credential for update", e);
-            }
         }
-    }
-
-    /**
-     * Returns the credential for update.
-     * This method is used by WireImpl to get the credential for update.
-     * @return the credential for update, or null if not set
-     */
-    private Credential getCredential() throws IOException {
-        if (wire instanceof WireImpl) {
-            var wireImpl = (WireImpl) wire;
-            // getCredential() returns the credential for update
-            // so it is not null if the credential is set.
-            return wireImpl.getCredential();
-        }
-        // if wire is not WireImpl, it does not support getCredential
-        LOG.warn("getCredential is not supported by the wire: {}", wire.getClass().getName());
-        return null;
     }
 
     @Override
@@ -314,14 +253,14 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
-        return wire.getCredentialsExpirationTime();
+    public FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
+        return wire.getAuthenticationExpirationTime();
     }
 
     @Override
-    public FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+    public FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
-        return wire.updateCredential(credential);
+        return wire.updateAuthentication(credential);
     }
 
     static class UpdateExpirationTimeProcessor implements MainResponseProcessor<Void> {
@@ -614,7 +553,6 @@ public class SessionImpl implements Session {
                 try {
                     if (closed.compareAndSet(expected, SESSION_CLOSED)) {
                         keepAliveTimer.cancel();  // does not throw any exception
-                        updateCredentialTask.interrupt();
                         wireClose();
                         return;
                     }

@@ -30,10 +30,10 @@ message Request {
         EncryptionKey encryption_key = 13;
 
         // update the credential
-        UpdateCredential update_credential = 14;
+        UpdateAuthentication update_authentication = 14;
 
         // get the expiration time of the current session credential
-        GetCredentialsExpirationTime get_credential_expiration_time = 15;
+        GetAuthenticationExpirationTime get_authentication_expiration_time = 15;
     }
     reserved 16 to 99;
 }
@@ -105,12 +105,12 @@ message EncryptionKey {
 }
 
 // update the credential
-message UpdateCredential {
+message UpdateAuthentication {
     // the credential.
     Credential credential = 1;
 }
 
 // get the expiration time of the current session credential
-message GetCredentialsExpirationTime {
+message GetAuthenticationExpirationTime {
     // no special properties.
 }

@@ -125,12 +125,10 @@ public interface Wire extends ServerResource {
     /**
      * Returns the expiration time of the current session credentials.
      * @return the future of the response, which may raise an exception on waiting for completion
-     * @see #updateCredential(Credential)
+     * @see #updateAuthentication(Credential)
      * @throws IOException if an I/O error occurs
-     * @throws InterruptedException if the operation is interrupted
-     * @throws ServerException if the server returns an error
      */
-    default FutureResponse<Instant> getCredentialsExpirationTime() throws IOException, InterruptedException, ServerException {
+    default FutureResponse<Instant> getAuthenticationExpirationTime() throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -141,7 +139,7 @@ public interface Wire extends ServerResource {
      *      it may throw {@link CoreServiceException} if authentication was failed.
      * @throws IOException if I/O error was occurred while sending message
      */
-    default FutureResponse<Void> updateCredential(@Nonnull Credential credential) throws IOException {
+    default FutureResponse<Void> updateAuthentication(@Nonnull Credential credential) throws IOException {
         Objects.requireNonNull(credential);
         return FutureResponse.returns(null);
     }
