@@ -349,9 +349,6 @@ public class WireImpl implements Wire {
                     clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
-                        if (e.getDiagnosticCode() == CoreServiceCode.SYSTEM_ERROR) {
-                            throw new IOException("encryption key not found, please check the server configuration", e);
-                        }
                         throw e;
                     }
                 }
