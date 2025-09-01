@@ -318,7 +318,7 @@ public class WireImpl implements Wire {
                 var errMessage = message.getError();
                 switch (errMessage.getCode()) {
                 case RESOURCE_LIMIT_REACHED:
-                    throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                    throw new ConnectException("the server has declined the connection request");  // preserve compatibility
                 case AUTHENTICATION_ERROR:
                     authenticationException = newCoreServiceException(errMessage);
                     throw authenticationException;
@@ -349,6 +349,25 @@ public class WireImpl implements Wire {
                     clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
+                        if (e.getDiagnosticCode() == CoreServiceCode.RESOURCE_LIMIT_REACHED) {
+                            return new FutureResponse<Long>() {
+                                @Override
+                                public Long get() throws IOException {
+                                    throw new ConnectException("the server has declined the connection request");  // preserve compatibility
+                                }
+                                @Override
+                                public Long get(long timeout, TimeUnit unit) throws IOException {
+                                    return get();
+                                }
+                                @Override
+                                public boolean isDone() {
+                                    return true;
+                                }
+                                @Override
+                                public void close() {
+                                }
+                            };
+                        }
                         throw e;
                     }
                 }
