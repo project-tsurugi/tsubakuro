@@ -349,8 +349,24 @@ public class WireImpl implements Wire {
                     clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {
-                        if (e.getDiagnosticCode() == CoreServiceCode.SYSTEM_ERROR) {
-                            throw new IOException("encryption key not found, please check the server configuration", e);
+                        if (e.getDiagnosticCode() == CoreServiceCode.RESOURCE_LIMIT_REACHED) {
+                            return new FutureResponse<Long>() {
+                                @Override
+                                public Long get() throws IOException {
+                                    throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                                }
+                                @Override
+                                public Long get(long timeout, TimeUnit unit) throws IOException {
+                                    return get();
+                                }
+                                @Override
+                                public boolean isDone() {
+                                    return false;
+                                }
+                                @Override
+                                public void close() {
+                                }
+                            };
                         }
                         throw e;
                     }

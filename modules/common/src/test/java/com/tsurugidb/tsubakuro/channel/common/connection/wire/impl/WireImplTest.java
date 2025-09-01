@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,12 +29,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -50,13 +50,16 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
+import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
+import com.tsurugidb.tsubakuro.mock.ResponseProtoForTests;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 class WireImplTest {
@@ -228,6 +231,86 @@ class WireImplTest {
         assertEquals(eun.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
     }
 
+    // userPassword cases
+    @Test
+    void handshake_authentication_userPassword_success() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.EncryptionKey.newBuilder()
+                    .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
+                                   .setEncryptionKey(ResponseProtoForTests.encryptionKey()))
+                    .build());
+
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
+                    .build());
+
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var future = wire.handshake(clientInformation, null);
+        future.get();
+
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void handshake_authentication_userPassword_UNSUPPORTED_OPERATION() throws Exception {
+        // push response message via test functionality
+        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
+                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.UNSUPPORTED_OPERATION).build());
+
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
+                    .build());
+
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var future = wire.handshake(clientInformation, null);
+        future.get();
+
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void handshake_authentication_userPassword_RESOURCE_LIMIT_REACHED() throws Exception {
+        // push response message via test functionality
+        link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
+                  Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED).build());
+
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var future = wire.handshake(clientInformation, null);
+        assertThrows(ConnectException.class, () -> future.get());
+
+        assertFalse(link.hasRemaining());
+    }
+
+    // rememberMe cases
+    @Test
+    void handshake_authentication_rememberMe_success() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
+                    .build());
+
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var future = wire.handshake(clientInformation, null);
+        future.get();
+
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void handshake_authentication_rememberMe_RESOURCE_LIMIT_REACHED() throws Exception {
+        // push response message via test functionality
+        link.next(EndpointResponse.Handshake.newBuilder()
+                    .setError(EndpointResponse.Error.newBuilder()
+                                .setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED))
+                    .build());
+
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var future = wire.handshake(clientInformation, null);
+        assertThrows(ConnectException.class, () -> future.get());
+
+        assertFalse(link.hasRemaining());
+    }
+
     @Test
     void getAuthenticationExpirationTime_success() throws Exception {
         // push response message via test functionality
@@ -249,7 +332,7 @@ class WireImplTest {
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
                     .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
-                                    .setEncryptionKey(new String(Base64.getDecoder().decode("LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFsVjAzbUJISU9LNjBCVm5nVWJvcGUvbVVPRHVSQ2FvZVVqY2hZbEMzMFRhbGFpRklIdjRMRHBqL1pMRDJGdVQwUFNDNE56aWF1c2Q0TGhDaXp5REk2VGUzMTVXZHhxSXl1dkZQV3lPdGtMdTgzcjVuYnJqT0pqaWVYd3BUejdLdk9iYmRqRjVjWFdKRnlzU1UvaGRwUDdOMTRZVXhpVkpuUTZIWk56VTRSNjVhRDdrU1NNL2MzK1h4czFndEpFUzlDSEV3R1kxU0JnUlA4UWx2V1o2QkQzak1WQm0xUVkyY00xS0lrZ1RDZFJNRWRSWWtoTTFSYk9EU0VHZzBXN3dIaXRpUUlVOE83M0I1cElRcE96OXNWS0V4N28ySXk5L2RhbzVTaG5iRTdHWUt2UzlXZXFpbHAxMmF5U1pKeWlQaklLc1VnMWc1N3NBMEVDKzRxZGhHbFFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t"), StandardCharsets.US_ASCII)))
+                                    .setEncryptionKey(ResponseProtoForTests.encryptionKey()))
                     .build());
 
         // push response message via test functionality
