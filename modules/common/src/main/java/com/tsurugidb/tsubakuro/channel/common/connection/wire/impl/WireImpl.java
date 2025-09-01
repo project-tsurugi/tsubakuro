@@ -318,7 +318,7 @@ public class WireImpl implements Wire {
                 var errMessage = message.getError();
                 switch (errMessage.getCode()) {
                 case RESOURCE_LIMIT_REACHED:
-                    throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                    throw new ConnectException("the server has declined the connection request");  // preserve compatibility
                 case AUTHENTICATION_ERROR:
                     authenticationException = newCoreServiceException(errMessage);
                     throw authenticationException;
@@ -353,7 +353,7 @@ public class WireImpl implements Wire {
                             return new FutureResponse<Long>() {
                                 @Override
                                 public Long get() throws IOException {
-                                    throw new ConnectException("the server has declined the connection request");  // preserve compatibiity
+                                    throw new ConnectException("the server has declined the connection request");  // preserve compatibility
                                 }
                                 @Override
                                 public Long get(long timeout, TimeUnit unit) throws IOException {
@@ -361,7 +361,7 @@ public class WireImpl implements Wire {
                                 }
                                 @Override
                                 public boolean isDone() {
-                                    return false;
+                                    return true;
                                 }
                                 @Override
                                 public void close() {
