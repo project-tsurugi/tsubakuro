@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,9 +43,10 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public class PreparedStatementImpl implements PreparedStatement {
     static final Logger LOG = LoggerFactory.getLogger(PreparedStatementImpl.class);
 
+    static final long VERY_SHORT_TIMEOUT = 1000;
+
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
-    private final AtomicBoolean closed = new AtomicBoolean();
     // timeout == 0 means no timeout is applied when closing (waits indefinitely)
     private long timeout = 0;
     private TimeUnit unit;
@@ -54,6 +54,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     final SqlCommon.PreparedStatement handle;
     private final SqlRequest.Prepare request;
     private Disposer disposer = null;
+    private boolean closed = false;
 
     /**
      * Creates a new instance.
@@ -98,7 +99,7 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @param u unit of timeout
      */
     @Override
-    public void setCloseTimeout(long t, TimeUnit u) {
+    public synchronized void setCloseTimeout(long t, TimeUnit u) {
         timeout = t;
         unit = u;
     }
@@ -121,20 +122,24 @@ public class PreparedStatementImpl implements PreparedStatement {
         doClose();
     }
 
-    private boolean doClose() throws IOException, ServerException, InterruptedException {
-        if (!closed.getAndSet(true) && service != null) {
+    private synchronized boolean doClose() throws IOException, ServerException, InterruptedException {
+        if (service != null) {
             if (futureResponse == null) {
                 futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
             }
-            try {
-                if (timeout == 0 || unit == null) {
-                    futureResponse.get();
-                } else {
-                    futureResponse.get(timeout, unit);
+            if (timeout == 0 || unit == null) {
+                try {
+                    futureResponse.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
+                } catch (ResponseTimeoutException | TimeoutException e) {
+                    return false;
                 }
-            } catch (ResponseTimeoutException | TimeoutException e) {
-                LOG.warn("closing resource is timeout", e);
-                return false;
+            } else {
+                try {
+                    futureResponse.get(timeout, unit);
+                } catch (ResponseTimeoutException | TimeoutException e) {
+                    LOG.warn("closing resource is timeout", e);
+                    throw new IOException(e);
+                }
             }
         }
         if (closeHandler != null) {
@@ -142,6 +147,7 @@ public class PreparedStatementImpl implements PreparedStatement {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
+        closed = true;
         return true;
     }
 
@@ -150,16 +156,16 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @return the SqlCommon.PreparedStatement
      * @throws IOException if I/O error was occurred while obtaining the handle
      */
-    public SqlCommon.PreparedStatement getHandle() throws IOException {
-        if (closed.get()) {
+    public synchronized SqlCommon.PreparedStatement getHandle() throws IOException {
+        if (closed) {
             throw new IOException("already closed");
         }
         return handle;
     }
 
     // for diagnostic
-    String diagnosticInfo() {
-        if (!closed.get()) {
+    synchronized String diagnosticInfo() {
+        if (!closed) {
             String rv = " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
             if (request != null) {
                 rv += "   ==== request from here ====" + System.getProperty("line.separator");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,51 @@
  */
 package com.tsurugidb.tsubakuro.mock;
 
+import java.io.IOException;
+
+import com.tsurugidb.sql.proto.SqlResponse;
+
 /**
  * ResponseMessage type.
  */
 public final class ResponseMessage {
 
-    private final int slot;
+    private int slot;
     private final byte info;
-    private final byte[] responseMessage;
+    private final byte[] body;
+    private final IOException e;
+    private final byte[] bodyHead;
+    private boolean isBodyHead;
 
-    public ResponseMessage(byte[] responseMessage) {
+    ResponseMessage(byte[] responseMessage) {
         this.slot = -1;
-        this.responseMessage = responseMessage;
+        this.body = responseMessage;
+        this.bodyHead = null;
+        this.isBodyHead = false;
         this.info = MockLink.RESPONSE_PAYLOAD;
+        this.e = null;
     }
 
-    public ResponseMessage(int slot, ResponseMessage responseMessage) {
+    ResponseMessage(byte[] responseMessage, byte[] bodyHead) {
+        this.slot = -1;
+        this.body = responseMessage;
+        this.bodyHead = bodyHead;
+        this.isBodyHead = true;
+        this.info = MockLink.RESPONSE_PAYLOAD;
+        this.e = null;
+    }
+
+    ResponseMessage(IOException e) {
+        this.slot = -1;
+        this.body = null;
+        this.bodyHead = null;
+        this.isBodyHead = false;
+        this.info = MockLink.RESPONSE_NULL;
+        this.e = e;
+    }
+
+    void assignSlot(int slot) {
         this.slot = slot;
-        this.info = responseMessage.getInfo();
-        this.responseMessage = responseMessage.getBytes();
     }
 
     int getSlot() {
@@ -45,6 +71,19 @@ public final class ResponseMessage {
     }
 
     byte[] getBytes() {
-        return responseMessage;
+        return body;
+    }
+
+    IOException getIOException() {
+        return e;
+    }
+
+    boolean hasBodyHead() {
+        return isBodyHead;
+    }
+
+    byte[] getBodyHead() {
+        isBodyHead = false;
+        return bodyHead;
     }
 }

@@ -65,8 +65,8 @@ class SqlServiceStubLobTest {
         try {
             wire = new WireImpl(link);
             session = new SessionImpl();
+            disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
-            disposer = new Disposer();
      } catch (IOException e) {
             System.err.println(e);
             fail("fail to create WireImpl");
@@ -179,7 +179,6 @@ class SqlServiceStubLobTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
                                             Parameters.clobOf(parameterName2, file2)).await();
@@ -226,7 +225,6 @@ class SqlServiceStubLobTest {
                                               null,
                                               disposer);
         ) {
-            var disposer = new Disposer();
             assertThrows(BlobException.class, () ->
                 transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                                 Parameters.blobOf(parameterName1, file1),

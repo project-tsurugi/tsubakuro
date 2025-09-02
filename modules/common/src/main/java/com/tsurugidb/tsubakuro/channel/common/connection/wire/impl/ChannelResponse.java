@@ -188,6 +188,9 @@ public class ChannelResponse implements Response {
         if (e instanceof CoreServiceException) {
             throw ((CoreServiceException) e).newException();
         }
+        if (e instanceof ResponseTimeoutException) {
+            throw (ResponseTimeoutException) e;
+        }
         if (e instanceof TimeoutException) {
             throw new ResponseTimeoutException(e.getMessage(), e);
         }
