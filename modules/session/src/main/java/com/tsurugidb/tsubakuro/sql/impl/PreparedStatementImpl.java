@@ -43,6 +43,8 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public class PreparedStatementImpl implements PreparedStatement {
     static final Logger LOG = LoggerFactory.getLogger(PreparedStatementImpl.class);
 
+    static final long VERY_SHORT_TIMEOUT = 1000;
+
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     // timeout == 0 means no timeout is applied when closing (waits indefinitely)
@@ -52,6 +54,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     final SqlCommon.PreparedStatement handle;
     private final SqlRequest.Prepare request;
     private Disposer disposer = null;
+    private boolean closed = false;
 
     /**
      * Creates a new instance.
@@ -126,7 +129,7 @@ public class PreparedStatementImpl implements PreparedStatement {
             }
             if (timeout == 0 || unit == null) {
                 try {
-                    futureResponse.get(1000, TimeUnit.MICROSECONDS);
+                    futureResponse.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
                 } catch (ResponseTimeoutException | TimeoutException e) {
                     return false;
                 }
@@ -144,6 +147,7 @@ public class PreparedStatementImpl implements PreparedStatement {
                     e -> LOG.warn("error occurred while collecting garbage", e),
                     () -> closeHandler.onClosed(this));
         }
+        closed = true;
         return true;
     }
 
@@ -153,7 +157,7 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @throws IOException if I/O error was occurred while obtaining the handle
      */
     public synchronized SqlCommon.PreparedStatement getHandle() throws IOException {
-        if (futureResponse != null) {
+        if (closed) {
             throw new IOException("already closed");
         }
         return handle;
@@ -161,7 +165,7 @@ public class PreparedStatementImpl implements PreparedStatement {
 
     // for diagnostic
     synchronized String diagnosticInfo() {
-        if (futureResponse == null) {
+        if (!closed) {
             String rv = " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
             if (request != null) {
                 rv += "   ==== request from here ====" + System.getProperty("line.separator");
