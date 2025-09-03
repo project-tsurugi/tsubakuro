@@ -67,6 +67,8 @@ import com.tsurugidb.tsubakuro.util.Timeout;
 public class TransactionImpl implements Transaction {
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
 
+    // A time short enough to cause a timeout if no message arrives during the acquisition operation,
+    // measured in microseconds.
     static final long VERY_SHORT_TIMEOUT = 1000;
 
     private final SqlResponse.Begin.Success transaction;
@@ -608,7 +610,7 @@ public class TransactionImpl implements Transaction {
             submitDisposeRequest();
         }
 
-        if (careRollbackAndDisposeResult()) {
+        if (handleRollbackAndDisposeResults()) {
                 return true;
         }
         if (--disposeRetry > 0) {
@@ -617,7 +619,7 @@ public class TransactionImpl implements Transaction {
         throw new IOException("server does not reply the dispose request and give up waiting for reply");
     }
 
-    private boolean careRollbackAndDisposeResult() throws IOException, ServerException, InterruptedException {
+    private boolean handleRollbackAndDisposeResults() throws IOException, ServerException, InterruptedException {
         if (rollbackResult != null) {
             try {
                 if (timeout == null) {
@@ -642,13 +644,13 @@ public class TransactionImpl implements Transaction {
             }
             disposeResult = null;
         }
-        state.set(State.CLOSED);
         if (closeHandler != null) {
             Lang.suppress(
                 e -> LOG.warn("error occurred while collecting garbage", e),
                 () -> closeHandler.onClosed(this)
             );
         }
+        state.set(State.CLOSED);
         return true;
     }
 
