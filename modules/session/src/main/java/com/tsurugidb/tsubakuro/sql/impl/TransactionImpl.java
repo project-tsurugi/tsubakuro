@@ -65,8 +65,9 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * Transaction type.
  */
 public class TransactionImpl implements Transaction {
-
     static final Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
+
+    static final long VERY_SHORT_TIMEOUT = 1000;
 
     private final SqlResponse.Begin.Success transaction;
     private Timeout timeout = null;
@@ -599,34 +600,40 @@ public class TransactionImpl implements Transaction {
             break;
         case ROLLBACKED:
         case TO_BE_CLOSED_WITH_ROLLBACK:
-            break;
         case CLOSED:
-            if (careDisposeResult()) {
-                return true;
-            }
-            if (--disposeRetry > 0) {
-                return false;
-            }
-            throw new IOException("server does not reply the dispose request and give up waiting for reply");
+            break;
         }
+
         if (needDispose) {
             submitDisposeRequest();
         }
+
+        if (careRollbackAndDisposeResult()) {
+                return true;
+        }
+        if (--disposeRetry > 0) {
+            return false;
+        }
+        throw new IOException("server does not reply the dispose request and give up waiting for reply");
+    }
+
+    private boolean careRollbackAndDisposeResult() throws IOException, ServerException, InterruptedException {
         if (rollbackResult != null) {
             try {
-                rollbackResult.get(1000, TimeUnit.MICROSECONDS);
+                if (timeout == null) {
+                    rollbackResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
+                } else {
+                    timeout.waitFor(rollbackResult);
+                }
             } catch (ResponseTimeoutException | TimeoutException e) {
                 return false;
             }
+            rollbackResult = null;
         }
-        return careDisposeResult();
-    }
-
-    private boolean careDisposeResult() throws IOException, ServerException, InterruptedException {
         if (disposeResult != null) {
             try {
                 if (timeout == null) {
-                    disposeResult.get(1000, TimeUnit.MICROSECONDS);
+                    disposeResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
                 } else {
                     timeout.waitFor(disposeResult);
                 }
@@ -635,13 +642,13 @@ public class TransactionImpl implements Transaction {
             }
             disposeResult = null;
         }
+        state.set(State.CLOSED);
         if (closeHandler != null) {
             Lang.suppress(
                 e -> LOG.warn("error occurred while collecting garbage", e),
                 () -> closeHandler.onClosed(this)
             );
         }
-        state.set(State.CLOSED);
         return true;
     }
 
