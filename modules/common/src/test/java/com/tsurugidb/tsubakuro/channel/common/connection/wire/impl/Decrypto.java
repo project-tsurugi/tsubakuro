@@ -19,9 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
 import javax.annotation.Nonnull;
@@ -34,39 +34,33 @@ import javax.crypto.NoSuchPaddingException;
 /**
  * Crypto type.
  */
-final class Crypto {
+final class Decrypto {
     private Cipher cipher;
-    private RSAPublicKey publicKey;
+    private RSAPrivateKey privateKey;
 
-    Crypto(@Nonnull String pem) {
+    Decrypto(@Nonnull String pem) {
         try {
-            String keyPem = pem
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replaceAll("[\\r\\n]+", "")
-                .replace("-----END PUBLIC KEY-----", "");
+            String KeyPem = pem
+                .replace("-----BEGIN PRIVATE KEY-----", "")
+                .replaceAll(System.lineSeparator(), "")
+                .replace("-----END PRIVATE KEY-----", "");
 
-            byte[] encoded = Base64.getDecoder().decode(keyPem);
-            X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
-            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            byte[] encoded = Base64.getDecoder().decode(KeyPem);
+            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
             cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            publicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-        } catch (InvalidKeyException e) {
+            KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+            privateKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException e) {
             throw new IllegalArgumentException(e);
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException e) {
-            throw new IllegalStateException(e);
         }
-    }
+   }
 
-    String encryptByPublicKey(String plainText) throws IllegalBlockSizeException {
+    String decryptByPrivateKey(String cipherText) throws IllegalBlockSizeException {
         try {
-            return Base64.getEncoder().withoutPadding().encodeToString(cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8)));
+            return new String(cipher.doFinal(Base64.getDecoder().decode(cipherText)), StandardCharsets.UTF_8);
         } catch (BadPaddingException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    int keySize() {
-        return publicKey.getModulus().bitLength();
     }
 }

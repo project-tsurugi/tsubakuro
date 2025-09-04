@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.crypto.IllegalBlockSizeException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -416,7 +417,15 @@ public class WireImpl implements Wire {
                 }
             }
             Instant dueInstant = validityPeriodInSeconds > 0 ? Instant.now().plusSeconds(validityPeriodInSeconds) : null;
-            credentialBuilder.setEncryptedCredential((new FileCredential(new Crypto(encryptionKey).encryptByPublicKey(co.getJsonText(dueInstant)), List.of())).getEncrypted());
+            var crypt = new Crypto(encryptionKey);
+            String jsonText = co.getJsonText(dueInstant);
+            try {
+                credentialBuilder.setEncryptedCredential((new FileCredential(crypt.encryptByPublicKey(jsonText), List.of())).getEncrypted());
+            } catch (IllegalBlockSizeException e) {
+                throw new IllegalArgumentException(MessageFormat.format("failed to encrypt {0}-byte credential ({1}), it should be less than {2} bytes", jsonText.length(), jsonText, crypt.keySize() / 8 - 11), e);
+            } catch (Exception e) {
+                throw new IOException("failed to encrypt credential", e);
+            }
         } else if (credential instanceof FileCredential) {
             var co = (FileCredential) credential;
             credentialBuilder.setEncryptedCredential(co.getEncrypted());
