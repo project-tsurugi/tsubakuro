@@ -48,7 +48,7 @@ final class Crypto {
             byte[] encoded = Base64.getDecoder().decode(keyPem);
             X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encoded);
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
             publicKey = (RSAPublicKey) keyFactory.generatePublic(keySpec);
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         } catch (InvalidKeyException e) {
