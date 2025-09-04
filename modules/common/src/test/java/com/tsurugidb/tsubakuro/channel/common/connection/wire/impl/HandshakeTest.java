@@ -37,7 +37,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonFactoryBuilder;
 import com.fasterxml.jackson.core.JsonToken;
 
-import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
@@ -46,7 +45,6 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
-import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
@@ -199,8 +197,8 @@ class HandshakeTest {
     @Test
     // cf. java.lang.IllegalArgumentException: javax.crypto.IllegalBlockSizeException: Data must not be longer than 245 bytes
     void handshake_authentication_userPassword_long_string_OK() throws Exception {
-        String user =  new StringWriter(){{ for(int i=0;i<76;i++) write("u"); }}.toString();
-        String password =  new StringWriter(){{ for(int i=0;i<76;i++) write("p"); }}.toString();
+        String user = "u".repeat(76);
+        String password = "p".repeat(77);
 
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -222,8 +220,8 @@ class HandshakeTest {
 
     @Test
     void handshake_authentication_userPassword_long_string_NG() throws Exception {
-        String user =  new StringWriter(){{ for(int i=0;i<77;i++) write("u"); }}.toString();
-        String password =  new StringWriter(){{ for(int i=0;i<77;i++) write("p"); }}.toString();
+        String user = "u".repeat(77);
+        String password = "p".repeat(77);
 
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -294,8 +292,8 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        String user = new StringWriter(){{ for(int i=0;i<5;i++) write(" Hello, World!"); }}.toString();
-        String password = new StringWriter(){{ for(int i=0;i<5;i++) write(" Goodbye, Space"); }}.toString();
+        String user = " Hello, World!".repeat(5);
+        String password = " Goodbye, Space".repeat(5);
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
         var future = wire.handshake(clientInformation, null);
@@ -312,17 +310,16 @@ class HandshakeTest {
 
             JsonFactory JSON = new JsonFactoryBuilder().build();
             var parser = JSON.createParser(jsonText);
-            while (true) {
-                String name = parser.getCurrentName();
-                if ("user".equals(name)) {
-                    parser.nextToken();
-                    assertEquals(parser.getText(), user);
-                } else if ("password".equals(name)) {
-                    parser.nextToken();
-                    assertEquals(parser.getText(), password);
-                }
-                if (parser.currentToken() == null) {
-                    break;
+            JsonToken token;
+            while ((token = parser.nextToken()) != null) {
+                if (token == JsonToken.FIELD_NAME) {
+                    String name = parser.getCurrentName();
+                    token = parser.nextToken();
+                    if ("user".equals(name)) {
+                        assertEquals(parser.getText(), user);
+                    } else if ("password".equals(name)) {
+                        assertEquals(parser.getText(), password);
+                    }
                 }
             }
             parser.close();
