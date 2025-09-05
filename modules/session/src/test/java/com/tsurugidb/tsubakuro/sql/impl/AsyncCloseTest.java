@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.util.OptionalLong;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -146,6 +147,89 @@ class AsyncCloseTest {
             var tx = future.await();
         ) {
             assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
+            tx.commit();
+        }
+
+        session.close();
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void transactionCloseWithCommit_timeoutCommit() throws Exception {
+        // add response for Begin
+        link.next(SqlResponse.Response.newBuilder()
+                    .setBegin(SqlResponse.Begin.newBuilder()
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                        .setHandle(100))))
+                    .build());
+
+        link.setTimeoutOnEmpty(true);
+
+        // Begin test body
+        var message = SqlRequest.Begin.newBuilder()
+                .setOption(SqlRequest.TransactionOption.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+            var tx = future.await();
+        ) {
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
+            assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
+            tx.commit();
+        }
+
+        session.close();
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+
+    @Test
+    void transactionCloseWithCommit_timeoutDisposeTransaction() throws Exception {
+
+
+        // add response for Begin
+        link.next(SqlResponse.Response.newBuilder()
+                    .setBegin(SqlResponse.Begin.newBuilder()
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                        .setHandle(100))))
+                    .build());
+
+        // add delay for Commit
+        link.next(new ResponseTimeoutException());
+        // add response for Commit
+        link.next(SqlResponse.Response.newBuilder()
+                    .setResultOnly(SqlResponse.ResultOnly.newBuilder()
+                                    .setSuccess(SqlResponse.Success.newBuilder()))
+                    .build());
+
+        link.setTimeoutOnEmpty(true);
+
+        // Begin test body
+        var message = SqlRequest.Begin.newBuilder()
+                .setOption(SqlRequest.TransactionOption.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+            var tx = future.await();
+        ) {
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
+            assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             tx.commit();
         }
 
@@ -464,6 +548,81 @@ class AsyncCloseTest {
             var future = service.send(message);
             var tx = future.await();
         ) {
+            assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
+        }
+
+        session.close();
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+
+   @Test
+    void transactionCloseWithoutCommit_timeoutRollbackTransaction() throws Exception {
+        // add response for Begin
+        link.next(SqlResponse.Response.newBuilder()
+                    .setBegin(SqlResponse.Begin.newBuilder()
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                        .setHandle(100))))
+                    .build());
+
+        link.setTimeoutOnEmpty(true);
+
+        // Begin test body
+        var message = SqlRequest.Begin.newBuilder()
+                .setOption(SqlRequest.TransactionOption.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+            var tx = future.await();
+        ) {
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
+            assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
+        }
+
+        session.close();
+        // neccesarry for taking care of delayed disposal
+        // need session.close() followed by SessionImpl.waitForCompletion()
+        if (session instanceof SessionImpl) {
+            ((SessionImpl) session).waitForCompletion();
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void transactionCloseWithoutCommit_timeoutDisposeTransaction() throws Exception {
+        // add response for Begin
+        link.next(SqlResponse.Response.newBuilder()
+                    .setBegin(SqlResponse.Begin.newBuilder()
+                        .setSuccess(SqlResponse.Begin.Success.newBuilder()
+                                .setTransactionHandle(SqlCommon.Transaction.newBuilder()
+                                                        .setHandle(100))))
+                    .build());
+
+        // add response for Rollback
+        link.next(SqlResponse.Response.newBuilder()
+                    .setResultOnly(SqlResponse.ResultOnly.newBuilder()
+                                .setError(SqlResponse.Error.newBuilder()))
+                    .build());
+
+        link.setTimeoutOnEmpty(true);
+
+        // Begin test body
+        var message = SqlRequest.Begin.newBuilder()
+                .setOption(SqlRequest.TransactionOption.getDefaultInstance())
+                .build();
+        try (
+            var service = new SqlServiceStub(session);
+            var future = service.send(message);
+            var tx = future.await();
+        ) {
+            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
         }
 
