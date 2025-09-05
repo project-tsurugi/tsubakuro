@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
@@ -50,10 +51,11 @@ public final class MockLink extends Link {
     private byte[] justBeforePayload;
     private boolean alive;
     private MockResultSetWire resultSetWire;
-
+    private boolean timeoutOnEmpty;
 
     public MockLink() {
         this.alive = true;
+        this.timeoutOnEmpty = false;
     }
 
     @Override
@@ -65,6 +67,9 @@ public final class MockLink extends Link {
             return;
         }
         if (registerdMessages.isEmpty()) {
+            if (timeoutOnEmpty) {
+                return;
+            }
             throw new AssertionError("no more response message registered");
         }
         while (true) {
@@ -80,7 +85,7 @@ public final class MockLink extends Link {
     }
 
     @Override
-    public boolean doPull(long timeout, TimeUnit unit) throws IOException {
+    public boolean doPull(long timeout, TimeUnit unit) throws IOException, TimeoutException {
         currentMessage = readyMessages.peek();
         if (currentMessage != null) {
             if (currentMessage.getIOException() != null) {
@@ -96,6 +101,9 @@ public final class MockLink extends Link {
                 readyMessages.poll();
                 return true;
             }
+        }
+        if (timeoutOnEmpty && timeout > 0) {
+            throw new TimeoutException("MockLink timeout on empty");
         }
         return false;
     }
@@ -190,5 +198,9 @@ public final class MockLink extends Link {
 
     public boolean hasRemaining() {
         return !(registerdMessages.isEmpty() && readyMessages.isEmpty());
+    }
+
+    public void setTimeoutOnEmpty(boolean to) {
+        timeoutOnEmpty = to;
     }
 }
