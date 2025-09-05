@@ -182,7 +182,6 @@ class AsyncCloseTest {
         ) {
             tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
-            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             tx.commit();
         }
 
@@ -195,11 +194,8 @@ class AsyncCloseTest {
         assertFalse(link.hasRemaining());
     }
 
-
     @Test
     void transactionCloseWithCommit_timeoutDisposeTransaction() throws Exception {
-
-
         // add response for Begin
         link.next(SqlResponse.Response.newBuilder()
                     .setBegin(SqlResponse.Begin.newBuilder()
@@ -229,7 +225,6 @@ class AsyncCloseTest {
         ) {
             tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             assertEquals(OptionalLong.of(100), TransactionImpl.getId(tx));
-            tx.setCloseTimeout(1000, TimeUnit.MILLISECONDS);
             tx.commit();
         }
 
@@ -560,8 +555,7 @@ class AsyncCloseTest {
         assertFalse(link.hasRemaining());
     }
 
-
-   @Test
+    @Test
     void transactionCloseWithoutCommit_timeoutRollbackTransaction() throws Exception {
         // add response for Begin
         link.next(SqlResponse.Response.newBuilder()
