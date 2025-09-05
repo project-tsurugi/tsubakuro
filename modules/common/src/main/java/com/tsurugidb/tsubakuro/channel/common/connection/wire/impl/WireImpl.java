@@ -333,9 +333,6 @@ public class WireImpl implements Wire {
         }
     }
 
-    public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation) throws IOException {
-        return handshake(clientInformation, wireInformation, 0, null);
-    }
     public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation, long timeout, TimeUnit unit) throws IOException {
         var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
         var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();

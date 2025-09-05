@@ -78,7 +78,7 @@ class HandshakeTest {
                     .build());
 
         // send request via product functionality
-        var future = wire.handshake(new ClientInformation(), null);
+        var future = wire.handshake(new ClientInformation(), null, 0, null);
         assertNotNull(future);
         long sessionId = future.get();
 
@@ -97,7 +97,7 @@ class HandshakeTest {
                     .build());
 
         // send request via product functionality
-        var future = wire.handshake(new ClientInformation(), null);
+        var future = wire.handshake(new ClientInformation(), null, 0, null);
         assertNotNull(future);
         long sessionId = future.get();
 
@@ -115,7 +115,7 @@ class HandshakeTest {
                                     .setMessage("Authentication failed"))
                     .build());
 
-        var future = wire.handshake(new ClientInformation(), null);
+        var future = wire.handshake(new ClientInformation(), null, 0, null);
         assertNotNull(future);
         CoreServiceException e = assertThrows(CoreServiceException.class, () -> future.get());
         assertEquals(e.getDiagnosticCode(), CoreServiceCode.AUTHENTICATION_ERROR);
@@ -137,7 +137,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
 
@@ -157,7 +157,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
 
@@ -173,7 +173,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
 
@@ -187,7 +187,7 @@ class HandshakeTest {
                   Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(CoreServiceException.class, () -> future.get());
 
@@ -211,7 +211,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
 
@@ -230,7 +230,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
-        var ex = assertThrows(IllegalArgumentException.class, () -> wire.handshake(clientInformation, null));
+        var ex = assertThrows(IllegalArgumentException.class, () -> wire.handshake(clientInformation, null, 0, null));
         System.out.println(ex);
         assertFalse(link.hasRemaining());
     }
@@ -244,7 +244,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
 
@@ -260,7 +260,7 @@ class HandshakeTest {
                     .build());
 
         var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
 
@@ -274,7 +274,7 @@ class HandshakeTest {
                   Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
 
         var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertThrows(CoreServiceException.class, () -> future.get());
 
         assertFalse(link.hasRemaining());
@@ -296,7 +296,7 @@ class HandshakeTest {
         String password = " Goodbye, Space".repeat(5);
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
-        var future = wire.handshake(clientInformation, null);
+        var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
 
         var decrypter = new Decrypto(ResponseProtoForTests.privateKey());

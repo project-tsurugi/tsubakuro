@@ -95,7 +95,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                         FutureResponse<Long> futureSessionId = null;
                         try {
                             wireImpl = unit != null ? connector.getSessionWire(id, timeout, unit) : connector.getSessionWire(id);
-                            futureSessionId = wireImpl.handshake(clientInformation, wireInformation());
+                            futureSessionId = wireImpl.handshake(clientInformation, wireInformation(), timeout, unit);
                             wireImpl.checkSessionId(unit != null ? futureSessionId.get(timeout, unit) : futureSessionId.get());
                             result.set(wireImpl);
                             return wireImpl;
