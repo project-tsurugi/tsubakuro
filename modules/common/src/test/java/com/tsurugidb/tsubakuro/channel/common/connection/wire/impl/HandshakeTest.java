@@ -197,8 +197,8 @@ class HandshakeTest {
     @Test
     // cf. java.lang.IllegalArgumentException: javax.crypto.IllegalBlockSizeException: Data must not be longer than 245 bytes
     void handshake_authentication_userPassword_long_string_OK() throws Exception {
-        String user = "u".repeat(76);
-        String password = "p".repeat(77);
+        String user = "u".repeat(61);
+        String password = "p".repeat(61);
 
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -220,8 +220,8 @@ class HandshakeTest {
 
     @Test
     void handshake_authentication_userPassword_long_string_NG() throws Exception {
-        String user = "u".repeat(77);
-        String password = "p".repeat(77);
+        String user = "u".repeat(61);
+        String password = "p".repeat(62);
 
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -292,8 +292,8 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        String user = " Hello, World!".repeat(5);
-        String password = " Goodbye, Space".repeat(5);
+        String user = " Hello, World!".repeat(3);
+        String password = " Goodbye, Space".repeat(3);
 
         var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
         var future = wire.handshake(clientInformation, null);

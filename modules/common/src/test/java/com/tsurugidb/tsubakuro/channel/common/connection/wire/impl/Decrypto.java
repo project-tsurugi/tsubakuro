@@ -47,7 +47,7 @@ final class Decrypto {
 
             byte[] encoded = Base64.getDecoder().decode(KeyPem);
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encoded);
-            cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             privateKey = (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
             cipher.init(Cipher.DECRYPT_MODE, privateKey);

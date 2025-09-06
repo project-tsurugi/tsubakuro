@@ -422,7 +422,7 @@ public class WireImpl implements Wire {
             try {
                 credentialBuilder.setEncryptedCredential((new FileCredential(crypt.encryptByPublicKey(jsonText), List.of())).getEncrypted());
             } catch (IllegalBlockSizeException e) {
-                throw new IllegalArgumentException(MessageFormat.format("failed to encrypt {0}-byte credential ({1}), it should be less than {2} bytes", jsonText.length(), jsonText, crypt.keySize() / 8 - 11), e);
+                throw new IllegalArgumentException(MessageFormat.format("failed to encrypt {0}-byte credential", jsonText.length()), e);
             } catch (Exception e) {
                 throw new IOException("failed to encrypt credential", e);
             }
