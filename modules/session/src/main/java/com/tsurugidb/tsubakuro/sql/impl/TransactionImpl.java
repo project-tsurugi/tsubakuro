@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -70,6 +72,8 @@ public class TransactionImpl implements Transaction {
     // A time short enough to cause a timeout if no message arrives during the acquisition operation,
     // measured in microseconds.
     static final long VERY_SHORT_TIMEOUT = 1000;
+    // The time until the disposer gives up on closing
+    static final long GIVE_UP_CLOSE_IN_SECONDS = 300;
 
     private final SqlResponse.Begin.Success transaction;
     private Timeout timeout = null;
@@ -78,23 +82,24 @@ public class TransactionImpl implements Transaction {
     private FutureResponse<Void> commitResult;
     private FutureResponse<Void> rollbackResult = null;
     private FutureResponse<Void> disposeResult = null;
-    private int disposeRetry = 10;
     private int commitRetry = 10;
     private AtomicReference<State> state = new AtomicReference<>();
+    private Instant closeInvokedInstant = null;
     private Disposer disposer = null;
     private boolean autoDispose = false;
 
     private enum State {
-                                    // | commitResult | commit    | rollback  | delayedClose | Transaction |
-                                    // |              | requested | requested | registerd    | closed      |
-                                    // ---------------------------------------------------------------------
-        INITIAL,                    // | null         | no        | no        | no           | no          |
-        COMMITTED,                  // | not null     | yes       | no        | no           | no          |
-        ROLLBACKED,                 // | null         | no        | yes       | no           | no          |
-        TO_BE_CLOSED,               // | null         | no        | no        | yes          | no          |
-        TO_BE_CLOSED_WITH_COMMIT,   // | not null     | yes       | no        | yes          | no          |
-        TO_BE_CLOSED_WITH_ROLLBACK, // | null         | no        | yes       | yes          | no          |
-        CLOSED                      // | -(don't care)| -         | -         | -            | yes         |
+                                    // | commitResult | commit    | rollback  | delayedClose | Transaction        |
+                                    // |              | requested | requested | registerd    | closed             |
+                                    // ----------------------------------------------------------------------------
+        INITIAL,                    // | null         | no        | no        | no           | no                 |
+        COMMITTED,                  // | not null     | yes       | no        | no           | no                 |
+        ROLLBACKED,                 // | null         | no        | yes       | no           | no                 |
+        TO_BE_CLOSED,               // | null         | no        | no        | yes          | no                 |
+        TO_BE_CLOSED_WITH_COMMIT,   // | not null     | yes       | no        | yes          | no                 |
+        TO_BE_CLOSED_WITH_ROLLBACK, // | null         | no        | yes       | yes          | no                 |
+        CLOSED                      // | -            | -         | -         | -            | yes (maybe waiting |
+                                    // | (don't care) |           |           |              |      for response) |
     }
     private boolean isCleanuped() {
         return state.get() != State.INITIAL;
@@ -505,6 +510,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
+        closeInvokedInstant = Instant.now();
         var s = state.get();
         switch (s) {
         case INITIAL:
@@ -591,14 +597,16 @@ public class TransactionImpl implements Transaction {
                     needDispose = true;
                 }
             } catch (ResponseTimeoutException | TimeoutException e) {
-                if (--commitRetry > 0 || timeout == null) {
+                var tillInstant = timeout != null ? closeInvokedInstant.plusSeconds(timeout.unit().toSeconds(timeout.value())) : closeInvokedInstant.plusSeconds(GIVE_UP_CLOSE_IN_SECONDS);
+                if (Instant.now().isBefore(tillInstant)) {
                     return false;
                 }
-                timeout.waitFor(commitResult);
-                return false;
+                throw new IOException(timeoutMessage("commit"), e);
             } catch (IOException | ServerException | InterruptedException e) {
+                LOG.trace("error occurred while committing transaction", e);
                 needDispose = true;
             }
+            state.set(State.CLOSED);
             break;
         case ROLLBACKED:
         case TO_BE_CLOSED_WITH_ROLLBACK:
@@ -609,38 +617,30 @@ public class TransactionImpl implements Transaction {
         if (needDispose) {
             submitDisposeRequest();
         }
-
-        if (handleRollbackAndDisposeResults()) {
-                return true;
-        }
-        if (--disposeRetry > 0) {
-            return false;
-        }
-        throw new IOException("server does not reply the dispose request and give up waiting for reply");
+        return handleRollbackAndDisposeResults();
     }
 
     private boolean handleRollbackAndDisposeResults() throws IOException, ServerException, InterruptedException {
+        var tillInstant = timeout != null ? closeInvokedInstant.plusSeconds(timeout.unit().toSeconds(timeout.value())) : closeInvokedInstant.plusSeconds(GIVE_UP_CLOSE_IN_SECONDS);
         if (rollbackResult != null) {
             try {
-                if (timeout == null) {
-                    rollbackResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
-                } else {
-                    timeout.waitFor(rollbackResult);
-                }
+                rollbackResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
             } catch (ResponseTimeoutException | TimeoutException e) {
-                return false;
+                if (Instant.now().isBefore(tillInstant)) {
+                    return false;
+                }
+                throw new IOException(timeoutMessage("rollback"), e);
             }
             rollbackResult = null;
         }
         if (disposeResult != null) {
             try {
-                if (timeout == null) {
-                    disposeResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
-                } else {
-                    timeout.waitFor(disposeResult);
-                }
+                disposeResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
             } catch (ResponseTimeoutException | TimeoutException e) {
+                if (Instant.now().isBefore(tillInstant)) {
                     return false;
+                }
+                throw new IOException(timeoutMessage("dispose"), e);
             }
             disposeResult = null;
         }
@@ -652,6 +652,12 @@ public class TransactionImpl implements Transaction {
         }
         state.set(State.CLOSED);
         return true;
+    }
+    private String timeoutMessage(String request) {
+        if (timeout == null) {
+            return MessageFormat.format("server does not reply the {0} request for {1} seconds and give up waiting for reply", request, GIVE_UP_CLOSE_IN_SECONDS);
+        }
+        return MessageFormat.format("server does not reply the {0} request for {1} {2} and give up waiting for reply", request, timeout.value(), timeout.unit());
     }
 
     /**
