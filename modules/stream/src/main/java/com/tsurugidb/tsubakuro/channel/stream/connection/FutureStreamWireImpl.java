@@ -43,7 +43,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
     private final AtomicBoolean gotton = new AtomicBoolean();
     private final AtomicReference<Wire> result = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
-    private FutureResponse<Long> futureSessionId;
+    private FutureResponse<Long> futureSessionId = null;
     private boolean closed = false;
 
     FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, ClientInformation clientInformation) {
@@ -126,7 +126,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             closed = true;
             if (result.get() == null) {
                 try {
-                    futureSessionId.close();
+                    if (futureSessionId != null) {
+                        futureSessionId.close();
+                    }
                 } catch (Exception e) {
                     top = e;
                 } finally {
