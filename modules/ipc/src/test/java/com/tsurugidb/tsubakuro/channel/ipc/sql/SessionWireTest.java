@@ -50,7 +50,7 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionId);
             client = new WireImpl(new IpcLink(dbName, sessionId));
-            client.handshake(new ClientInformation(), null);
+            client.handshake(new ClientInformation(), null, 0, null);
         } catch (Exception e) {
             fail("cought Exception");
         }
@@ -70,7 +70,7 @@ class SessionWireTest {
         try {
             server = new ServerWireImpl(dbName, sessionId);
             client = new WireImpl(new IpcLink(dbName, sessionId));
-            client.handshake(new ClientInformation(), null);
+            client.handshake(new ClientInformation(), null, 0, null);
 
             // REQUEST test begin
             // client side send Request
@@ -99,7 +99,7 @@ class SessionWireTest {
     void timeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionId);
         client = new WireImpl(new IpcLink(dbName, sessionId));
-        client.handshake(new ClientInformation(), null);
+        client.handshake(new ClientInformation(), null, 0, null);
 
         // REQUEST test begin
         // client side send Request
@@ -129,7 +129,7 @@ class SessionWireTest {
     void serverCrashDetectionTestWithoutTimeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionId, false);
         client = new WireImpl(new IpcLink(dbName, sessionId));
-        client.handshake(new ClientInformation(), null);
+        client.handshake(new ClientInformation(), null, 0, null);
 
         // REQUEST test begin
         // client side send Request
@@ -159,7 +159,7 @@ class SessionWireTest {
     void serverCrashDetectionTestWithTimeout() throws Exception {
         server = new ServerWireImpl(dbName, sessionId);
         client = new WireImpl(new IpcLink(dbName, sessionId));
-        client.handshake(new ClientInformation(), null);
+        client.handshake(new ClientInformation(), null, 0, null);
 
         // REQUEST test begin
         // client side send Request

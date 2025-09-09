@@ -244,6 +244,10 @@ public final class StreamLink extends Link {
             try {
                 outStream.write(whole, 0, whole.length);
                 outStream.flush();
+            } catch (SocketException e) {
+                socketError.set(true);
+                channelResponse.setMainResponse(new IOException(linkLostMessage(), e));
+                return;
             } catch (IOException e) {
                 channelResponse.setMainResponse(e);
                 return;

@@ -23,7 +23,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.Link;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -36,56 +39,31 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
     private final StreamLink streamLink;
     private final WireImpl wireImpl;
-    private final FutureResponse<Long> futureSessionId;
+    private final ClientInformation clientInformation;
     private final AtomicBoolean gotton = new AtomicBoolean();
     private final AtomicReference<Wire> result = new AtomicReference<>();
     private final Lock lock = new ReentrantLock();
+    private FutureResponse<Long> futureSessionId = null;
     private boolean closed = false;
 
-    FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, FutureResponse<Long> futureSessionId) {
+    FutureStreamWireImpl(StreamLink streamLink, WireImpl wireImpl, ClientInformation clientInformation) {
         this.streamLink = streamLink;
         this.wireImpl = wireImpl;
-        this.futureSessionId = futureSessionId;
+        this.clientInformation = clientInformation;
     }
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
-        while (true) {
-            var wire = result.get();
-            if (wire != null) {
-                return wire;
-            }
-            lock.lock();
-            try {
-                wire = result.get();
-                if (wire != null) {
-                    return wire;
-                }
-                if (!gotton.getAndSet(true)) {
-                    try {
-                        streamLink.setSessionId(futureSessionId.get());
-                        return wireImpl;
-                    } catch (IOException | ServerException | InterruptedException e) {
-                        try {
-                            closeInternal();
-                        } catch (Exception suppress) {
-                            // the exception in closeInternal should be suppressed
-                            e.addSuppressed(suppress);
-                        }
-                        throw e;
-                    }
-                }
-            } finally {
-                lock.unlock();
-            }
-            if (closed) {
-                throw new IOException("FutureStreamWireImpl is already closed");
-            }
+        try {
+            return get(0, null);
+        } catch (TimeoutException e) {
+            throw new AssertionError("TimeoutException should not have arisen, but it did.");
         }
     }
 
     @Override
     public Wire get(long timeout, TimeUnit unit) throws TimeoutException, IOException, ServerException, InterruptedException {
+        futureSessionId = wireImpl.handshake(clientInformation, wireInformation(), timeout, unit);
         while (true) {
             var wire = result.get();
             if (wire != null) {
@@ -124,6 +102,12 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
         }
     }
 
+    private EndpointRequest.WireInformation wireInformation() {
+        return EndpointRequest.WireInformation.newBuilder().setStreamInformation(
+            EndpointRequest.WireInformation.StreamInformation.newBuilder().setMaximumConcurrentResultSets(Link.responseBoxSize())
+        ).build();
+    }
+
     @Override
     public boolean isDone() {
         return result.get() != null;
@@ -142,7 +126,9 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             closed = true;
             if (result.get() == null) {
                 try {
-                    futureSessionId.close();
+                    if (futureSessionId != null) {
+                        futureSessionId.close();
+                    }
                 } catch (Exception e) {
                     top = e;
                 } finally {
