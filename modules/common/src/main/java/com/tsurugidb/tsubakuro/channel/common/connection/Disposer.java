@@ -97,7 +97,7 @@ public class Disposer extends Thread {
 
         while (true) {
             working.set(true);
-            var futureResponse = futureResponseQueue.poll();
+            var futureResponse = futureResponseQueue.peek();
             if (futureResponse != null) {
                 try {
                     var obj = futureResponse.retrieve();
@@ -117,6 +117,8 @@ public class Disposer extends Thread {
                     } else {
                         exception.addSuppressed(e);
                     }
+                } finally {
+                    futureResponseQueue.poll();
                 }
                 continue;
             }
@@ -254,6 +256,7 @@ public class Disposer extends Thread {
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
     public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
+        waitForEmpty();
         lock.lock();
         try {
             if (close.get() != null) {
@@ -279,6 +282,7 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
+        waitForEmpty();
         lock.lock();
         try {
             disableAdd = true;
