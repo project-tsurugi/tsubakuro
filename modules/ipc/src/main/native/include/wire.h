@@ -561,8 +561,8 @@ private:
 
 // for resultset
 class unidirectional_simple_wires {
-    constexpr static std::size_t watch_interval = 5;
 public:
+    constexpr static std::size_t watch_interval = 5;
 
     class unidirectional_simple_wire : public simple_wire<length_header> {
         friend unidirectional_simple_wires;

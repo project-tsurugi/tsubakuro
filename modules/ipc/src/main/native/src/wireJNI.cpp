@@ -266,22 +266,32 @@ JNIEXPORT jobject JNICALL Java_com_tsurugidb_tsubakuro_channel_ipc_sql_ResultSet
   (JNIEnv *env, jclass, jlong handle, jlong timeout_ns)
 {
     session_wire_container::resultset_wires_container* rwc = reinterpret_cast<session_wire_container::resultset_wires_container*>(static_cast<std::uintptr_t>(handle));
-    long timeout_us = (timeout_ns != 0) ? ((timeout_ns - 500) / 1000) + 1 : 0;
+    bool do_timeout = (timeout_ns > 0);
+    long timeout_us = do_timeout ? ((timeout_ns - 500) / 1000) + 1 : 0;
+    long each_timeout = unidirectional_simple_wires::watch_interval * 1000000;
+    if (each_timeout > timeout_us && timeout_us > 0) {
+        each_timeout = timeout_us;
+    }
+    long current_timeout{};
 
     while (true) {
         try {
-            auto buf = rwc->get_chunk(timeout_us);
+            current_timeout = (timeout_us > 0) ? std::min(each_timeout, timeout_us) : each_timeout;
+            auto buf = rwc->get_chunk(current_timeout);
             if(buf.data()) {
                 return env->NewDirectByteBuffer(static_cast<void*>(const_cast<char*>(buf.data())), buf.length());
             }
             return nullptr;
         } catch (std::runtime_error &e) {
-            if (timeout_us != 0) {
-                jclass classj = env->FindClass("Ljava/io/InterruptedIOException;");
-                if (classj == nullptr) { std::abort(); }
-                env->ThrowNew(classj, (std::string("No response from the server in the specified time (") + std::to_string(timeout_ns) + " nS)").c_str());;
-                env->DeleteLocalRef(classj);
-                return nullptr;
+            if (do_timeout) {
+                timeout_us -= current_timeout;
+                if (timeout_us <= 0) {
+                    jclass classj = env->FindClass("Ljava/io/InterruptedIOException;");
+                    if (classj == nullptr) { std::abort(); }
+                    env->ThrowNew(classj, (std::string("No response from the server in the specified time (") + std::to_string(timeout_ns) + " nS)").c_str());;
+                    env->DeleteLocalRef(classj);
+                    return nullptr;
+                }
             }
             if (auto err = rwc->get_envelope()->get_status_provider().is_alive(); !err.empty()) {
                 jclass classj = env->FindClass("Ljava/io/IOException;");
