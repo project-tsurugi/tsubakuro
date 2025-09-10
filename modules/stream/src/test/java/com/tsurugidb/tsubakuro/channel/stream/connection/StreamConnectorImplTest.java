@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package  com.tsurugidb.tsubakuro.channel.stream.connection;
+package com.tsurugidb.tsubakuro.channel.stream.connection;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +35,7 @@ class StreamConnectorImplTest {
     private static final String HOST = "localhost";
     private static final int PORT = 12350;
 
-    static public String encryptionKey() {
+    private static String encryptionKey() {
         return new String(Base64.getDecoder().decode("LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFsVjAzbUJISU9LNjBCVm5nVWJvcGUvbVVPRHVSQ2FvZVVqY2hZbEMzMFRhbGFpRklIdjRMRHBqL1pMRDJGdVQwUFNDNE56aWF1c2Q0TGhDaXp5REk2VGUzMTVXZHhxSXl1dkZQV3lPdGtMdTgzcjVuYnJqT0pqaWVYd3BUejdLdk9iYmRqRjVjWFdKRnlzU1UvaGRwUDdOMTRZVXhpVkpuUTZIWk56VTRSNjVhRDdrU1NNL2MzK1h4czFndEpFUzlDSEV3R1kxU0JnUlA4UWx2V1o2QkQzak1WQm0xUVkyY00xS0lrZ1RDZFJNRWRSWWtoTTFSYk9EU0VHZzBXN3dIaXRpUUlVOE83M0I1cElRcE96OXNWS0V4N28ySXk5L2RhbzVTaG5iRTdHWUt2UzlXZXFpbHAxMmF5U1pKeWlQaklLc1VnMWc1N3NBMEVDKzRxZGhHbFFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t"),
                             StandardCharsets.US_ASCII);
     }
@@ -53,14 +55,14 @@ class StreamConnectorImplTest {
         var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
-        assertTrue(futureResponse != null);
+        assertNotNull(futureResponse);
         try {
             var wire = futureResponse.get();
-            assertTrue(wire != null);
+            assertNotNull(wire);
             wire.close();
         } catch (Exception e) {
             e.printStackTrace();
-            assertTrue(false);
+            fail(e.getMessage());
         } finally {
             server.close();
         }
@@ -69,7 +71,7 @@ class StreamConnectorImplTest {
 
     @Test
     void normal_withTimeout() throws Exception {
-        var server = new ServerMock(PORT);
+        var server = new ServerMock(PORT + 1);
         server.next(EndpointResponse.EncryptionKey.newBuilder()
                         .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
                                         .setEncryptionKey(encryptionKey()))
@@ -80,16 +82,16 @@ class StreamConnectorImplTest {
                         .build());
 
         var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
-        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT);
+        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 1);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
-        assertTrue(futureResponse != null);
+        assertNotNull(futureResponse);
         try {
             var wire = futureResponse.get(1, TimeUnit.SECONDS);
-            assertTrue(wire != null);
+            assertNotNull(wire);
             wire.close();
         } catch (Exception e) {
             e.printStackTrace();
-            assertTrue(false);
+            fail(e.getMessage());
         } finally {
             server.close();
         }

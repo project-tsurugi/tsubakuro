@@ -34,7 +34,7 @@ import com.tsurugidb.framework.proto.FrameworkResponse;
 public class ServerMock {
     static final Logger LOG = LoggerFactory.getLogger(ServerMock.class);
 
-    private final ConcurrentLinkedQueue<ResponseMessage> registerdMessages = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<ResponseMessage> registeredMessages = new ConcurrentLinkedQueue<>();
     private Worker worker = null;
     private ServerSocket serverSocket = null;
 
@@ -64,7 +64,7 @@ public class ServerMock {
                     var slot = serverStreamLink.getSlot();
                     switch (serverStreamLink.getInfo()) {
                         case 2: // StreamLink.REQUEST_SESSION_PAYLOAD
-                            var responseMessage = registerdMessages.poll();
+                            var responseMessage = registeredMessages.poll();
                             if (responseMessage != null) {
                                 serverStreamLink.sendResponse(slot, responseMessage.getBytes());
                             } else {
@@ -126,10 +126,10 @@ public class ServerMock {
     }
 
     private boolean next(byte [] responseMessage) {
-        return registerdMessages.offer(new ResponseMessage(responseMessage));
+        return registeredMessages.offer(new ResponseMessage(responseMessage));
     }
 
     public boolean hasRemaining() {
-        return !(registerdMessages.isEmpty());
+        return !(registeredMessages.isEmpty());
     }
 }
