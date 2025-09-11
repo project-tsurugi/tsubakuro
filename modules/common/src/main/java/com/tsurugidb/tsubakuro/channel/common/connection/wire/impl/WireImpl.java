@@ -343,7 +343,7 @@ public class WireImpl implements Wire {
             if (credential instanceof UsernamePasswordCredential) {
                 var ci = (UsernamePasswordCredential) credential;
                 try {
-                    encryptionKey = unit != null ? encryptionKey().get(timeout, unit) : encryptionKey().get();
+                    encryptionKey = (unit != null && timeout > 0) ? encryptionKey().get(timeout, unit) : encryptionKey().get();
                     clientInformationBuilder.setCredential(buildCredential(ci));
                 } catch (CoreServiceException e) {
                     if (e.getDiagnosticCode() != CoreServiceCode.UNSUPPORTED_OPERATION) {

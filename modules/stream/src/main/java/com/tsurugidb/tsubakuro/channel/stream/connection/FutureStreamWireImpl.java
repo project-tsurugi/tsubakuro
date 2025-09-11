@@ -54,40 +54,10 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
 
     @Override
     public Wire get() throws IOException, ServerException, InterruptedException {
-        futureSessionId = wireImpl.handshake(clientInformation, wireInformation(), 0, null);
-        while (true) {
-            var wire = result.get();
-            if (wire != null) {
-                return wire;
-            }
-            if (lock.tryLock()) {
-                try {
-                    wire = result.get();
-                    if (wire != null) {
-                        return wire;
-                    }
-                    if (!gotton.getAndSet(true)) {
-                        try {
-                            streamLink.setSessionId(futureSessionId.get());
-                            result.set(wireImpl);
-                            return wireImpl;
-                        } catch (IOException | ServerException | InterruptedException e) {
-                            try {
-                                closeInternal();
-                            } catch (Exception suppress) {
-                                // the exception in closeInternal should be suppressed
-                                e.addSuppressed(suppress);
-                            }
-                            throw e;
-                        }
-                    }
-                } finally {
-                    lock.unlock();
-                }
-            }
-            if (closed) {
-                throw new IOException("FutureStreamWireImpl is already closed");
-            }
+        try {
+            return get(0, null);
+        } catch (TimeoutException e) {
+            throw new AssertionError("TimeoutException should not have arisen, but it did.");
         }
     }
 
@@ -99,7 +69,8 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
             if (wire != null) {
                 return wire;
             }
-            if (lock.tryLock(timeout, unit)) {
+            boolean timeoutEnabled = unit != null && timeout > 0;
+            if (timeoutEnabled ? lock.tryLock(timeout, unit) : lock.tryLock()) {
                 try {
                     wire = result.get();
                     if (wire != null) {
@@ -107,7 +78,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                     }
                     if (!gotton.getAndSet(true)) {
                         try {
-                            streamLink.setSessionId(futureSessionId.get(timeout, unit));
+                            streamLink.setSessionId(timeoutEnabled ? futureSessionId.get(timeout, unit) : futureSessionId.get());
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
@@ -124,6 +95,7 @@ public class FutureStreamWireImpl implements FutureResponse<Wire> {
                     lock.unlock();
                 }
             } else {
+                // never falls through here when timeout is not enabled
                 throw new TimeoutException("get() by another thread has not returned within the specifined time (" + timeout + " " + unit + ")");
             }
             if (closed) {
