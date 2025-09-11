@@ -21,17 +21,17 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.channel.stream.ServerMock;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
-import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 class StreamConnectorImplTest {
     private static final String HOST = "localhost";
