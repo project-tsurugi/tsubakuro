@@ -86,7 +86,7 @@ public class UsernamePasswordCredential implements Credential {
      */
     public UsernamePasswordCredential(@Nonnull String name, @Nullable String password) {
         Objects.requireNonNull(name);
-        this.name = name.trim();
+        this.name = name;
         this.password = password;
         if (this.name.length() > MAXIMUM_NAME_LENGTH) {
             throw new IllegalArgumentException("name is too long"); //$NON-NLS-1$
