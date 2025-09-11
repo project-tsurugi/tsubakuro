@@ -52,13 +52,22 @@ class DbSessionBuilderTest extends DbTester {
 
     @Test
     void createTimeout() throws Exception {
+        createTimeout(1);
+    }
+
+    @Test
+    void createTimeout0() throws Exception {
+        createTimeout(0);
+    }
+
+    private void createTimeout(int timeout) throws Exception {
         var builder = createSessionBuilder();
         builder.withLabel("createTimeout");
 
         for (int i = 0; i < ATTEMPT_SIZE; i++) {
-            try (var session = builder.create(1, TimeUnit.SECONDS)) {
+            try (var session = builder.create(timeout, TimeUnit.SECONDS)) {
                 // close only
-                session.setCloseTimeout(new Timeout(1, TimeUnit.SECONDS, Policy.ERROR));
+                session.setCloseTimeout(new Timeout(timeout, TimeUnit.SECONDS, Policy.ERROR));
                 session.close();
             }
         }
