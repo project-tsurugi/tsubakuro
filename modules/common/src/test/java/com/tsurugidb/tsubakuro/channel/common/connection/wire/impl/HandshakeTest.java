@@ -319,7 +319,7 @@ class HandshakeTest {
                     String name = parser.getCurrentName();
                     token = parser.nextToken();
                     if ("user".equals(name)) {
-                        assertEquals(parser.getText(), user.trim());
+                        assertEquals(parser.getText(), user);
                     } else if ("password".equals(name)) {
                         assertEquals(parser.getText(), password);
                     }
