@@ -91,7 +91,7 @@ public class UsernamePasswordCredential implements Credential {
         if (this.name.length() > MAXIMUM_NAME_LENGTH) {
             throw new IllegalArgumentException("name is too long"); //$NON-NLS-1$
         }
-        if (this.password.length() > MAXIMUM_PASSWORD_LENGTH) {
+        if (this.password != null && this.password.length() > MAXIMUM_PASSWORD_LENGTH) {
             throw new IllegalArgumentException("password is too long"); //$NON-NLS-1$
         }
     }
