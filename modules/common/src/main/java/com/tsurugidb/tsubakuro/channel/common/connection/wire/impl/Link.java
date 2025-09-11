@@ -101,7 +101,7 @@ public abstract class Link implements ServerResource {
                             response.await();
                         } else {
                             if (!response.await(t, u)) {
-                                throw new TimeoutException("any response has not arrived within the specifined time (" + t + " " + u + ")");
+                                throw new TimeoutException("any response has not arrived within the specified time (" + t + " " + u + ")");
                             }
                         }
                     } catch (InterruptedException e) {

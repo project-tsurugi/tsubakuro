@@ -88,7 +88,7 @@ abstract class AbstractFutureResponse<V> implements FutureResponse<V> {
                         continue;
                     }
                     if (!condition.await(timeout, unit)) {
-                        throw new TimeoutException("getInternal() by another thread has not returned within the specifined time (" + timeout + " " + unit + ")");
+                        throw new TimeoutException("getInternal() by another thread has not returned within the specified time (" + timeout + " " + unit + ")");
                     }
                 } finally {
                     lock.unlock();

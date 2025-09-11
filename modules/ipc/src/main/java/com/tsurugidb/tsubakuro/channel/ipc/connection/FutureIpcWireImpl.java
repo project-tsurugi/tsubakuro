@@ -126,7 +126,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                     lock.unlock();
                 }
             } else {
-                throw new TimeoutException("get() by another thread has not returned within the specifined time (" + timeout + " " + unit + ")");
+                throw new TimeoutException("get() by another thread has not returned within the specified time (" + timeout + " " + unit + ")");
             }
             if (closed) {
                 throw new IOException("FutureIpcWireImpl is already closed");
