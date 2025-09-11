@@ -79,12 +79,13 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
         if (connectException) {
             throw new ConnectException("the server has declined the connection request");
         }
+        boolean timeoutEnabled = unit != null && timeout > 0;
         while (true) {
             var wire = result.get();
             if (wire != null) {
                 return wire;
             }
-            if (unit != null ? lock.tryLock(timeout, unit) : lock.tryLock()) {
+            if (timeoutEnabled ? lock.tryLock(timeout, unit) : lock.tryLock()) {
                 try {
                     wire = result.get();
                     if (wire != null) {
@@ -94,9 +95,9 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                         WireImpl wireImpl = null;
                         FutureResponse<Long> futureSessionId = null;
                         try {
-                            wireImpl = unit != null ? connector.getSessionWire(id, timeout, unit) : connector.getSessionWire(id);
+                            wireImpl = timeoutEnabled ? connector.getSessionWire(id, timeout, unit) : connector.getSessionWire(id);
                             futureSessionId = wireImpl.handshake(clientInformation, wireInformation(), timeout, unit);
-                            wireImpl.checkSessionId(unit != null ? futureSessionId.get(timeout, unit) : futureSessionId.get());
+                            wireImpl.checkSessionId(timeoutEnabled ? futureSessionId.get(timeout, unit) : futureSessionId.get());
                             result.set(wireImpl);
                             return wireImpl;
                         } catch (TimeoutException | IOException | ServerException | InterruptedException e) {
@@ -125,7 +126,7 @@ public class FutureIpcWireImpl implements FutureResponse<Wire> {
                     lock.unlock();
                 }
             } else {
-                throw new TimeoutException("get() by another thread has not returned within the specifined time (" + timeout + " " + unit + ")");
+                throw new TimeoutException("get() by another thread has not returned within the specified time (" + timeout + " " + unit + ")");
             }
             if (closed) {
                 throw new IOException("FutureIpcWireImpl is already closed");
