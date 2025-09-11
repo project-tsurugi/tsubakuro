@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.channel.stream.ServerMock;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
 
@@ -95,6 +97,40 @@ class StreamConnectorImplTest {
         } finally {
             server.close();
         }
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
+    void timeout_encryptionKey() throws Exception {
+        var server = new ServerMock(PORT + 2);
+
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 2);
+        var futureResponse = streamConnectorImpl.connect(clientInformation);
+        assertNotNull(futureResponse);
+
+        assertThrows(ResponseTimeoutException.class, () -> futureResponse.get(1, TimeUnit.SECONDS));
+
+        server.close();
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
+    void timeout_handshake() throws Exception {
+        var server = new ServerMock(PORT + 3);
+        server.next(EndpointResponse.EncryptionKey.newBuilder()
+                        .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
+                                        .setEncryptionKey(encryptionKey()))
+                        .build());
+
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 3);
+        var futureResponse = streamConnectorImpl.connect(clientInformation);
+        assertNotNull(futureResponse);
+
+        assertThrows(ResponseTimeoutException.class, () -> futureResponse.get(1, TimeUnit.SECONDS));
+
+        server.close();
         assertFalse(server.hasRemaining());
     }
 }

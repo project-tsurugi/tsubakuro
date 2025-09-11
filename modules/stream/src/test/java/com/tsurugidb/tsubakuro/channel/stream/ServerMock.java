@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,11 @@ public class ServerMock {
                             if (responseMessage != null) {
                                 serverStreamLink.sendResponse(slot, responseMessage.getBytes());
                             } else {
-                                LOG.warn("no response message");
+                                try {
+                                    Thread.sleep(100);
+                                } catch(InterruptedException e) {
+                                    return;
+                                }
                             }
                             break;
                         default:
@@ -107,6 +111,15 @@ public class ServerMock {
         if (serverSocket != null) {
             serverSocket.close();
             serverSocket = null;
+        }
+        if (worker != null) {
+            worker.interrupt();
+            try {
+                worker.join(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            worker = null;
         }
     }
 
