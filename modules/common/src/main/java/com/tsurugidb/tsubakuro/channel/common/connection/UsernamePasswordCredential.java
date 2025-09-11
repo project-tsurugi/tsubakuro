@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -62,6 +63,17 @@ public class UsernamePasswordCredential implements Credential {
      */
     private static final int FORMAT_VERSION = 1;
 
+    /**
+     * The maximum name length.
+     */
+    public static final int MAXIMUM_NAME_LENGTH = 60;  // FIXME alter to 1024 as the specification defined
+
+    /**
+     * The maximum password length.
+     */
+    public static final int MAXIMUM_PASSWORD_LENGTH = 60;  // FIXME alter to 1024 as the specification defined
+
+
     private static final JsonFactory JSON = new JsonFactoryBuilder()
             .build();
 
@@ -74,8 +86,14 @@ public class UsernamePasswordCredential implements Credential {
      */
     public UsernamePasswordCredential(@Nonnull String name, @Nullable String password) {
         Objects.requireNonNull(name);
-        this.name = name;
+        this.name = name.trim();
         this.password = password;
+        if (this.name.length() > MAXIMUM_NAME_LENGTH) {
+            throw new IllegalArgumentException("name is too long"); //$NON-NLS-1$
+        }
+        if (this.password.length() > MAXIMUM_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("password is too long"); //$NON-NLS-1$
+        }
     }
 
     /**
@@ -119,7 +137,7 @@ public class UsernamePasswordCredential implements Credential {
             writer.writeString(password != null ? password : "");
             if (dueInstant != null) {
                 writer.writeFieldName(KEY_EXPIRATION_DATE);
-                writer.writeString(dueInstant.toString());
+                writer.writeString(dueInstant.truncatedTo(ChronoUnit.MICROS).toString());
             }
             writer.writeEndObject();
         }

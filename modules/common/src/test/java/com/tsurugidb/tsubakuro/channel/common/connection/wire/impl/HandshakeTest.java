@@ -197,8 +197,8 @@ class HandshakeTest {
     @Test
     // cf. java.lang.IllegalArgumentException: javax.crypto.IllegalBlockSizeException: Data must not be longer than 245 bytes
     void handshake_authentication_userPassword_long_string_OK() throws Exception {
-        String user = "u".repeat(61);
-        String password = "p".repeat(61);
+        String user = "u".repeat(60);
+        String password = "p".repeat(60);
 
         // push response message via test functionality
         link.next(EndpointResponse.EncryptionKey.newBuilder()
@@ -219,18 +219,21 @@ class HandshakeTest {
     }
 
     @Test
-    void handshake_authentication_userPassword_long_string_NG() throws Exception {
+    void handshake_authentication_userPassword_long_name_NG() throws Exception {
         String user = "u".repeat(61);
-        String password = "p".repeat(62);
+        String password = "p".repeat(60);
 
-        // push response message via test functionality
-        link.next(EndpointResponse.EncryptionKey.newBuilder()
-                    .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
-                                   .setEncryptionKey(ResponseProtoForTests.encryptionKey()))
-                    .build());
+        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password)));
+        System.out.println(ex);
+        assertFalse(link.hasRemaining());
+    }
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
-        var ex = assertThrows(IllegalArgumentException.class, () -> wire.handshake(clientInformation, null, 0, null));
+    @Test
+    void handshake_authentication_userPassword_long_password_NG() throws Exception {
+        String user = "u".repeat(60);
+        String password = "p".repeat(61);
+
+        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password)));
         System.out.println(ex);
         assertFalse(link.hasRemaining());
     }
@@ -316,7 +319,7 @@ class HandshakeTest {
                     String name = parser.getCurrentName();
                     token = parser.nextToken();
                     if ("user".equals(name)) {
-                        assertEquals(parser.getText(), user);
+                        assertEquals(parser.getText(), user.trim());
                     } else if ("password".equals(name)) {
                         assertEquals(parser.getText(), password);
                     }
