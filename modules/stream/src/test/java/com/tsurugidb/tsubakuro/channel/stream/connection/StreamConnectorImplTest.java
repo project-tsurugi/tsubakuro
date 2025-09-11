@@ -16,16 +16,20 @@
 package com.tsurugidb.tsubakuro.channel.stream.connection;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
@@ -129,6 +133,48 @@ class StreamConnectorImplTest {
         assertNotNull(futureResponse);
 
         assertThrows(ResponseTimeoutException.class, () -> futureResponse.get(1, TimeUnit.SECONDS));
+
+        server.close();
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
+    void noTimeout_encryptionKey() throws Exception {
+        var server = new ServerMock(PORT + 4);
+
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 4);
+        var futureResponse = streamConnectorImpl.connect(clientInformation);
+        assertNotNull(futureResponse);
+
+        assertThrows(AssertionFailedError.class, () -> {
+            assertTimeoutPreemptively(
+                Duration.ofSeconds(1), () -> { futureResponse.get(0, TimeUnit.SECONDS); }
+            );
+        });
+
+        server.close();
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
+    void noTimeout_handshake() throws Exception {
+        var server = new ServerMock(PORT + 5);
+        server.next(EndpointResponse.EncryptionKey.newBuilder()
+                        .setSuccess(EndpointResponse.EncryptionKey.Success.newBuilder()
+                                        .setEncryptionKey(encryptionKey()))
+                        .build());
+
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 5);
+        var futureResponse = streamConnectorImpl.connect(clientInformation);
+        assertNotNull(futureResponse);
+
+        assertThrows(AssertionFailedError.class, () -> {
+            assertTimeoutPreemptively(
+                Duration.ofSeconds(1), () -> { futureResponse.get(0, TimeUnit.SECONDS); }
+            );
+        });
 
         server.close();
         assertFalse(server.hasRemaining());
