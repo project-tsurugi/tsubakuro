@@ -407,9 +407,11 @@ public class WireImpl implements Wire {
                 try {
                     encryptionKey = encryptionKey().get(GET_ENCRYPTION_KEY_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 } catch (TimeoutException e) {
+                    close();
                     throw new IOException("timeout in getting encryption key", e);
                 }
                 if (encryptionKey == null) {
+                    close();
                     throw new IllegalStateException("encryptionKey is not set");
                 }
             }
@@ -419,8 +421,10 @@ public class WireImpl implements Wire {
             try {
                 credentialBuilder.setEncryptedCredential((new FileCredential(crypt.encryptByPublicKey(jsonText), List.of())).getEncrypted());
             } catch (IllegalBlockSizeException e) {
+                close();
                 throw new IllegalArgumentException(MessageFormat.format("failed to encrypt {0}-byte credential", jsonText.length()), e);
             } catch (Exception e) {
+                close();
                 throw new IOException("failed to encrypt credential", e);
             }
         } else if (credential instanceof FileCredential) {
