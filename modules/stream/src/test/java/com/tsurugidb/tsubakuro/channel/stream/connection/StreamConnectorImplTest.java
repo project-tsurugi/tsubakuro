@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
@@ -146,7 +147,7 @@ class StreamConnectorImplTest {
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
 
-        assertThrows(org.opentest4j.AssertionFailedError.class, () -> {
+        assertThrows(AssertionFailedError.class, () -> {
             assertTimeoutPreemptively(
                 Duration.ofSeconds(1), () -> { futureResponse.get(0, TimeUnit.SECONDS); }
             );
@@ -169,7 +170,7 @@ class StreamConnectorImplTest {
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
 
-        assertThrows(org.opentest4j.AssertionFailedError.class, () -> {
+        assertThrows(AssertionFailedError.class, () -> {
             assertTimeoutPreemptively(
                 Duration.ofSeconds(1), () -> { futureResponse.get(0, TimeUnit.SECONDS); }
             );
