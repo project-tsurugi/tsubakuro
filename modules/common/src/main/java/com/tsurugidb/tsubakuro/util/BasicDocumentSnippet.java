@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 
 /**
  * A basic implementation of {@link DocumentSnippet}.
- * @version 1.7.0
+ * @version 1.12.0
  */
 public class BasicDocumentSnippet implements DocumentSnippet {
 
@@ -65,7 +65,7 @@ public class BasicDocumentSnippet implements DocumentSnippet {
      * @param notes additional notes in the document snippet
      * @param references optional references in the document snippet
      * @param code an optional code number for the target element
-     * @since 1.7.0
+     * @since 1.12.0
      */
     public BasicDocumentSnippet(
             @Nonnull List<? extends String> description,

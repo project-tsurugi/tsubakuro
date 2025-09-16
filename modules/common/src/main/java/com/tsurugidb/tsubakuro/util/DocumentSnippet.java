@@ -22,7 +22,7 @@ import java.util.OptionalInt;
 /**
  * Represents a snippet of documentation, reflects to {@link Doc}.
  * @see Doc
- * @version 1.7.0
+ * @version 1.12.0
  */
 public interface DocumentSnippet {
 
@@ -51,7 +51,7 @@ public interface DocumentSnippet {
     /**
      * Returns an optional code number for the target element.
      * @return the element code if defined, otherwise {@code empty}
-     * @since 1.7.0
+     * @since 1.12.0
      */
     default OptionalInt getCode() {
         return OptionalInt.empty();
