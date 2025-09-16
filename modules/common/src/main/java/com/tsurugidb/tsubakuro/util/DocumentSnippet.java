@@ -17,10 +17,12 @@ package com.tsurugidb.tsubakuro.util;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Represents a snippet of documentation, reflects to {@link Doc}.
  * @see Doc
+ * @version 1.7.0
  */
 public interface DocumentSnippet {
 
@@ -44,6 +46,15 @@ public interface DocumentSnippet {
      */
     default List<Reference> getReferences() {
         return List.of();
+    }
+
+    /**
+     * Returns an optional code number for the target element.
+     * @return the element code if defined, otherwise {@code empty}
+     * @since 1.7.0
+     */
+    default OptionalInt getCode() {
+        return OptionalInt.empty();
     }
 
     /**
