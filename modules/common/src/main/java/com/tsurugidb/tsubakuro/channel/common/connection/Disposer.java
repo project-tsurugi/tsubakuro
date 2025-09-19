@@ -122,7 +122,7 @@ public class Disposer extends Thread {
                 }
                 continue;
             }
-            var serverResource = serverResourceQueue.poll();
+            var serverResource = serverResourceQueue.peek();
             if (serverResource != null) {
                 try {
                     if (!serverResource.delayedClose()) {
@@ -132,6 +132,8 @@ public class Disposer extends Thread {
                     }
                 } catch (ServerException | IOException | InterruptedException e) {
                     exception = addSuppressed(exception, e);
+                } finally {
+                    serverResourceQueue.poll();
                 }
                 continue;
             }
