@@ -76,7 +76,7 @@ class ResponseBox {
             return channelResponse;
         }
         var channelResponse = new ChannelResponse(link);
-        q.addRequest(new RequestEntry(channelResponse, header, payload));
+        q.queueRequest(new RequestEntry(channelResponse, header, payload));
         return channelResponse;
     }
 

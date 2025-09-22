@@ -16,16 +16,15 @@
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nonnull;
 
 class Queues {
+    // slot queue, not guarded
     private final ConcurrentLinkedQueue<SlotEntry> slotQueue = new ConcurrentLinkedQueue<>();
+    // request queue, guarded by 'this'
     private final ConcurrentLinkedQueue<RequestEntry> requestQueue = new ConcurrentLinkedQueue<>();
     private final Link link;
-    private final Lock lock = new ReentrantLock();
 
     Queues(@Nonnull Link link) {
         this.link = link;
@@ -37,52 +36,57 @@ class Queues {
 
     void returnSlot(SlotEntry slotEntry) {
         slotEntry.resetChannelResponse();
-        pairAnnihilation(slotEntry);
+        slotQueue.add(slotEntry);
+        if (requestQueue.peek() != null) {
+            synchronized (this) {
+                var slotEntryAfter = slotQueue.poll();
+                var requestEntry = requestQueue.poll();
+                if (requestEntry != null && slotEntryAfter != null) {
+                    pairAnnihilation(slotEntryAfter, requestEntry);
+                }
+            }
+        }
     }
 
     SlotEntry pollSlot() {
-        lock.lock();
-        try {
-            return slotQueue.poll();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    void addRequest(RequestEntry requestEntry) {
-        lock.lock();
-        try {
-            requestQueue.add(requestEntry);
-            if (!slotQueue.isEmpty()) {
-                pairAnnihilation(slotQueue.poll());
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    void pairAnnihilation(SlotEntry slotEntry) {
-        lock.lock();
-        try {
-            while (true) {
-                var requestEntry = requestQueue.poll();
-                if (requestEntry == null) {
-                    slotQueue.add(slotEntry);
-                    return;
-                } else {
-                    var channelResponse = requestEntry.channelResponse();
-                    if (channelResponse.canAssignSlot()) {
-                        slotEntry.channelResponse(channelResponse);
-                        slotEntry.requestMessage(requestEntry.payload());
-                        link.sendInternal(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
-                        channelResponse.finishAssignSlot(slotEntry.slot());
-                        return;
+        if (requestQueue.peek() != null) {
+            synchronized (this) {
+                while (true) {
+                    var slotEntry = slotQueue.poll();
+                    var requestEntry = requestQueue.poll();
+                    if (requestEntry != null && slotEntry != null) {
+                        pairAnnihilation(slotEntry, requestEntry);
+                        continue;
                     }
+                    break;
                 }
-                // slot has not consumed, let's handle next queued request.
             }
-        } finally {
-            lock.unlock();
         }
+        return slotQueue.poll();
+    }
+
+    synchronized void queueRequest(RequestEntry requestEntry) {
+        var slotEntrybefor = slotQueue.poll();
+        if (slotEntrybefor != null) {
+            pairAnnihilation(slotEntrybefor, requestEntry);
+            return;
+        }
+        requestQueue.add(requestEntry);
+        var slotEntryAfter = slotQueue.poll();
+        if (slotEntryAfter != null) {
+            pairAnnihilation(slotEntryAfter, requestQueue.poll());  // requestQueue is not empty
+        }
+    }
+
+    void pairAnnihilation(@Nonnull SlotEntry slotEntry, @Nonnull RequestEntry requestEntry) {
+        var channelResponse = requestEntry.channelResponse();
+        if (channelResponse.canAssignSlot()) {
+            slotEntry.channelResponse(channelResponse);
+            slotEntry.requestMessage(requestEntry.payload());
+            link.sendInternal(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
+            channelResponse.finishAssignSlot(slotEntry.slot());
+            return;
+        }
+        throw new AssertionError("channelResponse slot is not assignable");
     }
 }
