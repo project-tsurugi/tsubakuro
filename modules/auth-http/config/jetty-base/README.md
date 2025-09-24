@@ -2,7 +2,7 @@
 
 ## requirements
 
-* Jetty 11
+* Jetty 12
 
 ## setup
 
@@ -14,7 +14,6 @@ cp /path/to/harinoki.war webapps/harinoki.war
 ## start jetty
 
 ```sh
-export TSURUGI_JWT_SECRET_KEY=tsurugi-256-bit-secret-sample-key
 java -jar $JETTY_HOME/start.jar etc/jaas-login-service.xml
 ```
 
