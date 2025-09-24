@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'com.tsurugidb.tsubakuro'
-version = '1.11.0-SNAPSHOT'
+version = '1.11.0'
 
 java {
     toolchain {
