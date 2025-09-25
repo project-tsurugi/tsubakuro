@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,18 +44,24 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 public class PreparedStatementImpl implements PreparedStatement {
     static final Logger LOG = LoggerFactory.getLogger(PreparedStatementImpl.class);
 
+    // A time short enough to cause a timeout if no message arrives during the acquisition operation,
+    // measured in microseconds.
     static final long VERY_SHORT_TIMEOUT = 1000;
+    // The time until the disposer gives up on closing
+    static final long GIVE_UP_CLOSE_IN_SECONDS = 300;
 
     private final SqlService service;
     private final ServerResource.CloseHandler closeHandler;
     // timeout == 0 means no timeout is applied when closing (waits indefinitely)
     private long timeout = 0;
-    private TimeUnit unit;
+    private TimeUnit unit = null;
     private FutureResponse<Void> futureResponse = null;
     final SqlCommon.PreparedStatement handle;
     private final SqlRequest.Prepare request;
     private Disposer disposer = null;
+    private boolean addedToDisposer = false;
     private boolean closed = false;
+    private Instant closeInvokedInstant = null;
 
     /**
      * Creates a new instance.
@@ -105,41 +112,43 @@ public class PreparedStatementImpl implements PreparedStatement {
     }
 
     @Override
-    public void close() throws IOException, ServerException, InterruptedException {
+    public synchronized void close() throws IOException, ServerException, InterruptedException {
+        if (closeInvokedInstant == null) {
+            closeInvokedInstant = Instant.now();
+        }
         if (disposer != null) {
-            if (disposer.isClosingNow()) {
-                doClose();
-            } else {
-                disposer.add(new Disposer.DelayedClose() {
-                    @Override
-                    public boolean delayedClose() throws ServerException, IOException, InterruptedException {
-                        return doClose();
-                    }
-                });
+            if (!addedToDisposer) {
+                if (disposer.isClosingNow()) {
+                    doClose();
+                } else {
+                    disposer.add(new Disposer.DelayedClose() {
+                        @Override
+                        public boolean delayedClose() throws ServerException, IOException, InterruptedException {
+                            return doClose();
+                        }
+                    });
+                    addedToDisposer = true;
+                }
             }
             return;
         }
         doClose();
     }
 
-    private synchronized boolean doClose() throws IOException, ServerException, InterruptedException {
+    private boolean doClose() throws IOException, ServerException, InterruptedException {
         if (service != null) {
             if (futureResponse == null) {
                 futureResponse = service.send(SqlRequest.DisposePreparedStatement.newBuilder().setPreparedStatementHandle(handle).build());
             }
-            if (timeout == 0 || unit == null) {
-                try {
-                    futureResponse.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
-                } catch (ResponseTimeoutException | TimeoutException e) {
+            try {
+                futureResponse.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
+            } catch (ResponseTimeoutException | TimeoutException e) {
+                var tillInstant = (timeout > 0 && unit != null) ? closeInvokedInstant.plusSeconds(unit.toSeconds(timeout)) : closeInvokedInstant.plusSeconds(GIVE_UP_CLOSE_IN_SECONDS);
+                if (Instant.now().isBefore(tillInstant)) {
                     return false;
                 }
-            } else {
-                try {
-                    futureResponse.get(timeout, unit);
-                } catch (ResponseTimeoutException | TimeoutException e) {
-                    LOG.warn("closing resource is timeout", e);
-                    throw new IOException(e);
-                }
+                LOG.warn("closing resource is timeout", e);
+                throw new IOException(e);
             }
         }
         if (closeHandler != null) {

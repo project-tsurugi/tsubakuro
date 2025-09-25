@@ -510,7 +510,9 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
-        closeInvokedInstant = Instant.now();
+        if (closeInvokedInstant == null) {
+            closeInvokedInstant = Instant.now();
+        }
         var s = state.get();
         switch (s) {
         case INITIAL:
@@ -592,7 +594,7 @@ public class TransactionImpl implements Transaction {
         case COMMITTED:
         case TO_BE_CLOSED_WITH_COMMIT:
             try {
-                commitResult.get(1000, TimeUnit.MICROSECONDS);
+                commitResult.get(VERY_SHORT_TIMEOUT, TimeUnit.MICROSECONDS);
                 if (!autoDispose) {
                     needDispose = true;
                 }
