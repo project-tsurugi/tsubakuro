@@ -68,27 +68,37 @@ class Queues {
     }
 
     synchronized void queueRequest(RequestEntry requestEntry) {
-        var slotEntrybefore = slotQueue.poll();
-        if (slotEntrybefore != null) {
-            pairAnnihilation(slotEntrybefore, requestEntry);
+        while (true) {
+            var slotEntrybefore = slotQueue.poll();
+            if (slotEntrybefore != null) {
+                if (pairAnnihilation(slotEntrybefore, requestEntry)) {
+                    return;
+                }
+                continue;
+            }
+            requestQueue.add(requestEntry);
+            var slotEntryAfter = slotQueue.poll();
+            if (slotEntryAfter != null) {
+                if (pairAnnihilation(slotEntryAfter, requestQueue.poll())) {  // requestQueue is not empty
+                    return;
+                }
+                continue;
+            }
             return;
-        }
-        requestQueue.add(requestEntry);
-        var slotEntryAfter = slotQueue.poll();
-        if (slotEntryAfter != null) {
-            pairAnnihilation(slotEntryAfter, requestQueue.poll());  // requestQueue is not empty
         }
     }
 
-    void pairAnnihilation(@Nonnull SlotEntry slotEntry, @Nonnull RequestEntry requestEntry) {
+    boolean pairAnnihilation(@Nonnull SlotEntry slotEntry, @Nonnull RequestEntry requestEntry) {
         var channelResponse = requestEntry.channelResponse();
         if (channelResponse.canAssignSlot()) {
             slotEntry.channelResponse(channelResponse);
             slotEntry.requestMessage(requestEntry.payload());
             link.sendInternal(slotEntry.slot(), requestEntry.header(), requestEntry.payload(), channelResponse);
             channelResponse.finishAssignSlot(slotEntry.slot());
-            return;
+            return true;
         }
-        throw new AssertionError("channelResponse slot is not assignable");
+        // the request has been cancelled
+        slotQueue.add(slotEntry);
+        return false;
     }
 }
