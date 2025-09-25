@@ -155,7 +155,7 @@ public class Disposer extends Thread {
                     continue;
                 }
                 empty.signalAll();
-                shoudContinue = shutdownQueue.isEmpty() && close.get() == null;
+                shoudContinue = close.get() == null;
             } finally {
                 lock.unlock();
             }
