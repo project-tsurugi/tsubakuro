@@ -52,11 +52,12 @@ class Queues {
         if (requestQueue.peek() != null) {
             synchronized (this) {
                 while (true) {
-                    var slotEntry = slotQueue.poll();
-                    var requestEntry = requestQueue.poll();
-                    if (requestEntry != null && slotEntry != null) {
-                        pairAnnihilation(slotEntry, requestEntry);
-                        continue;
+                    if (requestQueue.peek() != null) {
+                        var slotEntry = slotQueue.poll();
+                        if (slotEntry != null) {
+                            pairAnnihilation(slotEntry, requestQueue.poll());
+                            continue;
+                        }
                     }
                     break;
                 }
