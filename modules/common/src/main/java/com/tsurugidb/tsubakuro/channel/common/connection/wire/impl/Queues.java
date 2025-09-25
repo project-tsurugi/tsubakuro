@@ -37,12 +37,13 @@ class Queues {
     void returnSlot(SlotEntry slotEntry) {
         slotEntry.resetChannelResponse();
         slotQueue.add(slotEntry);
-        if (requestQueue.peek() != null) {
+        if (requestQueue.peek() != null) {  // usually false
             synchronized (this) {
-                var slotEntryAfter = slotQueue.poll();
-                var requestEntry = requestQueue.poll();
-                if (requestEntry != null && slotEntryAfter != null) {
-                    pairAnnihilation(slotEntryAfter, requestEntry);
+                if (requestQueue.peek() != null) {  // check again in synchronized block
+                    var slotEntryAfter = slotQueue.poll();
+                    if (slotEntryAfter != null) {
+                        pairAnnihilation(slotEntryAfter, requestQueue.poll());
+                    }
                 }
             }
         }
