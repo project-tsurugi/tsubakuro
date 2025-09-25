@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -37,9 +36,27 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
  * The disposer that disposes server resources corresponding to ForegroundFutureResponses that are closed without being gotten.
  */
 public class Disposer extends Thread {
-    static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
+    // processing status.
+    enum Status {
+        // initial state, Disposer thread is not running.
+        INIT,
 
-    private AtomicBoolean started = new AtomicBoolean(false);
+        // Disposer thread is running and accepting FutureResponses and Resources.
+        OPEN,
+
+        // shutdown has been initiated.
+        SHUTDOWN,
+
+        // session close has been initiated.
+        CLOSED,
+        ;
+
+        String asString() {
+            return name();
+        }
+    }
+
+    static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
     private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
@@ -47,17 +64,13 @@ public class Disposer extends Thread {
 
     private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
-    private long disposerThreadId = 0;
-
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
-
-    private AtomicBoolean working = new AtomicBoolean(false);
-
-    private boolean disableAdd = false;
 
     private final Lock lock = new ReentrantLock();
 
     private final Condition empty = lock.newCondition();
+
+    private AtomicReference<Status> status = new AtomicReference<>(Status.INIT);
 
     /**
      * Enclodure of delayed clean up procedure.
@@ -93,10 +106,8 @@ public class Disposer extends Thread {
     @Override
     public void run() {
         Exception exception = null;
-        disposerThreadId = Thread.currentThread().getId();
 
         while (true) {
-            working.set(true);
             var futureResponse = futureResponseQueue.peek();
             if (futureResponse != null) {
                 try {
@@ -143,7 +154,6 @@ public class Disposer extends Thread {
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                     continue;
                 }
-                working.set(false);
                 empty.signalAll();
                 shoudContinue = shutdownQueue.isEmpty() && close.get() == null;
             } finally {
@@ -157,11 +167,13 @@ public class Disposer extends Thread {
                 }
                 continue;
             }
+            status.set(Status.SHUTDOWN);
             while (!shutdownQueue.isEmpty()) {  // in case multiple shutdown requests are registered
                 try {
-                    shutdownQueue.poll().process();
+                    shutdownQueue.peek().process();
                 } catch (IOException e) {
                     exception = addSuppressed(exception, e);
+                } finally {
                     shutdownQueue.poll();
                 }
             }
@@ -173,6 +185,7 @@ public class Disposer extends Thread {
                 if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty()) {
                     continue;
                 }
+                status.set(Status.CLOSED);
                 delayedClose = close.get();
             } finally {
                 lock.unlock();
@@ -218,11 +231,13 @@ public class Disposer extends Thread {
     void add(ForegroundFutureResponse<?> futureResponse) {
         lock.lock();
         try {
-            if (disableAdd) {
-                throw new AssertionError("Session already closed");
+            var currentStatus = status.get();
+            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+                throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             futureResponseQueue.add(futureResponse);
-            if (!started.getAndSet(true)) {
+            if (status.get() == Status.INIT) {
+                status.set(Status.OPEN);
                 this.start();
             }
         } finally {
@@ -238,11 +253,13 @@ public class Disposer extends Thread {
     public void add(DelayedClose resource) {
         lock.lock();
         try {
-            if (disableAdd) {
-                throw new AssertionError("Session already closed");
+            var currentStatus = status.get();
+            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+                throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             serverResourceQueue.add(resource);
-            if (!started.getAndSet(true)) {
+            if (status.get() == Status.INIT) {
+                status.set(Status.OPEN);
                 this.start();
             }
         } finally {
@@ -258,15 +275,14 @@ public class Disposer extends Thread {
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
     public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
-        waitForEmpty();
         lock.lock();
         try {
-            if (close.get() != null) {
-                throw new AssertionError("Session close is already scheduled");
+            var currentStatus = status.get();
+            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+                throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
-            disableAdd = true;
-            shutdownQueue.add(cleanUp);
-            if (!started.getAndSet(true)) {
+            if (currentStatus == Status.INIT) {
+                status.set(Status.OPEN);
                 this.start();
             }
         } finally {
@@ -287,37 +303,18 @@ public class Disposer extends Thread {
         waitForEmpty();
         lock.lock();
         try {
-            disableAdd = true;
-            if (started.getAndSet(true)) {  // true if daemon is working
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty() || working.get()) {
-                    close.set(cleanUp);
-                    return;
-                }
-                close.set(new DelayedClose() {
-                    @Override
-                    public boolean delayedClose() {
-                        // do nothing
-                        return true;
-                    }
-                });
+            var currentStatus = status.get();
+            if (status.get() == Status.CLOSED) {
+                throw new AssertionError("Session close is already scheduled");
+            } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is runnint`
+                close.set(cleanUp);
+                return;
             }
-            empty.signalAll();
+            status.set(Status.CLOSED);
+            cleanUp.delayedClose();
         } finally {
             lock.unlock();
         }
-        cleanUp.delayedClose();
-    }
-
-    /**
-     * Method to check whether the thread that called close is a disposer or not.
-     * This method is provided in order to deal with both the case where a FutureResponse is closed without get
-     * and the case where close is taken place for a ServerResource that has gotton from a FutureResponse.
-     * ServerResource.close() should implement in that it performs close processing when it has been called from the Disposer,
-     * and it registers a delayed close with the Disposer when it has been called from a non-disposer module.
-     * @return true if serverResource.close() is currently being called by this disposer
-     */
-    public boolean isClosingNow() {
-        return disposerThreadId == Thread.currentThread().getId();
     }
 
     /**
@@ -328,7 +325,7 @@ public class Disposer extends Thread {
     public void waitForEmpty() {
         lock.lock();
         try {
-            while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || working.get()) {
+            while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                 try {
                     empty.await();
                 } catch (InterruptedException e) {

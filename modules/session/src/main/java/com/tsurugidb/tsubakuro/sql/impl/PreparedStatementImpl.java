@@ -118,17 +118,13 @@ public class PreparedStatementImpl implements PreparedStatement {
         }
         if (disposer != null) {
             if (!addedToDisposer) {
-                if (disposer.isClosingNow()) {
-                    doClose();
-                } else {
-                    disposer.add(new Disposer.DelayedClose() {
-                        @Override
-                        public boolean delayedClose() throws ServerException, IOException, InterruptedException {
-                            return doClose();
-                        }
-                    });
-                    addedToDisposer = true;
-                }
+                disposer.add(new Disposer.DelayedClose() {
+                    @Override
+                    public boolean delayedClose() throws ServerException, IOException, InterruptedException {
+                        return doClose();
+                    }
+                });
+                addedToDisposer = true;
             }
             return;
         }
