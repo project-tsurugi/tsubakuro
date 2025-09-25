@@ -66,9 +66,9 @@ class Queues {
     }
 
     synchronized void queueRequest(RequestEntry requestEntry) {
-        var slotEntrybefor = slotQueue.poll();
-        if (slotEntrybefor != null) {
-            pairAnnihilation(slotEntrybefor, requestEntry);
+        var slotEntrybefore = slotQueue.poll();
+        if (slotEntrybefore != null) {
+            pairAnnihilation(slotEntrybefore, requestEntry);
             return;
         }
         requestQueue.add(requestEntry);
