@@ -170,11 +170,9 @@ public class Disposer extends Thread {
             status.set(Status.SHUTDOWN);
             while (!shutdownQueue.isEmpty()) {  // in case multiple shutdown requests are registered
                 try {
-                    shutdownQueue.peek().process();
+                    shutdownQueue.poll().process();
                 } catch (IOException e) {
                     exception = addSuppressed(exception, e);
-                } finally {
-                    shutdownQueue.poll();
                 }
             }
 
@@ -258,7 +256,7 @@ public class Disposer extends Thread {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             serverResourceQueue.add(resource);
-            if (status.get() == Status.INIT) {
+            if (currentStatus == Status.INIT) {
                 status.set(Status.OPEN);
                 this.start();
             }
@@ -281,6 +279,7 @@ public class Disposer extends Thread {
             if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
+            shutdownQueue.add(cleanUp);
             if (currentStatus == Status.INIT) {
                 status.set(Status.OPEN);
                 this.start();
@@ -304,7 +303,7 @@ public class Disposer extends Thread {
         lock.lock();
         try {
             var currentStatus = status.get();
-            if (status.get() == Status.CLOSED) {
+            if (currentStatus == Status.CLOSED) {
                 throw new AssertionError("Session close is already scheduled");
             } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is runnint`
                 close.set(cleanUp);
