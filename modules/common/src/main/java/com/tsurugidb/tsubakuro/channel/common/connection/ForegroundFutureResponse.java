@@ -54,12 +54,19 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     private final AtomicReference<V> result = new AtomicReference<>();
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean closeOnce = new AtomicBoolean();
 
     private final AtomicBoolean gotton = new AtomicBoolean();
 
     private Timeout closeTimeout = null;
 
     private final Disposer disposer;
+
+    // A time short enough to cause a timeout if no message arrives during the acquisition operation,
+    // measured in microseconds.
+    static final long VERY_SHORT_TIMEOUT = 1000;
+    static final TimeUnit VERY_SHORT_TIMEOUT_UNIT = TimeUnit.MICROSECONDS;
+    static final Timeout VERY_SHORT = new Timeout(VERY_SHORT_TIMEOUT, VERY_SHORT_TIMEOUT_UNIT, Timeout.Policy.IGNORE);
 
     /**
      * Creates a new instance.
@@ -93,12 +100,22 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     synchronized V retrieve()
             throws InterruptedException, IOException, ServerException, TimeoutException {
-        gotton.set(true);
         var mapped = result.get();
         if (mapped != null) {
             return mapped;
         }
+        if (closed.get()) {
+            throw new AlreadyClosedException();
+        }
         return processResult(getInternal(POLL_INTERVAL, TimeUnit.SECONDS), Timeout.DISABLED);
+    }
+
+    /**
+     * An exception notifying that the FutureResponse has been closed.
+     */
+    public static class AlreadyClosedException extends IOException {
+        AlreadyClosedException() {
+        }
     }
 
     @Override
@@ -185,8 +202,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
-        Exception exception = null;
+        if (closeOnce.getAndSet(true)) {
+            return;
+        }
 
+        Exception exception = null;
         if (!gotton.getAndSet(true)) {
             try {
                 Response response = null;
@@ -194,6 +214,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     response = delegate.get(closeTimeout.value(), closeTimeout.unit());
                 } else {
                     response = delegate.get();
+                }
+                if (response.isMainResponseReady()) {
+                    processResult(Owner.of(response), VERY_SHORT);
+                    return;
                 }
                 response.cancel();
             } catch (Exception e) {

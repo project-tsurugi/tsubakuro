@@ -18,7 +18,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeoutException;
+// import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
 import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
+import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
+import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
@@ -115,23 +117,34 @@ public class Disposer extends Thread {
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
-                } catch (ChannelResponse.AlreadyCanceledException e) {
+                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
                     // Server resource has not created at the server
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-                } catch (TimeoutException e) {
+//                } catch (TimeoutException e) {
                     // Let's try again
-                    futureResponseQueue.add(futureResponse);
-                } catch (Exception e) {     // should not occur
-                    if (exception == null) {
-                        exception = e;
-                    } else {
-                        exception.addSuppressed(e);
+//                    futureResponseQueue.add(futureResponse);
+                } catch (Exception e) {
+                    boolean ignore = false;
+                    if (e instanceof CoreServiceException) {
+                        System.out.println("CoreServiceException in disposer: " + e);
+                        // ignore OPERATION_CANCELED error
+                        if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
+                            ignore = true;
+                        }
+                    }
+                    if (!ignore) {
+                        // should not occur
+                        if (exception == null) {
+                            exception = e;
+                        } else {
+                            exception.addSuppressed(e);
+                        }
                     }
                 } finally {
                     futureResponseQueue.poll();
+                    continue;
                 }
-                continue;
             }
             var serverResource = serverResourceQueue.peek();
             if (serverResource != null) {
@@ -155,7 +168,10 @@ public class Disposer extends Thread {
                     continue;
                 }
                 empty.signalAll();
-                shoudContinue = close.get() == null;
+                shoudContinue = shutdownQueue.isEmpty() && close.get() == null;
+                if (!shoudContinue) {
+                    status.set(Status.SHUTDOWN);
+                }
             } finally {
                 lock.unlock();
             }
@@ -167,30 +183,28 @@ public class Disposer extends Thread {
                 }
                 continue;
             }
-            status.set(Status.SHUTDOWN);
-            while (!shutdownQueue.isEmpty()) {  // in case multiple shutdown requests are registered
-                try {
-                    shutdownQueue.poll().process();
-                } catch (IOException e) {
-                    exception = addSuppressed(exception, e);
-                }
-            }
 
-            // confirm if we can go ahead to session close
-            DelayedClose delayedClose = null;
-            lock.lock();
-            try {
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty() || !shutdownQueue.isEmpty()) {
+            while (true) {
+                while (!shutdownQueue.isEmpty()) {  // in case multiple shutdown requests are registered
+                    try {
+                        shutdownQueue.poll().process();
+                    } catch (IOException e) {
+                        exception = addSuppressed(exception, e);
+                    }
+                }
+
+                // confirm if we can go ahead to session close
+                DelayedClose delayedClose = close.get();
+                if (delayedClose == null) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        // No problem, it's OK
+                    }
                     continue;
                 }
-                status.set(Status.CLOSED);
-                delayedClose = close.get();
-            } finally {
-                lock.unlock();
-            }
 
-            if (delayedClose != null) {
-                // go ahead to session close as futureResponseQueue, serverResourceQueue, and shutdownQueue are empty
+                status.set(Status.CLOSED);
                 try {
                     delayedClose.delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
@@ -198,13 +212,7 @@ public class Disposer extends Thread {
                 }
                 break;
             }
-
-            // sleep outside of the lock
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                // No problem, it's OK
-            }
+            break;
         }
 
         if (exception != null) {
@@ -299,21 +307,20 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
-        waitForEmpty();
         lock.lock();
         try {
             var currentStatus = status.get();
             if (currentStatus == Status.CLOSED) {
                 throw new AssertionError("Session close is already scheduled");
-            } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is runnint`
+            } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is running`
                 close.set(cleanUp);
                 return;
             }
             status.set(Status.CLOSED);
-            cleanUp.delayedClose();
         } finally {
             lock.unlock();
         }
+        cleanUp.delayedClose();  // execute outside the lock
     }
 
     /**
