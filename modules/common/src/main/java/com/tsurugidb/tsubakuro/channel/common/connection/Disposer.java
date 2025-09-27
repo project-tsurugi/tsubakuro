@@ -18,7 +18,7 @@ package com.tsurugidb.tsubakuro.channel.common.connection;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-// import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -113,7 +113,7 @@ public class Disposer extends Thread {
             var futureResponse = futureResponseQueue.peek();
             if (futureResponse != null) {
                 try {
-                    var obj = futureResponse.retrieve();
+                    var obj = futureResponse.cleanUp();
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
@@ -121,9 +121,9 @@ public class Disposer extends Thread {
                     // Server resource has not created at the server
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-//                } catch (TimeoutException e) {
+                } catch (TimeoutException e) {
                     // Let's try again
-//                    futureResponseQueue.add(futureResponse);
+                    futureResponseQueue.add(futureResponse);
                 } catch (Exception e) {
                     boolean ignore = false;
                     if (e instanceof CoreServiceException) {

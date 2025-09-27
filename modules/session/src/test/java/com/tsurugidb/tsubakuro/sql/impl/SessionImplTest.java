@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2025 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,130 +28,41 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.framework.proto.FrameworkRequest;
+import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
-import com.tsurugidb.tsubakuro.util.FutureResponse;
+import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
+import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Placeholders;
 import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.Types;
-import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
-import com.tsurugidb.sql.proto.SqlRequest;
-import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.session.ProtosForTest;
 
 class SessionImplTest {
-    SqlResponse.Response nextResponse;
+
+    private final MockLink link = new MockLink();
+
     private final long specialTimeoutValue = 9999;
-    private final String exceptionMessage = "link is already closed";
 
-    class ChannelResponseMock implements Response {
-        private final SessionWireMock wire;
-        private boolean cancelCalled = false;
+    private final String exceptionMessage = "already closed";
 
-        ChannelResponseMock(SessionWireMock wire) {
-            this.wire = wire;
-        }
-        @Override
-        public boolean isMainResponseReady() {
-            return true;
-        }
-        @Override
-        public ByteBuffer waitForMainResponse() throws IOException {
-            return ByteBuffer.wrap(DelimitedConverter.toByteArray(nextResponse));
-        }
-        @Override
-        public ByteBuffer waitForMainResponse(long timeout, TimeUnit unit) throws IOException {
-            return waitForMainResponse();
-        }
-        @Override
-        public void cancel() throws IOException {
-            cancelCalled = true;
-        }
-        @Override
-        public void close() throws IOException, InterruptedException {
-        }
-        boolean cancelCalled() {
-            return cancelCalled;
-        }
-    }
-
-    class SessionWireMock implements Wire {
-        private boolean closed = false;
-        private ChannelResponseMock channelResponseMock;
-
-        @Override
-        public FutureResponse<? extends Response> send(int serviceID, byte[] byteArray) throws IOException {
-            if (closed) {
-                throw new IOException(exceptionMessage);
-            }
-
-            var request = SqlRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(byteArray));
-            switch (request.getRequestCase()) {
-                case BEGIN:
-                    nextResponse = ProtosForTest.BeginResponseChecker.builder().build();
-                    break;
-                case PREPARE:
-                    nextResponse = ProtosForTest.PrepareResponseChecker.builder().build();
-                    break;
-                case EXECUTE_STATEMENT:  // for cancel test
-                    nextResponse = SqlResponse.Response.newBuilder()
-                        .setExecuteResult(SqlResponse.ExecuteResult.newBuilder())
-                        .build();
-                    break;
-                case DISPOSE_PREPARED_STATEMENT:
-                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                    break;
-                case COMMIT:
-                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                    break;
-                case ROLLBACK:
-                    nextResponse = ProtosForTest.ResultOnlyResponseChecker.builder().build();
-                    break;
-                case DISPOSE_TRANSACTION:
-                    nextResponse = SqlResponse.Response.newBuilder()
-                        .setDisposeTransaction(SqlResponse.DisposeTransaction.newBuilder()
-                                       .setSuccess(SqlResponse.Void.newBuilder()))
-                        .build();
-                        break;
-                default:
-                    System.out.println("falls default case%n" + request);
-                    return null;  // dummy as it is test for session
-            }
-            channelResponseMock = new ChannelResponseMock(this);
-            return FutureResponse.wrap(Owner.of(channelResponseMock));
-        }
-
-        @Override
-        public FutureResponse<? extends Response> send(int serviceID, ByteBuffer request) throws IOException {
-            return send(serviceID, request.array());
-        }
-
-        @Override
-        public ResultSetWire createResultSetWire() throws IOException {
-            if (closed) {
-                throw new IOException(exceptionMessage);
-            }
-            return null;  // dummy as it is test for session
-        }
-
-        @Override
-        public void close() throws IOException {
-            closed = true;
-        }
-
-        ChannelResponseMock channelResponseMock() {
-            return channelResponseMock;
-        }
-    }
+    private static int SERVICE_ID_ENDPOINT_BROKER = 1;
 
     @Test
     void useSessionAfterClose() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         var sqlClient = SqlClient.attach(session);
         sqlClient.close();
         session.close();
@@ -167,8 +78,9 @@ class SessionImplTest {
     @Disabled("timeout should raise whether error or warning")
     @Test
     void sessionTimeout() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         session.setCloseTimeout(new Timeout(specialTimeoutValue, TimeUnit.SECONDS, Timeout.Policy.ERROR));
 
         Throwable exception = assertThrows(IOException.class, () -> {
@@ -180,11 +92,16 @@ class SessionImplTest {
 
     @Test
     void useTransactionAfterClose() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         var sqlClient = SqlClient.attach(session);
 
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
         var transaction = sqlClient.createTransaction().get();
+
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         transaction.commit();
 
         Throwable exception = assertThrows(IOException.class, () -> {
@@ -196,18 +113,31 @@ class SessionImplTest {
 
     @Test
     void useTransactionAfterSessionClose() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         var sqlClient = SqlClient.attach(session);
 
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
         var t1 = sqlClient.createTransaction().get();
         var t2 = sqlClient.createTransaction().get();
         var t3 = sqlClient.createTransaction().get();
         var t4 = sqlClient.createTransaction().get();
 
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         t2.commit();
         t4.commit();
 
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         sqlClient.close();
         session.close();
         session.waitForCompletion();
@@ -226,15 +156,19 @@ class SessionImplTest {
 
     @Test
     void usePreparedStatementAfterClose() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         var sqlClient = SqlClient.attach(session);
 
+        link.next(ProtosForTest.PrepareResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
         var preparedStatement = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         preparedStatement.close();
         session.waitForDisposerEmpty();
 
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
         var transaction = sqlClient.createTransaction().get();
 
         Throwable exception = assertThrows(IOException.class, () -> {
@@ -243,24 +177,38 @@ class SessionImplTest {
         // FIXME: check structured error code instead of message
         assertEquals("already closed", exception.getMessage());
 
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         transaction.commit();
         sqlClient.close();
     }
 
     @Test
     void usePreparedStatementAfterSessionClose() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        session.connect(new SessionWireMock());
+        session.connect(wire);
         var sqlClient = SqlClient.attach(session);
 
+        link.next(ProtosForTest.PrepareResponseChecker.builder().build());
+        link.next(ProtosForTest.PrepareResponseChecker.builder().build());
+        link.next(ProtosForTest.PrepareResponseChecker.builder().build());
+        link.next(ProtosForTest.PrepareResponseChecker.builder().build());
         String sql = "SELECT * FROM ORDERS WHERE o_id = :o_id";
         var ps1 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps2 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps3 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
         var ps4 = sqlClient.prepare(sql, Placeholders.of("o_id", long.class)).get();
 
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         ps2.close();
         ps4.close();
+
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
+        link.next(ProtosForTest.ResultOnlyResponseChecker.builder().build());
         sqlClient.close();
         session.close();
         session.waitForCompletion();
@@ -279,15 +227,21 @@ class SessionImplTest {
 
     @Test
     void requestCancel() throws Exception {
+        var wire = new WireImpl(link);
         var session = new SessionImpl();
-        var wire = new SessionWireMock();
         session.connect(wire);
         var sqlClient = SqlClient.attach(session);
+
+        link.next(ProtosForTest.BeginResponseChecker.builder().build());
+        link.setTimeoutOnEmpty(true);
 
         var transaction = sqlClient.createTransaction().get();
         var future = transaction.executeStatement("this is a sql for test");
         future.close();
 
-//        assertTrue(wire.channelResponseMock().cancelCalled());
+        var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
+        assertEquals(SERVICE_ID_ENDPOINT_BROKER, header.getServiceId());
+        var request = EndpointRequest.Request.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforePayload()));
+        assertTrue(request.hasCancel());
     }
 }

@@ -62,12 +62,6 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final Disposer disposer;
 
-    // A time short enough to cause a timeout if no message arrives during the acquisition operation,
-    // measured in microseconds.
-    static final long VERY_SHORT_TIMEOUT = 1000;
-    static final TimeUnit VERY_SHORT_TIMEOUT_UNIT = TimeUnit.MICROSECONDS;
-    static final Timeout VERY_SHORT = new Timeout(VERY_SHORT_TIMEOUT, VERY_SHORT_TIMEOUT_UNIT, Timeout.Policy.IGNORE);
-
     /**
      * Creates a new instance.
      * @param delegate the decoration target
@@ -96,26 +90,6 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             return mapped;
         }
         return processResult(getInternal(), Timeout.DISABLED);
-    }
-
-    synchronized V retrieve()
-            throws InterruptedException, IOException, ServerException, TimeoutException {
-        var mapped = result.get();
-        if (mapped != null) {
-            return mapped;
-        }
-        if (closed.get()) {
-            throw new AlreadyClosedException();
-        }
-        return processResult(getInternal(POLL_INTERVAL, TimeUnit.SECONDS), Timeout.DISABLED);
-    }
-
-    /**
-     * An exception notifying that the FutureResponse has been closed.
-     */
-    public static class AlreadyClosedException extends IOException {
-        AlreadyClosedException() {
-        }
     }
 
     @Override
@@ -215,10 +189,6 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 } else {
                     response = delegate.get();
                 }
-                if (response.isMainResponseReady()) {
-                    processResult(Owner.of(response), VERY_SHORT);
-                    return;
-                }
                 response.cancel();
             } catch (Exception e) {
                 exception = e;
@@ -253,6 +223,31 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                 }
             }
+        }
+    }
+
+    V cleanUp() throws InterruptedException, IOException, ServerException, TimeoutException {
+        Response response = delegate.get();
+        if (response != null) {
+            close();
+            while (!closed.get()) {  // in case another thread has executed close()
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+            }
+            synchronized (this) {
+                if (response.isMainResponseReady()) {
+                    return processResult(Owner.of(response), Timeout.DISABLED);
+                }
+            }
+        }
+        throw new AlreadyClosedException();
+    }
+
+    static class AlreadyClosedException extends IOException {
+        AlreadyClosedException() {
         }
     }
 
