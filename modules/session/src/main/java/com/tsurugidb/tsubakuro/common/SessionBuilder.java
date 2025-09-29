@@ -169,6 +169,7 @@ public final class SessionBuilder {
 
     /**
      * Establishes a connection to the Tsurugi server.
+     * When the timeout is 0, no timeout is detected.
      * @param timeout the maximum time to wait
      * @param unit the time unit of {@code timeout}
      * @return the established connection session

@@ -95,6 +95,9 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     @Override
     public synchronized V get(long timeout, TimeUnit unit)
             throws InterruptedException, IOException, ServerException, TimeoutException {
+        if (timeout == 0 || unit == null) {
+            return get();
+        }
         if (closed.get()) {
             throw new IOException("Future for " + mapper.toString() + " is already closed");
         }

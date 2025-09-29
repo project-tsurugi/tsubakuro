@@ -17,21 +17,26 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
-
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import java.util.concurrent.TimeUnit;
 
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
@@ -49,12 +54,16 @@ import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;
+import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.SqlServiceCode;
 import com.tsurugidb.tsubakuro.sql.SqlServiceException;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
+
 
 class ResultSetTest {
 
@@ -247,6 +256,85 @@ class ResultSetTest {
             assertEquals(e.getDiagnosticCode(),  CoreServiceCode.valueOf(Diagnostics.Code.PERMISSION_ERROR));
         }
         disposer.waitForEmpty();
+        assertFalse(link.hasRemaining());
+    }
+
+    static class Timeout extends Thread {
+        private final FutureResponse<ResultSet> futureResultSet;
+        private final int timeout;
+        private Error error = null;
+        private Exception exception = null;
+
+        Timeout(FutureResponse<ResultSet> futureResultSet, int timeout) {
+            this.futureResultSet = futureResultSet;
+            this.timeout = timeout;
+        }
+
+        public void run() {
+            try {
+                assertTimeoutPreemptively(
+                    Duration.ofSeconds(1), () -> { futureResultSet.get(timeout, TimeUnit.MILLISECONDS); }
+                );
+            } catch (Error e) {
+                error = e;
+            } catch (Exception e) {
+                exception = e;
+            }
+        };
+
+        Error getError() {
+            return error;
+        }
+        Exception getException() {
+            return exception;
+        }
+    }
+
+    @Test
+    void query_ZeroTimeout() throws Exception {
+        link.setTimeoutOnEmpty(true);
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              disposer);
+            var futureResultSet = transaction.executeQuery("select 1");
+        ) {
+            var timeout = new Timeout(futureResultSet, 0);
+            timeout.start();
+            Thread.sleep(2000);
+            timeout.join();
+
+            assertTrue(timeout.getError() instanceof AssertionFailedError);
+        }
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void query_timeout() throws Exception {
+        link.setTimeoutOnEmpty(true);
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              disposer);
+            var futureResultSet = transaction.executeQuery("select 1");
+        ) {
+            var timeout = new Timeout(futureResultSet, 500);
+            timeout.start();
+            Thread.sleep(2000);
+            timeout.join();
+
+            assertTrue(timeout.getException() instanceof ResponseTimeoutException);
+        }
         assertFalse(link.hasRemaining());
     }
 }
