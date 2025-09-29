@@ -26,6 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -343,33 +346,38 @@ public class SessionImpl implements Session {
     class ShutdownCleanUp implements FutureResponse<Void>, Disposer.DelayedShutdown {
         private final ShutdownType type;
         private FutureResponse<Void> future = null;
-        private AtomicBoolean done = new AtomicBoolean(false);
+        private final Lock lock = new ReentrantLock();
+        private final Condition futureCondition = lock.newCondition();
 
         ShutdownCleanUp(ShutdownType type) {
             this.type = type;
         }
         @Override
-        public synchronized void process() throws IOException {
-            if (done.getAndSet(true)) {
-                return;
-            }
+        public void process() throws IOException {
             while (true) {
                 int expected = closed.get();
                 if (expected == SESSION_CLOSED) {
+                    future = FutureResponse.returns(null);
+                    futureCondition.signalAll();
                     return;
                 }
                 if (future == null) {
                     if (!closed.compareAndSet(expected, expected + 1)) {
                         continue;
                     }
-                    disposer.waitForEmpty();
                     var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
-                    future = sendUrgent(
-                        SERVICE_ID,
-                            toDelimitedByteArray(newRequest()
-                                .setShutdown(shutdownMessageBuilder.setType(type.type()))
-                                .build()),
-                        new ShutdownProcessor().asResponseProcessor());
+                    lock.lock();
+                    try {
+                        future = sendUrgent(
+                            SERVICE_ID,
+                                toDelimitedByteArray(newRequest()
+                                    .setShutdown(shutdownMessageBuilder.setType(type.type()))
+                                    .build()),
+                            new ShutdownProcessor().asResponseProcessor());
+                        futureCondition.signalAll();
+                    } finally {
+                        lock.unlock();
+                    }
                 }
                 return;
             }
@@ -384,20 +392,24 @@ public class SessionImpl implements Session {
         }
         @Override
         public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
-            if (future == null) {
-                try {
-                    process();
-                } catch (IOException fe) {
-                    addSuppressed(fe);
+            lock.lock();
+            try {
+                while (future == null) {
+                    try {
+                        futureCondition.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw e;
+                    }
                 }
+            } finally {
+                lock.unlock();
             }
             try {
-                if (future != null) {
-                    if (timeout == 0 && unit == null) {
-                        future.get();
-                    } else {
-                        future.get(timeout, unit);
-                    }
+                if (timeout == 0 && unit == null) {
+                    future.get();
+                } else {
+                    future.get(timeout, unit);
                 }
             } catch (IOException | ServerException | InterruptedException | TimeoutException fe) {
                 addSuppressed(fe);
@@ -535,7 +547,6 @@ public class SessionImpl implements Session {
     }
 
     private void doClose(int d) throws ServerException, IOException, InterruptedException {
-        disposer.waitForEmpty();
         while (true) {
             int expected = closed.get();
             if (expected == SESSION_CLOSED) {

@@ -54,6 +54,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     private final AtomicReference<V> result = new AtomicReference<>();
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean closeOnce = new AtomicBoolean();
 
     private final AtomicBoolean gotton = new AtomicBoolean();
 
@@ -89,16 +90,6 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             return mapped;
         }
         return processResult(getInternal(), Timeout.DISABLED);
-    }
-
-    synchronized V retrieve()
-            throws InterruptedException, IOException, ServerException, TimeoutException {
-        gotton.set(true);
-        var mapped = result.get();
-        if (mapped != null) {
-            return mapped;
-        }
-        return processResult(getInternal(POLL_INTERVAL, TimeUnit.SECONDS), Timeout.DISABLED);
     }
 
     @Override
@@ -185,8 +176,11 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public synchronized void close() throws IOException, ServerException, InterruptedException {
-        Exception exception = null;
+        if (closeOnce.getAndSet(true)) {
+            return;
+        }
 
+        Exception exception = null;
         if (!gotton.getAndSet(true)) {
             try {
                 Response response = null;
@@ -229,6 +223,31 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                 }
             }
+        }
+    }
+
+    V cleanUp() throws InterruptedException, IOException, ServerException, TimeoutException {
+        Response response = delegate.get();
+        if (response != null) {
+            close();
+            while (!closed.get()) {  // in case another thread has executed close()
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    // ignore
+                }
+            }
+            synchronized (this) {
+                if (response.isMainResponseReady()) {
+                    return processResult(Owner.of(response), Timeout.DISABLED);
+                }
+            }
+        }
+        throw new AlreadyClosedException();
+    }
+
+    static class AlreadyClosedException extends IOException {
+        AlreadyClosedException() {
         }
     }
 

@@ -34,6 +34,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.diagnostics.proto.Diagnostics;
@@ -53,6 +56,8 @@ import com.tsurugidb.tsubakuro.util.Pair;
  * A simple implementation of {@link Response} which just returns payload data.
  */
 public class ChannelResponse implements Response {
+    static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
+
     public static final String METADATA_CHANNEL_ID = "metadata";
     public static final String RELATION_CHANNEL_ID = "relation";
 
@@ -69,13 +74,15 @@ public class ChannelResponse implements Response {
     // cancel request has been sent out
     public static final int CANCEL_STATUS_CANCEL_SENT = -4;
     // the request is to be sent
-    public static final int CANCEL_STATUS_REQUEST_SNEDING = -5;
+    public static final int CANCEL_STATUS_REQUEST_SENDING = -5;
     // the request is not sent out
     public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
     // the request is not sent out
     public static final int CANCEL_STATUS_CANCEL_DO_NOT_SEND = -7;
     // the request is not sent out
     public static final int CANCEL_STATUS_ALREADY_RECEIVED = -8;
+    // the request is canceled before sending
+    public static final int CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND = -9;
 
     private long cancelThreadId = 0;
 
@@ -131,7 +138,7 @@ public class ChannelResponse implements Response {
      */
     public ChannelResponse(Link link, int slot) {
         this.link = link;
-        this.cancelStatus.set(CANCEL_STATUS_REQUEST_SNEDING);
+        this.cancelStatus.set(CANCEL_STATUS_REQUEST_SENDING);
     }
 
     /**
@@ -278,20 +285,26 @@ public class ChannelResponse implements Response {
      * Check if the request is ready to be sent.
      *
      * @param slot the slot number in the responseBox
-     * @return false when cancel has already took place
+     * @return true when slot is assigned, false when slot is already assigned or cancel has already took place
      */
     boolean canAssignSlot() {
         while (true) {
             var expected = cancelStatus.get();
             if (expected == CANCEL_STATUS_NO_SLOT) {
-                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_SNEDING)) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_SENDING)) {
                     return true;
                 }
+                continue;
             }
-            if (expected == CANCEL_STATUS_CANCEL_SENT) {
+            if (expected == CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND) {
                 exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
                 return false;
             }
+            if (expected == CANCEL_STATUS_CANCEL_SENT) {
+                return false;
+            }
+            LOG.error("canAssignSlot: cancelStatus = " + expected);
+            return false;
         }
     }
 
@@ -310,7 +323,7 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (expected != CANCEL_STATUS_REQUEST_SNEDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+            if (expected != CANCEL_STATUS_REQUEST_SENDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
                 throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
             }
             if (cancelStatus.compareAndSet(expected, slot)) {
@@ -337,13 +350,13 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_CANCEL_SENT)) {
+            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND)) {
                 return; // cancel before request send
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
                 return; // response has already arrived
             }
-            if (expected == CANCEL_STATUS_CANCEL_SENT) {
+            if (expected == CANCEL_STATUS_CANCEL_SENT || expected == CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND) {
                 return; // cancel twice
             }
         }
@@ -374,7 +387,7 @@ public class ChannelResponse implements Response {
                 continue;
             }
             switch (expected) {
-                case CANCEL_STATUS_REQUEST_SNEDING:
+                case CANCEL_STATUS_REQUEST_SENDING:
                     if (!received) {
                         if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_REQUEST_DO_NOT_SEND)) {
                             return;
