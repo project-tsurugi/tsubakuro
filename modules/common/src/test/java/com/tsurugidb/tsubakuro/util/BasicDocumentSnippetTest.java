@@ -15,10 +15,10 @@
  */
 package com.tsurugidb.tsubakuro.util;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
+import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +37,7 @@ class BasicDocumentSnippetTest {
     @Test
     void new_empty() {
         var doc = new BasicDocumentSnippet();
-        assertEquals(new BasicDocumentSnippet(List.of(), List.of(), List.of()), doc);
+        assertEquals(new BasicDocumentSnippet(List.of(), List.of(), List.of(), null), doc);
     }
 
     @Doc("OK")
@@ -129,5 +129,36 @@ class BasicDocumentSnippetTest {
                                 new BasicDocumentSnippet.BasicReference("http://example.com/3", null))),
                 doc,
                 doc.toString());
+    }
+
+    @Doc(value = "OK", code = 123)
+    @Test
+    void of_code() {
+        var a = pick("of_code");
+        var doc = BasicDocumentSnippet.of(a);
+        assertEquals(
+                new BasicDocumentSnippet(
+                        List.of("OK"),
+                        List.of(),
+                        List.of(),
+                        123),
+                doc,
+                doc.toString());
+        assertEquals(OptionalInt.of(123), doc.getCode());
+    }
+
+    @Doc(value = "OK", code = Doc.CODE_UNSPECIFIED)
+    @Test
+    void of_code_unspecified() {
+        var a = pick("of_code_unspecified");
+        var doc = BasicDocumentSnippet.of(a);
+        assertEquals(
+                new BasicDocumentSnippet(
+                        List.of("OK"),
+                        List.of(),
+                        List.of()),
+                doc,
+                doc.toString());
+        assertEquals(OptionalInt.empty(), doc.getCode());
     }
 }

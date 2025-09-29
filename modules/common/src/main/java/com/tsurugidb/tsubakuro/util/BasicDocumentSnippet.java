@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
@@ -26,6 +27,7 @@ import javax.annotation.Nullable;
 
 /**
  * A basic implementation of {@link DocumentSnippet}.
+ * @version 1.12.0
  */
 public class BasicDocumentSnippet implements DocumentSnippet {
 
@@ -35,29 +37,48 @@ public class BasicDocumentSnippet implements DocumentSnippet {
 
     private final List<Reference> references;
 
+    private final @Nullable Integer code;
+
     /**
      * Creates an empty instance.
      */
     public BasicDocumentSnippet() {
-        this(List.of(), List.of(), List.of());
+        this(List.of(), List.of(), List.of(), null);
     }
 
     /**
      * Creates a new instance.
      * @param description the description in the document snippet
-     * @param notes additional notesin the document snippet
+     * @param notes additional notes in the document snippet
      * @param references optional references in the document snippet
      */
     public BasicDocumentSnippet(
             @Nonnull List<? extends String> description,
             @Nonnull List<? extends String> notes,
             @Nonnull List<? extends Reference> references) {
+        this(description, notes, references, null);
+    }
+
+    /**
+     * Creates a new instance.
+     * @param description the description in the document snippet
+     * @param notes additional notes in the document snippet
+     * @param references optional references in the document snippet
+     * @param code an optional code number for the target element
+     * @since 1.12.0
+     */
+    public BasicDocumentSnippet(
+            @Nonnull List<? extends String> description,
+            @Nonnull List<? extends String> notes,
+            @Nonnull List<? extends Reference> references,
+            @Nullable Integer code) {
         Objects.requireNonNull(description);
         Objects.requireNonNull(notes);
         Objects.requireNonNull(references);
         this.description = List.copyOf(description);
         this.notes = List.copyOf(notes);
         this.references = List.copyOf(references);
+        this.code = code;
     }
 
     /**
@@ -90,7 +111,11 @@ public class BasicDocumentSnippet implements DocumentSnippet {
                     return new BasicReference(location, title);
                 })
                 .collect(Collectors.toList());
-        return new BasicDocumentSnippet(description, notes, references);
+        Integer code = null;
+        if (annotation.code() != Doc.CODE_UNSPECIFIED) {
+            code = annotation.code();
+        }
+        return new BasicDocumentSnippet(description, notes, references, code);
     }
 
     @Override
@@ -109,8 +134,16 @@ public class BasicDocumentSnippet implements DocumentSnippet {
     }
 
     @Override
+    public OptionalInt getCode() {
+        if (code != null) {
+            return OptionalInt.of(code);
+        }
+        return OptionalInt.empty();
+    }
+
+    @Override
     public int hashCode() {
-        return Objects.hash(description, notes, references);
+        return Objects.hash(description, notes, references, code);
     }
 
     @Override
@@ -127,13 +160,14 @@ public class BasicDocumentSnippet implements DocumentSnippet {
         BasicDocumentSnippet other = (BasicDocumentSnippet) obj;
         return Objects.equals(description, other.description)
                 && Objects.equals(notes, other.notes)
-                && Objects.equals(references, other.references);
+                && Objects.equals(references, other.references)
+                && Objects.equals(code, other.code);
     }
 
     @Override
     public String toString() {
-        return String.format("BasicDocumentSnippet(description=%s, notes=%s, references=%s)", //$NON-NLS-1$
-                description, notes, references);
+        return String.format("BasicDocumentSnippet(description=%s, notes=%s, references=%s, code=%s)", //$NON-NLS-1$
+                description, notes, references, code);
     }
 
     /**
