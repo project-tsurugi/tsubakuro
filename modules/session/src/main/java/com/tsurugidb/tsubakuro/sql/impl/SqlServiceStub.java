@@ -101,6 +101,7 @@ public class SqlServiceStub implements SqlService {
 
     private final ServerResourceHolder futureResponses = new ServerResourceHolder();
     private final ServerResourceHolder resources = new ServerResourceHolder();
+    private boolean resourcesClosed = false;
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
@@ -187,8 +188,12 @@ public class SqlServiceStub implements SqlService {
             var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources, disposer);
             transactionImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
-                return resources.register(transactionImpl);
+                if (!resourcesClosed) {
+                    return resources.register(transactionImpl);
+                }
             }
+            transactionImpl.close();
+            throw new SessionAlreadyClosedException();
         }
     }
 
@@ -317,8 +322,12 @@ public class SqlServiceStub implements SqlService {
             var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request, disposer);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
-                return resources.register(preparedStatementImpl);
+                if (!resourcesClosed) {
+                    return resources.register(preparedStatementImpl);
+                }
             }
+            preparedStatementImpl.close();
+            throw new SessionAlreadyClosedException();
         }
     }
 
@@ -630,8 +639,12 @@ public class SqlServiceStub implements SqlService {
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName, request);
                 resultSetImpl.setCloseTimeout(closeTimeout);
                 synchronized (resources) {
-                    return resources.register(resultSetImpl);
+                    if (!resourcesClosed) {
+                        return resources.register(resultSetImpl);
+                    }
                 }
+                resultSetImpl.close();
+                throw new SessionAlreadyClosedException();
             }
         }
 
@@ -1275,6 +1288,7 @@ public class SqlServiceStub implements SqlService {
             futureResponses.close();
         }
         synchronized (resources) {
+            resourcesClosed = true;
             resources.close();
         }
         session.remove(this);
