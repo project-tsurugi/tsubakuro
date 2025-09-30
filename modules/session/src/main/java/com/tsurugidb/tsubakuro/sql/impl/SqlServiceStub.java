@@ -592,7 +592,7 @@ public class SqlServiceStub implements SqlService {
                 ResultSetMetadataAdapter metadata = null;
                 while (true) {
                     Timeout timeoutHere = null;
-                    if (timeout.value() > 0) {
+                    if (timeout.value() > 0 && timeout.unit() != null) {
                         timeoutHere = timeout;
                     } else if (closeTimeout != null) {
                         if (closeTimeout.value() > 0) {

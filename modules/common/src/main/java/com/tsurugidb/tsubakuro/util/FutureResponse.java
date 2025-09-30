@@ -62,6 +62,7 @@ public interface FutureResponse<V> extends ServerResource {
      * After the response has been retrieved, {@link #close()} will never dispose the corresponding server resources.
      * If the response object holds any server resources, please dispose it.
      * </p>
+     * When the timeout is 0 or when the unit is null, no timeout is detected.
      * @param timeout the maximum time to wait
      * @param unit the time unit of {@code timeout}
      * @return the response

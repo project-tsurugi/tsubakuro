@@ -219,6 +219,9 @@ public class ChannelResponse implements Response {
 
     @Override
     public InputStream openSubResponse(String id, long timeout, TimeUnit unit) throws NoSuchElementException, IOException, InterruptedException, ServerException, TimeoutException {
+        if (timeout == 0 || unit == null) {
+            return openSubResponse(id);
+        }
         if (id.equals(METADATA_CHANNEL_ID)) {
             waitForResultSetOrMainResponse(timeout, unit);
             return metadataChannel();

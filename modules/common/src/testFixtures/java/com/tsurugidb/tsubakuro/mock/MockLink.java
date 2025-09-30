@@ -102,8 +102,26 @@ public final class MockLink extends Link {
                 return true;
             }
         }
-        if (timeoutOnEmpty && timeout > 0) {
-            throw new TimeoutException("MockLink timeout on empty");
+        if (timeoutOnEmpty) {
+            if (timeout > 0) {
+                try {
+                    Thread.sleep(unit.toMillis(timeout));
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("interrupted while waiting for response", e);
+                }
+                throw new TimeoutException("MockLink timeout on empty");
+            } else {
+                while (true) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new IOException("interrupted while waiting for response", e);
+                    }
+                }
+                // never reach
+            }
         }
         return false;
     }
