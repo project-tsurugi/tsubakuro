@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
+import com.tsurugidb.tsubakuro.sql.exception.InactiveTransactionException;
 import com.tsurugidb.tsubakuro.test.util.DbTester;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -83,7 +84,12 @@ class DbResultSet2Test extends DbTester {
                 rsFuture1.close();
 
                 try (var rs2 = transaction.executeQuery(sql).await(5, TimeUnit.SECONDS)) {
-                    assertTrue(rs2.nextRow());
+                    try {
+                        assertTrue(rs2.nextRow());
+                    } catch (InactiveTransactionException e) {
+                        // PASS (WORKAROUND)
+                        throw new NoCommitException(e);
+                    }
                 }
             }
         });

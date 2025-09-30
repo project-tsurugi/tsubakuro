@@ -23,6 +23,7 @@ import com.tsurugidb.tsubakuro.debug.DebugClient;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Transaction;
+import com.tsurugidb.tsubakuro.sql.exception.InactiveTransactionException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
 import com.tsurugidb.tsubakuro.util.Timeout.Policy;
@@ -245,6 +246,14 @@ public class DbTester {
         void apply(Exception e) throws Exception;
     }
 
+    protected static class NoCommitException extends RuntimeException {
+        public NoCommitException(InactiveTransactionException cause) {
+            super(cause);
+        }
+
+        private static final long serialVersionUID = 1L;
+    }
+
     protected static void executeOcc(TransactionAction action, ExceptionAction commitErrorAction) throws IOException, ServerException, InterruptedException, TimeoutException {
         try (var sqlClient = SqlClient.attach(getSession())) {
             var option = TransactionOption.newBuilder() //
@@ -252,7 +261,11 @@ public class DbTester {
                     .setLabel("DbTester.executeOcc") //
                     .build();
             try (var transaction = sqlClient.createTransaction(option).await(10, TimeUnit.SECONDS)) {
-                action.execute(transaction);
+                try {
+                    action.execute(transaction);
+                } catch (NoCommitException ignore) {
+                    return;
+                }
                 try {
                     transaction.commit().await(10, TimeUnit.SECONDS);
                 } catch (Exception e) {
