@@ -101,7 +101,7 @@ public class SqlServiceStub implements SqlService {
 
     private final ServerResourceHolder futureResponses = new ServerResourceHolder();
     private final ServerResourceHolder resources = new ServerResourceHolder();
-    private boolean resourcesClosed = false;
+    private volatile boolean resourcesClosed = false;
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
@@ -192,9 +192,18 @@ public class SqlServiceStub implements SqlService {
                     return resources.register(transactionImpl);
                 }
             }
-            transactionImpl.close();
-            throw new SessionAlreadyClosedException();
+            handleSessionAlreadyClosed(transactionImpl);
+            return null; // unreachable
         }
+    }
+
+    private void handleSessionAlreadyClosed(AutoCloseable ac) throws SessionAlreadyClosedException {
+        try {
+            ac.close();
+        } catch (Exception e) {
+            LOG.warn("Failed to close resource although session is already closed.", e); //$NON-NLS-1$
+        }
+        throw new SessionAlreadyClosedException();
     }
 
     @Override
@@ -326,8 +335,8 @@ public class SqlServiceStub implements SqlService {
                     return resources.register(preparedStatementImpl);
                 }
             }
-            preparedStatementImpl.close();
-            throw new SessionAlreadyClosedException();
+            handleSessionAlreadyClosed(preparedStatementImpl);
+            return null; // unreachable
         }
     }
 
@@ -643,8 +652,8 @@ public class SqlServiceStub implements SqlService {
                         return resources.register(resultSetImpl);
                     }
                 }
-                resultSetImpl.close();
-                throw new SessionAlreadyClosedException();
+                handleSessionAlreadyClosed(resultSetImpl);
+                return null; // unreachable
             }
         }
 
