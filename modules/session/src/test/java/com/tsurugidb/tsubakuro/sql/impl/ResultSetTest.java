@@ -280,7 +280,7 @@ class ResultSetTest {
             } catch (Exception e) {
                 exception = e;
             }
-        };
+        }
 
         Error getError() {
             return error;
