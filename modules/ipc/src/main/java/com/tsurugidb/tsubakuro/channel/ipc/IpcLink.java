@@ -16,9 +16,9 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -41,7 +41,7 @@ public final class IpcLink extends Link {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean serverDown = new AtomicBoolean();
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-    private final HashSet<ResultSetWireImpl> resources = new HashSet<>();
+    private final ConcurrentHashMap<ResultSetWireImpl, Boolean> resources = new ConcurrentHashMap<>();
 
     public static final byte RESPONSE_NULL = 0;
     public static final byte RESPONSE_PAYLOAD = 1;
@@ -158,9 +158,7 @@ public final class IpcLink extends Link {
                 throw new IOException("Link already closed");
             }
             var rv = new ResultSetWireImpl(wireHandle, this);
-            synchronized (resources) {
-                resources.add(rv);
-            }
+            resources.put(rv, Boolean.TRUE);
             return rv;
         } finally {
             rwl.readLock().unlock();
@@ -168,9 +166,7 @@ public final class IpcLink extends Link {
     }
 
     public void remove(ResultSetWireImpl resultSetWire) {
-        synchronized (resources) {
-            resources.remove(resultSetWire);
-        }
+        resources.remove(resultSetWire);
     }
 
     @Override
@@ -204,9 +200,10 @@ public final class IpcLink extends Link {
         rwl.writeLock().lock();
         try {
             if (!closed.getAndSet(true)) {
-                synchronized (resources) {
-                    for (var e : resources) {
-                        e.close();
+                Object[] keys = resources.keySet().toArray();
+                for (Object key : keys) {
+                    if (key instanceof ResultSetWireImpl) {
+                        ((ResultSetWireImpl) key).close();
                     }
                 }
                 closeNative(wireHandle);
