@@ -200,10 +200,11 @@ public final class IpcLink extends Link {
         rwl.writeLock().lock();
         try {
             if (!closed.getAndSet(true)) {
-                var keys = resources.keys();
-                while (keys.hasMoreElements()) {
-                    var e = keys.nextElement();
-                    e.close();
+                Object[] keys = resources.keySet().toArray();
+                for (Object key : keys) {
+                    if (key instanceof ResultSetWireImpl) {
+                        ((ResultSetWireImpl) key).close();
+                    }
                 }
                 closeNative(wireHandle);
                 destroyNative(wireHandle);
