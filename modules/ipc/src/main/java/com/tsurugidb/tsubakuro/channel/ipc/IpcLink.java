@@ -154,12 +154,13 @@ public final class IpcLink extends Link {
     public ResultSetWire createResultSetWire() throws IOException {
         rwl.readLock().lock();
         try {
-            if (closed.get()) {
-                throw new IOException("Link already closed");
-            }
             var rv = new ResultSetWireImpl(wireHandle, this);
             resources.put(rv, Boolean.TRUE);
-            return rv;
+            if (!closed.get()) {
+                return rv;
+            }
+            rv.close();
+            throw new IOException("Link already closed");
         } finally {
             rwl.readLock().unlock();
         }
