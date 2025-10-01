@@ -52,6 +52,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     private final AtomicReference<Response> unprocessed = new AtomicReference<>();
 
     private final AtomicReference<V> result = new AtomicReference<>();
+    private final AtomicBoolean resultValid = new AtomicBoolean();
 
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean closeOnce = new AtomicBoolean();
@@ -81,14 +82,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public synchronized V get() throws InterruptedException, IOException, ServerException {
+        var mapped = result.get();
+        if (resultValid.get()) {
+            return mapped;
+        }
         if (closed.get()) {
             throw new IOException("Future for " + mapper.toString() + " is already closed");
         }
         gotton.set(true);
-        var mapped = result.get();
-        if (mapped != null) {
-            return mapped;
-        }
         return processResult(getInternal(), Timeout.DISABLED);
     }
 
@@ -98,14 +99,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         if (timeout == 0 || unit == null) {
             return get();
         }
+        var mapped = result.get();
+        if (resultValid.get()) {
+            return mapped;
+        }
         if (closed.get()) {
             throw new IOException("Future for " + mapper.toString() + " is already closed");
         }
         gotton.set(true);
-        var mapped = result.get();
-        if (mapped != null) {
-            return mapped;
-        }
         return processResult(getInternal(timeout, unit), new Timeout(timeout, unit, Timeout.Policy.ERROR));
     }
 
@@ -145,13 +146,14 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
             V mapped;
             synchronized (this) {
                 mapped = result.get();
-                if (mapped != null) {
+                if (resultValid.get()) {
                     return mapped;
                 }
                 LOG.trace("mapping response: {}", response.get()); //$NON-NLS-1$
                 mapped = mapper.process(response.get(), timeout);
                 LOG.trace("response mapped: {}", mapped); //$NON-NLS-1$
                 result.set(mapped);
+                resultValid.set(true);
             }
             // don't close the original response only if mapping was succeeded
             response.release();
@@ -161,7 +163,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     @Override
     public boolean isDone() {
-        if (result.get() != null) {
+        if (resultValid.get()) {
             return true;
         }
         try {
@@ -226,6 +228,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                     }
                 }
             }
+        } else {
+            closed.set(true);
         }
     }
 

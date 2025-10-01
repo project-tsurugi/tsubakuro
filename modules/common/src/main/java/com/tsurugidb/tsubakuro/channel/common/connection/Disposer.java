@@ -32,10 +32,11 @@ import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
- * The disposer that disposes server resources corresponding to ForegroundFutureResponses that are closed without being gotten.
+ * The disposer that disposes server resources corresponding to FutureResponses that are closed without being gotten.
  */
 public class Disposer extends Thread {
     // processing status.
@@ -60,7 +61,7 @@ public class Disposer extends Thread {
 
     static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
-    private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<FutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
     private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
@@ -113,9 +114,17 @@ public class Disposer extends Thread {
             var futureResponse = futureResponseQueue.peek();
             if (futureResponse != null) {
                 try {
-                    var obj = futureResponse.cleanUp();
-                    if (obj instanceof ServerResource) {
-                        ((ServerResource) obj).close();
+                    if (futureResponse instanceof ForegroundFutureResponse) {
+                        var obj = ((ForegroundFutureResponse<?>) futureResponse).cleanUp();
+                        if (obj instanceof ServerResource) {
+                            ((ServerResource) obj).close();
+                        }
+                    } else {
+                        // should not occur
+                        var obj = futureResponse.get();
+                        if (obj instanceof ServerResource) {
+                            ((ServerResource) obj).close();
+                        }
                     }
                 } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
                     // Server resource has not created at the server
@@ -234,7 +243,12 @@ public class Disposer extends Thread {
         return exception;
     }
 
-    void add(ForegroundFutureResponse<?> futureResponse) {
+    /**
+     * Add a FutureResponse{@literal <?>} object, usually instance of ForegroundFutureResponse{@literal <?>}, to the queue.
+     * If disposer thread has not started, a disposer thread will be started.
+     * @param futureResponse the FutureResponse{@literal <?>} to be added
+     */
+    public void add(FutureResponse<?> futureResponse) {
         lock.lock();
         try {
             var currentStatus = status.get();

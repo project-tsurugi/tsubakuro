@@ -31,6 +31,7 @@ import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -100,8 +101,9 @@ public class SqlServiceStub implements SqlService {
     private final Session session;
 
     private final ServerResourceHolder futureResponses = new ServerResourceHolder();
+    private final AtomicBoolean futureResponsesClosed = new AtomicBoolean(false);
     private final ServerResourceHolder resources = new ServerResourceHolder();
-    private volatile boolean resourcesClosed = false;
+    private final AtomicBoolean resourcesClosed = new AtomicBoolean(false);
 
     private Timeout closeTimeout = Timeout.DISABLED;
 
@@ -188,7 +190,7 @@ public class SqlServiceStub implements SqlService {
             var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources, disposer);
             transactionImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
-                if (!resourcesClosed) {
+                if (!resourcesClosed.get()) {
                     return resources.register(transactionImpl);
                 }
             }
@@ -212,11 +214,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (Begin): {}", request); //$NON-NLS-1$
         var processor = new TransactionBeginProcessor();
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor.asResponseProcessor())));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor.asResponseProcessor())));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     class TransactionCommitProcessor implements MainResponseProcessor<Void> {
@@ -331,7 +343,7 @@ public class SqlServiceStub implements SqlService {
             var preparedStatementImpl = new PreparedStatementImpl(detailResponse.getPreparedStatementHandle(), SqlServiceStub.this, resources, request, disposer);
             preparedStatementImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
-                if (!resourcesClosed) {
+                if (!resourcesClosed.get()) {
                     return resources.register(preparedStatementImpl);
                 }
             }
@@ -346,11 +358,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
         var processor = new StatementPrepareProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor.asResponseProcessor())));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor.asResponseProcessor())));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     class StatementDisposeProcessor implements MainResponseProcessor<Void> {
@@ -648,7 +670,7 @@ public class SqlServiceStub implements SqlService {
                 var resultSetImpl = new ResultSetImpl(resources, metadata, cursor, owner.release(), this, resultSetName, request);
                 resultSetImpl.setCloseTimeout(closeTimeout);
                 synchronized (resources) {
-                    if (!resourcesClosed) {
+                    if (!resourcesClosed.get()) {
                         return resources.register(resultSetImpl);
                     }
                 }
@@ -669,11 +691,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (execute query): {}", request); //$NON-NLS-1$
         var processor = new QueryProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor)));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor)));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     @Override
@@ -682,11 +714,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
         var processor = new QueryProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor)));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor)));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     @Override
@@ -695,12 +737,22 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (execute prepared query): {}", request); //$NON-NLS-1$
         var processor = new QueryProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                blobs,
-                processor)));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        blobs,
+                                        processor)));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     @Override
@@ -709,11 +761,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
         var processor = new QueryProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor)));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor)));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     @Override
@@ -722,11 +784,21 @@ public class SqlServiceStub implements SqlService {
         Objects.requireNonNull(request);
         LOG.trace("send (execute dump): {}", request); //$NON-NLS-1$
         var processor = new QueryProcessor(request);
-        return processor.setFutureResponse(futureResponses.register(
-            session.send(
-                SERVICE_ID,
-                SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
-                processor)));
+        if (futureResponsesClosed.get()) {
+            throw new SessionAlreadyClosedException();
+        }
+        var futureResponse = processor.setFutureResponse(
+                                futureResponses.register(
+                                    session.send(
+                                        SERVICE_ID,
+                                        SqlRequestUtils.toSqlRequestDelimitedByteArray(request),
+                                        processor)));
+        if (futureResponsesClosed.get()) {
+            disposer.add(futureResponse);
+            futureResponses.onClosed(futureResponse);
+            throw new SessionAlreadyClosedException();
+        }
+        return futureResponse;
     }
 
     class LoadProcessor implements MainResponseProcessor<ExecuteResult> {
@@ -1290,14 +1362,23 @@ public class SqlServiceStub implements SqlService {
         resources.setCloseTimeout(timeout);
     }
 
+    class CleanUpAction implements Consumer<ServerResource> {
+        @Override
+        public void accept(ServerResource r) {
+            if (r instanceof FutureResponse<?>) {
+                disposer.add((FutureResponse<?>) r);
+                futureResponses.onClosed(r);
+            }
+        }
+    }
+
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$
-        synchronized (futureResponses) {
-            futureResponses.close();
-        }
+        futureResponsesClosed.set(true);
+        futureResponses.forEach(new CleanUpAction());
         synchronized (resources) {
-            resourcesClosed = true;
+            resourcesClosed.set(true);
             resources.close();
         }
         session.remove(this);

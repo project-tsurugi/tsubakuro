@@ -54,7 +54,7 @@ class SessionImplTest {
 
     private final long specialTimeoutValue = 9999;
 
-    private final String exceptionMessage = "already closed";
+    private final String exceptionMessage = "session already closed";
 
     private static int SERVICE_ID_ENDPOINT_BROKER = 1;
 
