@@ -246,12 +246,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 }
             }
         }
-        throw new AlreadyClosedException();
-    }
-
-    static class AlreadyClosedException extends IOException {
-        AlreadyClosedException() {
-        }
+        throw new TimeoutException();
     }
 
     private static Exception addSuppressed(Exception exception, Exception e) {

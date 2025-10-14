@@ -117,7 +117,7 @@ public class Disposer extends Thread {
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
-                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
+                } catch (ChannelResponse.AlreadyCanceledException e) {
                     // Server resource has not created at the server
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
