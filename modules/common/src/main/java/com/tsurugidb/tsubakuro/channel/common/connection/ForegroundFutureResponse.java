@@ -49,6 +49,8 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final ResponseProcessor<? extends V> mapper;
 
+    private final Disposer disposer;
+
     private final AtomicReference<Response> unprocessed = new AtomicReference<>();
 
     private final AtomicReference<V> result = new AtomicReference<>();
@@ -60,7 +62,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private Timeout closeTimeout = null;
 
-    private final Disposer disposer;
+    private Response responseCleanUp = null;
 
     /**
      * Creates a new instance.
@@ -186,13 +188,12 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         Exception exception = null;
         if (!gotton.getAndSet(true)) {
             try {
-                Response response = null;
                 if (closeTimeout != null) {
-                    response = delegate.get(closeTimeout.value(), closeTimeout.unit());
+                    responseCleanUp = delegate.get(closeTimeout.value(), closeTimeout.unit());
                 } else {
-                    response = delegate.get();
+                    responseCleanUp = delegate.get();
                 }
-                response.cancel();
+                responseCleanUp.cancel();
             } catch (Exception e) {
                 exception = e;
             } finally {
@@ -230,9 +231,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
     }
 
     V cleanUp() throws InterruptedException, IOException, ServerException, TimeoutException {
-        Response response = delegate.get();
-        if (response != null) {
+        if (responseCleanUp == null) {
             close();
+        }
+        if (responseCleanUp != null) {
             while (!closed.get()) {  // in case another thread has executed close()
                 try {
                     Thread.sleep(10);
@@ -241,17 +243,10 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                 }
             }
             synchronized (this) {
-                if (response.isMainResponseReady()) {
-                    return processResult(Owner.of(response), Timeout.DISABLED);
-                }
+                return processResult(Owner.of(responseCleanUp), new Timeout(100, TimeUnit.MILLISECONDS, Timeout.Policy.ERROR));
             }
         }
-        throw new AlreadyClosedException();
-    }
-
-    static class AlreadyClosedException extends IOException {
-        AlreadyClosedException() {
-        }
+        throw new AssertionError("response to be processed is null");
     }
 
     private static Exception addSuppressed(Exception exception, Exception e) {

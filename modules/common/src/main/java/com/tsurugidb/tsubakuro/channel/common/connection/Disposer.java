@@ -32,6 +32,7 @@ import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
@@ -117,11 +118,11 @@ public class Disposer extends Thread {
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
-                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
+                } catch (ChannelResponse.AlreadyCanceledException e) {
                     // Server resource has not created at the server
                 } catch (SessionAlreadyClosedException e) {
                     // Server resource has been disposed by the session close
-                } catch (TimeoutException e) {
+                } catch (TimeoutException | ResponseTimeoutException e) {
                     // Let's try again
                     futureResponseQueue.add(futureResponse);
                 } catch (Exception e) {
