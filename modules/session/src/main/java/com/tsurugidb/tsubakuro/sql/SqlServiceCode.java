@@ -20,14 +20,16 @@ import java.util.EnumMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
 import com.tsurugidb.sql.proto.SqlError;
+import com.tsurugidb.tsubakuro.exception.DiagnosticCode;
 import com.tsurugidb.tsubakuro.util.Doc;
 
 /**
  * Code of server core diagnostics.
  */
-@Doc(value = "SQL service is designed to access the database with SQL.")
+@Doc(
+    value = "SQL service is designed to access the database with SQL.",
+    code = 2)
 public enum SqlServiceCode implements DiagnosticCode {
 
     /**
@@ -317,7 +319,7 @@ public enum SqlServiceCode implements DiagnosticCode {
      */
     @Doc("unsupported feature/syntax was requested")
     UNSUPPORTED_COMPILER_FEATURE_EXCEPTION(3010, SqlError.Code.UNSUPPORTED_COMPILER_FEATURE_EXCEPTION),
-    
+
     /**
      * CC_EXCEPTION
      */
@@ -359,7 +361,7 @@ public enum SqlServiceCode implements DiagnosticCode {
      */
     @Doc("LTX aborted due to its read")
     LTX_READ_EXCEPTION(4013, SqlError.Code.LTX_READ_EXCEPTION),
-    
+
     /**
      * LTX_WRITE_EXCEPTION
      */

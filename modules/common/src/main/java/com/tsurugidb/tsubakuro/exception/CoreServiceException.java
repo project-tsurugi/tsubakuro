@@ -92,7 +92,7 @@ public class CoreServiceException extends ServerException {
      * Creates a new instance wrapped itself.
      *
      * @return exception wrapped itself
-     * @since 1.7.0
+     * @since 1.12.0
      */
     public CoreServiceException newException() {
         return new CoreServiceException(this);

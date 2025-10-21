@@ -26,7 +26,9 @@ import com.tsurugidb.tsubakuro.util.Doc;
 /**
  * Code of server core diagnostics.
  */
-@Doc("diagnostics of the service infrastructure.")
+@Doc(
+    value = "diagnostics of the service infrastructure.",
+    code = 1)
 public enum CoreServiceCode implements DiagnosticCode {
 
     /**

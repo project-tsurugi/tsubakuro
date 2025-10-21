@@ -27,6 +27,7 @@ import java.lang.annotation.Target;
  * For example, to attach this annotation to the definition of each structured error codes,
  * then you can easily create a table of those codes.
  * </p>
+ * @version 1.12.0
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({
@@ -41,6 +42,12 @@ public @interface Doc {
      * A delimiter character to separate reference title and its location.
      */
     char REFERENCE_DELIMITER = '@';
+
+    /**
+     * An unspecified value for {@link #code()}.
+     * @since 1.12.0
+     */
+    int CODE_UNSPECIFIED = -1;
 
     /**
      * Description of the target element.
@@ -67,4 +74,12 @@ public @interface Doc {
      * @see #REFERENCE_DELIMITER
      */
     String[] reference() default {};
+
+    /**
+     * An optional code number for the target element.
+     * @return the element code if defined, otherwise {@link #CODE_UNSPECIFIED}
+     * @see #CODE_UNSPECIFIED
+     * @since 1.12.0
+     */
+    int code() default CODE_UNSPECIFIED;
 }
