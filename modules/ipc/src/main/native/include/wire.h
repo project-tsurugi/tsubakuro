@@ -837,7 +837,7 @@ public:
                                               bool eor = is_eor();
                                               std::atomic_thread_fence(std::memory_order_acq_rel);
                                               for (auto&& wire: unidirectional_simple_wires_) {
-                                                  if (wire.has_record()) {
+                                                  if (!wire.equal(0) && wire.has_record()) {
                                                       active_wire = &wire;
                                                       return true;
                                                   }
