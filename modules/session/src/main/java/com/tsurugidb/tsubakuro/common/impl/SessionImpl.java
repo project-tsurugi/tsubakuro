@@ -95,7 +95,7 @@ public class SessionImpl implements Session {
      * The keep alive interval in milliseconds.
      */
     public static final int KEEP_ALIVE_INTERVAL = 60000;
-    private final Timer keepAliveTimer = new Timer();
+    private final Timer keepAliveTimer = new Timer(true);
     private boolean doKeepAlive = false;
 
     /**
@@ -565,6 +565,7 @@ public class SessionImpl implements Session {
                     if (closed.compareAndSet(expected, SESSION_CLOSED)) {
                         keepAliveTimer.cancel();  // does not throw any exception
                         wireClose();
+                        close();                  // in case close() is not called yet, and thus disposer is not terminated yet
                         return;
                     }
                 } finally {

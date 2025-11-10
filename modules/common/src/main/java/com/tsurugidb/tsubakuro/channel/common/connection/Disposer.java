@@ -244,6 +244,7 @@ public class Disposer extends Thread {
             futureResponseQueue.add(futureResponse);
             if (status.get() == Status.INIT) {
                 status.set(Status.OPEN);
+                this.setDaemon(true);
                 this.start();
             }
         } finally {
@@ -266,6 +267,7 @@ public class Disposer extends Thread {
             serverResourceQueue.add(resource);
             if (currentStatus == Status.INIT) {
                 status.set(Status.OPEN);
+                this.setDaemon(true);
                 this.start();
             }
         } finally {
@@ -290,6 +292,7 @@ public class Disposer extends Thread {
             shutdownQueue.add(cleanUp);
             if (currentStatus == Status.INIT) {
                 status.set(Status.OPEN);
+                this.setDaemon(true);
                 this.start();
             }
         } finally {
