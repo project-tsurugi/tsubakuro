@@ -439,15 +439,15 @@ class StreamBackedValueOutputTest {
     @Test
     void writeBlob() {
         assertArrayEquals(
-                sequence(HEADER_BLOB, fixed8(1), fixed8(123)),
-                perform(o -> o.writeBlob(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123))));
+                sequence(HEADER_BLOB, fixed8(1), fixed8(123), fixed8(456)),
+                perform(o -> o.writeBlob(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123, 456))));
     }
 
     @Test
     void writeClob() {
         assertArrayEquals(
-                sequence(HEADER_CLOB, fixed8(1), fixed8(123)),
-                perform(o -> o.writeClob(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123))));
+                sequence(HEADER_CLOB, fixed8(1), fixed8(123), fixed8(456)),
+                perform(o -> o.writeClob(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123, 456))));
     }
 
     @Test

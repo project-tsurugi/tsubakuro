@@ -24,10 +24,11 @@ import com.tsurugidb.tsubakuro.sql.BlobReference;
 public final class BlobReferenceForSql implements BlobReference {
     final SqlCommon.LargeObjectReference largeObjectReference;
 
-    public BlobReferenceForSql(SqlCommon.LargeObjectProvider provider, long objectId) {
+    public BlobReferenceForSql(SqlCommon.LargeObjectProvider provider, long objectId, long referenceTag) {
         largeObjectReference = SqlCommon.LargeObjectReference.newBuilder()
                                 .setProvider(provider)
                                 .setObjectId(objectId)
+                                .setReferenceTag(referenceTag)
                                 .build();
     }
 
@@ -53,5 +54,8 @@ public final class BlobReferenceForSql implements BlobReference {
     }
     public long getObjectId() {
         return largeObjectReference.getObjectId();
+    }
+    public long getReferenceTag() {
+        return largeObjectReference.getReferenceTag();
     }
 }

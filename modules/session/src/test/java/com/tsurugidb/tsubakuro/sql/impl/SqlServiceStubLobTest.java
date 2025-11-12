@@ -239,6 +239,7 @@ class SqlServiceStubLobTest {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
+        long referenceTag = 678;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = tempDir.resolve(fileName);
@@ -272,7 +273,7 @@ class SqlServiceStubLobTest {
                                               null,
                                               disposer);
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());
@@ -290,6 +291,7 @@ class SqlServiceStubLobTest {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
+        long referenceTag = 678;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = tempDir.resolve(fileName);
@@ -322,7 +324,7 @@ class SqlServiceStubLobTest {
                                               null,
                                               disposer);
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertFalse(pathOpt.isPresent());
         }
@@ -335,6 +337,7 @@ class SqlServiceStubLobTest {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
+        long referenceTag = 678;
         Path file = tempDir.resolve(fileName);
 
         var header = FrameworkResponse.Header.newBuilder()
@@ -367,7 +370,7 @@ class SqlServiceStubLobTest {
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
             assertThrows(BlobException.class, () ->
-                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await());
+                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await());
         }
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
@@ -378,6 +381,7 @@ class SqlServiceStubLobTest {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
+        long referenceTag = 678;
 
         byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = tempDir.resolve("lob.data");
@@ -412,7 +416,7 @@ class SqlServiceStubLobTest {
                                               disposer);
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
-            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId), copy).await();
+            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await();
             var obtainedData = Files.readAllBytes(copy);
             assertTrue(Files.exists(copy));
             assertEquals(data.length, obtainedData.length);

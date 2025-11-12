@@ -366,6 +366,7 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
             var blob = (BlobReferenceForSql) value;
             write8(blob.getProvider());
             write8(blob.getObjectId());
+            write8(blob.getReferenceTag());
         } else {
             throw new IllegalArgumentException();
         }
@@ -379,6 +380,7 @@ public class StreamBackedValueOutput implements ValueOutput, Flushable {
             var clob = (ClobReferenceForSql) value;
             write8(clob.getProvider());
             write8(clob.getObjectId());
+            write8(clob.getReferenceTag());
         } else {
             throw new IllegalArgumentException();
         }
