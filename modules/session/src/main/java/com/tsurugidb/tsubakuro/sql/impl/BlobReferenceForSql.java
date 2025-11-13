@@ -49,12 +49,27 @@ public final class BlobReferenceForSql implements BlobReference {
     public int hashCode() {
         return largeObjectReference.hashCode();
     }
+    /**
+     * Returns the provider of the BLOB data.
+     *
+     * @return the provider value
+     */
     public long getProvider() {
         return largeObjectReference.getProvider().getNumber();
     }
+    /**
+     * Returns the object id of the BLOB data.
+     *
+     * @return the object id value
+     */
     public long getObjectId() {
         return largeObjectReference.getObjectId();
     }
+    /**
+     * Returns the reference tag of the BLOB data.
+     *
+     * @return the reference tag value
+     */
     public long getReferenceTag() {
         return largeObjectReference.getReferenceTag();
     }
