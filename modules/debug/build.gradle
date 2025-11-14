@@ -1,18 +1,18 @@
 plugins {
     id 'tsubakuro.java-library-conventions'
-    id 'com.google.protobuf' version '0.9.4'
+    id 'com.google.protobuf' version '0.9.5'
 }
 
 dependencies {
     api project(':tsubakuro-session')
 
     testImplementation(testFixtures(project(':tsubakuro-session')))
-    api 'com.google.protobuf:protobuf-java:3.17.3'
+    api 'com.google.protobuf:protobuf-java:3.25.8'
 }
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.8.0'
+        artifact = 'com.google.protobuf:protoc:3.25.8'
     }
 }
 
