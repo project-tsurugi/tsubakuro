@@ -581,7 +581,8 @@ public class StreamBackedValueInput implements ValueInput {
             throw new IOException("illegal blob provider");
         }
         var objectId = read8();
-        return new BlobReferenceForSql(provider, objectId);
+        var referenceTag = read8();
+        return new BlobReferenceForSql(provider, objectId, referenceTag);
     }
 
     @Override
@@ -593,7 +594,8 @@ public class StreamBackedValueInput implements ValueInput {
             throw new IOException("illegal clob provider");
         }
         var objectId = read8();
-        return new ClobReferenceForSql(provider, objectId);
+        var referenceTag = read8();
+        return new ClobReferenceForSql(provider, objectId, referenceTag);
     }
 
     @Override

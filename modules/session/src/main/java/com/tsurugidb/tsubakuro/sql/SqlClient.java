@@ -50,12 +50,12 @@ public interface SqlClient extends ServerResource, ServiceClient {
     /**
      * The major service message version which this client requests.
      */
-    int SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    int SERVICE_MESSAGE_VERSION_MAJOR = 2;
 
     /**
      * The minor service message version which this client requests.
      */
-    int SERVICE_MESSAGE_VERSION_MINOR = 6;
+    int SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * Attaches to the SQL service in the current session.

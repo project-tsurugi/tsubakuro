@@ -266,13 +266,13 @@ class StreamBackedValueInputTest {
 
     @Test
     void readBlob() {
-        assertSerDe(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123),
+        assertSerDe(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123, 456),
                 StreamBackedValueOutput::writeBlob, StreamBackedValueInput::readBlob);
     }
 
     @Test
     void readClob() {
-        assertSerDe(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123),
+        assertSerDe(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), 123, 456),
                 StreamBackedValueOutput::writeClob, StreamBackedValueInput::readClob);
     }
 

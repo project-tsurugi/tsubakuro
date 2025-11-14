@@ -140,7 +140,7 @@ class TransactionLobTest {
         var sqlClient = SqlClient.attach(session);
         var transaction = sqlClient.createTransaction().await();
 
-        var blobReference = new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
+        var blobReference = new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345, 678);
         var stream = transaction.openInputStream(blobReference).await();
         for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
             assertEquals('a' + i, stream.read());
@@ -169,7 +169,7 @@ class TransactionLobTest {
         var sqlClient = SqlClient.attach(session);
         var transaction = sqlClient.createTransaction().await();
 
-        var clobReference = new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345);
+        var clobReference = new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), 12345, 678);
         var reader = transaction.openReader(clobReference).await();
         for (int i = 0; i < RESPONSE_MESSAGE_SIZE; i++) {
             assertEquals('a' + i, reader.read());
