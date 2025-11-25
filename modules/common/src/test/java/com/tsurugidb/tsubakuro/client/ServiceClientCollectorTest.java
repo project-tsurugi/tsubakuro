@@ -15,9 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.client;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.net.URL;
@@ -29,11 +27,20 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
+
 class ServiceClientCollectorTest {
+
+    private static Set<Class<?>> BUILTIN_CLASSES = Set.of(
+        WireImpl.WireClient.class,
+        WireImpl.EndpointBrokerClient.class
+    );
 
     private Path temp;
 
@@ -73,7 +80,9 @@ class ServiceClientCollectorTest {
         try (var cl = prepare(new String[] {
                 MockClient.class.getName(),
         })) {
-            var results = ServiceClientCollector.collect(cl, true);
+            var results = ServiceClientCollector.collect(cl, true).stream()
+                    .filter(c -> !BUILTIN_CLASSES.contains(c))
+                    .collect(Collectors.toList());
             assertEquals(List.of(MockClient.class), results);
         }
     }
@@ -86,7 +95,9 @@ class ServiceClientCollectorTest {
                 "  " + MockClient.class.getName() + " # testing",
                 "# end",
         })) {
-            var results = ServiceClientCollector.collect(cl, true);
+            var results = ServiceClientCollector.collect(cl, true).stream()
+                    .filter(c -> !BUILTIN_CLASSES.contains(c))
+                    .collect(Collectors.toList());
             assertEquals(List.of(MockClient.class), results);
         }
     }
@@ -95,7 +106,8 @@ class ServiceClientCollectorTest {
     void empty() throws Exception {
         try (var cl = prepare(new String[] {})) {
             var results = ServiceClientCollector.collect(cl, true);
-            assertEquals(List.of(), results);
+            assertFalse(results.isEmpty());
+            assertTrue(results.stream().allMatch(it -> BUILTIN_CLASSES.contains(it)));
         }
     }
 
@@ -124,7 +136,9 @@ class ServiceClientCollectorTest {
                 MockClient.class.getName(),
                 MockClient.class.getName() + "_MISSING",
         })) {
-            var results = ServiceClientCollector.collect(cl, false);
+            var results = ServiceClientCollector.collect(cl, false).stream()
+                    .filter(c -> !BUILTIN_CLASSES.contains(c))
+                    .collect(Collectors.toList());
             assertEquals(List.of(MockClient.class), results);
         }
     }
