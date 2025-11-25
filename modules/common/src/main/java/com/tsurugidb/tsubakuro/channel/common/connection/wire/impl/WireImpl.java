@@ -54,6 +54,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.client.ServiceClient;
+import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -66,25 +68,58 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * WireImpl type.
  */
 public class WireImpl implements Wire {
+
+    /**
+     * A dummy ServiceClient for exposing service message version of current common wire implementations.
+     */
+    @ServiceMessageVersion(
+            service = WireImpl.SERVICE_SYMBOLIC_ID,
+            major = WireImpl.SERVICE_MESSAGE_VERSION_MAJOR,
+            minor = WireImpl.SERVICE_MESSAGE_VERSION_MINOR)
+    public static class WireClient implements ServiceClient {
+        // no special members
+    }
+
+    /**
+     * A dummy ServiceClient for exposing service message version of endpoint broker service.
+     */
+    @ServiceMessageVersion(
+            service = WireImpl.ENDPOINT_BROKER_SERVICE_SYMBOLIC_ID,
+            major = WireImpl.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR,
+            minor = WireImpl.ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR)
+    public static class EndpointBrokerClient implements ServiceClient {
+        // no special members
+    }
+
+    /**
+     * The symbolic ID of this implementation.
+     */
+    static final String SERVICE_SYMBOLIC_ID = "wire"; //$NON-NLS-1$
+
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    private static final int SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    static final int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    private static final int SERVICE_MESSAGE_VERSION_MINOR = 1;
+    static final int SERVICE_MESSAGE_VERSION_MINOR = 1;
+
+    /**
+     * The symbolic ID for endpoint broker service.
+     */
+    static final String ENDPOINT_BROKER_SERVICE_SYMBOLIC_ID = "broker"; //$NON-NLS-1$
 
     /**
      * The major service message version for EndpointRequest.
      */
-    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
      * The minor service message version for EndpointRequest.
      */
-    private static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 1;
+    static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * The service id for endpoint broker.
