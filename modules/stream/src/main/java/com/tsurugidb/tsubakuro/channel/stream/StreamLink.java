@@ -48,14 +48,14 @@ public final class StreamLink extends Link {
     public static final int STREAM_MINIMUM_HEADER_SIZE = 3;
     public static final int STREAM_HEADER_SIZE = STREAM_MINIMUM_HEADER_SIZE + 4;  // + length(4bytes)
 
-    // 1 is nolonger used
+    // 1 is no longer used
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
     private static final byte REQUEST_ALIVE_CHECK = 5;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
-    // 3, 4 are nolonger used
+    // 3, 4 are no longer used
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
     public static final byte RESPONSE_SESSION_BODYHEAD = 7;
@@ -323,6 +323,8 @@ public final class StreamLink extends Link {
                 if (socket.isClosed()) {
                     throw new IOException("socket is already closed");
                 }
+                // The ALIVE_CHECK message is intended to verify whether the TCP/IP
+                // connection is kept alive, and there is no server response to it.
                 byte[] whole = new byte[STREAM_MINIMUM_HEADER_SIZE];
 
                 whole[0] = REQUEST_ALIVE_CHECK;
