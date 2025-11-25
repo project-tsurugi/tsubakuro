@@ -45,11 +45,13 @@ public final class StreamLink extends Link {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
 
-    public static final int STREAM_HEADER_SIZE = 7;
+    public static final int STREAM_MINIMUM_HEADER_SIZE = 3;
+    public static final int STREAM_HEADER_SIZE = STREAM_MINIMUM_HEADER_SIZE + 4;  // + length(4bytes)
 
     // 1 is nolonger used
     private static final byte REQUEST_SESSION_PAYLOAD = 2;
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
+    private static final byte REQUEST_ALIVE_CHECK = 5;
 
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
@@ -318,7 +320,16 @@ public final class StreamLink extends Link {
         }
         synchronized (outStream) {
             try {
-                socket.sendUrgentData(0);
+                if (socket.isClosed()) {
+                    throw new IOException("socket is already closed");
+                }
+                byte[] whole = new byte[STREAM_MINIMUM_HEADER_SIZE];
+
+                whole[0] = REQUEST_ALIVE_CHECK;
+                whole[1] = 0;  // slot(dummy)
+                whole[2] = 0;  // slot(dummy)
+                outStream.write(whole, 0, whole.length);
+                outStream.flush();
             } catch (IOException e) {
                 return false;
             }
