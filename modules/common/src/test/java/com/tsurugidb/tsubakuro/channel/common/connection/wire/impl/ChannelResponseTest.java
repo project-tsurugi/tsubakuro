@@ -34,7 +34,7 @@ class ChannelResponseTest {
 
     @Test
     void wrapAndThrow() throws Exception {
-        try (var target = new ChannelResponse(null)) {
+        try (var target = new ChannelResponse(null, false)) {
             {
                 var e0 = new CoreServiceException(CoreServiceCode.SYSTEM_ERROR, "test");
                 var e = assertThrows(ServerException.class, () -> {

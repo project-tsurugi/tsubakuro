@@ -68,14 +68,14 @@ class ResponseBox {
     private ChannelResponse registerInternal(@Nonnull byte[] header, @Nonnull byte[] payload, Queues q) {
         var slotEntry = q.pollSlot();
         if (slotEntry != null) {
-            var channelResponse = new ChannelResponse(link, slotEntry.slot());
+            var channelResponse = new ChannelResponse(link, true);
             slotEntry.channelResponse(channelResponse);
             slotEntry.requestMessage(payload);
             link.sendInternal(slotEntry.slot(), header, payload, channelResponse);
             channelResponse.finishAssignSlot(slotEntry.slot());
             return channelResponse;
         }
-        var channelResponse = new ChannelResponse(link);
+        var channelResponse = new ChannelResponse(link, false);
         q.queueRequest(new RequestEntry(channelResponse, header, payload));
         return channelResponse;
     }

@@ -18,10 +18,13 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.util.Timeout;
 
 /**
  * Processes the {@link Response#waitForMainResponse() main response} and returns request specific result value.
@@ -67,6 +70,16 @@ public interface MainResponseProcessor<T> {
                 Objects.requireNonNull(response);
                 try (response) {
                     return self.process(response.waitForMainResponse());
+                }
+            }
+
+            @Override
+            public T process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+                Objects.requireNonNull(response);
+                try (response) {
+                    return self.process(response.waitForMainResponse(timeout.value(), timeout.unit()));
+                } catch (TimeoutException e) {
+                    throw new ResponseTimeoutException(e.getMessage(), e);
                 }
             }
 

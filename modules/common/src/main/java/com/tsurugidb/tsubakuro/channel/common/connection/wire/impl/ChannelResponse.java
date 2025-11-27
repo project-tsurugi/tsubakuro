@@ -134,8 +134,21 @@ public class ChannelResponse implements Response {
      * Creates a new instance
      *
      * @param link the link object by which this ChannelResponse pulls a message from the SQL server
-     * @param slot the slot number in the responseBox
+     * @param hasSlot true if slot is available
      */
+    public ChannelResponse(Link link, boolean hasSlot) {
+        this.link = link;
+        this.cancelStatus.set(hasSlot ? CANCEL_STATUS_REQUEST_SENDING : CANCEL_STATUS_NO_SLOT);
+    }
+
+    /**
+     * Creates a new instance
+     *
+     * @param link the link object by which this ChannelResponse pulls a message from the SQL server
+     * @param slot the slot number in the responseBox
+     * @deprecated use ChannelResponse(Link link, boolean hasSlot) instead.
+     */
+    @Deprecated
     public ChannelResponse(Link link, int slot) {
         this.link = link;
         this.cancelStatus.set(CANCEL_STATUS_REQUEST_SENDING);
@@ -145,7 +158,9 @@ public class ChannelResponse implements Response {
      * Creates a new instance that is not associated with a slot in the responseBox
      *
      * @param link the link object by which this ChannelResponse pulls a message from the SQL server
+     * @deprecated use ChannelResponse(Link link, boolean hasSlot) instead.
      */
+    @Deprecated
     public ChannelResponse(Link link) {
         this.link = link;
         this.cancelStatus.set(CANCEL_STATUS_NO_SLOT);
@@ -185,8 +200,16 @@ public class ChannelResponse implements Response {
             try {
                 link.pullMessage(n, timeout, unit);
             } catch (IOException | TimeoutException e) {
-                // serious error, cannot pull message
-                exceptionMain.set(e);
+                while (true) {
+                    if (exceptionMain.get() != null) {
+                        // already exception has been set by another thread
+                        break;
+                    }
+                    if (exceptionMain.compareAndSet(null, e)) {
+                        // serious error, cannot pull message
+                        break;
+                    }
+                }
             }
         }
     }
@@ -300,7 +323,7 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (expected == CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND) {
-                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
+                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The request was canceled before it was sent to the server"));
                 return false;
             }
             if (expected == CANCEL_STATUS_CANCEL_SENT) {
@@ -326,12 +349,16 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (expected != CANCEL_STATUS_REQUEST_SENDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
-                throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
+            if (expected == CANCEL_STATUS_REQUEST_SENDING) {
+                if (cancelStatus.compareAndSet(expected, slot)) {
+                    return;
+                }
+                continue;
             }
-            if (cancelStatus.compareAndSet(expected, slot)) {
+            if (expected == CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
                 return;
             }
+            throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
         }
     }
 
@@ -363,10 +390,6 @@ public class ChannelResponse implements Response {
                 return; // cancel twice
             }
         }
-    }
-
-    public void cancelSuccessWithoutServerInteraction() {
-        exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
     }
 
     /**
