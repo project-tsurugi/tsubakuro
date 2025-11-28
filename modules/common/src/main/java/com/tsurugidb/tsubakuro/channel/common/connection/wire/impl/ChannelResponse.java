@@ -300,7 +300,6 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (expected == CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND) {
-                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
                 return false;
             }
             if (expected == CANCEL_STATUS_CANCEL_SENT) {
@@ -326,12 +325,18 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (expected != CANCEL_STATUS_REQUEST_SENDING && expected != CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
-                throw new AssertionError("request has not been sent, cancelStatus = " + cancelStatus.get());
+            if (expected == CANCEL_STATUS_REQUEST_SENDING) {
+                while (true) {
+                    if (cancelStatus.compareAndSet(CANCEL_STATUS_REQUEST_SENDING, slot)) {
+                        return;
+                    }
+                    continue;
+                }
             }
-            if (cancelStatus.compareAndSet(expected, slot)) {
-                return;
+            if (expected == CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+                    return;
             }
+            throw new AssertionError("finishAssignSlot: illegal cancelStatus = " + expected);
         }
     }
 
@@ -354,6 +359,7 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND)) {
+                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
                 return; // cancel before request send
             }
             if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {

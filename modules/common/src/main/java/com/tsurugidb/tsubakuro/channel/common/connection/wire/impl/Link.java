@@ -206,6 +206,11 @@ public abstract class Link implements ServerResource {
         return RESPONSE_BOX_SIZE;
     }
 
+    // to pass some extreme tests
+    void prepareForShutdown() {
+        responseBox.purgeQueue();
+    }
+
     // to suppress spotbug error
     long value() {
         return this.closeTimeout;
