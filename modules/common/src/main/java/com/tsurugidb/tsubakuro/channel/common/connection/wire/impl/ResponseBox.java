@@ -134,6 +134,10 @@ class ResponseBox {
         }
     }
 
+    void purgeQueue() {
+        queues.purgeQueue();
+    }
+
     // for diagnostic
     String diagnosticInfo() {
         String diagnosticInfo = "";

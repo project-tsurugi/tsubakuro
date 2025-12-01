@@ -206,6 +206,16 @@ public abstract class Link implements ServerResource {
         return RESPONSE_BOX_SIZE;
     }
 
+    /**
+     * Prepares the link for shutdown by purging the request queue that stores
+     * requests that could not be assigned a slot. This method is used to ensure that
+     * all pending requests are canceled before shutdown, preventing situations
+     * where waiting for a response that never comes.
+     */
+    void prepareForShutdown() {
+        responseBox.purgeQueue();
+    }
+
     // to suppress spotbug error
     long value() {
         return this.closeTimeout;

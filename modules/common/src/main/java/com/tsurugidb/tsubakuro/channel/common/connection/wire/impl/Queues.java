@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
+import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.annotation.Nonnull;
@@ -100,5 +101,18 @@ class Queues {
         // the request has been cancelled
         slotQueue.add(slotEntry);
         return false;
+    }
+
+    void purgeQueue() {
+        synchronized (this) {
+            RequestEntry requestEntry;
+            while ((requestEntry = requestQueue.poll()) != null) {
+                try {
+                    requestEntry.channelResponse().cancel();
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
     }
 }

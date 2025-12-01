@@ -315,6 +315,13 @@ public class WireImpl implements Wire {
     }
 
     /**
+     * Cancel all unsent requests queued up, provided as a preparatory operation for shutdown
+     */
+    public void prepareForShutdown() {
+        link.prepareForShutdown();
+    }
+
+    /**
      * Close the wire
      */
     @Override

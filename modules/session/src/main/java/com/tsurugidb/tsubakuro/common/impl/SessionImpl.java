@@ -368,7 +368,7 @@ public class SessionImpl implements Session {
                     var shutdownMessageBuilder = CoreRequest.Shutdown.newBuilder();
                     lock.lock();
                     try {
-                        future = sendUrgent(
+                        future = sendShutdown(
                             SERVICE_ID,
                                 toDelimitedByteArray(newRequest()
                                     .setShutdown(shutdownMessageBuilder.setType(type.type()))
@@ -382,6 +382,20 @@ public class SessionImpl implements Session {
                 return;
             }
         }
+
+        private <R> FutureResponse<R> sendShutdown(
+            int serviceId,
+            @Nonnull byte[] payload,
+            @Nonnull ResponseProcessor<R> processor) throws IOException {
+            Objects.requireNonNull(payload);
+            Objects.requireNonNull(processor);
+            if (wire instanceof WireImpl) {
+                ((WireImpl) wire).prepareForShutdown();
+            }
+            FutureResponse<? extends Response> futureShutdown = wire.send(serviceId, payload);
+            return convert(futureShutdown, processor);
+        }
+
         @Override
         public Void get() throws IOException, ServerException, InterruptedException {
             try {
