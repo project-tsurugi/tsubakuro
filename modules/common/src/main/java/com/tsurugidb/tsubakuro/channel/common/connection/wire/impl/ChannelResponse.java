@@ -326,15 +326,13 @@ public class ChannelResponse implements Response {
                 continue;
             }
             if (expected == CANCEL_STATUS_REQUEST_SENDING) {
-                while (true) {
-                    if (cancelStatus.compareAndSet(CANCEL_STATUS_REQUEST_SENDING, slot)) {
-                        return;
-                    }
-                    continue;
+                if (cancelStatus.compareAndSet(expected, slot)) {
+                    return;
                 }
+                continue;
             }
             if (expected == CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
-                    return;
+                return;
             }
             throw new AssertionError("finishAssignSlot: illegal cancelStatus = " + expected);
         }
