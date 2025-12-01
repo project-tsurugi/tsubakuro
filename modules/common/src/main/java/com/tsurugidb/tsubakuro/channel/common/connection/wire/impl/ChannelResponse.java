@@ -61,27 +61,60 @@ public class ChannelResponse implements Response {
     public static final String METADATA_CHANNEL_ID = "metadata";
     public static final String RELATION_CHANNEL_ID = "relation";
 
-    // cancelStatus >= 0 means the request has been sent to the server
-    // cancelStatus < 0 means the following state
+    // means the following state
     private final AtomicInteger cancelStatus = new AtomicInteger();
 
-    // the request is in the queue
+    // the request is in the queue (initial state case 1)
+    //  transition to CANCEL_STATUS_REQUEST_SENDING by canAssignSlot returning true
+    //  transition to CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND by cancel
     public static final int CANCEL_STATUS_NO_SLOT = -1;
-    // the response for the requet including normal request has been alived
-    public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
-    // cancel request is sending now
-    public static final int CANCEL_STATUS_CANCEL_SENDING = -3;
-    // cancel request has been sent out
-    public static final int CANCEL_STATUS_CANCEL_SENT = -4;
-    // the request is to be sent
+
+    // the request is to be sent (initial state case 2 and is anintermediate state)
+    //  transition to slot (>= 0) by finishAssignSlot
+    //  transition to CANCEL_STATUS_ALREADY_RECEIVED by responseArrive (may occure due to race condition)
+    //  transition to CANCEL_STATUS_REQUEST_DO_NOT_SEND by responseArrive (IOException arose in request send)
+    //  do nothing in cancel and try again
     public static final int CANCEL_STATUS_REQUEST_SENDING = -5;
-    // the request is not sent out
+
+    // cancelStatus >= 0 means the request has been sent to the server
+    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
+    //  transition to CANCEL_STATUS_CANCEL_SENDING by cancel and then CANCEL_STATUS_CANCEL_SENT
+    // case where cancelStatus >= 0
+
+    // the response for the request has been alived (final state)
+    //  do nothing by cancel
+    //  do nothing by responseArrive if IOException arose in request send, else AssertionErorr
+    public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
+
+    // the request is not sent out due to IOException arose in request send (final state)
+    //  do nothing by finishAssignSlot
+    //  do nothing by responseArrive if IOException arose in request send, else AssertionErorr
+    //  do nothing by cancel
     public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
-    // the request is not sent out
-    public static final int CANCEL_STATUS_CANCEL_DO_NOT_SEND = -7;
-    // the request is not sent out
+
+    // the response for the cancel request is already received (intermediate state)
+    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by finishAssignSlot
+    //  do nothing in cancel and try again
     public static final int CANCEL_STATUS_ALREADY_RECEIVED = -8;
-    // the request is canceled before sending
+
+    //
+    // State transitions when a Cancel is involved
+    //
+    // cancel request is being sent (intermediate state)
+    //  transition to CANCEL_STATUS_CANCEL_SENT immediately after send cancel request to the server
+    //  do nothing in responseArrive and try again
+    //  do nothing in cancel and try again
+    public static final int CANCEL_STATUS_CANCEL_SENDING = -3;
+
+    // cancel request has been sent out
+    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
+    //  do nothing by canAssignSlot and returns false
+    //  do nothing by cancel
+    public static final int CANCEL_STATUS_CANCEL_SENT = -4;
+
+    // the request is canceled before sending (final state)
+    //  do nothing by canAssignSlot and returns false
+    //  do nothing by cancel (indicates cancel twice)
     public static final int CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND = -9;
 
     private long cancelThreadId = 0;
@@ -312,14 +345,15 @@ public class ChannelResponse implements Response {
 
     /**
      * set cancelStatus and slot to the slot number given.
-     * This method is called after the request has been sent to the server.
+     * This method is called after the request has been sent to the server,
+     * which may arise some race condition on cancelStatus.
      *
      * @param slot the slot number in the responseBox
      */
     void finishAssignSlot(int slot) {
         while (true) {
             var expected = cancelStatus.get();
-            if (expected == CANCEL_STATUS_ALREADY_RECEIVED) {
+            if (expected == CANCEL_STATUS_ALREADY_RECEIVED) {  // in case of race condition
                 if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_RESPONSE_ARRIVED)) {
                     return;
                 }
@@ -356,16 +390,23 @@ public class ChannelResponse implements Response {
                 }
                 continue;
             }
-            if (cancelStatus.compareAndSet(CANCEL_STATUS_NO_SLOT, CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND)) {
-                exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
-                return; // cancel before request send
+            if (expected == CANCEL_STATUS_NO_SLOT) {
+                if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND)) {
+                    exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
+                    return; // cancel before request send
+                }
+                continue;
             }
-            if (expected == CANCEL_STATUS_RESPONSE_ARRIVED) {
-                return; // response has already arrived
+            if (expected == CANCEL_STATUS_RESPONSE_ARRIVED || expected == CANCEL_STATUS_REQUEST_DO_NOT_SEND) {
+                return; // response has already arrived or request was not sent
             }
             if (expected == CANCEL_STATUS_CANCEL_SENT || expected == CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND) {
                 return; // cancel twice
             }
+            if (expected == CANCEL_STATUS_REQUEST_SENDING || expected == CANCEL_STATUS_ALREADY_RECEIVED || expected == CANCEL_STATUS_CANCEL_SENDING) {
+                continue; // they are intermediate states, try again
+            }
+            throw new AssertionError("cancel: illegal cancelStatus = " + expected);
         }
     }
 
@@ -401,7 +442,7 @@ public class ChannelResponse implements Response {
                         }
                         break;
                     }
-                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_ALREADY_RECEIVED)) {
+                    if (cancelStatus.compareAndSet(expected, CANCEL_STATUS_ALREADY_RECEIVED)) {  // race condition
                         return;
                     }
                     break;
@@ -423,11 +464,6 @@ public class ChannelResponse implements Response {
                         return;
                     }
                     throw new AssertionError("response arrived twice, implies some error");
-                case CANCEL_STATUS_CANCEL_DO_NOT_SEND:
-                    if (!received) {
-                        return;
-                    }
-                    throw new AssertionError("CANCEL_STATUS_CANCEL_DO_NOT_SEND should not appear here");
                 default:
                     throw new AssertionError("illegal CANCEL_STATUS: " + expected);
             }
