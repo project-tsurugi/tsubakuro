@@ -219,7 +219,8 @@ public class ChannelResponse implements Response {
                 link.pullMessage(n, timeout, unit);
             } catch (IOException | TimeoutException e) {
                 // serious error, cannot pull message
-                exceptionMain.set(e);
+                wrapAndThrow(e);
+                throw new IOException(e.getMessage(), e);
             }
         }
     }
