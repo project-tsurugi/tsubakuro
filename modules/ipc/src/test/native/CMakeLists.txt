@@ -11,7 +11,7 @@ include(GNUInstallDirs)
 
 # find JNI, but AWT is not required
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
-    # no components are required, so give dummy optional-components
+    # JVM is specified as optional component to prevent AWT from being required
     find_package(JNI OPTIONAL_COMPONENTS JVM REQUIRED)
 else()
     # hack: if the cache vars for AWT are filled, findJNI will not search AWT

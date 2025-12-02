@@ -628,8 +628,9 @@ public class TransactionImpl implements Transaction {
                     return false;
                 }
                 throw new IOException(timeoutMessage("rollback"), e);
+            } finally {
+                rollbackResult = null;
             }
-            rollbackResult = null;
         }
         if (disposeResult != null) {
             try {

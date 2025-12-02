@@ -105,14 +105,23 @@ class Queues {
 
     void purgeQueue() {
         synchronized (this) {
-            RequestEntry requestEntry;
-            while ((requestEntry = requestQueue.poll()) != null) {
-                try {
-                    requestEntry.channelResponse().cancel();
-                } catch (IOException e) {
-                    throw new AssertionError(e);
+            for (SlotEntry slotEntry : slotQueue) {
+                var channelResponse = slotEntry.channelResponse();
+                if (channelResponse != null) {
+                    cancel(channelResponse);
                 }
             }
+            RequestEntry requestEntry;
+            while ((requestEntry = requestQueue.poll()) != null) {
+                cancel(requestEntry.channelResponse());
+            }
+        }
+    }
+    private void cancel(ChannelResponse channelResponse) {
+        try {
+            channelResponse.cancel();
+        } catch (IOException e) {
+            throw new AssertionError(e);
         }
     }
 }
