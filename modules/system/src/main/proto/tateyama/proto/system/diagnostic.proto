@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tateyama.proto.system.diagnostic;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.system.proto";
+option java_outer_classname = "SystemDiagnostic";
+
+// the error code.
+enum ErrorCode {
+    // the error code is not set.
+    ERROR_CODE_NOT_SPECIFIED = 0;
+
+    // the unknown error occurred.
+    UNKNOWN = 1;
+
+    // the target is not found.
+    NOT_FOUND = 2;
+}
