@@ -114,7 +114,7 @@ class SystemServiceStubTest {
     }
 
     @Test
-    void sendGetDatabaseProductApplicationError() throws Exception {
+    void sendGetSystemInfoApplicationError() throws Exception {
         link.next(SystemResponse.GetSystemInfo.newBuilder()
                     .setError(SystemResponse.Error.newBuilder()
                                 .setCode(SystemDiagnostic.ErrorCode.NOT_FOUND)

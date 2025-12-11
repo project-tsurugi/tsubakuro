@@ -23,7 +23,7 @@ import com.tsurugidb.tsubakuro.util.Doc;
  * @since 1.13.0
  */
 @Doc(
-        value = "System service is designed for external use of Tsurugi's system information provider service.")
+    value = "System service is designed for external use of Tsurugi's system information provider service.")
 public enum SystemServiceCode implements DiagnosticCode {
 
     /**
@@ -33,11 +33,11 @@ public enum SystemServiceCode implements DiagnosticCode {
     UNKNOWN(0),
 
     /**
-     * Database product version is not found.
+     * System information is not found.
      */
     @Doc(
-            value = "database product version is not found in this session.",
-            note = "database product version may be not given when the database is booting.")
+        value = "system information is not found in this session.",
+        note = "system information may not be available when the system is booting or the requested information is missing.")
     NOT_FOUND(1_01),
 
     ;

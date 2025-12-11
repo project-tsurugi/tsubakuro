@@ -29,7 +29,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 
 /**
- * An system service client.
+ * A system service client.
  * @see #attach(Session)
  * @since 1.13.0
  */

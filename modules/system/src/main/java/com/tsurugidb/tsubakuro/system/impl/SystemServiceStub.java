@@ -99,13 +99,21 @@ public class SystemServiceStub implements SystemService {
                 case NOT_FOUND:
                     throw new SystemServiceException(SystemServiceCode.NOT_FOUND, err.getMessage());
                 default:
-                    break;
+                    throw new BrokenResponseException(
+                        MessageFormat.format(
+                            "unknown error code: {0} ({1})",
+                            err.getCode(),
+                            err.getMessage()
+                        )
+                    );
                 }
 
+            case RESULT_NOT_SET:
+                throw newResultNotSet(SystemResponse.GetSystemInfo.class, "result");
+
             default:
-                break;
+                throw new AssertionError("Unknown result case: " + message.getResultCase());
             }
-            throw new AssertionError(); // may not occur
         }
     }
 
