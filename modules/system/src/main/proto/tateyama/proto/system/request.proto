@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package tateyama.proto.system.request;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.system.proto";
+option java_outer_classname = "SystemRequest";
+
+// the request message to system pseudo service.
+message Request {
+    // service message version (major)
+    uint64 service_message_version_major = 1;
+
+    // service message version (minor)
+    uint64 service_message_version_minor = 2;
+
+    // reserved for system use
+    reserved 3 to 10;
+
+    // the request command.
+    oneof command {
+        // get system information.
+        GetSystemInfo getSystemInfo = 11;
+    }
+    reserved 12 to 99;
+}
+
+// request to get system information.
+message GetSystemInfo {
+    // no special properties.
+}

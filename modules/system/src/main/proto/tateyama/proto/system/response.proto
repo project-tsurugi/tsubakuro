@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package tateyama.proto.system.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.system.proto";
+option java_outer_classname = "SystemResponse";
+
+import "tateyama/proto/system/diagnostic.proto";
+
+message Error {
+    // the error message.
+    string message = 1;
+
+    // error code
+    diagnostic.ErrorCode code = 2;
+
+    // supplemental text for debug purpose
+    string supplemental_text = 3;
+}
+
+// response of get system information request.
+message GetSystemInfo {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // error occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+        // the data channel name of retrieved large object data.
+        SystemInfo system_info = 1;
+    }
+}
+
+// system information.
+message SystemInfo {
+
+    // name field of tsurugi-info.json
+    string name = 1;
+
+    // version field of tsurugi-info.json
+    string version = 2;
+
+    // date field of tsurugi-info.json
+    string date = 3;
+
+    // url field of tsurugi-info.json
+    string url = 4;
+}
