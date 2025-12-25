@@ -8,6 +8,8 @@ dependencies {
 }
 
 task run(type: JavaExec) {
+    group = 'manual testing'
+    description = 'Processes JSON explain format into DOT format (--args input.json [output.dot])'
     javaLauncher = javaToolchains.launcherFor(java.toolchain)
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'com.tsurugidb.tsubakuro.explain.json.Main'

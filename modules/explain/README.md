@@ -184,6 +184,13 @@ var generator = DotGenerator.newBuilder()
       * `anti` - left anti join
     * `source` - always `flow`
     * `access`- always `merge`
+* `apply`
+  * title - `apply`
+  * attributes
+    * `apply-type` - apply direction
+      * `cross` - cross join style apply
+      * `outer` - outer join style apply
+    * `function` - function name
 
 ### exchange operators
 

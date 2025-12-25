@@ -85,6 +85,7 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
             Map.entry("join_find", new JoinFindPropertyExtractor()),
             Map.entry("join_scan", new JoinScanPropertyExtractor()),
             Map.entry("join_group", new JoinGroupPropertyExtractor()),
+            Map.entry("apply", new ApplyPropertyExtractor()),
 
             // exchange operators
             Map.entry("forward_exchange", new ForwardExchangePropertyExtractor()),
