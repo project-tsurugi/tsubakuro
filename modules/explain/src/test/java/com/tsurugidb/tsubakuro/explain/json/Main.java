@@ -82,7 +82,7 @@ public final class Main {
             System.out.printf("Wrote DOT file to: %s%n", outputFile.toAbsolutePath());
         } else {
             System.out.printf("// %s%n", file.toAbsolutePath());
-            System.out.print(dotText.toString());
+            System.out.print(dotText);
         }
     }
 
