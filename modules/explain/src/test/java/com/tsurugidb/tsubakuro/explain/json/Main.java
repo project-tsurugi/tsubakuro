@@ -39,12 +39,17 @@ public final class Main {
      * @throws PlanGraphException if input execution plan description was not valid
      */
     public static void main(String... args) throws IOException, PlanGraphException {
-        if (args.length != 1) {
+        if (args.length != 1 && args.length != 2) {
             throw new IllegalArgumentException(MessageFormat.format(
-                    "usage: java -cp ... {0} </path/to/explain.json>",
+                    "usage: java -cp ... {0} </path/to/explain.json> [</path/to/output.dot>]",
                     Main.class.getName()));
         }
         Path file = Path.of(args[0]);
+
+        Path outputFile = null;
+        if (args.length == 2) {
+            outputFile = Path.of(args[1]);
+        }
 
         // explain result text
         var jsonText = String.join("\n", Files.readAllLines(file, StandardCharsets.UTF_8));
@@ -72,8 +77,13 @@ public final class Main {
             dotText = output.toString();
         }
 
-        System.out.printf("// %s%n", file.toAbsolutePath());
-        System.out.print(dotText.toString());
+        if (outputFile != null) {
+            Files.writeString(outputFile, dotText, StandardCharsets.UTF_8);
+            System.out.printf("Wrote DOT file to: %s%n", outputFile.toAbsolutePath());
+        } else {
+            System.out.printf("// %s%n", file.toAbsolutePath());
+            System.out.print(dotText.toString());
+        }
     }
 
     private Main() {
