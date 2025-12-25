@@ -1,0 +1,495 @@
+[
+    {
+        "kind": "process",
+        "this": "@1",
+        "operators": [
+            {
+                "kind": "scan",
+                "this": "@2",
+                "source": {
+                    "kind": "relation",
+                    "binding": {
+                        "kind": "index",
+                        "table": "ksv",
+                        "simple_name": ".ksv",
+                        "keys": [
+                            {
+                                "column": "k",
+                                "direction": "ascendant"
+                            }
+                        ],
+                        "values": [],
+                        "features": [
+                            "primary",
+                            "find",
+                            "scan",
+                            "unique",
+                            "unique_constraint"
+                        ]
+                    }
+                },
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "k",
+                                "type": {
+                                    "kind": "int8"
+                                },
+                                "criteria": {
+                                    "nullity": "~nullable"
+                                },
+                                "default_value": {
+                                    "kind": "nothing"
+                                },
+                                "features": [],
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "k"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "k",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@3",
+                                "label": "k"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "k",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "s",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "immediate",
+                                    "element": {
+                                        "kind": "decimal",
+                                        "value": 0.00
+                                    }
+                                },
+                                "features": [],
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "s"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "s",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                }
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@4",
+                                "label": "s"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "s",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "table_column",
+                                "simple_name": "v",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                },
+                                "criteria": {
+                                    "nullity": "nullable"
+                                },
+                                "default_value": {
+                                    "kind": "immediate",
+                                    "element": {
+                                        "kind": "character",
+                                        "value": ""
+                                    }
+                                },
+                                "features": [],
+                                "owner": {
+                                    "kind": "table",
+                                    "simple_name": "v"
+                                }
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "v",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                }
+                            }
+                        },
+                        "destination": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@5",
+                                "label": "v"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "v",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                }
+                            }
+                        }
+                    }
+                ],
+                "lower": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "upper": {
+                    "keys": [],
+                    "kind": "unbound"
+                },
+                "input_ports": [],
+                "output_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "apply",
+                            "this": "@6",
+                            "index": 0
+                        }
+                    }
+                ]
+            },
+            {
+                "kind": "apply",
+                "this": "@6",
+                "operator_kind": "cross",
+                "function": {
+                    "kind": "function",
+                    "binding": {
+                        "definition_id": 20005,
+                        "name": "tvf",
+                        "return_type": {
+                            "kind": "table",
+                            "columns": [
+                                {
+                                    "name": "u",
+                                    "type": {
+                                        "kind": "int8"
+                                    }
+                                },
+                                {
+                                    "name": "v",
+                                    "type": {
+                                        "kind": "character",
+                                        "varying": true
+                                    }
+                                },
+                                {
+                                    "name": "w",
+                                    "type": {
+                                        "kind": "decimal",
+                                        "precision": 18,
+                                        "scale": 2
+                                    }
+                                }
+                            ]
+                        },
+                        "parameter_types": [
+                            {
+                                "kind": "int8"
+                            }
+                        ],
+                        "features": [
+                            "table_valued_function"
+                        ]
+                    }
+                },
+                "arguments": [
+                    {
+                        "kind": "variable_reference",
+                        "this": "@7",
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@3",
+                                "label": "k"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "k",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        },
+                        "resolution": {
+                            "type": {
+                                "kind": "int8"
+                            }
+                        }
+                    }
+                ],
+                "columns": [
+                    {
+                        "position": 0,
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@8",
+                                "label": "u"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "position": 1,
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@9",
+                                "label": "v"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "position": 2,
+                        "variable": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@10",
+                                "label": "w"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                }
+                            }
+                        }
+                    }
+                ],
+                "input_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "scan",
+                            "this": "@2",
+                            "index": 0
+                        }
+                    }
+                ],
+                "output_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "emit",
+                            "this": "@11",
+                            "index": 0
+                        }
+                    }
+                ]
+            },
+            {
+                "kind": "emit",
+                "this": "@11",
+                "columns": [
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@3",
+                                "label": "k"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "k",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        },
+                        "name": "k"
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@4",
+                                "label": "s"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "s",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                }
+                            }
+                        },
+                        "name": "s"
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@5",
+                                "label": "v"
+                            },
+                            "resolution": {
+                                "kind": "table_column",
+                                "simple_name": "v",
+                                "owner": "ksv",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                }
+                            }
+                        },
+                        "name": "v"
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@8",
+                                "label": "u"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "int8"
+                                }
+                            }
+                        },
+                        "name": "u"
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@9",
+                                "label": "v"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "character",
+                                    "varying": true
+                                }
+                            }
+                        },
+                        "name": "v"
+                    },
+                    {
+                        "source": {
+                            "kind": "variable",
+                            "binding": {
+                                "kind": "stream_variable",
+                                "this": "@10",
+                                "label": "w"
+                            },
+                            "resolution": {
+                                "kind": "unknown",
+                                "type": {
+                                    "kind": "decimal",
+                                    "precision": 18,
+                                    "scale": 2
+                                }
+                            }
+                        },
+                        "name": "w"
+                    }
+                ],
+                "input_ports": [
+                    {
+                        "index": 0,
+                        "opposite": {
+                            "kind": "apply",
+                            "this": "@6",
+                            "index": 0
+                        }
+                    }
+                ],
+                "output_ports": []
+            }
+        ],
+        "upstreams": [],
+        "downstreams": []
+    }
+]
