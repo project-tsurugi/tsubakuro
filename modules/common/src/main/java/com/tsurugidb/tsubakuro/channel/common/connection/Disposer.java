@@ -171,8 +171,6 @@ public class Disposer extends Thread {
                             // ignore OPERATION_CANCELED error
                             if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
                                 ignore = true;
-                            } else {
-                                LOG.error("Unexpected CoreServiceException in disposer" + e);
                             }
                         }
                         if (!ignore) {
