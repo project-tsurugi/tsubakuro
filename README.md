@@ -3,10 +3,9 @@
 ## Requirements
 
 ### JDK
-* OpenJDK 11 (see https://docs.microsoft.com/ja-jp/java/openjdk/download)
-The environment variables JAVA_HOME and PATH should be as follows;
-set JAVA_HOME to the directory where the JDK is installed,
-and add the directory where the java command exists to PATH.
+Tsubakuro needs JDK 17 to build.
+
+**Note:** The build is configured with `release = 11` in Gradle, which means the compiled bytecode is compatible with Java 11 or later. While JDK 17 is required for the build environment, the resulting JAR files can run on Java 11 and above.
 
 ### Dependency packages for Native Library
 Tsubakuro needs to install several packages for Native Libarary builds.
@@ -17,7 +16,7 @@ See *Dockerfile* section.
 ```dockerfile
 FROM ubuntu:22.04
 
-RUN apt update -y && apt install -y git build-essential cmake libboost-system-dev openjdk-11-jdk
+RUN apt update -y && apt install -y git build-essential cmake libboost-system-dev openjdk-17-jdk
 ```
 
 ###
