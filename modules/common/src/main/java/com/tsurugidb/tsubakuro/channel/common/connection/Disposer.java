@@ -41,16 +41,16 @@ public class Disposer extends Thread {
     // processing status.
     enum Status {
         // initial state, Disposer thread is not running.
-        INIT,
+        INACTIVE,
 
         // Disposer thread is running and accepting FutureResponses and Resources.
-        OPEN,
+        HANDLE_ASYNC_CLOSE,
 
         // shutdown has been initiated.
-        SHUTDOWN,
+        HANDLE_SESSION_SHUTDOWN,
 
         // session close has been initiated.
-        CLOSED,
+        HANDLE_SESSION_CLOSE,
         ;
 
         String asString() {
@@ -68,13 +68,47 @@ public class Disposer extends Thread {
 
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
-    private final Lock lock = new ReentrantLock();
     private final Lock peekPollLock = new ReentrantLock();
 
-    private final Condition empty = lock.newCondition();
+    static final class AtomicStatus {
+        private final AtomicReference<Status> status;
+        private final Lock lock = new ReentrantLock();
+        private final Condition empty = lock.newCondition();
 
-    private AtomicReference<Status> status = new AtomicReference<>(Status.INIT);
+        AtomicStatus(Status initialStatus) {
+            this.status = new AtomicReference<>(initialStatus);
+        }
 
+        Status get() {
+            if (!lock.tryLock()) {
+                throw new IllegalStateException("lock must be held when get() is called");
+            }
+            lock.unlock();
+            return status.get();
+        }
+
+        void set(Status newStatus) {
+            if (!lock.tryLock()) {
+                throw new IllegalStateException("lock must be held when set() is called");
+            }
+            lock.unlock();
+            status.set(newStatus);
+        }
+
+        void lock() {
+            lock.lock();
+        }
+
+        void unlock() {
+            lock.unlock();
+        }
+
+        Condition emptyCondition() {
+            return empty;
+        }
+    }
+
+    private AtomicStatus status = new AtomicStatus(Status.INACTIVE);
 
     /**
      * Enclosure of delayed clean up procedure.
@@ -186,20 +220,20 @@ public class Disposer extends Thread {
                         }
                     }
                 }
-                lock.lock();
+                status.lock();
                 try {
                     if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                         shouldContinue = true;
                         continueSoon = true;
                     } else {
-                        empty.signalAll();
+                        status.emptyCondition().signalAll();
                         shouldContinue = shutdownQueue.isEmpty() && close.get() == null;
                         if (!shouldContinue) {
-                           status.set(Status.SHUTDOWN);
+                           status.set(Status.HANDLE_SESSION_SHUTDOWN);
                         }
                     }
                 } finally {
-                    lock.unlock();
+                    status.unlock();
                 }
             } finally {
                 peekPollLock.unlock();
@@ -235,7 +269,7 @@ public class Disposer extends Thread {
                     continue;
                 }
 
-                status.set(Status.CLOSED);
+                status.set(Status.HANDLE_SESSION_CLOSE);
                 try {
                     delayedClose.delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
@@ -266,19 +300,20 @@ public class Disposer extends Thread {
     }
 
     void add(ForegroundFutureResponse<?> futureResponse) {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_SHUTDOWN || currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             futureResponseQueue.add(futureResponse);
-            if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -288,19 +323,20 @@ public class Disposer extends Thread {
      * @param resource the DelayedClose to be added
      */
     public void add(DelayedClose resource) {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_SHUTDOWN || currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             serverResourceQueue.add(resource);
-            if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -312,20 +348,20 @@ public class Disposer extends Thread {
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
     public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_SHUTDOWN || currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             shutdownQueue.add(cleanUp);
-            if (currentStatus == Status.INIT) {
-                status.set(Status.OPEN);
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -339,18 +375,18 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Session close is already scheduled");
-            } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is running`
+            } else if (currentStatus == Status.HANDLE_ASYNC_CLOSE || currentStatus == Status.HANDLE_SESSION_SHUTDOWN) {  // the same as `if daemon is running`
                 close.set(cleanUp);
                 return;
             }
-            status.set(Status.CLOSED);
+            status.set(Status.HANDLE_SESSION_CLOSE);
         } finally {
-            lock.unlock();
+            status.unlock();
         }
         cleanUp.delayedClose();  // execute outside the lock
     }
@@ -361,17 +397,17 @@ public class Disposer extends Thread {
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
     public void waitForEmpty() {
-        lock.lock();
+        status.lock();
         try {
             while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                 try {
-                    empty.await();
+                    status.emptyCondition().await();
                 } catch (InterruptedException e) {
                     continue;
                 }
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 }
