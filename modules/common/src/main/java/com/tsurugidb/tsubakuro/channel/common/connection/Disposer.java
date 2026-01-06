@@ -60,47 +60,35 @@ public class Disposer extends Thread {
 
     static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
-    private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
-    private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
-    private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
-
+    private final ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
     private final AtomicReference<DelayedClose> close = new AtomicReference<>();
 
-    private final Lock peekPollLock = new ReentrantLock();
+    private final Lock globalLock = new ReentrantLock();
 
-    static final class AtomicStatus {
+    static final class AtomicStatus extends ReentrantLock {
         private final AtomicReference<Status> status;
-        private final Lock lock = new ReentrantLock();
-        private final Condition empty = lock.newCondition();
+        private final Condition empty = newCondition();
 
         AtomicStatus(Status initialStatus) {
             this.status = new AtomicReference<>(initialStatus);
         }
 
         Status get() {
-            if (!lock.tryLock()) {
+            if (getOwner() != Thread.currentThread()) {
                 throw new IllegalStateException("lock must be held when get() is called");
             }
-            lock.unlock();
-            return status.get();
+           return status.get();
         }
 
         void set(Status newStatus) {
-            if (!lock.tryLock()) {
+            if (getOwner() != Thread.currentThread()) {
                 throw new IllegalStateException("lock must be held when set() is called");
             }
-            lock.unlock();
             status.set(newStatus);
-        }
-
-        void lock() {
-            lock.lock();
-        }
-
-        void unlock() {
-            lock.unlock();
         }
 
         Condition emptyCondition() {
@@ -108,7 +96,7 @@ public class Disposer extends Thread {
         }
     }
 
-    private AtomicStatus status = new AtomicStatus(Status.INACTIVE);
+    private final AtomicStatus status = new AtomicStatus(Status.INACTIVE);
 
     /**
      * Enclosure of delayed clean up procedure.
@@ -143,53 +131,60 @@ public class Disposer extends Thread {
 
     @Override
     public void run() {
+        globalLock.lock();
+        try {
+            bodyRun();
+        } finally {
+            globalLock.unlock();
+        }
+    }
+
+    /**
+     * Delayedclean up procedure.
+     * It sleeps and waits until the resources to be processed or session closure procedures are registered,
+     * in order to avoid wasting CPU resources.
+     */
+    private void bodyRun() {
         Exception exception = null;
 
         while (true) {
             boolean shouldContinue = false;
-            peekPollLock.lock();
-            try {
-                var futureResponse = futureResponseQueue.peek();
-                if (futureResponse != null) {
-                    shouldContinue = true;
-                    boolean doAdd = false;
-                    try {
-                        var obj = futureResponse.cleanUp();
-                        if (obj instanceof ServerResource) {
-                            ((ServerResource) obj).close();
-                        }
-                    } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
-                        // Server resource has not created at the server
-                    } catch (SessionAlreadyClosedException e) {
-                        // Server resource has been disposed by the session close
-                    } catch (TimeoutException e) {
-                        // Let's try again
-                        doAdd = true;
-                    } catch (Exception e) {
-                        boolean ignore = false;
-                        if (e instanceof CoreServiceException) {
-                            // ignore OPERATION_CANCELED error
-                            if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
-                                ignore = true;
-                            }
-                        }
-                        if (!ignore) {
-                            // should not occur
-                            if (exception == null) {
-                                exception = e;
-                            } else {
-                                exception.addSuppressed(e);
-                            }
-                        }
-                    } finally {
-                        futureResponseQueue.poll();
-                        if (doAdd) {
-                            futureResponseQueue.add(futureResponse);
+            var futureResponse = futureResponseQueue.peek();
+            if (futureResponse != null) {
+                shouldContinue = true;
+                boolean doAdd = false;
+                try {
+                    var obj = futureResponse.cleanUp();
+                    if (obj instanceof ServerResource) {
+                        ((ServerResource) obj).close();
+                    }
+                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException | SessionAlreadyClosedException e) {
+                    // Server resource has not created at the server side, or session is already closed
+                } catch (TimeoutException e) {
+                    // Let's try again, as server resource has been disposed by the session close
+                    doAdd = true;
+                } catch (ServerException | IOException | InterruptedException e) {
+                    boolean ignore = false;
+                    if (e instanceof CoreServiceException) {
+                        // ignore OPERATION_CANCELED error
+                        if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
+                            ignore = true;
                         }
                     }
+                    if (!ignore) {
+                        // should not occur
+                        if (exception == null) {
+                            exception = e;
+                        } else {
+                            exception.addSuppressed(e);
+                        }
+                    }
+                } finally {
+                    futureResponseQueue.poll();
+                    if (doAdd) {
+                        futureResponseQueue.add(futureResponse);
+                    }
                 }
-            } finally {
-                peekPollLock.unlock();
             }
             if (shouldContinue) {
                 continue;
@@ -197,49 +192,44 @@ public class Disposer extends Thread {
 
             shouldContinue = false;
             boolean continueSoon = false;
-            peekPollLock.lock();
-            try {
-                var serverResource = serverResourceQueue.peek();
-                if (serverResource != null) {
-                    boolean doAdd = false;
-                    try {
-                        if (!serverResource.delayedClose()) {
-                            // The server response has not been received
-                            doAdd = true;
-                            shouldContinue = true;
-                            continueSoon = true;
-                        }
-                    } catch (ServerException | IOException | InterruptedException e) {
-                        exception = addSuppressed(exception, e);
-                    } finally {
-                        serverResourceQueue.poll();
-                        if (doAdd) {
-                            serverResourceQueue.add(serverResource);
-                        }
-                    }
-                }
-                status.lock();
+            var serverResource = serverResourceQueue.peek();
+            if (serverResource != null) {
+                boolean doAdd = false;
                 try {
-                    if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    if (!serverResource.delayedClose()) {
+                        // The server response has not been received
+                        doAdd = true;
                         shouldContinue = true;
                         continueSoon = true;
-                    } else {
-                        status.emptyCondition().signalAll();
-                        shouldContinue = shutdownQueue.isEmpty() && close.get() == null;
-                        if (!shouldContinue) {
-                           status.set(Status.HANDLE_SESSION_SHUTDOWN);
-                        }
                     }
+                } catch (ServerException | IOException | InterruptedException e) {
+                    exception = addSuppressed(exception, e);
                 } finally {
-                    status.unlock();
+                    serverResourceQueue.poll();
+                    if (doAdd) {
+                        serverResourceQueue.add(serverResource);
+                    }
+                }
+            }
+            status.lock();
+            try {
+                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
+                    shouldContinue = true;
+                    continueSoon = true;
+                } else {
+                    status.emptyCondition().signalAll();
+                    shouldContinue = shutdownQueue.isEmpty() && close.get() == null;
+                    if (!shouldContinue) {
+                        status.set(Status.HANDLE_SESSION_SHUTDOWN);
+                    }
                 }
             } finally {
-                peekPollLock.unlock();
+                status.unlock();
             }
             if (shouldContinue) {
                 if (!continueSoon) {
                     try {
-                        Thread.sleep(10);
+                        sleep(10);  // intentional sleep to wait for possible registration of new resources
                     } catch (InterruptedException e) {
                         // No problem, it's OK
                     }
@@ -260,14 +250,19 @@ public class Disposer extends Thread {
                 DelayedClose delayedClose = close.get();
                 if (delayedClose == null) {
                     try {
-                        Thread.sleep(10);
+                        sleep(10);  // intentional sleep to wait for possible registration of delayed close
                     } catch (InterruptedException e) {
                         // No problem, it's OK
                     }
                     continue;
                 }
 
-                status.set(Status.HANDLE_SESSION_CLOSE);
+                status.lock();
+                try {
+                    status.set(Status.HANDLE_SESSION_CLOSE);
+                } finally {
+                    status.unlock();
+                }
                 try {
                     delayedClose.delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
@@ -401,7 +396,7 @@ public class Disposer extends Thread {
                 try {
                     status.emptyCondition().await();
                 } catch (InterruptedException e) {
-                    continue;
+                    // No problem, it's OK
                 }
             }
         } finally {
