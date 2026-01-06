@@ -77,7 +77,7 @@ public class Disposer extends Thread {
 
 
     /**
-     * Enclodure of delayed clean up procedure.
+     * Enclosure of delayed clean up procedure.
      */
     public interface DelayedShutdown {
         /**
@@ -88,7 +88,7 @@ public class Disposer extends Thread {
     }
 
     /**
-     * Enclodure of delayed clean up procedure.
+     * Enclosure of delayed clean up procedure.
      */
     public interface DelayedClose {
         /**
@@ -138,7 +138,7 @@ public class Disposer extends Thread {
                             if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
                                 ignore = true;
                             } else {
-                                LOG.error("Unexpected CoreServiceException in disposer: " + e);
+                                LOG.error("Unexpected CoreServiceException in disposer" + e);
                             }
                         }
                         if (!ignore) {
@@ -212,7 +212,6 @@ public class Disposer extends Thread {
                         // No problem, it's OK
                     }
                 }
-                status.set(Status.OPEN);    
                 continue;
             }
 
@@ -269,17 +268,14 @@ public class Disposer extends Thread {
     void add(ForegroundFutureResponse<?> futureResponse) {
         lock.lock();
         try {
-            while (true) {
-                var currentStatus = status.get();
-                if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
-                    throw new AssertionError("Disposer status: " + currentStatus.asString());
-                }
-                futureResponseQueue.add(futureResponse);
-                if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
-                    this.setDaemon(true);
-                    this.start();
-                }
-                break;
+            var currentStatus = status.get();
+            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+                throw new AssertionError("Disposer status: " + currentStatus.asString());
+            }
+            futureResponseQueue.add(futureResponse);
+            if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
+                this.setDaemon(true);
+                this.start();
             }
         } finally {
             lock.unlock();
@@ -294,17 +290,14 @@ public class Disposer extends Thread {
     public void add(DelayedClose resource) {
         lock.lock();
         try {
-            while (true) {
-                var currentStatus = status.get();
-                if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
-                    throw new AssertionError("Disposer status: " + currentStatus.asString());
-                }
-                serverResourceQueue.add(resource);
-                if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
-                    this.setDaemon(true);
-                    this.start();
-                }
-                break;
+            var currentStatus = status.get();
+            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+                throw new AssertionError("Disposer status: " + currentStatus.asString());
+            }
+            serverResourceQueue.add(resource);
+            if (currentStatus == Status.INIT && status.compareAndSet(Status.INIT, Status.OPEN)) {
+                this.setDaemon(true);
+                this.start();
             }
         } finally {
             lock.unlock();
