@@ -1,0 +1,10 @@
+plugins {
+    id 'tsubakuro.java-library-conventions'
+}
+
+dependencies {
+    implementation project(':tsubakuro-common')
+    implementation project(':tsubakuro-stream')
+    implementation project(':tsubakuro-ipc')
+    implementation project(':tsubakuro-debug')
+}
