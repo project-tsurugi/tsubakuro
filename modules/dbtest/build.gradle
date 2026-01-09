@@ -1,10 +1,10 @@
 plugins {
-    id 'tsubakuro.java-library-conventions'
+    id 'tsubakuro.java-conventions'
 }
 
 dependencies {
-    implementation project(':tsubakuro-common')
-    implementation project(':tsubakuro-stream')
-    implementation project(':tsubakuro-ipc')
-    implementation project(':tsubakuro-debug')
+    dbtestImplementation project(':tsubakuro-common')
+    dbtestImplementation project(':tsubakuro-stream')
+    dbtestImplementation project(':tsubakuro-ipc')
+    dbtestImplementation project(':tsubakuro-debug')
 }
