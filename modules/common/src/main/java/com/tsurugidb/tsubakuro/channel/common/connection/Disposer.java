@@ -104,6 +104,8 @@ public class Disposer extends Thread {
 
     private final AtomicStatus status = new AtomicStatus(Status.INACTIVE);
 
+    private static final long PATROL_CYCLE_TIME_NANOS = 1_000_000_000L;  // 1 second
+
     /**
      * Enclosure of delayed clean up procedure.
      */
@@ -217,7 +219,7 @@ public class Disposer extends Thread {
                     shouldContinue = shutdownQueue.isEmpty() && sessionClose.get() == null;
                     if (shouldContinue) {
                         try {
-                            status.entryCondition().await();
+                            status.entryCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
                         } catch (InterruptedException e) {
                             // No problem, it's OK
                         }
@@ -249,7 +251,7 @@ public class Disposer extends Thread {
                     status.lock();
                     try {
                         try {
-                            status.entryCondition().await();
+                            status.entryCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
                         } catch (InterruptedException e) {
                             // No problem, it's OK
                         }
@@ -405,7 +407,7 @@ public class Disposer extends Thread {
         try {
             while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                 try {
-                    status.emptyCondition().await();
+                    status.emptyCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
                 } catch (InterruptedException e) {
                     // No problem, it's OK
                 }
