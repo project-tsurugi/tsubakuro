@@ -80,14 +80,14 @@ public class Disposer extends Thread {
         }
 
         Status get() {
-            if (getOwner() != Thread.currentThread()) {
+            if (!isHeldByCurrentThread()) {
                 throw new IllegalStateException("lock must be held when get() is called");
             }
            return status.get();
         }
 
         void set(Status newStatus) {
-            if (getOwner() != Thread.currentThread()) {
+            if (!isHeldByCurrentThread()) {
                 throw new IllegalStateException("lock must be held when set() is called");
             }
             status.set(newStatus);
@@ -148,7 +148,7 @@ public class Disposer extends Thread {
     }
 
     /**
-     * Delayedclean up procedure body.
+     * Delayed clean up procedure body.
      */
     private void bodyRun() {
         Exception exception = null;
@@ -165,24 +165,16 @@ public class Disposer extends Thread {
                 } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException | SessionAlreadyClosedException e) {
                     // Server resource has not created at the server side, or session is already closed
                 } catch (TimeoutException e) {
-                    // Let's try again, as server resource has been disposed by the session close
+                    // The operation timed out while waiting for a response; re-queue and try again
                     doAdd = true;
-                } catch (ServerException | IOException | InterruptedException e) {
-                    boolean ignore = false;
-                    if (e instanceof CoreServiceException) {
-                        // ignore OPERATION_CANCELED error
-                        if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
-                            ignore = true;
-                        }
-                    }
-                    if (!ignore) {
+                } catch (CoreServiceException e) {
+                    if (e.getDiagnosticCode() != CoreServiceCode.OPERATION_CANCELED) {
                         // should not occur
-                        if (exception == null) {
-                            exception = e;
-                        } else {
-                            exception.addSuppressed(e);
-                        }
+                        exception = addSuppressed(exception, e);
                     }
+                } catch (ServerException | IOException | InterruptedException e) {
+                    // should not occur
+                    exception = addSuppressed(exception, e);
                 } finally {
                     futureResponseQueue.poll();
                     if (doAdd) {
