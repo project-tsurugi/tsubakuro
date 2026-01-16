@@ -57,6 +57,8 @@ public class ExecuteResultAdapter implements ExecuteResult {
             return CounterType.MERGED_ROWS;
         case DELETED_ROWS:
             return CounterType.DELETED_ROWS;
+        default:
+            break;
         }
         return null;
     }

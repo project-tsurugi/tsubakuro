@@ -19,9 +19,6 @@ import java.util.LinkedHashSet;
 
 import javax.annotation.Nonnull;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
 
@@ -29,8 +26,6 @@ import com.tsurugidb.tsubakuro.util.Timeout;
  * Keeps {@link ServerResource}s.
  */
 class ServiceShelf {
-
-    static final Logger LOG = LoggerFactory.getLogger(ServiceShelf.class);
 
     private final LinkedHashSet<ServerResource> entries = new LinkedHashSet<>();
 
@@ -57,8 +52,7 @@ class ServiceShelf {
 
     void setCloseTimeout(@Nonnull Timeout timeout) {
         synchronized (this) {
-            for (var iter = entries.iterator(); iter.hasNext();) {
-                var resource = iter.next();
+            for (var resource : entries) {
                 resource.setCloseTimeout(timeout);
             }
         }

@@ -118,12 +118,7 @@ public class PreparedStatementImpl implements PreparedStatement {
         }
         if (disposer != null) {
             if (!addedToDisposer) {
-                disposer.add(new Disposer.DelayedClose() {
-                    @Override
-                    public boolean delayedClose() throws ServerException, IOException, InterruptedException {
-                        return doClose();
-                    }
-                });
+                disposer.add(() -> doClose());
                 addedToDisposer = true;
             }
             return;
@@ -171,7 +166,7 @@ public class PreparedStatementImpl implements PreparedStatement {
     // for diagnostic
     synchronized String diagnosticInfo() {
         if (!closed) {
-            String rv = " +PreparedStatement " + Long.valueOf(handle.getHandle()).toString() + System.getProperty("line.separator");
+            String rv = " +PreparedStatement " + Long.toString(handle.getHandle()) + System.getProperty("line.separator");
             if (request != null) {
                 rv += "   ==== request from here ====" + System.getProperty("line.separator");
                 rv += request.toString();

@@ -22,6 +22,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,8 +32,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.annotation.Nonnull;
 
@@ -77,9 +77,35 @@ public class SessionImpl implements Session {
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean cleanUpFinished = new AtomicBoolean(false);
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
-    private final AtomicBoolean completed = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
+
+    private static final class AtomicCompleted extends ReentrantLock {
+        private final AtomicBoolean flag = new AtomicBoolean(false);
+        private final Condition empty = newCondition();
+
+        Boolean get() {
+            lock();
+            try {
+                return flag.get();
+            } finally {
+                unlock();
+            }
+        }
+        void set() {
+            lock();
+            try {
+                flag.set(true);
+                empty.signalAll();
+            } finally {
+                unlock();
+            }
+        }
+        Condition emptyCondition() {
+            return empty;
+        }
+    }
+    private final AtomicCompleted completed = new AtomicCompleted();
 
     private Wire wire;
     private Timeout closeTimeout;
@@ -88,8 +114,6 @@ public class SessionImpl implements Session {
     // use AtomicInteger to keep track of the number of close requests.
     private final AtomicInteger closed = new AtomicInteger(0);
     public static final int SESSION_CLOSED = -1;
-
-    private Exception exception = null;
 
     /**
      * The keep alive interval in milliseconds.
@@ -110,6 +134,7 @@ public class SessionImpl implements Session {
             this.timer = timer;
         }
 
+        @Override
         public void run() {
             try {
                 if (closed.get() != SESSION_CLOSED) {
@@ -117,7 +142,7 @@ public class SessionImpl implements Session {
                 } else {
                     timer.cancel();
                 }
-            } catch (Exception ex) {
+            } catch (ServerException | IOException | InterruptedException ex) {
                 timer.cancel();
             }
         }
@@ -178,18 +203,9 @@ public class SessionImpl implements Session {
         return disposer;
     }
 
-    /**
-     * Connect this session to the SQL server.
-     *
-     * Note. How to connect to a SQL server is implementation dependent.
-     * This implementation assumes that the session wire connected to the database is given.
-     *
-     * @param w the wire connected to the Database
-     */
     @Override
-    public void connect(@Nonnull Wire w) {
-        Objects.requireNonNull(w);
-        wire = w;
+    public void connect(@Nonnull Wire sessionWire) {
+        wire = sessionWire;
         if (doKeepAlive) {
             keepAliveTimer.scheduleAtFixedRate(new KeepAliveTask(keepAliveTimer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
@@ -268,7 +284,7 @@ public class SessionImpl implements Session {
 
     static class UpdateExpirationTimeProcessor implements MainResponseProcessor<Void> {
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             var message = CoreResponse.UpdateExpirationTime.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
@@ -332,9 +348,8 @@ public class SessionImpl implements Session {
     }
 
     static class ShutdownProcessor implements MainResponseProcessor<Void> {
-
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             // No error checking is performed here,
             // as only core diagnostic errors can occur for shutdown requests.
             var message = CoreResponse.Shutdown.parseDelimitedFrom(new ByteBufferInputStream(payload));
@@ -348,6 +363,7 @@ public class SessionImpl implements Session {
         private FutureResponse<Void> future = null;
         private final Lock lock = new ReentrantLock();
         private final Condition futureCondition = lock.newCondition();
+        private Exception exception = null;
 
         ShutdownCleanUp(ShutdownType type) {
             this.type = type;
@@ -378,6 +394,9 @@ public class SessionImpl implements Session {
                                     .build()),
                             new ShutdownProcessor().asResponseProcessor());
                         futureCondition.signalAll();
+                    } catch (IOException ex) {
+                        addSuppressed(ex);
+                        throw ex;
                     } finally {
                         lock.unlock();
                     }
@@ -396,6 +415,7 @@ public class SessionImpl implements Session {
         }
         @Override
         public Void get(long timeout, TimeUnit unit) throws IOException, ServerException, InterruptedException, TimeoutException {
+            throwException();  // return if exception is null, otherwise throw it
             lock.lock();
             try {
                 while (future == null) {
@@ -415,13 +435,13 @@ public class SessionImpl implements Session {
                 } else {
                     future.get(timeout, unit);
                 }
-            } catch (IOException | ServerException | InterruptedException | TimeoutException fe) {
-                addSuppressed(fe);
+            } catch (IOException | ServerException | InterruptedException | TimeoutException ex) {
+                addSuppressed(ex);
             }
             try {
                 doClose(1);
-            } catch (IOException | ServerException | InterruptedException fe) {
-                addSuppressed(fe);
+            } catch (IOException | ServerException | InterruptedException ex) {
+                addSuppressed(ex);
             }
             throwException();
             return null;
@@ -448,6 +468,31 @@ public class SessionImpl implements Session {
                 exception.addSuppressed(exceptionNew);
             }
         }
+
+        private void throwException() throws IOException, ServerException, InterruptedException {
+            if (exception != null) {
+                try {
+                    if (exception instanceof IOException) {
+                        throw (IOException) exception;
+                    }
+                    if (exception instanceof ServerException) {
+                        throw (ServerException) exception;
+                    }
+                    if (exception instanceof TimeoutException) {
+                        throw new ResponseTimeoutException(exception);
+                    }
+                    if (exception instanceof InterruptedException) {
+                        throw (InterruptedException) exception;
+                    }
+                    if (exception instanceof RuntimeException) {
+                        throw (RuntimeException) exception;
+                    }
+                    throw new AssertionError(exception);
+                } finally {
+                    exception = null;
+                }
+            }
+        }
     }
 
     @Override
@@ -462,12 +507,8 @@ public class SessionImpl implements Session {
         return FutureResponse.returns(null);
     }
 
-    static CoreServiceException newUnknown() {
-        return new CoreServiceException(CoreServiceCode.UNKNOWN);
-    }
-
     @Override
-    public void setCloseTimeout(Timeout timeout) {
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
         closeTimeout = timeout;
         services.setCloseTimeout(timeout);
     }
@@ -478,43 +519,10 @@ public class SessionImpl implements Session {
     }
 
     class CloseCleanUp implements Disposer.DelayedClose {
+        @Override
         public boolean delayedClose() throws ServerException, IOException, InterruptedException {
-            try {
-                doClose(0);
-            } catch (ServerException | IOException | InterruptedException fe) {
-                if (exception == null) {
-                    exception = fe;
-                } else {
-                    exception.addSuppressed(fe);
-                }
-            }
-            throwException();
+            doClose(0);
             return true;
-        }
-    }
-
-    private void throwException() throws IOException, ServerException, InterruptedException {
-        if (exception != null) {
-            try {
-                if (exception instanceof IOException) {
-                    throw (IOException) exception;
-                }
-                if (exception instanceof ServerException) {
-                    throw (ServerException) exception;
-                }
-                if (exception instanceof TimeoutException) {
-                    throw new ResponseTimeoutException(exception);
-                }
-                if (exception instanceof InterruptedException) {
-                    throw (InterruptedException) exception;
-                }
-                if (exception instanceof RuntimeException) {
-                    throw (RuntimeException) exception;
-                }
-                throw new AssertionError(exception);
-            } finally {
-                exception = null;
-            }
         }
     }
 
@@ -529,22 +537,18 @@ public class SessionImpl implements Session {
         }
     }
 
-    private void cleanServiceStub() {
+    private void cleanServiceStub() throws IOException {
         if (!cleanUpFinished.getAndSet(true)) {
             // take care of the serviceStubs
             if (closeTimeout != null) {
                 services.setCloseTimeout(closeTimeout);
             }
-            for (var e : services.entries()) {
+            for (var se : services.entries()) {
                 try {
-                    e.close();
-                    services.remove(e);
-                } catch (ServerException | IOException | InterruptedException fe) {
-                    if (exception == null) {
-                        exception = fe;
-                    } else {
-                        exception.addSuppressed(fe);
-                    }
+                    se.close();
+                    services.remove(se);
+                } catch (ServerException | InterruptedException ex) {
+                    throw new IOException(ex);
                 }
             }
         }
@@ -573,7 +577,7 @@ public class SessionImpl implements Session {
                         return;
                     }
                 } finally {
-                    completed.set(true);
+                    completed.set();
                 }
             }
         }
@@ -603,8 +607,13 @@ public class SessionImpl implements Session {
         if (!closeCleanUpRegistered.get()) {
             throw new IllegalStateException("Session close is not submitted");
         }
-        while (!completed.get()) {
-            Thread.sleep(100);
+        completed.lock();
+        try {
+            while (!completed.get()) {
+                completed.emptyCondition().await();
+            }
+        } finally {
+            completed.unlock();
         }
     }
 
@@ -619,7 +628,11 @@ public class SessionImpl implements Session {
     }
 
     @Override
+    @Nonnull
     public Wire getWire() {
+        if (wire == null) {
+            throw new IllegalStateException("Session is not connected to the wire yet");
+        }
         return wire;
     }
 
@@ -672,7 +685,7 @@ public class SessionImpl implements Session {
         if (closed.get() != SESSION_CLOSED) {
             String sessionId = "";
             if (wire instanceof WireImpl) {
-                sessionId = Long.valueOf(((WireImpl) wire).sessionId()).toString();
+                sessionId = Long.toString(((WireImpl) wire).sessionId());
             }
             String diagnosticInfo = "session " + sessionId + System.getProperty("line.separator");
 

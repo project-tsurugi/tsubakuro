@@ -82,8 +82,7 @@ public class TransactionImpl implements Transaction {
     private FutureResponse<Void> commitResult;
     private FutureResponse<Void> rollbackResult = null;
     private FutureResponse<Void> disposeResult = null;
-    private int commitRetry = 10;
-    private AtomicReference<State> state = new AtomicReference<>();
+    private final AtomicReference<State> state = new AtomicReference<>();
     private Instant closeInvokedInstant = null;
     private Disposer disposer = null;
     private boolean autoDispose = false;
@@ -210,9 +209,9 @@ public class TransactionImpl implements Transaction {
                         throw new BlobException("error occurred while transmitting BLOB data: {" + path + " is not readable}");
                     }
                     String channelName = "ClobChannel-";
-                    channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+                    channelName += Long.toString(ProcessHandle.current().pid());
                     channelName += "-";
-                    channelName += Long.valueOf(clobNumber.getAndIncrement()).toString();
+                    channelName += Long.toString(clobNumber.getAndIncrement());
                     if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
@@ -236,9 +235,9 @@ public class TransactionImpl implements Transaction {
                         throw new BlobException("error occurred while transmitting BLOB data: {" + path + " is not readable}");
                     }
                     String channelName = "BlobChannel-";
-                    channelName += Long.valueOf(ProcessHandle.current().pid()).toString();
+                    channelName += Long.toString(ProcessHandle.current().pid());
                     channelName += "-";
-                    channelName += Long.valueOf(blobNumber.getAndIncrement()).toString();
+                    channelName += Long.toString(blobNumber.getAndIncrement());
                     if (!lobs.add(new FileBlobInfo(channelName, path))) {
                         throw new IllegalArgumentException();
                     }
@@ -539,12 +538,7 @@ public class TransactionImpl implements Transaction {
 
         if (disposer != null) {
             state.set(toBeClosed(s));
-            disposer.add(new Disposer.DelayedClose() {
-                @Override
-                public boolean delayedClose() throws ServerException, IOException, InterruptedException {
-                    return doClose();
-                }
-            });
+            disposer.add(() -> doClose());
             return;
         }
         doClose();

@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -30,8 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
-import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
+import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
 import com.tsurugidb.tsubakuro.util.Timeout;
@@ -43,8 +45,6 @@ import com.tsurugidb.tsubakuro.util.Timeout;
 public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXME remove public
     static final Logger LOG = LoggerFactory.getLogger(ForegroundFutureResponse.class);
 
-    private static final int POLL_INTERVAL = 1000; // in mS
-
     private final FutureResponse<? extends Response> delegate;
 
     private final ResponseProcessor<? extends V> mapper;
@@ -53,7 +53,32 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
 
     private final AtomicReference<V> result = new AtomicReference<>();
 
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private static final class AtomicClosed extends ReentrantLock {
+        private final AtomicBoolean closedFlag = new AtomicBoolean(false);
+        private final Condition closedCondition = newCondition();
+
+        Boolean get() {
+            lock();
+            try {
+                return closedFlag.get();
+            } finally {
+                unlock();
+            }
+        }
+        void set() {
+            lock();
+            try {
+                closedFlag.set(true);
+                closedCondition.signalAll();
+            } finally {
+                unlock();
+            }
+        }
+        Condition closedCondition() {
+            return closedCondition;
+        }
+    }
+    private final AtomicClosed closed = new AtomicClosed();
     private final AtomicBoolean closeOnce = new AtomicBoolean();
 
     private final AtomicBoolean gotton = new AtomicBoolean();
@@ -139,7 +164,7 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         }
     }
 
-    private V processResult(Owner<Response> response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+    private V processResult(@Nonnull Owner<Response> response, Timeout timeout) throws IOException, ServerException, InterruptedException {
 //        assert response != null;    // comment out in order to prevent SpotBugs violation
         try (response) {
             V mapped;
@@ -186,14 +211,12 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         Exception exception = null;
         if (!gotton.getAndSet(true)) {
             try {
-                Response response = null;
                 if (closeTimeout != null) {
-                    response = delegate.get(closeTimeout.value(), closeTimeout.unit());
+                    delegate.get(closeTimeout.value(), closeTimeout.unit()).cancel();
                 } else {
-                    response = delegate.get();
+                    delegate.get().cancel();
                 }
-                response.cancel();
-            } catch (Exception e) {
+            } catch (ServerException | IOException | InterruptedException | TimeoutException e) {
                 exception = e;
             } finally {
                 try {
@@ -209,18 +232,19 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
                             up.setCloseTimeout(closeTimeout);
                         }
                         Owner.close(up);
-                    } catch (Exception e) {
+                    } catch (ServerException | IOException | InterruptedException e) {
                         exception = addSuppressed(exception, e);
                     } finally {
                         try {
-                            if (closeTimeout != null) {
-                                delegate.setCloseTimeout(closeTimeout);
+                            try (delegate) {
+                                if (closeTimeout != null) {
+                                    delegate.setCloseTimeout(closeTimeout);
+                                }
                             }
-                            delegate.close();
-                        } catch (Exception e) {
+                        } catch (ServerException | IOException | InterruptedException e) {
                             exception = addSuppressed(exception, e);
                         } finally {
-                            closed.set(true);
+                            closed.set();
                             throwException(exception);
                         }
                     }
@@ -233,12 +257,13 @@ public class ForegroundFutureResponse<V> implements FutureResponse<V> {  // FIXM
         Response response = delegate.get();
         if (response != null) {
             close();
-            while (!closed.get()) {  // in case another thread has executed close()
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    // ignore
+            closed.lock();
+            try {
+                while (!closed.get()) {  // in case another thread has executed close()
+                    closed.closedCondition().await();
                 }
+            } finally {
+                closed.unlock();
             }
             synchronized (this) {
                 if (response.isMainResponseReady()) {

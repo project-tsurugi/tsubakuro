@@ -346,7 +346,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      *
      * @since 1.8.0
      */
-    default FutureResponse<InputStream> openInputStream(BlobReference ref) throws IOException {
+    default FutureResponse<InputStream> openInputStream(@Nonnull BlobReference ref) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -358,7 +358,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      *
      * @since 1.8.0
      */
-    default FutureResponse<Reader> openReader(ClobReference ref) throws IOException {
+    default FutureResponse<Reader> openReader(@Nonnull ClobReference ref) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -370,7 +370,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      *
      * @since 1.8.0
      */
-    default FutureResponse<LargeObjectCache> getLargeObjectCache(LargeObjectReference ref) throws IOException {
+    default FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -383,7 +383,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      *
      * @since 1.8.0
      */
-    default FutureResponse<Void> copyTo(LargeObjectReference ref, Path destination) throws IOException {
+    default FutureResponse<Void> copyTo(@Nonnull LargeObjectReference ref, @Nonnull Path destination) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -397,6 +397,5 @@ public interface Transaction extends ServerResourceNeedingDisposal {
 
     @Override
     default void close() throws ServerException, IOException, InterruptedException {
-        return;
     }
 }
