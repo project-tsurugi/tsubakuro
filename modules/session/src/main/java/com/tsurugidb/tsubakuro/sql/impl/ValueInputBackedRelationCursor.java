@@ -18,10 +18,10 @@ package com.tsurugidb.tsubakuro.sql.impl;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
-import java.time.OffsetTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Objects;
@@ -29,9 +29,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
@@ -53,8 +50,6 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     private static final Set<EntryType> DECIMAL_EXPECTED_TYPES =
             EnumSet.of(EntryType.DECIMAL, EntryType.INT);
 
-    static final Logger LOG = LoggerFactory.getLogger(ValueInputBackedRelationCursor.class);
-
     private final ValueInput input;
 
     private final Stack stack = new Stack();
@@ -74,14 +69,20 @@ public class ValueInputBackedRelationCursor implements RelationCursor {
     public boolean nextRow() throws IOException, InterruptedException {
         discardTopLevelRow();
         EntryType type = input.peekType();
-        if (type == EntryType.END_OF_CONTENTS) {
-            return false;
-        } else if (type == EntryType.ROW) {
-            int elements = input.readRowBegin();
-            stack.push(EntryKind.TOP_LEVEL_ROW, elements);
-            return true;
+        if (null == type) {
+            throw new BrokenRelationException(BrokenRelationException.Status.UNEXPECTED_END_OF_CONTENTS,
+                "no type available in the relation data");
         } else {
-            throw BrokenRelationException.sawUnexpectedValueType(type, TOPLEVEL_EXPECTED_TYPES);
+            switch (type) {
+            case END_OF_CONTENTS:
+                return false;
+            case ROW:
+                int elements = input.readRowBegin();
+                stack.push(EntryKind.TOP_LEVEL_ROW, elements);
+                return true;
+            default:
+                throw BrokenRelationException.sawUnexpectedValueType(type, TOPLEVEL_EXPECTED_TYPES);
+            }
         }
     }
 

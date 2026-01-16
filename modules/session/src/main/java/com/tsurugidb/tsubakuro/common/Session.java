@@ -201,12 +201,13 @@ public interface Session extends ServerResource {
      *
      * @param sessionWire the wire that connects to the Database
      */
-    void connect(Wire sessionWire);
+    void connect(@Nonnull Wire sessionWire);
 
     /**
      * Provides wire to tha caller, exists as a temporal measure for sessionLink
      * @return the wire that this session uses
      */
+    @Nonnull
     Wire getWire();
 
     /**
@@ -220,11 +221,11 @@ public interface Session extends ServerResource {
      * @return true when the server is alive
      */
     default boolean isAlive() {
-        var wire = getWire();
-        if (wire == null) {
+        try {
+            return getWire().isAlive();
+        } catch (IllegalStateException e) {
             return false;
         }
-        return wire.isAlive();
     }
 
     /**

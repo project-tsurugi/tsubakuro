@@ -417,7 +417,7 @@ public class ResultSetImpl implements ResultSet {
         try {
             // first, close upstream input
             cursor.close();
-        } catch (Exception suppress) {
+        } catch (ServerException | IOException | InterruptedException suppress) {
             // the exception in closing stream should be suppressed
             if (e != suppress) {
                 e.addSuppressed(suppress);
@@ -427,7 +427,7 @@ public class ResultSetImpl implements ResultSet {
             // then, check the main response
             tested.set(true);
             tester.test(response);
-        } catch (Throwable inMain) {
+        } catch (ServerException | IOException | InterruptedException inMain) {
             // throw exceptions in main response instead of
             if (e != inMain) {
                 inMain.addSuppressed(e);
@@ -459,7 +459,7 @@ public class ResultSetImpl implements ResultSet {
             try (response) {
                 try {
                     cursor.close();
-                } catch (Exception e) {
+                } catch (ServerException | IOException | InterruptedException e) {
                     // suppresses exception while closing the sub-response
                     LOG.warn("error occurred while closing result set", e);
                 }

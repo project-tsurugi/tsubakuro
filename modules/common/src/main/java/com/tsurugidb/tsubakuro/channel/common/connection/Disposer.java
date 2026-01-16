@@ -83,7 +83,7 @@ public class Disposer extends Thread {
             if (!isHeldByCurrentThread()) {
                 throw new IllegalStateException("lock must be held when get() is called");
             }
-           return status.get();
+            return status.get();
         }
 
         void set(Status newStatus) {

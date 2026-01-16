@@ -77,9 +77,35 @@ public class SessionImpl implements Session {
     private final ServiceShelf services = new ServiceShelf();
     private final AtomicBoolean cleanUpFinished = new AtomicBoolean(false);
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
-    private final AtomicBoolean completed = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
+
+    private static final class AtomicCompleted extends ReentrantLock {
+        private final AtomicBoolean flag = new AtomicBoolean(false);
+        private final Condition empty = newCondition();
+
+        Boolean get() {
+            lock();
+            try {
+                return flag.get();
+            } finally {
+                unlock();
+            }
+        }
+        void set() {
+            lock();
+            try {
+                flag.set(true);
+                empty.signalAll();
+            } finally {
+                unlock();
+            }
+        }
+        Condition emptyCondition() {
+            return empty;
+        }
+    }
+    private final AtomicCompleted completed = new AtomicCompleted();
 
     private Wire wire;
     private Timeout closeTimeout;
@@ -108,6 +134,7 @@ public class SessionImpl implements Session {
             this.timer = timer;
         }
 
+        @Override
         public void run() {
             try {
                 if (closed.get() != SESSION_CLOSED) {
@@ -176,18 +203,9 @@ public class SessionImpl implements Session {
         return disposer;
     }
 
-    /**
-     * Connect this session to the SQL server.
-     *
-     * Note. How to connect to a SQL server is implementation dependent.
-     * This implementation assumes that the session wire connected to the database is given.
-     *
-     * @param w the wire connected to the Database
-     */
     @Override
-    public void connect(@Nonnull Wire w) {
-        Objects.requireNonNull(w);
-        wire = w;
+    public void connect(@Nonnull Wire sessionWire) {
+        wire = sessionWire;
         if (doKeepAlive) {
             keepAliveTimer.scheduleAtFixedRate(new KeepAliveTask(keepAliveTimer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
@@ -559,7 +577,7 @@ public class SessionImpl implements Session {
                         return;
                     }
                 } finally {
-                    completed.set(true);
+                    completed.set();
                 }
             }
         }
@@ -589,8 +607,13 @@ public class SessionImpl implements Session {
         if (!closeCleanUpRegistered.get()) {
             throw new IllegalStateException("Session close is not submitted");
         }
-        while (!completed.get()) {
-            Thread.sleep(100);
+        completed.lock();
+        try {
+            while (!completed.get()) {
+                completed.emptyCondition().await();
+            }
+        } finally {
+            completed.unlock();
         }
     }
 
@@ -605,7 +628,11 @@ public class SessionImpl implements Session {
     }
 
     @Override
+    @Nonnull
     public Wire getWire() {
+        if (wire == null) {
+            throw new IllegalStateException("Session is not connected to the wire yet");
+        }
         return wire;
     }
 

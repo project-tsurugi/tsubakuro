@@ -17,7 +17,6 @@ package com.tsurugidb.tsubakuro.sql.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-//import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -32,7 +31,6 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 
 /**
  * Abstract implementation of {@link ResponseProcessor} for providing {@link ResultSet}.
@@ -41,17 +39,10 @@ import com.tsurugidb.tsubakuro.util.ServerResourceHolder;
 abstract class AbstractResultSetProcessor<T extends Message>
         implements ResponseProcessor<ResultSet>, ResultSetImpl.ResponseTester {
 
-    private final ServerResourceHolder resources;
-
     protected final AtomicReference<T> cache = new AtomicReference<>();
     protected final AtomicReference<ServerException> cachedException = new AtomicReference<>(null);
 
     private final AtomicBoolean passed = new AtomicBoolean();
-
-    AbstractResultSetProcessor(@Nonnull ServerResourceHolder resources) {
-        Objects.requireNonNull(resources);
-        this.resources = resources;
-    }
 
     @Override
     public boolean isReturnsServerResource() {
@@ -138,7 +129,7 @@ abstract class AbstractResultSetProcessor<T extends Message>
     abstract void doTest(@Nonnull T response) throws IOException, ServerException, InterruptedException;
 
     @Override
-    public ResultSet process(Response response) throws IOException, ServerException, InterruptedException {
+    public ResultSet process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
         return process(response, Timeout.DISABLED);
     }
 }
