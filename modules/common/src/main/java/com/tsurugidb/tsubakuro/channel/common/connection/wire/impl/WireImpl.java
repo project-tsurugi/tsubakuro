@@ -638,7 +638,7 @@ public class WireImpl implements Wire {
     }
 
     /**
-     * Get session ID, for diagnostic.
+     * Returns the session ID, for diagnostic.
      * @return the session ID
      */
     public long sessionId() {

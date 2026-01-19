@@ -84,7 +84,7 @@ public class LinkMessage {
     }
 
     /**
-     * Getters.
+     * Returns the bytes.
      * @return the bytes
      */
     public byte[] getBytes() {
@@ -92,7 +92,7 @@ public class LinkMessage {
     }
 
     /**
-     * Getters.
+     * Returns the slot.
      * @return the slot
      */
     public int getSlot() {
@@ -100,7 +100,7 @@ public class LinkMessage {
     }
 
     /**
-     * Getters.
+     * Returns the writer.
      * @return the writer
      */
     public byte getWriter() {

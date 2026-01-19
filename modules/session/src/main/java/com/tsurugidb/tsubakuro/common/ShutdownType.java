@@ -46,7 +46,7 @@ public enum ShutdownType {
     }
 
     /**
-     * Get the corresponding CoreRequest.ShutdownType.
+     * Returns corresponding CoreRequest.ShutdownType.
      * @return the corresponding CoreRequest.ShutdownType
      */
     public CoreRequest.ShutdownType type() {

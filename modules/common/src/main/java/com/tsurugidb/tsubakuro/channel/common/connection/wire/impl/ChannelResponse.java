@@ -84,16 +84,16 @@ public class ChannelResponse implements Response {
     public static final int CANCEL_STATUS_NO_SLOT = -1;
 
     /**
-     * the request is to be sent (initial state case 2 and is anintermediate state).
+     * the request is to be sent (initial state case 2 and is an intermediate state).
      *   transition to slot (>= 0) by finishAssignSlot
-     *   transition to CANCEL_STATUS_ALREADY_RECEIVED by responseArrive (may occure due to race condition)
+     *   transition to CANCEL_STATUS_ALREADY_RECEIVED by responseArrive (may occur due to race condition)
      *   transition to CANCEL_STATUS_REQUEST_DO_NOT_SEND by responseArrive (IOException arose in request send)
      *   do nothing in cancel and try again
      */
     public static final int CANCEL_STATUS_REQUEST_SENDING = -5;
 
     /**
-     * the response for the request has been arrived (final state)
+     * the response for the request has arrived (final state)
      *  do nothing by cancel
      *  do nothing by responseArrive if IOException arose in request send, else AssertionError
      */

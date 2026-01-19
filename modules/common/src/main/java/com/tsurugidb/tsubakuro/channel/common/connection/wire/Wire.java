@@ -181,6 +181,6 @@ public interface Wire extends ServerResource {
      * @return diagnostic information string
      */
     default String diagnosticInfo() {
-        return " diagnosticInfo for the wire is not implementd";
+        return " diagnosticInfo for the wire is not implemented";
     }
 }

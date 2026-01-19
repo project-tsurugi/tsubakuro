@@ -238,7 +238,7 @@ public abstract class Link implements ServerResource {
     }
 
     /**
-     * Getter of the response box size, used in iceaxe-testing.
+     * Returns the response box size, used in iceaxe-testing.
      * @return response box size
      */
     public static int responseBoxSize() {
