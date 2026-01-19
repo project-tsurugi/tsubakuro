@@ -375,6 +375,15 @@ public class WireImpl implements Wire {
         }
     }
 
+    /**
+     * Performs handshake process.
+     * @param clientInformation the client information
+     * @param wireInformation the wire information
+     * @param timeout the timeout duration
+     * @param unit the time unit of the timeout
+     * @return a future response containing the session ID
+     * @throws IOException if an I/O error occurs during the handshake process
+     */
     public FutureResponse<Long> handshake(@Nonnull ClientInformation clientInformation, @Nullable EndpointRequest.WireInformation wireInformation, long timeout, TimeUnit unit) throws IOException {
         var handshakeMessageBuilder = EndpointRequest.Handshake.newBuilder();
         var clientInformationBuilder = EndpointRequest.ClientInformation.newBuilder();
@@ -479,6 +488,11 @@ public class WireImpl implements Wire {
         return credentialBuilder.build();
     }
 
+    /**
+     * Check session ID consistency.
+     * @param id the session ID to check
+     * @throws IOException if the session ID is inconsistent
+     */
     public void checkSessionId(long id) throws IOException {
         if (sessionId() != id) {
             throw new IOException(MessageFormat.format("handshake error (inconsistent session ID), {0} not equal {1}", sessionId(), id));
@@ -623,7 +637,10 @@ public class WireImpl implements Wire {
         return new CoreServiceException(CoreServiceCode.valueOf(message.getCode()), message.getMessage());
     }
 
-    // for diagnostic
+    /**
+     * Get session ID, for diagnostic.
+     * @return the session ID
+     */
     public long sessionId() {
         return link.sessionId();
     }

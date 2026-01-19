@@ -23,6 +23,9 @@ import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 
+/**
+ * An implementation of {@link BlobInfo} that represents BLOB data stored in a file.
+ */
 public class FileBlobInfo implements BlobInfo {
 
     private final String channelName;

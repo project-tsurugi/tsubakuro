@@ -1308,6 +1308,11 @@ public class SqlServiceStub implements SqlService {
             return diagnosticInfo;
         }
     }
+
+    /**
+     * Returns diagnostic information of this SQL service stub.
+     * @return diagnostic information string
+     */
     public String diagnosticInfo() {
         var resourceInfoAction = new ResourceInfoAction();
         resources.forEach(resourceInfoAction);

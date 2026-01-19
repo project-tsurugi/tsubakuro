@@ -16,9 +16,9 @@
 package com.tsurugidb.tsubakuro.channel.ipc;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -43,10 +43,20 @@ public final class IpcLink extends Link {
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
     private final ConcurrentHashMap<ResultSetWireImpl, Boolean> resources = new ConcurrentHashMap<>();
 
+    /**
+     * Response type indicating null response
+     */
     public static final byte RESPONSE_NULL = 0;
+
+    /**
+     * Response type indicating payload response
+     */
     public static final byte RESPONSE_PAYLOAD = 1;
+
+    /**
+     * Response type indicating body head response
+     */
     public static final byte RESPONSE_BODYHEAD = 2;
-    public static final byte RESPONSE_CODE = 3;
 
     private static native long openNative(String name) throws IOException;
     private static native void sendNative(long wireHandle, int slot, byte[] message);
@@ -166,6 +176,10 @@ public final class IpcLink extends Link {
         }
     }
 
+    /**
+     * Removes a ResultSetWireImpl from the resources.
+     * @param resultSetWire the ResultSetWireImpl to be removed
+     */
     public void remove(ResultSetWireImpl resultSetWire) {
         resources.remove(resultSetWire);
     }

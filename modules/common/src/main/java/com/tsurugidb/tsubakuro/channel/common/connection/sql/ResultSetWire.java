@@ -34,7 +34,14 @@ public interface ResultSetWire extends Closeable {
      * Provide multiple buffers as one input stream
      */
     abstract class ByteBufferBackedInput extends InputStream {
+        /**
+         * The source ByteBuffer.
+         */
         protected ByteBuffer source;
+
+        /**
+         * The timeout for nextRow.
+         */
         protected long timeoutNanos;
 
         /**
@@ -94,16 +101,24 @@ public interface ResultSetWire extends Closeable {
             timeoutNanos = (WireImpl.MAX_TIMEOUT_DAYS > TimeUnit.DAYS.convert(timeout, unit)) ? unit.toNanos(timeout) : WireImpl.MAX_TIMEOUT_DAYS * 24 * 3600_000_000_000L;
         }
 
+        /**
+         * Fetches the next ByteBuffer.
+         * @return {@code true} if the next ByteBuffer is available, {@code false} if no more ByteBuffer is available
+         * @throws IOException if an I/O error occurs
+         */
         protected abstract boolean next() throws IOException;
 
-        // avoid spotbus warning
+        /**
+         * Getters, exists for avoid spotbugs warning.
+         * @return the timeout in nanoseconds
+         */
         protected long getTimeoutNanos() {
             return timeoutNanos;
         }
     }
 
     /**
-     * Connect this to the wire specifiec by the name.
+     * Connect this to the wire specified by the name.
      * @param name the result set name specified by the SQL server.
      * @throws IOException connection error
      * @return ResultSetWire

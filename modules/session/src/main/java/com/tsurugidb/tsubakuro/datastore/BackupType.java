@@ -17,8 +17,18 @@ package com.tsurugidb.tsubakuro.datastore;
 
 import com.tsurugidb.datastore.proto.DatastoreRequest;
 
+/**
+ * Backup type for datastore operations.
+ */
 public enum BackupType {
+    /**
+     * Standard backup type.
+     */
     STANDARD(DatastoreRequest.BackupType.STANDARD),
+
+    /**
+     * Transaction backup type.
+     */
     TRANSACTION(DatastoreRequest.BackupType.TRANSACTION);
 
     private final DatastoreRequest.BackupType type;
@@ -27,6 +37,10 @@ public enum BackupType {
         this.type = type;
     }
 
+    /**
+     * Gets the corresponding DatastoreRequest.BackupType.
+     * @return the DatastoreRequest.BackupType
+     */
     public DatastoreRequest.BackupType type() {
         return type;
     }

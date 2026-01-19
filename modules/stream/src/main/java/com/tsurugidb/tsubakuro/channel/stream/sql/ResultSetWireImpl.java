@@ -148,6 +148,11 @@ public class ResultSetWireImpl implements ResultSetWire {
         }
     }
 
+    /**
+     * Add payload to the list or queue.
+     * @param writerId the writer ID
+     * @param payload the payload data
+     */
     public void add(int writerId, byte[] payload) {
         if (!lists.containsKey(writerId)) {
             lists.put(writerId, new LinkedList<byte[]>());

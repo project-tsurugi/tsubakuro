@@ -110,10 +110,18 @@ public class SessionImpl implements Session {
     private Wire wire;
     private Timeout closeTimeout;
 
-    // As there are cases where multiple close requests occur in parallel,
-    // use AtomicInteger to keep track of the number of close requests.
+    /**
+     * The number of close requests.
+     * As there are cases where multiple close requests occur in parallel,
+     * use AtomicInteger to keep track of the number of close requests.
+     * When the Session is closed, the value is set to SESSION_CLOSED.
+     */
     private final AtomicInteger closed = new AtomicInteger(0);
-    public static final int SESSION_CLOSED = -1;
+
+    /**
+     * The value indicating that the Session is closed.
+     */
+    private static final int SESSION_CLOSED = -1;
 
     /**
      * The keep alive interval in milliseconds.
@@ -198,7 +206,10 @@ public class SessionImpl implements Session {
         this.blobPathMapping = null;
     }
 
-    // for SqlServiceStubImpl only
+    /**
+     * Returns the Disposer. for SqlServiceStubImpl only
+     * @return the Disposer
+     */
     public Disposer disposer() {
         return disposer;
     }
@@ -681,6 +692,11 @@ public class SessionImpl implements Session {
             return diagnosticInfo;
         }
     }
+
+    /**
+     * Returns diagnostic information about this session.
+     * @return the diagnostic information
+     */
     public String diagnosticInfo() {
         if (closed.get() != SESSION_CLOSED) {
             String sessionId = "";

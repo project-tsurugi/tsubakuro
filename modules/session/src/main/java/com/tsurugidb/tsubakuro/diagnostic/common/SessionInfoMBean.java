@@ -15,6 +15,13 @@
  */
 package com.tsurugidb.tsubakuro.diagnostic.common;
 
+/**
+ * MBean interface for session information.
+ */
 public interface SessionInfoMBean {
+    /**
+     * Get session information.
+     * @return session information as a string
+     */
     String getSessionInfo();
 }

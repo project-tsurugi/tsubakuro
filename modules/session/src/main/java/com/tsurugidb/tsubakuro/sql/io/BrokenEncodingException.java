@@ -55,6 +55,9 @@ public class BrokenEncodingException extends IOException {
         VALUE_OUT_OF_RANGE,
     }
 
+    /**
+     * The error kind.
+     */
     private final Status status;
 
     /**

@@ -21,15 +21,74 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.sql.exception.*;
+import com.tsurugidb.tsubakuro.sql.exception.AnalyzeException;
+import com.tsurugidb.tsubakuro.sql.exception.BlockedByConcurrentOperationException;
+import com.tsurugidb.tsubakuro.sql.exception.BlockedByHighPriorityTransactionException;
+import com.tsurugidb.tsubakuro.sql.exception.CcException;
+import com.tsurugidb.tsubakuro.sql.exception.CheckConstraintViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.CompileException;
+import com.tsurugidb.tsubakuro.sql.exception.ConflictOnWritePreserveException;
+import com.tsurugidb.tsubakuro.sql.exception.ConstraintViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.DataCorruptionException;
+import com.tsurugidb.tsubakuro.sql.exception.DependenciesViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.DumpDirectoryInaccessibleException;
+import com.tsurugidb.tsubakuro.sql.exception.DumpFileException;
+import com.tsurugidb.tsubakuro.sql.exception.EvaluationException;
+import com.tsurugidb.tsubakuro.sql.exception.InactiveTransactionException;
+import com.tsurugidb.tsubakuro.sql.exception.InconsistentStatementException;
+import com.tsurugidb.tsubakuro.sql.exception.InternalException;
+import com.tsurugidb.tsubakuro.sql.exception.InvalidDecimalValueException;
+import com.tsurugidb.tsubakuro.sql.exception.InvalidRuntimeValueException;
+import com.tsurugidb.tsubakuro.sql.exception.LoadFileException;
+import com.tsurugidb.tsubakuro.sql.exception.LoadFileFormatException;
+import com.tsurugidb.tsubakuro.sql.exception.LoadFileNotFoundException;
+import com.tsurugidb.tsubakuro.sql.exception.LtxException;
+import com.tsurugidb.tsubakuro.sql.exception.LtxReadException;
+import com.tsurugidb.tsubakuro.sql.exception.LtxWriteException;
+import com.tsurugidb.tsubakuro.sql.exception.LtxWriteOperationWithoutWritePreserveException;
+import com.tsurugidb.tsubakuro.sql.exception.NotNullConstraintViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.OccException;
+import com.tsurugidb.tsubakuro.sql.exception.OccReadException;
+import com.tsurugidb.tsubakuro.sql.exception.OccWriteException;
+import com.tsurugidb.tsubakuro.sql.exception.ParameterException;
+import com.tsurugidb.tsubakuro.sql.exception.ReadOperationOnRestrictedReadAreaException;
+import com.tsurugidb.tsubakuro.sql.exception.ReferentialIntegrityConstraintViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.RequestFailureException;
+import com.tsurugidb.tsubakuro.sql.exception.RestrictedOperationException;
+import com.tsurugidb.tsubakuro.sql.exception.RtxException;
+import com.tsurugidb.tsubakuro.sql.exception.ScalarSubqueryEvaluationException;
+import com.tsurugidb.tsubakuro.sql.exception.SecondaryIndexCorruptionException;
+import com.tsurugidb.tsubakuro.sql.exception.SqlExecutionException;
+import com.tsurugidb.tsubakuro.sql.exception.SqlLimitReachedException;
+import com.tsurugidb.tsubakuro.sql.exception.SqlRequestTimeoutException;
+import com.tsurugidb.tsubakuro.sql.exception.StatementNotFoundException;
+import com.tsurugidb.tsubakuro.sql.exception.SymbolAnalyzeException;
+import com.tsurugidb.tsubakuro.sql.exception.SyntaxException;
+import com.tsurugidb.tsubakuro.sql.exception.TargetAlreadyExistsException;
+import com.tsurugidb.tsubakuro.sql.exception.TargetNotFoundException;
+import com.tsurugidb.tsubakuro.sql.exception.TransactionExceededLimitException;
+import com.tsurugidb.tsubakuro.sql.exception.TransactionNotFoundException;
+import com.tsurugidb.tsubakuro.sql.exception.TypeAnalyzeException;
+import com.tsurugidb.tsubakuro.sql.exception.UniqueConstraintViolationException;
+import com.tsurugidb.tsubakuro.sql.exception.UnresolvedPlaceholderException;
+import com.tsurugidb.tsubakuro.sql.exception.UnsupportedCompilerFeatureException;
+import com.tsurugidb.tsubakuro.sql.exception.UnsupportedRuntimeFeatureException;
+import com.tsurugidb.tsubakuro.sql.exception.ValueAnalyzeException;
+import com.tsurugidb.tsubakuro.sql.exception.ValueEvaluationException;
+import com.tsurugidb.tsubakuro.sql.exception.ValueOutOfRangeException;
+import com.tsurugidb.tsubakuro.sql.exception.ValueTooLongException;
+import com.tsurugidb.tsubakuro.sql.exception.WriteOperationByRtxException;
 
 /**
- * generic error in SQL service
+ * Generic error in SQL service.
  */
 public class SqlServiceException extends ServerException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The diagnostic code.
+     */
     private final SqlServiceCode code;
 
     /**

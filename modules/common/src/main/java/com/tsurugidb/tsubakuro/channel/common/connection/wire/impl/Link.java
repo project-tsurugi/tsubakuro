@@ -19,14 +19,17 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
 
+/**
+ * An abstract class that represents a link to the server.
+ */
 public abstract class Link implements ServerResource {
     private static final int RESPONSE_BOX_SIZE = Byte.MAX_VALUE;
     private static final int RESPONSE_BOX_URGENT_SIZE = 2;
@@ -37,8 +40,19 @@ public abstract class Link implements ServerResource {
     private long receivedMessageNumber = 0;
     private ResponseBox responseBox = new ResponseBox(this, RESPONSE_BOX_SIZE, RESPONSE_BOX_URGENT_SIZE);
 
+    /**
+     * The close timeout unit.
+     */
     protected TimeUnit closeTimeUnit;
+
+    /**
+     * The close timeout in closeTimeUnit.
+     */
     protected long closeTimeout = 0;
+
+    /**
+     * The session ID assigned to this link.
+     */
     protected long sessionId;
 
     /**
@@ -141,6 +155,13 @@ public abstract class Link implements ServerResource {
         doSend(s, frameHeader, payload, channelResponse);
     }
 
+    /**
+     * Send a request message via this link to the server.
+     * @param s the slot number
+     * @param frameHeader the frameHeader of the request
+     * @param payload the payload of the request
+     * @param channelResponse the ChannelResponse that stores a response for the request
+     */
     protected abstract void doSend(int s, byte[] frameHeader, byte[] payload, ChannelResponse channelResponse);
 
     /**
@@ -191,17 +212,35 @@ public abstract class Link implements ServerResource {
     public abstract String linkLostMessage();
 
     // bridge methods for ResponseBox
+    /**
+     * Push a response message to the response box.
+     * @param slot the slot number
+     * @param payload the payload of the response message
+     */
     protected void push(int slot, byte[] payload) {
         responseBox.push(slot, payload);
     }
+    /**
+     * Push a response message to the head of the response box.
+     * @param slot the slot number
+     * @param payload the payload of the response message
+     * @param resultSetWire the ResultSetWire associated with this response message
+     */
     protected void pushHead(int slot, byte[] payload, ResultSetWire resultSetWire) {
         responseBox.pushHead(slot, payload, resultSetWire);
     }
-    protected void doClose(boolean ic) {
-        responseBox.doClose(ic);
+    /**
+     * Close this link.
+     * @param intentionalClose if true, intentional close is performed
+     */
+    protected void doClose(boolean intentionalClose) {
+        responseBox.doClose(intentionalClose);
     }
 
-    // for iceaxe-testing
+    /**
+     * Getter of the response box size, used in iceaxe-testing.
+     * @return response box size
+     */
     public static int responseBoxSize() {
         return RESPONSE_BOX_SIZE;
     }

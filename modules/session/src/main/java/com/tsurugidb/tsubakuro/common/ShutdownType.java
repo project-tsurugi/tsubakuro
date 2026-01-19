@@ -17,6 +17,9 @@ package com.tsurugidb.tsubakuro.common;
 
 import com.tsurugidb.core.proto.CoreRequest;
 
+/**
+ * Types of session shutdown.
+ */
 public enum ShutdownType {
     /**
      * Waits for the ongoing requests and safely shutdown the session.
@@ -42,6 +45,10 @@ public enum ShutdownType {
         this.type = type;
     }
 
+    /**
+     * Get the corresponding CoreRequest.ShutdownType.
+     * @return the corresponding CoreRequest.ShutdownType
+     */
     public CoreRequest.ShutdownType type() {
         return type;
     }

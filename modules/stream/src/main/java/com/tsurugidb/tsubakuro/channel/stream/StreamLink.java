@@ -15,8 +15,8 @@
  */
 package com.tsurugidb.tsubakuro.channel.stream;
 
-import java.io.DataInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
@@ -37,6 +37,9 @@ import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetBox;
 import com.tsurugidb.tsubakuro.channel.stream.sql.ResultSetWireImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 
+/**
+ * StreamLink type.
+ */
 public final class StreamLink extends Link {
     private Socket socket;
     private BufferedOutputStream outStream;
@@ -45,7 +48,14 @@ public final class StreamLink extends Link {
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean socketError = new AtomicBoolean();
 
+    /**
+     * The minimum size of stream header.
+     */
     public static final int STREAM_MINIMUM_HEADER_SIZE = 3;
+
+    /**
+     * The size of stream header.
+     */
     public static final int STREAM_HEADER_SIZE = STREAM_MINIMUM_HEADER_SIZE + 4;  // + length(4bytes)
 
     // 1 is no longer used
@@ -53,11 +63,30 @@ public final class StreamLink extends Link {
     private static final byte REQUEST_RESULT_SET_BYE_OK = 3;
     private static final byte REQUEST_ALIVE_CHECK = 5;
 
+    /**
+     * The response type of session payload.
+     */
     public static final byte RESPONSE_SESSION_PAYLOAD = 1;
+
+    /**
+     * The response type of result set payload.
+     */
     public static final byte RESPONSE_RESULT_SET_PAYLOAD = 2;
     // 3, 4 are no longer used
+
+    /**
+     * The response type of result set hello.
+     */
     public static final byte RESPONSE_RESULT_SET_HELLO = 5;
+
+    /**
+     * The response type of result set bye.
+     */
     public static final byte RESPONSE_RESULT_SET_BYE = 6;
+
+    /**
+     * The response type of session body head.
+     */
     public static final byte RESPONSE_SESSION_BODYHEAD = 7;
 
     private static final long SESSION_ID_IS_NOT_ASSIGNED = Long.MAX_VALUE;
@@ -70,6 +99,12 @@ public final class StreamLink extends Link {
         }
     }
 
+    /**
+     * Creates a new StreamLink.
+     * @param hostname the hostname
+     * @param port the port number
+     * @throws IOException if an I/O error occurs
+     */
     public StreamLink(String hostname, int port) throws IOException {
         this.socket = new Socket(hostname, port);
         this.socket.setTcpNoDelay(true);
@@ -78,6 +113,11 @@ public final class StreamLink extends Link {
         super.sessionId = SESSION_ID_IS_NOT_ASSIGNED;
     }
 
+    /**
+     * Sets the session ID.
+     * @param id the session ID
+     * @throws IOException if the session ID is already assigned
+     */
     public void setSessionId(long id) throws IOException {
         if (sessionId == SESSION_ID_IS_NOT_ASSIGNED) {
             this.sessionId = id;
@@ -196,6 +236,10 @@ public final class StreamLink extends Link {
         }
     }
 
+    /**
+     * Gets the ResultSetBox of this link.
+     * @return the ResultSetBox
+     */
     public ResultSetBox getResultSetBox() {
         return resultSetBox;
     }

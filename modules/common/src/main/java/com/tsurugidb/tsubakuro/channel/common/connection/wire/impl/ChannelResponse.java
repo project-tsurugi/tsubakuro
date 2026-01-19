@@ -58,63 +58,83 @@ import com.tsurugidb.tsubakuro.util.Pair;
 public class ChannelResponse implements Response {
     static final Logger LOG = LoggerFactory.getLogger(ChannelResponse.class);
 
+    /**
+     * subchannel id of metadata channel
+     */
     public static final String METADATA_CHANNEL_ID = "metadata";
+
+    /**
+     * subchannel id of relation channel
+     */
     public static final String RELATION_CHANNEL_ID = "relation";
 
-    // means the following state
+    /**
+     * cancelStatus >= 0 indicates the slot number in the responseBox and means the request has been sent to the server
+     *  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
+     *  transition to CANCEL_STATUS_CANCEL_SENDING by cancel and then CANCEL_STATUS_CANCEL_SENT
+     * cancelStatus < 0 indicates various states before or during sending the request or cancel request
+     */
     private final AtomicInteger cancelStatus = new AtomicInteger();
 
-    // the request is in the queue (initial state case 1)
-    //  transition to CANCEL_STATUS_REQUEST_SENDING by canAssignSlot returning true
-    //  transition to CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND by cancel
+    /**
+     * the request is in the queue (initial state case 1)
+     *  transition to CANCEL_STATUS_REQUEST_SENDING by canAssignSlot returning true
+     *  transition to CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND by cancel
+    */
     public static final int CANCEL_STATUS_NO_SLOT = -1;
 
-    // the request is to be sent (initial state case 2 and is anintermediate state)
-    //  transition to slot (>= 0) by finishAssignSlot
-    //  transition to CANCEL_STATUS_ALREADY_RECEIVED by responseArrive (may occure due to race condition)
-    //  transition to CANCEL_STATUS_REQUEST_DO_NOT_SEND by responseArrive (IOException arose in request send)
-    //  do nothing in cancel and try again
+    /**
+     * the request is to be sent (initial state case 2 and is anintermediate state).
+     *   transition to slot (>= 0) by finishAssignSlot
+     *   transition to CANCEL_STATUS_ALREADY_RECEIVED by responseArrive (may occure due to race condition)
+     *   transition to CANCEL_STATUS_REQUEST_DO_NOT_SEND by responseArrive (IOException arose in request send)
+     *   do nothing in cancel and try again
+     */
     public static final int CANCEL_STATUS_REQUEST_SENDING = -5;
 
-    // cancelStatus >= 0 means the request has been sent to the server
-    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
-    //  transition to CANCEL_STATUS_CANCEL_SENDING by cancel and then CANCEL_STATUS_CANCEL_SENT
-    // case where cancelStatus >= 0
-
-    // the response for the request has been alived (final state)
-    //  do nothing by cancel
-    //  do nothing by responseArrive if IOException arose in request send, else AssertionErorr
+    /**
+     * the response for the request has been arrived (final state)
+     *  do nothing by cancel
+     *  do nothing by responseArrive if IOException arose in request send, else AssertionError
+     */
     public static final int CANCEL_STATUS_RESPONSE_ARRIVED = -2;
 
-    // the request is not sent out due to IOException arose in request send (final state)
-    //  do nothing by finishAssignSlot
-    //  do nothing by responseArrive if IOException arose in request send, else AssertionErorr
-    //  do nothing by cancel
+    /**
+     * the request is not sent out due to IOException arose in request send (final state)
+     *   do nothing by finishAssignSlot
+     *   do nothing by responseArrive if IOException arose in request send, else AssertionError
+     *   do nothing by cancel
+     */
     public static final int CANCEL_STATUS_REQUEST_DO_NOT_SEND = -6;
 
-    // the response for the cancel request is already received (intermediate state)
-    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by finishAssignSlot
-    //  do nothing in cancel and try again
+    /**
+     * the response for the cancel request is already received (intermediate state)
+     *  transition to CANCEL_STATUS_RESPONSE_ARRIVED by finishAssignSlot
+     *  do nothing in cancel and try again
+     */
     public static final int CANCEL_STATUS_ALREADY_RECEIVED = -8;
 
-    //
-    // State transitions when a Cancel is involved
-    //
-    // cancel request is being sent (intermediate state)
-    //  transition to CANCEL_STATUS_CANCEL_SENT immediately after send cancel request to the server
-    //  do nothing in responseArrive and try again
-    //  do nothing in cancel and try again
+    /**
+     * cancel request is being sent (intermediate state)
+     *  transition to CANCEL_STATUS_CANCEL_SENT immediately after send cancel request to the server
+     *  do nothing in responseArrive and try again
+     *  do nothing in cancel and try again
+     */
     public static final int CANCEL_STATUS_CANCEL_SENDING = -3;
 
-    // cancel request has been sent out
-    //  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
-    //  do nothing by canAssignSlot and returns false
-    //  do nothing by cancel
+    /**
+     * cancel request has been sent out
+     *  transition to CANCEL_STATUS_RESPONSE_ARRIVED by responseArrive
+     *  do nothing by canAssignSlot and returns false
+     *  do nothing by cancel
+     */
     public static final int CANCEL_STATUS_CANCEL_SENT = -4;
 
-    // the request is canceled before sending (final state)
-    //  do nothing by canAssignSlot and returns false
-    //  do nothing by cancel (indicates cancel twice)
+    /**
+     * the request is canceled before sending (final state)
+     *  do nothing by canAssignSlot and returns false
+     *  do nothing by cancel (indicates cancel twice)
+     */
     public static final int CANCEL_STATUS_CANCEL_BEFORE_REQUEST_SEND = -9;
 
     private long cancelThreadId = 0;
@@ -411,6 +431,9 @@ public class ChannelResponse implements Response {
         }
     }
 
+    /**
+     * Sets the exception indicating that the operation was canceled before sending the request to the server.
+     */
     public void cancelSuccessWithoutServerInteraction() {
         exceptionMain.set(new CoreServiceException(CoreServiceCode.valueOf(Diagnostics.Code.OPERATION_CANCELED), "The operation was canceled before the request was sent to the server"));
     }
@@ -529,6 +552,10 @@ public class ChannelResponse implements Response {
         }
     }
 
+    /**
+     * Sets an exception occurred during receiving the main response.
+     * @param exception the exception occurred
+     */
     public void setMainResponse(@Nonnull IOException exception) {
         Objects.requireNonNull(exception);
         var e = exceptionMain.getAndSet(null);
@@ -541,6 +568,11 @@ public class ChannelResponse implements Response {
         exceptionMain.set(exception);
     }
 
+    /**
+     * Sets the ResultSetWire associated with this ChannelResponse.
+     * @param response the response ByteBuffer
+     * @param rsw the ResultSetWire to be associated
+     */
     public void setResultSet(@Nonnull ByteBuffer response, @Nonnull ResultSetWire rsw) {
         Objects.requireNonNull(response);
         Objects.requireNonNull(rsw);
@@ -572,11 +604,18 @@ public class ChannelResponse implements Response {
         return response;
     }
 
-    // for diagnostic
+    /**
+     * Returns the name of the ResultSetWire associated with this ChannelResponse, exists for diagnostic.
+     * @return result set name
+     */
     public String resultSetName() {
         return resultSetName;
     }
 
+    /**
+     * Returns diagnostic information about this ChannelResponse.
+     * @return diagnostic information string
+     */
     public String diagnosticInfo() {
         String diagnosticInfo = " response status: ";
         if (!resultSetName.isEmpty()) {

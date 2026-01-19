@@ -52,6 +52,9 @@ public class BrokenRelationException extends IOException {
         INT_VALUE_OUT_OF_RANGE,
     }
 
+    /**
+     * The error kind.
+     */
     private final Status status;
 
     /**

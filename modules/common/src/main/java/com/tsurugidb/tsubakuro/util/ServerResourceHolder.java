@@ -81,6 +81,10 @@ public class ServerResourceHolder implements ServerResource, ServerResource.Clos
         }
     }
 
+    /**
+     * Applies the given function to each registered resource.
+     * @param f the function
+     */
     public void forEach(java.util.function.Consumer<ServerResource> f) {
         for (var iter = entries.entrySet().iterator(); iter.hasNext();) {
             f.accept(iter.next().getKey().resource);
