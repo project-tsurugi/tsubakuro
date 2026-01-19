@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 Project Tsurugi.
+ * Copyright 2023-2026 Project Tsurugi.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,16 +41,16 @@ public class Disposer extends Thread {
     // processing status.
     enum Status {
         // initial state, Disposer thread is not running.
-        INIT,
+        INACTIVE,
 
         // Disposer thread is running and accepting FutureResponses and Resources.
-        OPEN,
+        HANDLE_ASYNC_CLOSE,
 
         // shutdown has been initiated.
-        SHUTDOWN,
+        HANDLE_SESSION_SHUTDOWN,
 
         // session close has been initiated.
-        CLOSED,
+        HANDLE_SESSION_CLOSE,
         ;
 
         String asString() {
@@ -60,22 +60,54 @@ public class Disposer extends Thread {
 
     static final Logger LOG = LoggerFactory.getLogger(Disposer.class);
 
-    private ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<ForegroundFutureResponse<?>> futureResponseQueue = new ConcurrentLinkedQueue<>();
 
-    private ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<DelayedClose> serverResourceQueue = new ConcurrentLinkedQueue<>();
 
-    private ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<DelayedShutdown> shutdownQueue = new ConcurrentLinkedQueue<>();
 
-    private final AtomicReference<DelayedClose> close = new AtomicReference<>();
+    private final AtomicReference<DelayedClose> sessionClose = new AtomicReference<>();
 
-    private final Lock lock = new ReentrantLock();
+    private final Lock globalLock = new ReentrantLock();
 
-    private final Condition empty = lock.newCondition();
+    private static final class AtomicStatus extends ReentrantLock {
+        private final AtomicReference<Status> status;
+        private final Condition empty = newCondition();
+        private final Condition entry = newCondition();
 
-    private AtomicReference<Status> status = new AtomicReference<>(Status.INIT);
+        AtomicStatus(Status initialStatus) {
+            this.status = new AtomicReference<>(initialStatus);
+        }
+
+        Status get() {
+            if (!isHeldByCurrentThread()) {
+                throw new IllegalStateException("lock must be held when get() is called");
+            }
+            return status.get();
+        }
+
+        void set(Status newStatus) {
+            if (!isHeldByCurrentThread()) {
+                throw new IllegalStateException("lock must be held when set() is called");
+            }
+            status.set(newStatus);
+        }
+
+        Condition emptyCondition() {
+            return empty;
+        }
+
+        Condition entryCondition() {
+            return entry;
+        }
+    }
+
+    private final AtomicStatus status = new AtomicStatus(Status.INACTIVE);
+
+    private static final long PATROL_CYCLE_TIME_NANOS = 1_000_000_000L;  // 1 second
 
     /**
-     * Enclodure of delayed clean up procedure.
+     * Enclosure of delayed clean up procedure.
      */
     public interface DelayedShutdown {
         /**
@@ -86,7 +118,7 @@ public class Disposer extends Thread {
     }
 
     /**
-     * Enclodure of delayed clean up procedure.
+     * Enclosure of delayed clean up procedure.
      */
     public interface DelayedClose {
         /**
@@ -107,80 +139,92 @@ public class Disposer extends Thread {
 
     @Override
     public void run() {
+        globalLock.lock();  // ensure single run at a time
+        try {
+            bodyRun();
+        } finally {
+            globalLock.unlock();
+        }
+    }
+
+    /**
+     * Delayed clean up procedure body.
+     */
+    private void bodyRun() {
         Exception exception = null;
 
         while (true) {
             var futureResponse = futureResponseQueue.peek();
             if (futureResponse != null) {
+                boolean doAdd = false;
                 try {
                     var obj = futureResponse.cleanUp();
                     if (obj instanceof ServerResource) {
                         ((ServerResource) obj).close();
                     }
-                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException e) {
-                    // Server resource has not created at the server
-                } catch (SessionAlreadyClosedException e) {
-                    // Server resource has been disposed by the session close
+                } catch (ChannelResponse.AlreadyCanceledException | ForegroundFutureResponse.AlreadyClosedException | SessionAlreadyClosedException e) {
+                    // Server resource has not created at the server side, or session is already closed
                 } catch (TimeoutException e) {
-                    // Let's try again
-                    futureResponseQueue.add(futureResponse);
-                } catch (Exception e) {
-                    boolean ignore = false;
-                    if (e instanceof CoreServiceException) {
-                        System.out.println("CoreServiceException in disposer: " + e);
-                        // ignore OPERATION_CANCELED error
-                        if (((CoreServiceException) e).getDiagnosticCode() == CoreServiceCode.OPERATION_CANCELED) {
-                            ignore = true;
-                        }
-                    }
-                    if (!ignore) {
+                    // The operation timed out while waiting for a response; re-queue and try again
+                    doAdd = true;
+                } catch (CoreServiceException e) {
+                    if (e.getDiagnosticCode() != CoreServiceCode.OPERATION_CANCELED) {
                         // should not occur
-                        if (exception == null) {
-                            exception = e;
-                        } else {
-                            exception.addSuppressed(e);
-                        }
+                        exception = addSuppressed(exception, e);
                     }
+                } catch (ServerException | IOException | InterruptedException e) {
+                    // should not occur
+                    exception = addSuppressed(exception, e);
                 } finally {
                     futureResponseQueue.poll();
-                    continue;
+                    if (doAdd) {
+                        futureResponseQueue.add(futureResponse);
+                    }
                 }
+                continue;
             }
+
             var serverResource = serverResourceQueue.peek();
             if (serverResource != null) {
+                boolean doAdd = false;
                 try {
                     if (!serverResource.delayedClose()) {
                         // The server response has not been received
-                        serverResourceQueue.add(serverResource);
-                        continue;
+                        doAdd = true;
                     }
                 } catch (ServerException | IOException | InterruptedException e) {
                     exception = addSuppressed(exception, e);
                 } finally {
                     serverResourceQueue.poll();
+                    if (doAdd) {
+                        serverResourceQueue.add(serverResource);
+                    }
                 }
                 continue;
             }
-            boolean shoudContinue = false;
-            lock.lock();
+
+            boolean shouldContinue = false;
+            status.lock();
             try {
-                if (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
-                    continue;
-                }
-                empty.signalAll();
-                shoudContinue = shutdownQueue.isEmpty() && close.get() == null;
-                if (!shoudContinue) {
-                    status.set(Status.SHUTDOWN);
+                if (futureResponseQueue.isEmpty() && serverResourceQueue.isEmpty()) {
+                    status.emptyCondition().signalAll();
+                    shouldContinue = shutdownQueue.isEmpty() && sessionClose.get() == null;
+                    if (shouldContinue) {
+                        try {
+                            status.entryCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
+                        } catch (InterruptedException e) {
+                            // No problem, it's OK
+                        }
+                    } else {
+                        status.set(Status.HANDLE_SESSION_SHUTDOWN);
+                    }
+                } else {
+                    shouldContinue = true;
                 }
             } finally {
-                lock.unlock();
+                status.unlock();
             }
-            if (shoudContinue) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    // No problem, it's OK
-                }
+            if (shouldContinue) {
                 continue;
             }
 
@@ -194,19 +238,31 @@ public class Disposer extends Thread {
                 }
 
                 // confirm if we can go ahead to session close
-                DelayedClose delayedClose = close.get();
-                if (delayedClose == null) {
+                shouldContinue = (sessionClose.get() == null);
+                if (shouldContinue) {
+                    status.lock();
                     try {
-                        Thread.sleep(10);
-                    } catch (InterruptedException e) {
-                        // No problem, it's OK
+                        try {
+                            status.entryCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
+                        } catch (InterruptedException e) {
+                            // No problem, it's OK
+                        }
+                    } finally {
+                        status.unlock();
                     }
+                }
+                if (shouldContinue) {
                     continue;
                 }
 
-                status.set(Status.CLOSED);
+                status.lock();
                 try {
-                    delayedClose.delayedClose();
+                    status.set(Status.HANDLE_SESSION_CLOSE);
+                } finally {
+                    status.unlock();
+                }
+                try {
+                    sessionClose.get().delayedClose();
                 } catch (ServerException | IOException | InterruptedException e) {
                     exception = addSuppressed(exception, e);
                 }
@@ -235,20 +291,22 @@ public class Disposer extends Thread {
     }
 
     void add(ForegroundFutureResponse<?> futureResponse) {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_SHUTDOWN || currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             futureResponseQueue.add(futureResponse);
-            if (status.get() == Status.INIT) {
-                status.set(Status.OPEN);
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
+            } else {
+                status.entryCondition().signalAll();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -258,20 +316,22 @@ public class Disposer extends Thread {
      * @param resource the DelayedClose to be added
      */
     public void add(DelayedClose resource) {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_SHUTDOWN || currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             serverResourceQueue.add(resource);
-            if (currentStatus == Status.INIT) {
-                status.set(Status.OPEN);
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
+            } else {
+                status.entryCondition().signalAll();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -283,20 +343,22 @@ public class Disposer extends Thread {
      * @throws IOException An error was occurred in c.shoutdown() execution.
      */
     public void registerDelayedShutdown(DelayedShutdown cleanUp) throws IOException {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.SHUTDOWN || currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Disposer status: " + currentStatus.asString());
             }
             shutdownQueue.add(cleanUp);
-            if (currentStatus == Status.INIT) {
-                status.set(Status.OPEN);
+            if (currentStatus == Status.INACTIVE) {
+                status.set(Status.HANDLE_ASYNC_CLOSE);
                 this.setDaemon(true);
                 this.start();
+            } else {
+                status.entryCondition().signalAll();
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 
@@ -310,18 +372,19 @@ public class Disposer extends Thread {
      * @throws InterruptedException if interrupted while disposing the session
      */
     public void registerDelayedClose(DelayedClose cleanUp) throws ServerException, IOException, InterruptedException {
-        lock.lock();
+        status.lock();
         try {
             var currentStatus = status.get();
-            if (currentStatus == Status.CLOSED) {
+            if (currentStatus == Status.HANDLE_SESSION_CLOSE) {
                 throw new AssertionError("Session close is already scheduled");
-            } else if (currentStatus == Status.OPEN || currentStatus == Status.SHUTDOWN) {  // the same as `if daemon is running`
-                close.set(cleanUp);
+            } else if (currentStatus == Status.HANDLE_ASYNC_CLOSE || currentStatus == Status.HANDLE_SESSION_SHUTDOWN) {  // the same as `if daemon is running`
+                sessionClose.set(cleanUp);
+                status.entryCondition().signalAll();
                 return;
             }
-            status.set(Status.CLOSED);
+            status.set(Status.HANDLE_SESSION_CLOSE);
         } finally {
-            lock.unlock();
+            status.unlock();
         }
         cleanUp.delayedClose();  // execute outside the lock
     }
@@ -332,17 +395,17 @@ public class Disposer extends Thread {
      * NOTE: This method must be called with the guarantee that no subsequent add() will be called.
      */
     public void waitForEmpty() {
-        lock.lock();
+        status.lock();
         try {
             while (!futureResponseQueue.isEmpty() || !serverResourceQueue.isEmpty()) {
                 try {
-                    empty.await();
+                    status.emptyCondition().awaitNanos(PATROL_CYCLE_TIME_NANOS);
                 } catch (InterruptedException e) {
-                    continue;
+                    // No problem, it's OK
                 }
             }
         } finally {
-            lock.unlock();
+            status.unlock();
         }
     }
 }

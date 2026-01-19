@@ -29,6 +29,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,18 +41,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Message;
+import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
-import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.ChannelResponse;
+import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
-import com.tsurugidb.tsubakuro.client.SessionAlreadyClosedException;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -133,15 +134,15 @@ public class SqlServiceStub implements SqlService {
     //        return new SqlServiceException(SqlServiceCode.UNKNOWN, message.getMessageText());
     //    }
 
-    static BrokenResponseException newResultNotSet(
-            @Nonnull Class<? extends Message> aClass, @Nonnull String name) {
-        assert aClass != null;
-        assert name != null;
-        return new BrokenResponseException(MessageFormat.format(
-                "{0}.{1} is not set",
-                aClass.getSimpleName(),
-                name));
-    }
+    //    static BrokenResponseException newResultNotSet(
+    //            @Nonnull Class<? extends Message> aClass, @Nonnull String name) {
+    //        assert aClass != null;
+    //        assert name != null;
+    //        return new BrokenResponseException(MessageFormat.format(
+    //                "{0}.{1} is not set",
+    //                aClass.getSimpleName(),
+    //                name));
+    //    }
 
     static BrokenResponseException newResultNotRecognized(
             @Nonnull Class<? extends Message> aClass, @Nonnull String name, @Nonnull Enum<?> kind) {
@@ -164,7 +165,7 @@ public class SqlServiceStub implements SqlService {
         }
 
         @Override
-        public Transaction process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Transaction process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -223,7 +224,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -260,7 +261,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -307,7 +308,7 @@ public class SqlServiceStub implements SqlService {
         }
 
         @Override
-        public PreparedStatement process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public PreparedStatement process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -342,7 +343,7 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<PreparedStatement> send(
-            SqlRequest.Prepare request) throws IOException {
+            @Nonnull SqlRequest.Prepare request) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (prepare): {}", request); //$NON-NLS-1$
         var processor = new StatementPrepareProcessor(request);
@@ -357,7 +358,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -394,7 +395,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.Explain> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public StatementMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public StatementMetadata process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -449,7 +450,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.DescribeTable> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public TableMetadata process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public TableMetadata process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -486,7 +487,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
-        public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public ExecuteResult process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -511,6 +512,8 @@ public class SqlServiceStub implements SqlService {
                         throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
                     return new ExecuteResultAdapter();
+                default:
+                    break;
             }
             throw new IOException("response type is inconsistent with the request type");
         }
@@ -566,7 +569,6 @@ public class SqlServiceStub implements SqlService {
         FutureResponse<ResultSet> futureResponse = null;
 
         QueryProcessor(Message request) {
-            super(resources);
             this.request = request;
         }
         FutureResponse<ResultSet> setFutureResponse(FutureResponse<ResultSet> r) {
@@ -595,7 +597,7 @@ public class SqlServiceStub implements SqlService {
         }
 
         @Override
-        public ResultSet process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+        public ResultSet process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
@@ -637,6 +639,9 @@ public class SqlServiceStub implements SqlService {
                     if (response.isMainResponseReady()) {
                         test(response);
                     }
+                }
+                if (metadata == null) {
+                    throw new BrokenResponseException("ResultSet metadata was not sent from the server.");
                 }
                 var dataInput = response.openSubResponse(ChannelResponse.RELATION_CHANNEL_ID);
                 SqlServiceStub.LOG.trace("result set metadata: {}", metadata); //$NON-NLS-1$
@@ -733,7 +738,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
-        public ExecuteResult process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public ExecuteResult process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -758,6 +763,8 @@ public class SqlServiceStub implements SqlService {
                         throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
                     return new ExecuteResultAdapter();
+                default:
+                    break;
             }
             throw new IOException("response type is inconsistent with the request type");
         }
@@ -778,7 +785,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetTransactionStatus> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public TransactionStatus.TransactionStatusWithMessage process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public TransactionStatus.TransactionStatusWithMessage process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -815,7 +822,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.ListTables> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public TableList process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public TableList process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -852,7 +859,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetSearchPath> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public SearchPath process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public SearchPath process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -889,7 +896,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetErrorInfo> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public SqlServiceException process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public SqlServiceException process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -915,6 +922,8 @@ public class SqlServiceStub implements SqlService {
                 case ERROR:
                     var errorResponse = detailResponse.getError();
                     throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
+                default:
+                    break;
             }
             throw new IOException("unhandled response in GetErrorInfo");  // never reached
         }
@@ -935,12 +944,12 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public InputStream process(Response response) throws IOException, ServerException, InterruptedException {
+        public InputStream process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
             return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public InputStream process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+        public InputStream process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
 
             if (session.isClosed()) {
@@ -983,7 +992,7 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<InputStream> send(
-            @Nonnull SqlRequest.GetLargeObjectData request, BlobReference reference) throws IOException {
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull BlobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
         return session.send(
@@ -996,12 +1005,12 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public Reader process(Response response) throws IOException, ServerException, InterruptedException {
+        public Reader process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
             return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public Reader process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+        public Reader process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
 
             if (session.isClosed()) {
@@ -1045,7 +1054,7 @@ public class SqlServiceStub implements SqlService {
 
     @Override
     public FutureResponse<Reader> send(
-            @Nonnull SqlRequest.GetLargeObjectData request, ClobReference reference) throws IOException {
+            @Nonnull SqlRequest.GetLargeObjectData request, @Nonnull ClobReference reference) throws IOException {
         Objects.requireNonNull(request);
         LOG.trace("send (GetLargeObjectData): {}", request); //$NON-NLS-1$
         return session.send(
@@ -1058,12 +1067,12 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.GetLargeObjectData> detailResponseCache = new AtomicReference<>();
 
         @Override
-        public LargeObjectCache process(Response response) throws IOException, ServerException, InterruptedException {
+        public LargeObjectCache process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
             return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public LargeObjectCache process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+        public LargeObjectCache process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
 
             if (session.isClosed()) {
@@ -1128,12 +1137,12 @@ public class SqlServiceStub implements SqlService {
         }
 
         @Override
-        public Void process(Response response) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull Response response) throws IOException, ServerException, InterruptedException {
             return process(response, Timeout.DISABLED);
         }
 
         @Override
-        public Void process(Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull Response response, Timeout timeout) throws IOException, ServerException, InterruptedException {
             Objects.requireNonNull(response);
 
             if (session.isClosed()) {
@@ -1188,7 +1197,7 @@ public class SqlServiceStub implements SqlService {
                     throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown
                     throw new BlobException("error occurred while receiving BLOB data: {openSubResponse fail, channel name: " + channelName + "}", e);
-                } catch (Exception e) {
+                } catch (ServerException | IOException | InterruptedException | NoSuchElementException e) {
                     throw new BlobException("error occurred while receiving BLOB data: {unknown error}", e);  // should not happen
                 }
             }
@@ -1215,7 +1224,7 @@ public class SqlServiceStub implements SqlService {
         private final AtomicReference<SqlResponse.Response> responseCache = new AtomicReference<>();
 
         @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+        public Void process(@Nonnull ByteBuffer payload) throws IOException, ServerException, InterruptedException {
             if (session.isClosed()) {
                 throw new SessionAlreadyClosedException();
             }
@@ -1240,6 +1249,8 @@ public class SqlServiceStub implements SqlService {
                         throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
                     }
                     return null;
+                default:
+                    break;
             }
             throw new IOException("response type is inconsistent with the request type");
         }
@@ -1256,35 +1267,8 @@ public class SqlServiceStub implements SqlService {
                 new DisposeTransactionProcessor().asResponseProcessor(false));
     }
 
-    // for compatibility
-    class DisconnectProcessor implements MainResponseProcessor<Void> {
-        private final AtomicReference<SqlResponse.ResultOnly> detailResponseCache = new AtomicReference<>();
-
-        @Override
-        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            if (session.isClosed()) {
-                throw new SessionAlreadyClosedException();
-            }
-            if (detailResponseCache.get() == null) {
-                var response = SqlResponse.Response.parseDelimitedFrom(new ByteBufferInputStream(payload));
-                if (!SqlResponse.Response.ResponseCase.RESULT_ONLY.equals(response.getResponseCase())) {
-                    // FIXME log error message
-                    throw new IOException("response type is inconsistent with the request type");
-                }
-                detailResponseCache.set(response.getResultOnly());
-            }
-            var detailResponse = detailResponseCache.get();
-            LOG.trace("receive (disconnect): {}", detailResponse); //$NON-NLS-1$
-            if (SqlResponse.ResultOnly.ResultCase.ERROR.equals(detailResponse.getResultCase())) {
-                var errorResponse = detailResponse.getError();
-                throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
-            }
-            return null;
-        }
-    }
-
     @Override
-    public void setCloseTimeout(Timeout timeout) {
+    public void setCloseTimeout(@Nonnull Timeout timeout) {
         closeTimeout = timeout;
         futureResponses.setCloseTimeout(timeout);
         resources.setCloseTimeout(timeout);
@@ -1297,8 +1281,9 @@ public class SqlServiceStub implements SqlService {
             futureResponses.close();
         }
         synchronized (resources) {
-            resourcesClosed = true;
-            resources.close();
+            try (resources) {
+                resourcesClosed = true;
+            }
         }
         session.remove(this);
     }

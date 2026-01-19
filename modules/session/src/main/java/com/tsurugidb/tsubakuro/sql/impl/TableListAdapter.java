@@ -45,7 +45,7 @@ public class TableListAdapter implements TableList {
     public List<String> getTableNames() {
         var rv = new ArrayList<String>();
         for (var n : proto.getTablePathNamesList()) {
-            if (n.getIdentifiersList().size() > 0) {
+            if (!n.getIdentifiersList().isEmpty()) {
                 rv.add(getTableName(n));
             }
         }
@@ -56,7 +56,7 @@ public class TableListAdapter implements TableList {
     public List<String> getSimpleNames(SearchPath searchPath) {
         var rv = new ArrayList<String>();
         for (var n : proto.getTablePathNamesList()) {
-            if (n.getIdentifiersList().size() > 0) {
+            if (!n.getIdentifiersList().isEmpty()) {
                 for (var sn: searchPath.getSchemaNames()) {
                     if (getTableName(n).startsWith(sn)) {
                         rv.add(getTableName(n));
@@ -69,7 +69,7 @@ public class TableListAdapter implements TableList {
 
     static String getTableName(SqlResponse.Name n) {
         var l = n.getIdentifiersList();
-        if (l.size() > 0) {
+        if (!l.isEmpty()) {
             String name = l.get(0).getLabel();
             for (int i = 1; i < l.size(); i++) {
                 name += ".";
