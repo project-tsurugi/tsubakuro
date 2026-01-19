@@ -36,10 +36,17 @@ public final class StreamConnectorImpl implements Connector {
 
     private static final Logger LOG = LoggerFactory.getLogger(StreamConnectorImpl.class);
 
+    /** The default port number for the stream connector. */
     public static final int DEFAULT_PORT = 12345;
+
     private final String hostname;
     private final int port;
 
+    /**
+     * Creates a new instance.
+     * @param hostname the hostname to connect
+     * @param port the port number
+     */
     public StreamConnectorImpl(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;

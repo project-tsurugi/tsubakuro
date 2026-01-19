@@ -17,8 +17,6 @@ extern "C" {
 #define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_PAYLOAD 1L
 #undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BODYHEAD
 #define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_BODYHEAD 2L
-#undef com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_CODE
-#define com_tsurugidb_tsubakuro_channel_ipc_IpcLink_RESPONSE_CODE 3L
 /*
  * Class:     com_tsurugidb_tsubakuro_channel_ipc_IpcLink
  * Method:    openNative

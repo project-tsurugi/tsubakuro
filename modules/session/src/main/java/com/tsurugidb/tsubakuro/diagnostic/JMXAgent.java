@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.diagnostic;
 
 import java.lang.management.ManagementFactory;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.MBeanRegistrationException;
@@ -24,10 +25,11 @@ import javax.management.MalformedObjectNameException;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.tsurugidb.tsubakuro.diagnostic.common.SessionInfo;
 
+/**
+ * JMX Agent for Tsubakuro.
+ */
 public final class JMXAgent {
     private static MBeanServer mbs;
     private static ObjectName name;
@@ -52,6 +54,10 @@ public final class JMXAgent {
         }
     }
 
+    /**
+     * Gets the SessionInfo MBean instance, initializing it if necessary.
+     * @return the SessionInfo MBean instance
+     */
     public static synchronized SessionInfo sessionInfo() {
         if (!created.getAndSet(true)) {
             setUp();

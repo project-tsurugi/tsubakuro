@@ -33,6 +33,10 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
     private final boolean exists;
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /**
+     * Constructor with path
+     * @param path the path to the cache file
+     */
     public LargeObjectCacheImpl(@Nullable Path path) {
         this.path = path;
         if (path != null) {
@@ -41,6 +45,10 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
         }
         exists = false;
     }
+
+    /**
+     * Constructor for non-existing cache
+     */
     public LargeObjectCacheImpl() {
         this.path = null;
         exists = false;

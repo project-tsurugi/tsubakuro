@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.junit.jupiter.api.Test;
 
@@ -131,6 +131,6 @@ class SessionWireTest {
             link.setSessionId(sessionId);
             WireImpl client = new WireImpl(link);
         });
-        assertTrue(exception.getMessage().contains("Connection refused"));
+        assertTrue(exception instanceof ConnectException);
     }
 }

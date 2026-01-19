@@ -17,11 +17,18 @@ package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
 import javax.annotation.Nonnull;
 
+/**
+ * SlotEntry type.
+ */
 public class SlotEntry {
     private final int slot;
     private ChannelResponse channelResponse;
     private byte[] requestMessage;  // for diagnostic
 
+    /**
+     * Constructor.
+     * @param slot the slot number
+     */
     SlotEntry(int slot) {
         this.slot = slot;
     }

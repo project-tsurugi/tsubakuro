@@ -138,6 +138,13 @@ public interface SqlService extends ServerResource {
     default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecuteStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
+    /**
+     * Requests {@code ExecuteStatement} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
     default FutureResponse<ExecuteResult> send(@Nonnull SqlRequest.ExecutePreparedStatement request) throws IOException {
         throw new UnsupportedOperationException();
     }
@@ -167,6 +174,14 @@ public interface SqlService extends ServerResource {
     default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecuteQuery request) throws IOException {
         throw new UnsupportedOperationException();
     }
+    /**
+     * Requests {@code Query} to SQL service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     *      If the request was succeeded, future will returns a result set object which includes query results.
+     * @throws IOException if I/O error was occurred while sending the request
+     */
     default FutureResponse<ResultSet> send(@Nonnull SqlRequest.ExecutePreparedQuery request) throws IOException {
         throw new UnsupportedOperationException();
     }

@@ -17,10 +17,24 @@ package com.tsurugidb.tsubakuro.util;
 
 import java.util.Optional;
 
+/**
+ * A pair of two values.
+ *
+ * @param <L> the type of the left value
+ * @param <R> the type of the right value
+ */
 public final class Pair<L, R> {
     private L left;
     private R right;
 
+    /**
+     * Creates a new Pair instance.
+     * @param <L> the type of the left value
+     * @param <R> the type of the right value
+     * @param left the left value
+     * @param right the right value
+     * @return a new Pair containing the left and right values
+     */
     public static <L, R> Pair<L, R> of(L left, R right) {
         return new Pair<>(left, right);
     }
@@ -32,19 +46,18 @@ public final class Pair<L, R> {
                 .orElseThrow(() -> new NullPointerException());
     }
 
-    //    public class Pair<L, R> {
-    //    private final L left;
-    //    private final R right;
-
-    //    public Pair(L left, R right) {
-    //    this.left = left;
-    //    this.right = right;
-    //    }
-
+    /**
+     * Gets the left value.
+     * @return the left value
+     */
     public L getLeft() {
     return left;
     }
 
+    /**
+     * Gets the right value.
+     * @return the right value
+     */
     public R getRight() {
     return right;
     }

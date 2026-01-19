@@ -27,6 +27,9 @@ public class CoreServiceException extends ServerException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The diagnostic code.
+     */
     private final CoreServiceCode code;
 
     /**

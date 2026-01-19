@@ -38,6 +38,9 @@ public class ResultSetBox {
     private Condition[] slotCondition = new Condition[SIZE];
     private boolean intentionalClose = false;
 
+    /**
+     * Creates a new ResultSetBox.
+     */
     public ResultSetBox() {
         for (int i = 0; i < SIZE; i++) {
             slotLock[i] = new ReentrantLock();
@@ -45,6 +48,12 @@ public class ResultSetBox {
         }
     }
 
+    /**
+     * Registers a ResultSetWire to this box.
+     * @param name the name
+     * @param resultSetWire the ResultSetWireImpl instance
+     * @throws IOException if an I/O error occurs
+     */
     public void register(String name, ResultSetWireImpl resultSetWire) throws IOException {
         while (true) {
             lock.lock();
@@ -71,6 +80,12 @@ public class ResultSetBox {
         }
     }
 
+    /**
+     * Pushes hello to this box.
+     * @param name the name
+     * @param slot the slot number
+     * @throws IOException if an I/O error occurs
+     */
     public void pushHello(String name, int slot) throws IOException {  // for RESPONSE_RESULT_SET_HELLO
         lock.lock();
         try {
@@ -85,6 +100,13 @@ public class ResultSetBox {
         }
     }
 
+    /**
+     * Pushes payload to this box.
+     * @param slot the slot number
+     * @param writerId the writer identifier
+     * @param payload the payload data
+     * @throws IOException if an I/O error occurs
+     */
     public void push(int slot, int writerId, byte[] payload) throws IOException {  // for RESPONSE_RESULT_SET_PAYLOAD
         if (boxes[slot] == null) {
             waitRegistration(slot);
@@ -98,6 +120,11 @@ public class ResultSetBox {
         }
     }
 
+    /**
+     * Pushes bye to this box.
+     * @param slot the slot number
+     * @throws IOException if an I/O error occurs
+     */
     public void pushBye(int slot) throws IOException {  // for RESPONSE_RESULT_SET_BYE
         if (boxes[slot] == null) {
             waitRegistration(slot);
@@ -107,6 +134,12 @@ public class ResultSetBox {
         box.endOfRecords();
     }
 
+    /**
+     * Pushes bye with exception to this box.
+     * @param slot the slot number
+     * @param e the exception
+     * @throws IOException if an I/O error occurs
+     */
     public void pushBye(int slot, IOException e) throws IOException {  // for RESPONSE_RESULT_SET_BYE
         if (boxes[slot] == null) {
             waitRegistration(slot);
@@ -133,11 +166,18 @@ public class ResultSetBox {
         }
     }
 
+    /**
+     * Closes this box.
+     * @param ic whether the close is intentional
+     */
     public void doClose(boolean ic) {
         intentionalClose = ic;
         close();
     }
 
+    /**
+     * Closes this ResultSetBox.
+     */
     public void close() {
         for (ResultSetWireImpl e : boxes) {
             if (e != null) {

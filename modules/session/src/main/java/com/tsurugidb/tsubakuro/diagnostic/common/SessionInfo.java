@@ -20,9 +20,16 @@ import java.util.function.BiConsumer;
 
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 
+/**
+ * Session information for diagnostics.
+ */
 public class SessionInfo implements SessionInfoMBean {
     private WeakHashMap<SessionImpl, Void> sessions = new WeakHashMap<SessionImpl, Void>();
 
+    /**
+     * Add a session.
+     * @param s the session to add
+     */
     public void addSession(SessionImpl s) {
         synchronized (sessions) {
             sessions.put(s, null);

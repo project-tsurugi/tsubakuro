@@ -24,14 +24,14 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.ThreadSafe;
 
-import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
+import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
+import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
 import com.tsurugidb.tsubakuro.util.Timeout;
-import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 
 /**
  * An abstract interface of communication path to the server.
@@ -176,8 +176,11 @@ public interface Wire extends ServerResource {
     @Override
     void close() throws IOException, InterruptedException, ServerException;
 
-    // for diagnostic
+    /**
+     * Get diagnostic information of this wire.
+     * @return diagnostic information string
+     */
     default String diagnosticInfo() {
-        return " diagnosticInfo for the wire is not implementd";
+        return " diagnosticInfo for the wire is not implemented";
     }
 }

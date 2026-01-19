@@ -29,8 +29,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Connector;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
-import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
 import com.tsurugidb.tsubakuro.channel.ipc.IpcLink;
+import com.tsurugidb.tsubakuro.channel.ipc.NativeLibrary;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
@@ -55,6 +55,10 @@ public final class IpcConnectorImpl implements Connector {
         NativeLibrary.load();
     }
 
+    /**
+     * Creates a new IpcConnectorImpl.
+     * @param name the database name
+     */
     public IpcConnectorImpl(String name) {
         this.name = name;
     }
