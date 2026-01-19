@@ -26,10 +26,10 @@ import javax.annotation.Nullable;
 import com.tsurugidb.tsubakuro.client.ServiceClient;
 import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.common.Session;
+import com.tsurugidb.tsubakuro.datastore.impl.DatastoreClientImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.ServerResource;
-import com.tsurugidb.tsubakuro.datastore.impl.DatastoreClientImpl;
 
 /**
  * A datastore service client.
@@ -54,7 +54,7 @@ public interface DatastoreClient extends ServerResource, ServiceClient {
     /**
      * The minor service message version which this client requests.
     */
-    int SERVICE_MESSAGE_VERSION_MINOR = 0;
+    int SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * Attaches to the datastore service in the current session.
@@ -153,6 +153,17 @@ public interface DatastoreClient extends ServerResource, ServiceClient {
      * @throws IOException if I/O error was occurred while sending request
      */
     default FutureResponse<Boolean> removeTag(@Nonnull String name) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Register transaction ID and TPM ID to the server.
+     * @param transactionID the transaction ID
+     * @param tpmID the TPM ID
+     * @return the future response of Void
+     * @throws IOException if I/O error was occurred while sending request
+     */
+    default FutureResponse<Void> registerTransactionTpmId(@Nonnull String transactionID, Long tpmID) throws IOException {
         throw new UnsupportedOperationException();
     }
 

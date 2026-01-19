@@ -8,6 +8,7 @@ option java_outer_classname = "DatastoreRequest";
 
 // the request message to datastore service.
 message Request {
+    // this Request message is major = 0 and minor = 1
     // service message version (major)
     uint64 service_message_version_major = 1;
 
@@ -43,9 +44,11 @@ message Request {
         RestoreCancel restore_cancel = 23;
         // disposes a restore job history.
         RestoreDispose restore_dispose = 24;
+        // register TxID and TpmID.
+        RegisterTransactionTpmId register_transaction_tpm_id = 25;
     }
     reserved 16;
-    reserved 25 to 99;
+    reserved 26 to 99;
 }
 
 // starts backup operation.
@@ -159,4 +162,12 @@ message RestoreCancel {
 message RestoreDispose {
     // the restore job ID.
     uint64 id = 1;
+}
+
+// register TxID and TpmID.
+message RegisterTransactionTpmId {
+    // the transaction ID.
+    string transaction_id = 1;
+    // the TPM ID
+    uint64 tpm_id = 2;
 }

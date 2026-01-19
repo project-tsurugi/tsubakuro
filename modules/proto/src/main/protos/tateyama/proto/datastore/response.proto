@@ -394,3 +394,17 @@ message RestoreDispose {
         UnknownError unknown_error = 11;
     }
 }
+
+// register transaction and tpm id.
+message RegisterTransactionTpmId {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // ids was successfully registered.
+        Void success = 12;
+
+        // unknown error was occurred.
+        UnknownError unknown_error = 11;
+    }
+}

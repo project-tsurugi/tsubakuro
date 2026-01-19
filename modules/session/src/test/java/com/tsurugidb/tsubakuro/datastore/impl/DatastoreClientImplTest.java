@@ -172,4 +172,19 @@ class DatastoreClientImplTest {
         assertTrue(client.removeTag("existing").await());
         assertFalse(client.removeTag("missing").await());
     }
+
+    @Test
+    void registerTransactionTpmId() throws Exception {
+        var transactionId = "TID-1234567890abcdefghij";
+        long tpmId = 123456L;
+        DatastoreClient client = new DatastoreClientImpl(new DatastoreService() {
+            @Override
+            public FutureResponse<Void> send(DatastoreRequest.RegisterTransactionTpmId request) throws IOException {
+                assertEquals(transactionId, request.getTransactionId());
+                assertEquals(tpmId, request.getTpmId());
+                return FutureResponse.returns(null);
+            }
+        });
+        client.registerTransactionTpmId(transactionId, tpmId).await();
+    }
 }

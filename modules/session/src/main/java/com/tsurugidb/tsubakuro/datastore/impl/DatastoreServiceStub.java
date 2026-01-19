@@ -408,6 +408,36 @@ public class DatastoreServiceStub implements DatastoreService {
                 new TagRemoveProcessor().asResponseProcessor());
     }
 
+    static class RegisterTransactionTpmIdProcessor implements MainResponseProcessor<Void> {
+        @Override
+        public Void process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
+            var message = DatastoreResponse.RegisterTransactionTpmId.parseDelimitedFrom(new ByteBufferInputStream(payload));
+            LOG.trace("receive: {}", message); //$NON-NLS-1$
+            switch (message.getResultCase()) {
+            case SUCCESS:
+                return null;
+
+            case UNKNOWN_ERROR:
+                throw newUnknown(message.getUnknownError());
+
+            default:
+                break;
+            }
+            throw new AssertionError(); // may not occur
+        }
+    }
+
+    @Override
+    public FutureResponse<Void> send(@Nonnull DatastoreRequest.RegisterTransactionTpmId request) throws IOException {
+        LOG.trace("send: {}", request); //$NON-NLS-1$
+        return session.send(
+                SERVICE_ID,
+                toDelimitedByteArray(newRequest()
+                                     .setRegisterTransactionTpmId(request)
+                                     .build()),
+                new RegisterTransactionTpmIdProcessor().asResponseProcessor());
+    }
+
     @Override
     public void close() throws ServerException, IOException, InterruptedException {
         LOG.trace("closing underlying resources"); //$NON-NLS-1$

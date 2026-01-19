@@ -127,6 +127,15 @@ public class DatastoreClientImpl implements DatastoreClient {
     }
 
     @Override
+    public FutureResponse<Void> registerTransactionTpmId(@Nonnull String transactionID, Long tpmID) throws IOException {
+        Objects.requireNonNull(transactionID);
+        var builder = DatastoreRequest.RegisterTransactionTpmId.newBuilder()
+                .setTransactionId(transactionID)
+                .setTpmId(tpmID);
+        return service.send(builder.build());
+    }
+
+    @Override
     public void close() throws ServerException, IOException, InterruptedException {
         service.close();
     }

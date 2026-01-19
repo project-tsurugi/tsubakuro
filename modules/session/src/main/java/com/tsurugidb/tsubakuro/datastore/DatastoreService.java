@@ -130,6 +130,19 @@ public interface DatastoreService extends ServerResource {
     }
 
     /**
+     * Requests {@code TagRemove} to datastore service.
+     * @param request the request
+     * @return the future response of the request,
+     *      which may raise error if the request was failed.
+     *      If the request was succeeded,
+     *      future will returns whether or not the target tag is removed
+     * @throws IOException if I/O error was occurred while sending the request
+     */
+    default FutureResponse<Void> send(DatastoreRequest.RegisterTransactionTpmId request) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
      * Requests to update the session expiration time.
      * <p>
      * The resources underlying this session will be disposed after this session was expired.
