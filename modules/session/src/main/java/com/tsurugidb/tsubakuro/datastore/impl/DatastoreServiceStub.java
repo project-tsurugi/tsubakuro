@@ -254,7 +254,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagListProcessor implements MainResponseProcessor<List<Tag>> {
         @Override
         public List<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponse.TagList.parseFrom(payload);
+            var message = DatastoreResponse.TagList.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -291,7 +291,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagAddProcessor implements MainResponseProcessor<Tag> {
         @Override
         public Tag process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponse.TagAdd.parseFrom(payload);
+            var message = DatastoreResponse.TagAdd.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -339,7 +339,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagGetProcessor implements MainResponseProcessor<Optional<Tag>> {
         @Override
         public Optional<Tag> process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponse.TagGet.parseFrom(payload);
+            var message = DatastoreResponse.TagGet.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
@@ -375,7 +375,7 @@ public class DatastoreServiceStub implements DatastoreService {
     static class TagRemoveProcessor implements MainResponseProcessor<Boolean> {
         @Override
         public Boolean process(ByteBuffer payload) throws IOException, ServerException, InterruptedException {
-            var message = DatastoreResponse.TagRemove.parseFrom(payload);
+            var message = DatastoreResponse.TagRemove.parseDelimitedFrom(new ByteBufferInputStream(payload));
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
