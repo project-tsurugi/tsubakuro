@@ -30,6 +30,9 @@ public class SystemServiceException extends ServerException {
 
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The diagnostic code.
+     */
     private final SystemServiceCode code;
 
     /**
