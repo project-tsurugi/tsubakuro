@@ -365,8 +365,8 @@ public final class Parameters {
 
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setClob(SqlCommon.Clob.newBuilder()
-                        .setLocalPath(path.toString()))
+                .setLargeObjectInfoClob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                        .setClientPath(path.toString()))
                 .build();
     }
 
@@ -384,8 +384,8 @@ public final class Parameters {
 
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setBlob(SqlCommon.Blob.newBuilder()
-                        .setLocalPath(path.toString()))
+                .setLargeObjectInfoBlob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                        .setClientPath(path.toString()))
                 .build();
     }
 

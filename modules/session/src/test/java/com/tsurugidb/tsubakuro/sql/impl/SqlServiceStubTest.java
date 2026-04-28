@@ -27,7 +27,7 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -45,7 +45,7 @@ import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
+import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.BrokenResponseException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -989,8 +989,8 @@ class SqlServiceStubTest {
         var message = SqlRequest.ExecutePreparedStatement.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
                 .build();
-        var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo("blobChannel", Path.of("/somewhere/blobChannel.data")));
+        var lobs = new ArrayList<BlobInfoImpl>();
+        lobs.add(new BlobInfoImpl("blobChannel", Path.of("/somewhere/blobChannel.data")));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);
@@ -1006,7 +1006,7 @@ class SqlServiceStubTest {
 
             var lob = wire.blobs().get(0);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
+            assertEquals(lob.getPath(), Optional.of("/somewhere/blobChannel.data"));
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1122,8 +1122,8 @@ class SqlServiceStubTest {
         var message = SqlRequest.ExecutePreparedQuery.newBuilder()
                 .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
                 .build();
-        var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo("blobChannel", Path.of("/somewhere/blobChannel.data")));
+        var lobs = new ArrayList<BlobInfoImpl>();
+        lobs.add(new BlobInfoImpl("blobChannel", Path.of("/somewhere/blobChannel.data")));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);
@@ -1145,7 +1145,7 @@ class SqlServiceStubTest {
 
             var lob = wire.blobs().get(0);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
+            assertEquals(lob.getPath(), Optional.of("/somewhere/blobChannel.data"));
         }
         assertFalse(wire.hasRemaining());
     }

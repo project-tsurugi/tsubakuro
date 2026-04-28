@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -42,7 +42,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
+import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
@@ -108,9 +108,9 @@ class SqlServiceStubLobTest {
         Files.write(file1, data);
         Files.write(file2, data);
 
-        var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo(channelName1, file1));
-        lobs.add(new FileBlobInfo(channelName2, file2));
+        var lobs = new ArrayList<BlobInfoImpl>();
+        lobs.add(new BlobInfoImpl(channelName1, file1));
+        lobs.add(new BlobInfoImpl(channelName2, file2));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);

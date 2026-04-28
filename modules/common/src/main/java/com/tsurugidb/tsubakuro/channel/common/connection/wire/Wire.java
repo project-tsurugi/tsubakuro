@@ -26,7 +26,8 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
+// import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -95,7 +96,7 @@ public interface Wire extends ServerResource {
      *
      * @since 1.8.0
      */
-    default FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    default FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -117,7 +118,7 @@ public interface Wire extends ServerResource {
      *
      * @since 1.8.0
      */
-    default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    default FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         Objects.requireNonNull(payload);
         return send(serviceId, ByteBuffer.wrap(payload), blobs);
     }

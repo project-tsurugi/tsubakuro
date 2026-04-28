@@ -43,11 +43,32 @@ message Handshake {
     // the client information.
     ClientInformation client_information = 1;
 
+    // prioritized candidates of BLOB transfer media/methods to use
+    repeated BlobTransferMedium blob_transfer_media = 2;
+
     // reserved for system use
-    reserved 2 to 10;
+    reserved 3 to 10;
 
     // the wire information.
     WireInformation wire_information = 11;
+}
+
+// BLOB relay service type to use
+enum BlobTransferType {
+  // does not use BLOB transfer
+  DOES_NOT_USE = 0;
+
+  // privileged mode BLOB transfer
+  PRIVILEGED = 1;
+
+  // data_relay_grpc.proto.blob_relay_streaming.blob_relay
+  RELAY = 2;
+}
+
+// BLOB relay service medium
+message BlobTransferMedium {
+  // BLOB relay service type
+  BlobTransferType blob_transfer_type = 1;
 }
 
 // client information

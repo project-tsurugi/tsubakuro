@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.sql;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+package com.tsurugidb.tsubakuro.common;
 
 /**
- * Represents large object cache.
- *
- * @since 1.8.0
+ * Blob transfer medium used by the LargeObjectClient.
  */
-@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_INTERFACE")
-public interface LargeObjectCache extends com.tsurugidb.tsubakuro.common.LargeObjectCache {
-    // no special methods.
+public interface BlobTransferMedium {
+    /**
+     * Gets the BlobTransferType Blob transfer type used in the session.
+     * @return the BlobTransferType other than BlobTransferType.DEFAULT
+     */
+    BlobTransferType getBlobTransferType();
 }
