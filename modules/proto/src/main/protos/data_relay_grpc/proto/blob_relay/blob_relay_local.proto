@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package data_relay_grpc.proto.blob_relay.blob_relay_local;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.blob_relay.proto";
+option java_outer_classname = "Local";
+
+import "data_relay_grpc/proto/blob_relay/blob_reference.proto";
+
+// represents BLOB file on the file system.
+message BlobFile {
+
+    // the path to BLOB data.
+    string path = 1;
+}
+
+// request message to download BLOB data over the file system.
+message GetLocalRequest {
+
+    // the API schema version.
+    uint64 api_version = 1;
+
+    // the context ID.
+    oneof context_id {
+        // the current session ID.
+        uint64 session_id = 2;
+
+        // the current transaction ID.
+        uint64 transaction_id = 3;
+    }
+
+    // the reference to the BLOB to download.
+    blob_reference.BlobReference blob = 4;
+}
+
+// response message to download BLOB data over the file system.
+message GetLocalResponse {
+
+    // the downloading BLOB file.
+    BlobFile data = 1;
+}
+
+// request message to upload BLOB data over the file system.
+message PutLocalRequest {
+
+    // the API schema version.
+    uint64 api_version = 1;
+
+    // the current session ID
+    uint64 session_id = 2;
+
+    // the BLOB file to upload.
+    BlobFile data = 3;
+}
+
+// response message to upload BLOB data over the file system.
+message PutLocalResponse {
+
+    // the reference to the uploaded BLOB.
+    blob_reference.BlobReference blob = 1;
+}
+
+// Transfer BLOB data over the file system.
+service BlobRelayLocal {
+
+    // Download BLOB data.
+    rpc Get(GetLocalRequest) returns (GetLocalResponse);
+
+    // Upload BLOB data.
+    rpc Put(PutLocalRequest) returns (PutLocalResponse);
+}

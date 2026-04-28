@@ -659,7 +659,7 @@ public class SessionImpl implements Session {
 
     /**
      * Returns the blobPathMapping.
-     * Supporsed to be used by SqlServiceStub
+     * Supposed to be used by SqlServiceStub
      * @return the blobPathMapping
      */
     public BlobPathMapping getBlobPathMapping() {

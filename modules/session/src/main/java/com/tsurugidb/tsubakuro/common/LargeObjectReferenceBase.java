@@ -13,15 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.sql;
-
-import  com.tsurugidb.tsubakuro.common.LargeObjectReferenceBase;
+package com.tsurugidb.tsubakuro.common;
 
 /**
- * An abstract super interface of large object references.
+ * An abstract super interface of large object references at Session layer.
  *
- * @since 1.8.0
+ * @since 1.10.0
  */
-public interface LargeObjectReference extends LargeObjectReferenceBase {
-    // no special methods.
+public interface LargeObjectReferenceBase {
+    /**
+     * Returns the provider of the LOB data.
+     * @return the provider value
+     */
+    long getProvider();
+
+    /**
+     * Returns the object id of the LOB data.
+     * @return the object id value
+     */
+    long getObjectId();
+
+    /**
+     * Returns the reference tag of the LOB data.
+     * @return the reference tag value
+     */
+    long getReferenceTag();
 }
