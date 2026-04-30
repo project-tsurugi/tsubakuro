@@ -46,7 +46,6 @@ import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;

@@ -98,7 +98,7 @@ public interface Session extends ServerResource {
         @Nonnull byte[] payload,
         @Nonnull List<? extends BlobInfo> blobs,
         @Nonnull ResponseProcessor<R> processor) throws IOException {
-        throw new UnsupportedOperationException();
+        return send(serviceId, ByteBuffer.wrap(payload), blobs, processor);
     }
 
     /**

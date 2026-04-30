@@ -51,7 +51,7 @@ import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.framework.proto.FrameworkResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
@@ -66,31 +66,6 @@ class WireImplTest {
 
     private final MockLink link = new MockLink();
     private WireImpl wire = null;
-
-    static class BlobInfoForTest implements BlobInfo {
-        private final String channelName;
-        private final Path path;
-
-        public BlobInfoForTest(String channelName, Path path) {
-            this.channelName = channelName;
-            this.path = path;
-        }
-
-        @Override
-        public String getChannelName() {
-            return channelName;
-        }
-
-        @Override
-        public boolean isFile() {
-            return true;
-        }
-
-        @Override
-        public Optional<Path> getPath() {
-            return Optional.of(path);
-        }
-    }
 
     public WireImplTest() {
         try {
@@ -108,9 +83,9 @@ class WireImplTest {
         String fileName2 = "/tmp/channel-2";
         String channelName2 = "testChannel-2";
 
-        LinkedList<BlobInfoForTest> blobs = new LinkedList<>();
-        blobs.add(new BlobInfoForTest(channelName1, Paths.get(fileName1)));
-        blobs.add(new BlobInfoForTest(channelName2, Paths.get(fileName2)));
+        LinkedList<ServerBlobInfo> blobs = new LinkedList<>();
+        blobs.add(new ServerBlobInfo(channelName1, Paths.get(fileName1).toString()));
+        blobs.add(new ServerBlobInfo(channelName2, Paths.get(fileName2).toString()));
 
         // push response message via test functionality
         link.next(SqlResponse.Response.newBuilder().build());
@@ -125,7 +100,7 @@ class WireImplTest {
             String channelName = e.getChannelName();
             String path = e.getPath();
             if (channelName.equals(channelName1)) {
-                assertEquals(e.getPath(), fileName1);
+                assertEquals(path, fileName1);
             } else if (channelName.equals(channelName2)) {
                 assertEquals(e.getPath(), fileName2);
             } else {

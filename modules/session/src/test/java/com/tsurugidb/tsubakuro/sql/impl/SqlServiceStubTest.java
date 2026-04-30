@@ -1006,7 +1006,7 @@ class SqlServiceStubTest {
 
             var lob = wire.blobs().get(0);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
+            assertEquals(lob.getPath(), "/somewhere/blobChannel.data");
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1145,7 +1145,7 @@ class SqlServiceStubTest {
 
             var lob = wire.blobs().get(0);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath().get().toString(), "/somewhere/blobChannel.data");
+            assertEquals(lob.getPath(), "/somewhere/blobChannel.data");
         }
         assertFalse(wire.hasRemaining());
     }

@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.HashSet;
@@ -42,8 +41,7 @@ import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
-import com.tsurugidb.tsubakuro.common.BlobPathMapping;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.FileCredential;
@@ -151,7 +149,6 @@ public class WireImpl implements Wire {
 
     private final Link link;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private BlobPathMapping blobPathMapping = null;
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
     private String encryptionKey = null;
@@ -164,14 +161,6 @@ public class WireImpl implements Wire {
     public WireImpl(@Nonnull Link link) throws IOException {
         this.link = link;
         LOG.trace("begin Session");
-    }
-
-    /**
-     * Set BlobPathMapping.
-     * @param mapping path mapping used when passing blobs to the server
-     */
-    public void setBlobPathMapping(BlobPathMapping mapping) {
-        this.blobPathMapping = mapping;
     }
 
     @Override
@@ -202,7 +191,7 @@ public class WireImpl implements Wire {
     }
 
     @Override
-    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         if (closed.get()) {
             throw new IOException("already closed");
         }
@@ -219,9 +208,7 @@ public class WireImpl implements Wire {
                     throw new IllegalArgumentException("duplicate channel name: " + e.getChannelName());
                 }
                 var blobInfo = FrameworkCommon.BlobInfo.newBuilder().setChannelName(e.getChannelName());
-                if (e.getPath().isPresent() && e.isFile()) {
-                    blobInfo.setPath(serverPathString(e.getPath().get()));
-                }
+                blobInfo.setPath(e.getPath());
                 repeatedBlobInfo.addBlobs(blobInfo.build());
             }
             header.setBlobs(repeatedBlobInfo);
@@ -230,30 +217,8 @@ public class WireImpl implements Wire {
         return FutureResponse.wrap(Owner.of(response));
     }
 
-    private String serverPathString(Path blobPath) {
-        if (blobPathMapping == null) {
-            return blobPath.toString();
-        }
-        var mapping = blobPathMapping.getOnSend();
-        for (var entry : mapping) {
-            var cp = entry.getClientPath();
-            var clientPath = cp.isAbsolute() ? cp : cp.toAbsolutePath();
-            if (blobPath.startsWith(clientPath)) {
-                var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
-                if (remainingPath != null) {
-                    String serverPath = entry.getServerPath();
-                    for (int i = 0; i < remainingPath.getNameCount(); i++) {
-                        serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
-                    }
-                    return serverPath;
-                }
-            }
-        }
-        return blobPath.toString();
-    }
-
     @Override
-    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         return send(serviceId, payload.array(), blobs);
     }
 

@@ -17,8 +17,9 @@ package com.tsurugidb.tsubakuro.common.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -50,6 +51,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
@@ -220,10 +222,6 @@ public class SessionImpl implements Session {
         if (doKeepAlive) {
             keepAliveTimer.scheduleAtFixedRate(new KeepAliveTask(keepAliveTimer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
         }
-        if (wire instanceof WireImpl) {
-            var wireImpl = (WireImpl) wire;
-            wireImpl.setBlobPathMapping(blobPathMapping);
-        }
     }
 
     @Override
@@ -251,22 +249,52 @@ public class SessionImpl implements Session {
     @Override
     public <R> FutureResponse<R> send(
         int serviceId,
-        @Nonnull byte[] payload,
-        @Nonnull List<? extends BlobInfo> blobs,
-        @Nonnull ResponseProcessor<R> processor) throws IOException {
-            FutureResponse<? extends Response> future = wire.send(serviceId, payload, blobs);
-            return convert(future, processor);
-    }
-
-    @Override
-    public <R> FutureResponse<R> send(
-        int serviceId,
         @Nonnull ByteBuffer payload,
         @Nonnull List<? extends BlobInfo> blobs,
         @Nonnull ResponseProcessor<R> processor) throws IOException {
-            FutureResponse<? extends Response> future = wire.send(serviceId, payload, blobs);
+            Objects.requireNonNull(payload);
+            Objects.requireNonNull(blobs);
+            Objects.requireNonNull(processor);
+            FutureResponse<? extends Response> future = wire.send(serviceId, payload, applyBlobPathMappingOnSend(blobs));
             return convert(future, processor);
         }
+
+    private List<ServerBlobInfo> applyBlobPathMappingOnSend(@Nonnull List<? extends BlobInfo> blobs) {
+        var list = new ArrayList<ServerBlobInfo>();
+        List<BlobPathMapping.Entry> mapping = null;
+        if (blobPathMapping != null) {
+            mapping = blobPathMapping.getOnSend();
+        }
+
+        nextBlob: for (var blob : blobs) {
+            var blobPathOptional = blob.getPath();
+            if (blobPathOptional.isEmpty()) {
+                continue;
+            }
+            var blobPath = blobPathOptional.get();
+
+            if (mapping != null) {
+                for (var entry : mapping) {
+                    var cp = entry.getClientPath();
+                    var clientPath = cp.isAbsolute() ? cp : cp.toAbsolutePath();
+                    if (blobPath.startsWith(clientPath)) {
+                        var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
+                        if (remainingPath != null) {
+                            String serverPath = entry.getServerPath();
+                            for (int i = 0; i < remainingPath.getNameCount(); i++) {
+                                serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
+                            }
+                            list.add(new ServerBlobInfo(blob.getChannelName(), serverPath));
+                            continue nextBlob;
+                        }
+                    }
+                }
+            }
+            // if there is no mapping or does not match any mapping, use the original path as server path
+            list.add(new ServerBlobInfo(blob.getChannelName(), blobPath.toString()));
+        }
+        return list;
+    }
 
     private <R> FutureResponse<R> convert(
             @Nonnull FutureResponse<? extends Response> response,
