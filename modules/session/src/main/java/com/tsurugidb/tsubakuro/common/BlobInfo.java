@@ -33,21 +33,27 @@ public interface BlobInfo {
      * </p>
      * @return the channel name
      */
-    String getChannelName();
+    default String getChannelName() {
+        throw new UnsupportedOperationException("getChannelName is not implemented");
+    }
 
     /**
      * Returns whether there is a file that represent this BLOB data in the local file system.
      * @return {@code true} if there is a file, otherwise {@code false}
      * @see #getPath()
      */
-    boolean isFile();
+    default boolean isFile() {
+        throw new UnsupportedOperationException("isFile is not implemented");
+    }
 
     /**
      * Returns the path of the file that represents this BLOB data, only if it exists.
      * @return the path of the file, or empty if it does not exist
      * @see #isFile()
      */
-    Optional<Path> getPath();
+    default Optional<Path> getPath() {
+        throw new UnsupportedOperationException("getPath is not implemented");
+    }
 
     /**
      * Returns the server path of the LargeObject uploaded to the BLOB relay service.

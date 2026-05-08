@@ -44,19 +44,25 @@ public interface LargeObjectInfo {
       * Returns the InfoType.
       * @return infoType
       */
-    InfoType getInfoType();
+    default InfoType getInfoType() {
+        throw new UnsupportedOperationException("getInfoType is not implemented");
+    }
 
     /**
      * Returns the BlobRelayReference.
      * @return the BlobRelayReference, when {@link #getInfoType()} is {@code BLOB_RELAY_REFERENCE}
      * @throws IllegalStateException when {@link #getInfoType()} is not {@code BLOB_RELAY_REFERENCE}
      */
-    BlobRelayReference getBlobRelayReference();
+    default BlobRelayReference getBlobRelayReference() {
+        throw new UnsupportedOperationException("getBlobRelayReference is not implemented");
+    }
 
     /**
      * Returns the Large Object file path string as seen from the server.
      * @return the Path representing the file path of the Large Object file, when {@link #getInfoType()} is {@code SERVER_PATH}
      * @throws IllegalStateException when {@link #getInfoType()} is not {@code SERVER_PATH}
      */
-    String getServerPath();
+    default String getServerPath() {
+        throw new UnsupportedOperationException("getServerPath is not implemented");
+    }
 }

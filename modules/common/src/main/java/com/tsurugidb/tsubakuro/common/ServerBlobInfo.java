@@ -15,8 +15,6 @@
  */
 package com.tsurugidb.tsubakuro.common;
 
-import java.util.Optional;
-
 /**
  * An abstract super interface of BLOB data to send to Tsurugi server.
  *
@@ -25,6 +23,25 @@ import java.util.Optional;
 public class ServerBlobInfo {
     private final String channelName;
     private final String serverPath;
+    private final BlobRelayReference blobRelayReference;
+    private final BlobInfoKind blobInfoKind;
+
+    /**
+     * The kind of this ServerBlobInfo, which indicates the type of the context it contains.
+     */
+    public enum BlobInfoKind {
+        /**
+         *  Indicates that the context contains a path to the server file that represents this BLOB data.
+         * In this case, the path can be obtained by calling getPath() method.
+         */
+        SERVER_PATH,
+
+         /**
+          * Indicates that the context contains a reference to the BLOB relay that represents this BLOB data.
+          * In this case, the reference can be obtained by calling getBlobRelayReference() method.
+          */
+        BLOB_RELAY_REFERENCE,
+    }
 
     /**
      * Creates a new instance of {@code ServerBlobInfo}.
@@ -35,6 +52,29 @@ public class ServerBlobInfo {
     public ServerBlobInfo(String channelName, String serverPath) {
         this.channelName = channelName;
         this.serverPath = serverPath;
+        this.blobRelayReference = null;
+        this.blobInfoKind = BlobInfoKind.SERVER_PATH;
+    }
+
+    /**
+     * Creates a new instance of {@code ServerBlobInfo}.
+     *
+     * @param channelName the channel name for sending this BLOB data
+     * @param blobRelayReference the reference to the BLOB relay that represents this BLOB data
+     */
+    public ServerBlobInfo(String channelName, BlobRelayReference blobRelayReference) {
+        this.channelName = channelName;
+        this.serverPath = null;
+        this.blobRelayReference = blobRelayReference;
+        this.blobInfoKind = BlobInfoKind.BLOB_RELAY_REFERENCE;
+    }
+
+    /**
+     * Returns the kind of this ServerBlobInfo.
+     * @return the kind of this ServerBlobInfo
+     */
+    public BlobInfoKind getBlobInfoKind() {
+        return blobInfoKind;
     }
 
     /**
@@ -51,9 +91,25 @@ public class ServerBlobInfo {
 
     /**
      * Returns the path of the server file that represents this BLOB data.
-     * @return the path of the server file, or empty if it does not exist
+     * @return the path of the server file
+     * @throws IllegalStateException if this ServerBlobInfo does not contain a server path
      */
-    public Optional<String> getPath() {
-        return Optional.ofNullable(serverPath);
+    public String getPath() {
+        if (blobInfoKind != BlobInfoKind.SERVER_PATH) {
+            throw new IllegalStateException("This ServerBlobInfo does not contain a server path");
+        }
+        return serverPath;
+    }
+
+    /**
+     * Returns the reference to the BLOB relay that represents this BLOB data.
+     * @return the reference to the BLOB relay
+     * @throws IllegalStateException if this ServerBlobInfo does not contain a BlobRelayReference
+     */
+    public BlobRelayReference getBlobRelayReference() {
+        if (blobInfoKind != BlobInfoKind.BLOB_RELAY_REFERENCE) {
+            throw new IllegalStateException("This ServerBlobInfo does not contain a BlobRelayReference");
+        }
+        return blobRelayReference;
     }
 }

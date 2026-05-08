@@ -46,6 +46,16 @@ public class LargeObjectInfoImpl implements LargeObjectInfo {
                 throw new IllegalArgumentException("parameter must be of type LARGE_OBJECT");
         }
     }
+    /**
+     * Class constructor.
+     * @param info the protobuf object containing the large object information
+     */
+    public LargeObjectInfoImpl(SqlRequest.ClientOnlyLargeObjectInfo info) {
+        if (info == null) {
+            throw new IllegalArgumentException("info must not be null");
+        }
+        this.largeObjectInfo = info;
+    }
 
     @Override
     public InfoType getInfoType() {

@@ -56,6 +56,8 @@ public final class SessionBuilder {
 
     private BlobPathMapping blobPathMapping = null;
 
+    private BlobTransferType blobTransferType = BlobTransferType.DEFAULT;
+
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
@@ -138,6 +140,16 @@ public final class SessionBuilder {
      */
     public SessionBuilder withKeepAlive(boolean enabled) {
         doKeepAlive = enabled;
+        return this;
+    }
+
+    /**
+     * Sets the blob transfer type for BLOB transfer.
+     * @param type the blob transfer type
+     * @return this
+     */
+    public SessionBuilder withBlobTransfer(@Nonnull BlobTransferType type) {
+        this.blobTransferType = type;
         return this;
     }
 

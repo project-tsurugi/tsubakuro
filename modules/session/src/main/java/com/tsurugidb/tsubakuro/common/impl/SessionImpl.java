@@ -52,6 +52,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
+import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.ShutdownType;
@@ -81,6 +82,7 @@ public class SessionImpl implements Session {
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
+    private final LargeObjectClient largeObjectClient;
 
     private static final class AtomicCompleted extends ReentrantLock {
         private final AtomicBoolean flag = new AtomicBoolean(false);
@@ -167,6 +169,7 @@ public class SessionImpl implements Session {
         this.wire = null;
         this.doKeepAlive = doKeepAlive;
         this.blobPathMapping = blobPathMapping;
+        this.largeObjectClient = new LargeObjectClientPrivileged(blobPathMapping);
         checkBlogPathMapping();
     }
 
@@ -193,6 +196,7 @@ public class SessionImpl implements Session {
         this.wire = null;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
+        this.largeObjectClient = new LargeObjectClientPrivileged(null);
     }
 
     /**
@@ -206,6 +210,7 @@ public class SessionImpl implements Session {
         this.wire = wire;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
+        this.largeObjectClient = new LargeObjectClientPrivileged(null);
     }
 
     /**
@@ -255,43 +260,31 @@ public class SessionImpl implements Session {
             Objects.requireNonNull(payload);
             Objects.requireNonNull(blobs);
             Objects.requireNonNull(processor);
-            FutureResponse<? extends Response> future = wire.send(serviceId, payload, applyBlobPathMappingOnSend(blobs));
+            FutureResponse<? extends Response> future = wire.send(serviceId, payload, handleBlobs(blobs));
             return convert(future, processor);
         }
 
-    private List<ServerBlobInfo> applyBlobPathMappingOnSend(@Nonnull List<? extends BlobInfo> blobs) {
+    private List<ServerBlobInfo> handleBlobs(@Nonnull List<? extends BlobInfo> blobs) throws IOException {
         var list = new ArrayList<ServerBlobInfo>();
-        List<BlobPathMapping.Entry> mapping = null;
-        if (blobPathMapping != null) {
-            mapping = blobPathMapping.getOnSend();
-        }
 
-        nextBlob: for (var blob : blobs) {
-            var blobPathOptional = blob.getPath();
-            if (blobPathOptional.isEmpty()) {
-                continue;
-            }
-            var blobPath = blobPathOptional.get();
-
-            if (mapping != null) {
-                for (var entry : mapping) {
-                    var cp = entry.getClientPath();
-                    var clientPath = cp.isAbsolute() ? cp : cp.toAbsolutePath();
-                    if (blobPath.startsWith(clientPath)) {
-                        var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
-                        if (remainingPath != null) {
-                            String serverPath = entry.getServerPath();
-                            for (int i = 0; i < remainingPath.getNameCount(); i++) {
-                                serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
-                            }
-                            list.add(new ServerBlobInfo(blob.getChannelName(), serverPath));
-                            continue nextBlob;
-                        }
-                    }
+        for (var blob : blobs) {
+            if (blob.getPath().isPresent()) {
+                // apply blob path mapping if the blob has a file path
+                try {
+                    var largeObjectInfo = largeObjectClient.upload(blob.getPath().get()).get();
+                    list.add(new ServerBlobInfo(blob.getChannelName(), largeObjectInfo.getServerPath()));
+                } catch (ServerException | InterruptedException e) {
+                    throw new AssertionError("Never occur: LargeObjectClient.upload(Path) for PREVIREDGE MODE", e);
                 }
+            } else if (blob.getServerPath().isPresent()) {
+                // if the blob does not have a file path but has a server path, use it directly
+                list.add(new ServerBlobInfo(blob.getChannelName(), blob.getServerPath().get()));
+            } else if (blob.getBlobRelayReference().isPresent()) {
+                // if the blob does not have a file path but has a BlobRelayReference, use it directly
+                list.add(new ServerBlobInfo(blob.getChannelName(), blob.getBlobRelayReference().get()));
+            } else {
+                throw new IllegalArgumentException("Blob must have either a file path, a server path, or a BlobRelayReference");
             }
-            // if there is no mapping or does not match any mapping, use the original path as server path
-            list.add(new ServerBlobInfo(blob.getChannelName(), blobPath.toString()));
         }
         return list;
     }
@@ -384,6 +377,11 @@ public class SessionImpl implements Session {
         LOG.warn("getUserName is not supported by the wire: {}", wire.getClass().getName());
         // return empty Optional
         return FutureResponse.returns(Optional.empty());
+    }
+
+    @Override
+    public LargeObjectClient getLargeObjectClient() {
+        return largeObjectClient;
     }
 
     static class ShutdownProcessor implements MainResponseProcessor<Void> {

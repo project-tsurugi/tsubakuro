@@ -53,14 +53,18 @@ public interface LargeObjectClient {
          * Returns the contextIdKind.
          * @return contextIdKind
          */
-        ContextIdKind contextIdKind();
+        default ContextIdKind contextIdKind() {
+            throw new UnsupportedOperationException("contextIdKind is not implemented");
+        }
 
         /**
          * Returns the transaction handle.
          * @return the transaction handle, when {@link #contextIdKind()} is {@code TRANSACTION}
          * @throws IllegalStateException if no transaction handle is available for this context
          */
-        long getTransactionHandle();
+        default long getTransactionHandle() {
+            throw new UnsupportedOperationException("getTransactionHandle is not implemented");
+        }
     }
 
     /**
@@ -70,7 +74,9 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while uploading Large Object
      * @throws BlobException if this instance is for privileged mode blob transfer
      */
-    FutureResponse<LargeObjectInfo> upload(InputStream source) throws IOException, BlobException;
+    default FutureResponse<LargeObjectInfo> upload(InputStream source) throws IOException, BlobException {
+        throw new UnsupportedOperationException("upload(InputStream) is not implemented");
+    }
 
     /**
      * Upload a Large Object passed from a Reader.
@@ -79,7 +85,9 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while uploading Large Object
      * @throws BlobException if this instance is for privileged mode blob transfer
      */
-    FutureResponse<LargeObjectInfo> upload(Reader source) throws IOException, BlobException;
+    default FutureResponse<LargeObjectInfo> upload(Reader source) throws IOException, BlobException {
+        throw new UnsupportedOperationException("upload(Reader) is not implemented");
+    }
 
     /**
      * Upload a Large Object file.
@@ -92,7 +100,9 @@ public interface LargeObjectClient {
      * @return the LargeObjectInfo of the uploaded Large Object
      * @throws IOException if I/O error occurs while uploading Large Object
      */
-    FutureResponse<LargeObjectInfo> upload(Path source) throws IOException;
+    default FutureResponse<LargeObjectInfo> upload(Path source) throws IOException {
+        throw new UnsupportedOperationException("upload(Path) is not implemented");
+    }
 
     /**
      * Returns an input stream for the Large Object.
@@ -102,7 +112,9 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while sending request
      * @throws BlobException If the value of LargeObjectReference.getProvider() cannot be used for the download request
      */
-    FutureResponse<InputStream> openInputStream(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException;
+    default FutureResponse<InputStream> openInputStream(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException {
+        throw new UnsupportedOperationException("openInputStream is not implemented");
+    }
 
     /**
      * Returns a reader for the Large Object.
@@ -112,7 +124,9 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while sending request
      * @throws BlobException If the value of LargeObjectReference.getProvider() cannot be used for the download request
      */
-    FutureResponse<Reader> openReader(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException;
+    default FutureResponse<Reader> openReader(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException {
+        throw new UnsupportedOperationException("openReader is not implemented");
+    }
 
     /**
      * Returns the LargeObjectCache for the Large Object.
@@ -123,7 +137,9 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while sending request
      * @throws BlobException If the value of LargeObjectReference.getProvider() cannot be used for the download request
      */
-    FutureResponse<LargeObjectCache> getLargeObjectCache(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException;
+    default FutureResponse<LargeObjectCache> getLargeObjectCache(ContextId contextId, LargeObjectReference ref) throws IOException, BlobException {
+        throw new UnsupportedOperationException("getLargeObjectCache is not implemented");
+    }
 
     /**
      * Copy the large object to the file indicated by the given path.
@@ -139,5 +155,7 @@ public interface LargeObjectClient {
      * @throws IOException if I/O error occurs while sending request
      * @throws BlobException If the value of LargeObjectReference.getProvider() cannot be used for the download request
      */
-    FutureResponse<Void> copyTo(ContextId contextId, LargeObjectReference ref, Path destination) throws IOException, BlobException;
+    default FutureResponse<Void> copyTo(ContextId contextId, LargeObjectReference ref, Path destination) throws IOException, BlobException {
+        throw new UnsupportedOperationException("copyTo is not implemented");
+    }
 }

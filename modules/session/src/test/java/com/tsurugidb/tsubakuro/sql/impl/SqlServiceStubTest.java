@@ -44,6 +44,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.sql.proto.SqlError;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -1005,8 +1006,9 @@ class SqlServiceStubTest {
             assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
 
             var lob = wire.blobs().get(0);
+            assertEquals(lob.getBlobInfoKind(), ServerBlobInfo.BlobInfoKind.SERVER_PATH);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath(), Optional.of("/somewhere/blobChannel.data"));
+            assertEquals(lob.getPath(), "/somewhere/blobChannel.data");
         }
         assertFalse(wire.hasRemaining());
     }
@@ -1144,8 +1146,9 @@ class SqlServiceStubTest {
             assertFalse(rs.nextRow());
 
             var lob = wire.blobs().get(0);
+            assertEquals(lob.getBlobInfoKind(), ServerBlobInfo.BlobInfoKind.SERVER_PATH);
             assertEquals(lob.getChannelName(), "blobChannel");
-            assertEquals(lob.getPath(), Optional.of("/somewhere/blobChannel.data"));
+            assertEquals(lob.getPath(), "/somewhere/blobChannel.data");
         }
         assertFalse(wire.hasRemaining());
     }

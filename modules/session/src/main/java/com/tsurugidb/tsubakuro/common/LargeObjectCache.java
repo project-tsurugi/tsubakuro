@@ -32,5 +32,7 @@ public interface LargeObjectCache extends ServerResource {
      * The returned Path is available until close() of this object is invoked.
      * @return the path of the file, or empty if it does not exist
      */
-    Optional<Path> find();
+    default Optional<Path> find() {
+        throw new UnsupportedOperationException("find is not implemented");
+    }
 }

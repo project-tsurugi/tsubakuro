@@ -208,8 +208,18 @@ public class WireImpl implements Wire {
                     throw new IllegalArgumentException("duplicate channel name: " + e.getChannelName());
                 }
                 var blobInfo = FrameworkCommon.BlobInfo.newBuilder().setChannelName(e.getChannelName());
-                if (e.getPath().isPresent()) {
-                    blobInfo.setPath(e.getPath().get().toString());
+                switch (e.getBlobInfoKind()) {
+                    case SERVER_PATH:
+                        blobInfo.setPath(e.getPath());
+                        break;
+                    case BLOB_RELAY_REFERENCE:
+                        var blobRelayReference = FrameworkCommon.BlobRelayReference.newBuilder()
+                            .setStorageId(e.getBlobRelayReference().getStorageId())
+                            .setObjectId(e.getBlobRelayReference().getObjectId())
+                            .setTag(e.getBlobRelayReference().getReferenceTag())
+                            .build();
+                        blobInfo.setBlob(blobRelayReference);
+                        break;
                 }
                 repeatedBlobInfo.addBlobs(blobInfo.build());
             }

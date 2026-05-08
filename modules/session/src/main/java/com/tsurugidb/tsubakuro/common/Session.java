@@ -263,7 +263,7 @@ public interface Session extends ServerResource {
      *
      * @since 1.11.0
      */
-    default BlobTransferMedium blobTransferMedium() {
+    default BlobTransferMedium getBlobTransferMedium() {
         throw new UnsupportedOperationException();
     }
 

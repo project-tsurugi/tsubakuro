@@ -23,5 +23,7 @@ public interface BlobTransferMedium {
      * Gets the BlobTransferType Blob transfer type used in the session.
      * @return the BlobTransferType other than BlobTransferType.DEFAULT
      */
-    BlobTransferType getBlobTransferType();
+    default BlobTransferType getBlobTransferType() {
+        throw new UnsupportedOperationException("getBlobTransferType is not implemented");
+    }
 }
