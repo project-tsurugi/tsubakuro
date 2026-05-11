@@ -33,6 +33,7 @@ import org.opentest4j.AssertionFailedError;
 
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.channel.stream.ServerMock;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
@@ -58,7 +59,7 @@ class StreamConnectorImplTest {
                                         .setSessionId(123))
                         .build());
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
@@ -87,7 +88,7 @@ class StreamConnectorImplTest {
                                         .setSessionId(123))
                         .build());
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 1);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
@@ -108,7 +109,7 @@ class StreamConnectorImplTest {
     void timeout_encryptionKey() throws Exception {
         var server = new ServerMock(PORT + 2);
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 2);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
@@ -127,7 +128,7 @@ class StreamConnectorImplTest {
                                         .setEncryptionKey(encryptionKey()))
                         .build());
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 3);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
@@ -142,7 +143,7 @@ class StreamConnectorImplTest {
     void noTimeout_encryptionKey() throws Exception {
         var server = new ServerMock(PORT + 4);
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 4);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);
@@ -165,7 +166,7 @@ class StreamConnectorImplTest {
                                         .setEncryptionKey(encryptionKey()))
                         .build());
 
-        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation("label", "app", new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var streamConnectorImpl = new StreamConnectorImpl(HOST, PORT + 5);
         var futureResponse = streamConnectorImpl.connect(clientInformation);
         assertNotNull(futureResponse);

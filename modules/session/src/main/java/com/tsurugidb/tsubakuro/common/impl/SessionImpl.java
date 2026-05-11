@@ -51,6 +51,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.ResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
@@ -542,6 +543,11 @@ public class SessionImpl implements Session {
             return shutdownCleanUp;
         }
         return FutureResponse.returns(null);
+    }
+
+    @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return wire.getBlobTransferMedium();
     }
 
     @Override

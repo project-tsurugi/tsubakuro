@@ -26,7 +26,7 @@ import javax.annotation.concurrent.ThreadSafe;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
-// import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
 import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -160,6 +160,16 @@ public interface Wire extends ServerResource {
      */
     default boolean isAlive() {
         return false;
+    }
+
+    /**
+     * Returns the BlobTransferMedium that the LargeObjectClient uses.
+     * @return the BlobTransferMedium
+     *
+     * @since 1.11.0
+     */
+    default BlobTransferMedium getBlobTransferMedium() {
+        throw new UnsupportedOperationException();
     }
 
     /**

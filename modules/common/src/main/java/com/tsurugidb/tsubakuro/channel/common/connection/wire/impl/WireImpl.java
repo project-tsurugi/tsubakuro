@@ -52,6 +52,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.client.ServiceClient;
 import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
@@ -97,12 +99,12 @@ public class WireImpl implements Wire {
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    static final int SERVICE_MESSAGE_VERSION_MAJOR = 3;
+    static final int SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
+    static final int SERVICE_MESSAGE_VERSION_MINOR = 3;
 
     /**
      * The symbolic ID for endpoint broker service.
@@ -152,6 +154,7 @@ public class WireImpl implements Wire {
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
     private String encryptionKey = null;
+    private BlobTransferMediumImpl blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.DOES_NOT_USE);
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -287,6 +290,11 @@ public class WireImpl implements Wire {
     }
 
     @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return blobTransferMedium;
+    }
+
+    @Override
     public void setCloseTimeout(Timeout timeout) {
         link.setCloseTimeout(timeout);
     }
@@ -329,10 +337,37 @@ public class WireImpl implements Wire {
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
-                if (message.getSuccess().getUserNameOptCase() == EndpointResponse.Handshake.Success.UserNameOptCase.USER_NAME) {
-                    userNameOptional = Optional.of(message.getSuccess().getUserName());
+                var successMessage = message.getSuccess();
+                if (successMessage.getUserNameOptCase() == EndpointResponse.Handshake.Success.UserNameOptCase.USER_NAME) {
+                    userNameOptional = Optional.of(successMessage.getUserName());
                 }
-                return message.getSuccess().getSessionId();
+
+                // care blob transfer medium
+                switch (successMessage.getBlobTransferCase()) {
+                    case PRIVILEGED_MODE:
+                        blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.PRIVILEGED);
+                        break;
+                    case BLOB_RELAY_SERVICE_INFO:
+                        blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.RELAY);
+                        // care parameters for blob relay
+                        var blobRelayInfo = successMessage.getBlobRelayServiceInfo();
+                        blobTransferMedium.putParameter("endpoint", blobRelayInfo.getEndpoint());
+                        if (blobRelayInfo.getSecure()) {
+                            blobTransferMedium.putParameter("secure", "true");
+                        }
+                        blobTransferMedium.putParameter("medium", blobRelayInfo.getMedium());
+                        var parameetersMap = blobRelayInfo.getParametersMap();
+                        for (var e: parameetersMap.entrySet()) {
+                            blobTransferMedium.putParameter(e.getKey(), e.getValue());
+                        }
+                        break;
+                    case BLOBTRANSFER_NOT_SET:
+                        break;
+                    default:
+                        throw new AssertionError("unsupported blob transfer medium: " + successMessage.getBlobTransferCase());
+                }
+
+                return successMessage.getSessionId();
 
             case ERROR:
                 var errMessage = message.getError();
@@ -417,6 +452,9 @@ public class WireImpl implements Wire {
         if (wireInformation != null) {
             handshakeMessageBuilder.setWireInformation(wireInformation);
         }
+
+        // handle blob transfer media in clientInformation
+        handshakeMessageBuilder.addAllBlobTransferMedia(clientInformation.getBlobTransferMedia());
 
         FutureResponse<? extends Response> future = send(
             SERVICE_ID_ENDPOINT_BROKER,

@@ -15,6 +15,8 @@
  */
 package com.tsurugidb.tsubakuro.common;
 
+import java.util.Map;
+
 /**
  * Blob transfer medium used by the LargeObjectClient.
  */
@@ -25,5 +27,13 @@ public interface BlobTransferMedium {
      */
     default BlobTransferType getBlobTransferType() {
         throw new UnsupportedOperationException("getBlobTransferType is not implemented");
+    }
+
+    /**
+     * Gets the parameters for the Blob transfer medium.
+     * @return the parameters for the Blob transfer medium
+     */
+    default Map<String, String> parameters() {
+        throw new UnsupportedOperationException("parameters is not implemented");
     }
 }
