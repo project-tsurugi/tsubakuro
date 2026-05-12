@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +84,6 @@ public class SessionImpl implements Session {
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
     private final Disposer disposer = new Disposer();
-    private final LargeObjectClient largeObjectClient;
 
     private static final class AtomicCompleted extends ReentrantLock {
         private final AtomicBoolean flag = new AtomicBoolean(false);
@@ -113,6 +113,7 @@ public class SessionImpl implements Session {
     private final AtomicCompleted completed = new AtomicCompleted();
 
     private Wire wire;
+    private LargeObjectClient largeObjectClient;
     private Timeout closeTimeout;
 
     /**
@@ -166,11 +167,11 @@ public class SessionImpl implements Session {
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
      */
-    public SessionImpl(boolean doKeepAlive, BlobPathMapping blobPathMapping) {
+    public SessionImpl(boolean doKeepAlive, @Nullable BlobPathMapping blobPathMapping) {
         this.wire = null;
         this.doKeepAlive = doKeepAlive;
         this.blobPathMapping = blobPathMapping;
-        this.largeObjectClient = new LargeObjectClientPrivileged(blobPathMapping);
+        this.largeObjectClient = null;  // wire is not connected yet, so largeObjectClient is not initialized yet
         checkBlogPathMapping();
     }
 
@@ -194,10 +195,10 @@ public class SessionImpl implements Session {
      * Creates a new instance with doKeepAlive is false and blobPathMapping is null, exist for tests.
      */
     public SessionImpl() {
+        this(false, null);
         this.wire = null;
-        this.doKeepAlive = false;
-        this.blobPathMapping = null;
-        this.largeObjectClient = new LargeObjectClientPrivileged(null);
+        this.largeObjectClient = null;  // wire is not connected yet, so largeObjectClient is not initialized yet
+
     }
 
     /**
@@ -211,7 +212,7 @@ public class SessionImpl implements Session {
         this.wire = wire;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
-        this.largeObjectClient = new LargeObjectClientPrivileged(null);
+        this.largeObjectClient = getLargeObjectClient(wire.getBlobTransferMedium());
     }
 
     /**
@@ -225,8 +226,27 @@ public class SessionImpl implements Session {
     @Override
     public void connect(@Nonnull Wire sessionWire) {
         wire = sessionWire;
+        largeObjectClient = getLargeObjectClient(wire.getBlobTransferMedium());
         if (doKeepAlive) {
             keepAliveTimer.scheduleAtFixedRate(new KeepAliveTask(keepAliveTimer), KEEP_ALIVE_INTERVAL, KEEP_ALIVE_INTERVAL);
+        }
+    }
+
+    private LargeObjectClient getLargeObjectClient(BlobTransferMedium blobTransferMedium) {
+        if (blobTransferMedium == null) {
+            return null;
+        }
+        switch (blobTransferMedium.getBlobTransferType()) {
+        case DOES_NOT_USE:
+            return null;
+        case RELAY:
+            return null; // FIXME implement LargeObjectClientRelay and use it here
+//            return new LargeObjectClientRelay(wire, blobTransferMedium.parameters());
+        case PRIVILEGED:
+            return new LargeObjectClientPrivileged(wire, blobPathMapping);
+        case DEFAULT:
+        default:
+            throw new IllegalArgumentException("Unsupported BlobTransferType: " + blobTransferMedium.getBlobTransferType());
         }
     }
 
@@ -267,7 +287,6 @@ public class SessionImpl implements Session {
 
     private List<ServerBlobInfo> handleBlobs(@Nonnull List<? extends BlobInfo> blobs) throws IOException {
         var list = new ArrayList<ServerBlobInfo>();
-
         for (var blob : blobs) {
             if (blob.getPath().isPresent()) {
                 // apply blob path mapping if the blob has a file path

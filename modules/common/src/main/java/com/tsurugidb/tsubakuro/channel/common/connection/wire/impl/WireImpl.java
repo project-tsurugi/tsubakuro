@@ -154,7 +154,9 @@ public class WireImpl implements Wire {
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
     private String encryptionKey = null;
-    private BlobTransferMediumImpl blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.DOES_NOT_USE);
+
+    // for testing compatibility
+    private BlobTransferMediumImpl blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.PRIVILEGED);
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.

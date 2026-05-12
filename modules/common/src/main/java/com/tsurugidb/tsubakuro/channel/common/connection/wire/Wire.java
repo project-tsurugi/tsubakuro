@@ -169,7 +169,7 @@ public interface Wire extends ServerResource {
      * @since 1.11.0
      */
     default BlobTransferMedium getBlobTransferMedium() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     /**

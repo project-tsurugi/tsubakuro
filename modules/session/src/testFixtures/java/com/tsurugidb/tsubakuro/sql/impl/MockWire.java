@@ -22,11 +22,14 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
 
 import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.ResultSetWireMock;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
@@ -80,6 +83,20 @@ public class MockWire implements Wire {
     public FutureResponse<? extends Response> send(int serviceId, byte[] payload, List<? extends ServerBlobInfo> blobs) throws IOException {
         blobList = blobs;
         return send(serviceId, ByteBuffer.wrap(payload), blobs);
+    }
+
+    @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return new BlobTransferMedium() {
+            @Override
+            public BlobTransferType getBlobTransferType() {
+                return BlobTransferType.PRIVILEGED;
+            }
+            @Override
+            public Map<String, String> parameters() {
+                return Map.of();
+            }
+        };
     }
 
     /**
