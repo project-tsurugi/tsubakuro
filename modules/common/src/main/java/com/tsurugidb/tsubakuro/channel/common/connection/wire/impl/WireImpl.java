@@ -353,6 +353,7 @@ public class WireImpl implements Wire {
                         blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.RELAY);
                         // care parameters for blob relay
                         var blobRelayInfo = successMessage.getBlobRelayServiceInfo();
+                        blobTransferMedium.putParameter("sessionId", String.valueOf(blobRelayInfo.getBlobSessionId()));
                         blobTransferMedium.putParameter("endpoint", blobRelayInfo.getEndpoint());
                         if (blobRelayInfo.getSecure()) {
                             blobTransferMedium.putParameter("secure", "true");

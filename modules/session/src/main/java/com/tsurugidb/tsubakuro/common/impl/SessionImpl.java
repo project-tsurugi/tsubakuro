@@ -240,8 +240,26 @@ public class SessionImpl implements Session {
         case DOES_NOT_USE:
             return null;
         case RELAY:
-            return null; // FIXME implement LargeObjectClientRelay and use it here
-//            return new LargeObjectClientRelay(wire, blobTransferMedium.parameters());
+            var parameters = blobTransferMedium.parameters();
+            String sessionId = parameters.get("sessionId");
+            String endpoint = parameters.get("endpoint");
+            if (sessionId == null || endpoint == null) {
+                throw new IllegalArgumentException("sessionId and endpoint parameters are required for RELAY BlobTransferType");
+            }
+            boolean secure = parameters.get("secure") != null;
+            String chunkSize = parameters.get("stream_chunk_size");
+            if (chunkSize != null) {
+                try {
+                    long chunkSizeLong = Long.parseLong(chunkSize);
+                    if (chunkSizeLong <= 0) {
+                        throw new IllegalArgumentException("stream_chunk_size must be a positive integer");
+                    }
+                    return new LargeObjectClientRelay(sessionId, endpoint, secure, chunkSizeLong);
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("stream_chunk_size must be a valid long integer", e);
+                }
+            }
+            return new LargeObjectClientRelay(sessionId, endpoint, secure, 1024 * 1024);
         case PRIVILEGED:
             return new LargeObjectClientPrivileged(wire, blobPathMapping);
         case DEFAULT:
@@ -292,9 +310,18 @@ public class SessionImpl implements Session {
                 // apply blob path mapping if the blob has a file path
                 try {
                     var largeObjectInfo = largeObjectClient.upload(blob.getPath().get()).get();
-                    list.add(new ServerBlobInfo(blob.getChannelName(), largeObjectInfo.getServerPath()));
+                    switch (largeObjectInfo.getInfoType()) {
+                        case SERVER_PATH:
+                            list.add(new ServerBlobInfo(blob.getChannelName(), largeObjectInfo.getServerPath()));
+                            break;
+                        case BLOB_RELAY_REFERENCE:
+                            list.add(new ServerBlobInfo(blob.getChannelName(), largeObjectInfo.getBlobRelayReference()));
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown LargeObjectInfo type: " + largeObjectInfo.getInfoType());
+                    }
                 } catch (ServerException | InterruptedException e) {
-                    throw new AssertionError("Never occur: LargeObjectClient.upload(Path) for PREVIREDGE MODE", e);
+                    throw new AssertionError("Never occur: LargeObjectClient.upload(Path) for PRIVILEGED MODE", e);
                 }
             } else if (blob.getServerPath().isPresent()) {
                 // if the blob does not have a file path but has a server path, use it directly

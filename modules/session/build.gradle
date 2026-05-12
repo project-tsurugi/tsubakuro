@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api project(':tsubakuro-common')
+    api project(':tsubakuro-grpc')
 
     testImplementation(testFixtures(project(':tsubakuro-common')))
     api 'com.auth0:java-jwt:3.19.2'
