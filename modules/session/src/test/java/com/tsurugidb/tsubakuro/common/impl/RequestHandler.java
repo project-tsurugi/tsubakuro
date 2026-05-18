@@ -20,11 +20,13 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
+import com.google.protobuf.Message;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.sql.impl.SimpleResponse;
 import com.tsurugidb.core.proto.CoreResponse;
+import com.tsurugidb.endpoint.proto.EndpointResponse;
 
 /**
  * Handles request for wires and returns its response.
@@ -67,6 +69,16 @@ public interface RequestHandler {
      * @param response the response payload
      * @return the request handler
      */
+    static RequestHandler returns(EndpointResponse.Handshake response) {
+        Objects.requireNonNull(response);
+        return returns(toDelimitedByteArray(response));
+    }
+
+    /**
+     * Creates a new request handler which returns the given response payload.
+     * @param response the response payload
+     * @return the request handler
+     */
     static RequestHandler returns(CoreResponse.UpdateExpirationTime response) {
         Objects.requireNonNull(response);
         return returns(toDelimitedByteArray(response));
@@ -84,14 +96,12 @@ public interface RequestHandler {
         };
     }
 
-    private static byte[] toDelimitedByteArray(CoreResponse.UpdateExpirationTime response) {
+    private static byte[] toDelimitedByteArray(Message response) {
         try (var buffer = new ByteArrayOutputStream()) {
             response.writeDelimitedTo(buffer);
             return buffer.toByteArray();
         } catch (IOException e) {
-            System.err.println(e);
-            e.printStackTrace();
+            throw new AssertionError(e.getMessage());
         }
-        return null;
     }
 }

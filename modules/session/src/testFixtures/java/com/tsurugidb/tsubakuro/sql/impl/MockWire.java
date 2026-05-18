@@ -93,7 +93,7 @@ public class MockWire implements Wire {
                 return BlobTransferType.PRIVILEGED;
             }
             @Override
-            public Map<String, String> parameters() {
+            public Map<String, String> getParameters() {
                 return Map.of();
             }
         };

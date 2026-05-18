@@ -49,6 +49,8 @@ public class MockWire implements Wire {
         }
     });
 
+    private BlobTransferType blobTransferType = BlobTransferType.PRIVILEGED;
+
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
         var next = handlers.poll();
@@ -73,10 +75,10 @@ public class MockWire implements Wire {
         return new BlobTransferMedium() {
             @Override
             public BlobTransferType getBlobTransferType() {
-                return BlobTransferType.PRIVILEGED;
+                return blobTransferType;
             }
             @Override
-            public Map<String, String> parameters() {
+            public Map<String, String> getParameters() {
                 return Map.of();
             }
         };
@@ -90,6 +92,17 @@ public class MockWire implements Wire {
     public MockWire next(RequestHandler handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
+        return this;
+    }
+
+    /**
+     * Set the blob transfer type for this mock wire.
+     * @param type the blob transfer type
+     * @return this
+     */
+    public MockWire blobTransfer(BlobTransferType type) {
+        Objects.requireNonNull(type);
+        blobTransferType = type;
         return this;
     }
 

@@ -240,7 +240,7 @@ public class SessionImpl implements Session {
         case DOES_NOT_USE:
             return null;
         case RELAY:
-            var parameters = blobTransferMedium.parameters();
+            var parameters = blobTransferMedium.getParameters();
             String sessionId = parameters.get("sessionId");
             String endpoint = parameters.get("endpoint");
             if (sessionId == null || endpoint == null) {

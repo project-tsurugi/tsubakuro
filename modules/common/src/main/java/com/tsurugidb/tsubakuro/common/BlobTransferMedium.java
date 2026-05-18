@@ -33,7 +33,7 @@ public interface BlobTransferMedium {
      * Gets the parameters for the Blob transfer medium.
      * @return the parameters for the Blob transfer medium
      */
-    default Map<String, String> parameters() {
-        throw new UnsupportedOperationException("parameters is not implemented");
+    default Map<String, String> getParameters() {
+        throw new UnsupportedOperationException("getParameters is not implemented");
     }
 }

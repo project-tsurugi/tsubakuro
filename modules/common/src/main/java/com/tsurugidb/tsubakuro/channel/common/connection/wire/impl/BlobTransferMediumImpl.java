@@ -50,7 +50,7 @@ public class BlobTransferMediumImpl implements BlobTransferMedium {
     }
 
     @Override
-    public Map<String, String> parameters() {
+    public Map<String, String> getParameters() {
         return parameters;
     }
 }
