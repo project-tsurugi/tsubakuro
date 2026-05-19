@@ -325,6 +325,100 @@ class SqlServiceStubWithLobClientTest {
     }
 
     @Test
+    void openInputStream(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+        long referenceTag = 678;
+
+        Path file = tempDir.resolve("lob.data");
+        Files.write(file, data);
+
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              disposer,
+                                              session.getLargeObjectClient());
+        ) {
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                        .setChunk(com.google.protobuf.ByteString.copyFrom(data))
+                                                    .build());
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                                    .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
+                                                                        .setBlobSize(data.length))
+                                                                    .build());
+
+            var inputStream = transaction.openInputStream(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
+            var obtainedData = inputStream.readAllBytes();
+            assertArrayEquals(data, obtainedData);
+        }
+        var lobReference = server.getBlobReference();
+        assertEquals(1, lobReference.getStorageId());
+        assertEquals(12345, lobReference.getObjectId());
+        assertEquals(678, lobReference.getTag());
+        disposer.waitForEmpty();
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
+    void openReader(@TempDir Path tempDir) throws Exception {
+        String fileName = "lob.data";
+        String channelName = "lobChannel";
+        long objectId = 12345;
+        long referenceTag = 678;
+
+        Path file = tempDir.resolve("lob.data");
+        Files.write(file, data);
+
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              disposer,
+                                              session.getLargeObjectClient());
+        ) {
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                        .setChunk(com.google.protobuf.ByteString.copyFrom(data))
+                                                    .build());
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                                    .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
+                                                                        .setBlobSize(data.length))
+                                                                    .build());
+
+            var reader = transaction.openReader(new ClobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
+            char[] obtainedData = new char[data.length];
+            reader.read(obtainedData);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
+            assertEquals(-1, reader.read());
+        }
+        var lobReference = server.getBlobReference();
+        assertEquals(1, lobReference.getStorageId());
+        assertEquals(12345, lobReference.getObjectId());
+        assertEquals(678, lobReference.getTag());
+        disposer.waitForEmpty();
+        assertFalse(link.hasRemaining());
+    }
+
+    @Test
     void getLargeObjectCache(@TempDir Path tempDir) throws Exception {
         String fileName = "lob.data";
         String channelName = "lobChannel";
@@ -397,6 +491,10 @@ class SqlServiceStubWithLobClientTest {
             assertEquals(data.length, obtainedData.length);
             assertArrayEquals(data, obtainedData);
         }
+        var lobReference = server.getBlobReference();
+        assertEquals(1, lobReference.getStorageId());
+        assertEquals(12345, lobReference.getObjectId());
+        assertEquals(678, lobReference.getTag());
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
     }

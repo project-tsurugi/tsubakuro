@@ -102,6 +102,7 @@ public class BlobRelayStreamingServer {
         private final AtomicReference<byte[]> receivedData = new AtomicReference<>();
         private final ArrayList<byte[]> receivedDataList = new ArrayList<>();
         private final AtomicInteger receivedDataCount = new AtomicInteger(0);
+        private BlobRelayCommon.BlobReference blobReference;
 
         @Override
         public StreamObserver<Streaming.PutStreamingRequest> put(StreamObserver<Streaming.PutStreamingResponse> responseObserver) {
@@ -167,6 +168,7 @@ public class BlobRelayStreamingServer {
 
         @Override
         public void get(Streaming.GetStreamingRequest request, StreamObserver<Streaming.GetStreamingResponse> responseObserver) {
+            blobReference = request.getBlob();
             while (!getResponses.isEmpty()) {
                 var response = getResponses.poll();
                 responseObserver.onNext(response);
@@ -180,6 +182,9 @@ public class BlobRelayStreamingServer {
         }
         void addGetResponse(Streaming.GetStreamingResponse response) {
             getResponses.offer(response);
+        }
+        BlobRelayCommon.BlobReference getBlobReference() {
+            return blobReference;
         }
         boolean hasRemaining() {
             return !(putResponses.isEmpty() && getResponses.isEmpty());
@@ -200,6 +205,9 @@ public class BlobRelayStreamingServer {
     }
     public byte[] receivedData(int offset) {
         return blobRelayImpl.receivedData(offset);
+    }
+    public BlobRelayCommon.BlobReference getBlobReference() {
+        return blobRelayImpl.getBlobReference();
     }
     public boolean hasRemaining() {
         return blobRelayImpl.hasRemaining();
