@@ -19,7 +19,9 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
@@ -27,7 +29,7 @@ import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 /**
  * An implementation of {@link LargeObjectCache}.
  */
-public class LargeObjectCacheImpl implements LargeObjectCache {
+public class LargeObjectCacheImpl implements com.tsurugidb.tsubakuro.sql.LargeObjectCache {
 
     private final Path path;
     private final boolean exists;
@@ -44,6 +46,16 @@ public class LargeObjectCacheImpl implements LargeObjectCache {
             return;
         }
         exists = false;
+    }
+
+    /**
+     * Constructor with com.tsurugidb.tsubakuro.common.LargeObjectCache
+     * @param largeObjectCache the com.tsurugidb.tsubakuro.common.LargeObjectCache used in Session layer
+     */
+    public LargeObjectCacheImpl(@Nonnull com.tsurugidb.tsubakuro.common.LargeObjectCache largeObjectCache) {
+        Objects.requireNonNull(largeObjectCache);
+        this.path = largeObjectCache.find().orElse(null);
+        exists = path != null && new File(path.toString()).exists();
     }
 
     /**

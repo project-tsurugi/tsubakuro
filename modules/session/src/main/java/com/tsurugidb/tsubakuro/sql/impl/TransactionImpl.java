@@ -43,12 +43,12 @@ import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.LargeObjectClient;
-import com.tsurugidb.tsubakuro.common.LargeObjectCache;
 import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.LargeObjectInfoImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -495,15 +495,44 @@ public class TransactionImpl implements Transaction {
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
 
+    private abstract class FutureResponseImpl<T> implements FutureResponse<T> {
+        protected volatile boolean done = false;
+
+        @Override
+        public T get() throws IOException, InterruptedException, ServerException {
+            try {
+                return get(0, null);
+            } catch (TimeoutException e) {
+                throw new AssertionError("Unexpected TimeoutException", e);
+            }
+        }
+        @Override
+        public boolean isDone() {
+            return done;
+        }
+        @Override
+        public void close() {
+        }
+    }
+
     @Override
     public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
         Objects.requireNonNull(ref);
-        if (ref instanceof BlobReferenceForSql) {
-            return largeObjectClient.getLargeObjectCache(contextId, ref);
-        } else if (ref instanceof ClobReferenceForSql) {
-            return largeObjectClient.getLargeObjectCache(contextId, ref);
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+        return new FutureResponseImpl<LargeObjectCache>() {
+            @Override
+            public LargeObjectCache get(long tmout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
+                try {
+                    if (ref instanceof BlobReferenceForSql) {
+                        return new LargeObjectCacheImpl(largeObjectClient.getLargeObjectCache(contextId, ref).get(tmout, unit));
+                    } else if (ref instanceof ClobReferenceForSql) {
+                        return new LargeObjectCacheImpl(largeObjectClient.getLargeObjectCache(contextId, ref).get(tmout, unit));
+                    }
+                    throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+                } finally {
+                    done = true;
+                }
+            }
+        };
     }
 
     @Override
