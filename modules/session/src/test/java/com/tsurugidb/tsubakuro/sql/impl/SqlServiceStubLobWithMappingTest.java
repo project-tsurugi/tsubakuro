@@ -51,7 +51,7 @@ import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;
-import com.tsurugidb.tsubakuro.sql.io.BlobException;
+import com.tsurugidb.tsubakuro.common.exception.BlobException;
 
 class SqlServiceStubLobWithMappingTest {
 

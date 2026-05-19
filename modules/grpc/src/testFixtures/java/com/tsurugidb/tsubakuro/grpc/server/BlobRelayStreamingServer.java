@@ -128,7 +128,7 @@ public class BlobRelayStreamingServer {
                             }
                             break;
                         default:
-                             throw new RuntimeException("Invalid request type");
+                             throw new RuntimeException("Invalid request type: " + request.getPayloadCase());
                     }
                 }
 
@@ -141,13 +141,12 @@ public class BlobRelayStreamingServer {
                 public void onCompleted() {
                     if (receivedSizeValid.get()) {
                         if (receivedData.get().length != receivedSize.get()) {
-                            throw new RuntimeException("Received data size does not match the expected size");
+                            throw new RuntimeException("Received data size does not match the expected size: " + receivedSize.get() + " != " + receivedData.get().length);
                         }
                     }
-                    while (!putResponses.isEmpty()) {
-                        var response = putResponses.poll();
-                        responseObserver.onNext(response);
-                    }
+                    var response = putResponses.poll();
+                    responseObserver.onNext(response);
+                    receivedData.set(null);
                     responseObserver.onCompleted();
                 }
             };
