@@ -15,16 +15,16 @@
  */
 package com.tsurugidb.tsubakuro.common.impl;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.ByteBuffer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.File;
 import java.io.Reader;
 import java.io.FileInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Optional;
 import java.util.Objects;
@@ -67,9 +67,9 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
      * A dummy ServiceClient for exposing service message version of current common blob_relay_privilege implementations.
      */
     @ServiceMessageVersion(
-            service = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_SYMBOLIC_ID,
-            major = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR,
-            minor = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
+            service = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_SYMBOLIC_ID,
+            major = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR,
+            minor = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
     public static class BlobRelayPrivilegeClient implements ServiceClient {
         // no special members
     }
@@ -77,17 +77,17 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
     /**
      * The symbolic ID of this implementation.
      */
-    static final String BLOB_RELAY_PRIVILEGE_SERVICE_SYMBOLIC_ID = "blob_relay_privilege"; //$NON-NLS-1$
+    static final String BLOB_PRIVILEGE_SERVICE_SYMBOLIC_ID = "blob_relay_privilege"; //$NON-NLS-1$
 
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    static final int BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    static final int BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    static final int BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR = 0;
+    static final int BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * The service id for endpoint broker.
@@ -159,8 +159,7 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
             case SUCCESS:
                 var serverPath = message.getSuccess().getServerFilePath();
                 final Path clientPath = applyBlobPathMapping(serverPath, blobPathMapping);
-                boolean fileExists = new File(clientPath.toString()).exists();
-                if (!fileExists) {
+                if (!Files.exists(clientPath)) {
                     throw new BlobException("BLOB file does not exist.");
                 }
                 return new FileInputStream(clientPath.toFile());
@@ -190,7 +189,7 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
     @Override
     public FutureResponse<Reader> openReader(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
         try {
-            var inputStreamReader = new InputStreamReader(openInputStream(contextId, ref).await(), "UTF-8");
+            var inputStreamReader = new InputStreamReader(openInputStream(contextId, ref).await(), StandardCharsets.UTF_8);
             return FutureResponse.returns(inputStreamReader);
         } catch (IOException | InterruptedException | ServerException e) {
             throw new BlobException(e);
@@ -217,14 +216,12 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
             if (optionalPath.isEmpty()) {
                 throw new BlobException("Server file path is empty.");
             }
-            var inputStream = new FileInputStream(optionalPath.get().toFile());
-            Files.copy(inputStream, destination);
+            Files.copy(optionalPath.get(), destination);
             return null;
         } catch (IOException | InterruptedException | ServerException e) {
             throw new BlobException(e);
         }
     }
-
 
     private class BlobRelayPrivilegeProcessor implements MainResponseProcessor<LargeObjectCache> {
         @Override
@@ -235,10 +232,9 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
             case SUCCESS:
                 var serverPath = message.getSuccess().getServerFilePath();
                 final Path clientPath = applyBlobPathMapping(serverPath, blobPathMapping);
-                boolean fileExists = new File(clientPath.toString()).exists();
                 return new LargeObjectCache() {
                     private final Path path = clientPath;
-                    private final boolean exists = fileExists;
+                    private final boolean exists = Files.exists(clientPath);
                     private final AtomicBoolean closed = new AtomicBoolean();
 
                     @Override
@@ -280,8 +276,8 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
 
     private BlobRelayPrivilegeRequest.Request newRequest(ContextId contextId, LargeObjectReference ref) {
         return BlobRelayPrivilegeRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
+                .setServiceMessageVersionMajor(BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
                 .setGetBlob(BlobRelayPrivilegeRequest.GetBlob.newBuilder()
                     .setTransactionHandle(contextId.getTransactionHandle())
                     .setBlobReference(BlobRelayPrivilegeRequest.BlobReference.newBuilder()

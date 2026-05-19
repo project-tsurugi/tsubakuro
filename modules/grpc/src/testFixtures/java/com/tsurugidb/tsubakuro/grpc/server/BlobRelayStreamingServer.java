@@ -24,7 +24,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ExecutorService;
@@ -98,6 +100,8 @@ public class BlobRelayStreamingServer {
         private final AtomicLong receivedSize = new AtomicLong(0);
         private final AtomicBoolean receivedSizeValid = new AtomicBoolean(false);
         private final AtomicReference<byte[]> receivedData = new AtomicReference<>();
+        private final ArrayList<byte[]> receivedDataList = new ArrayList<>();
+        private final AtomicInteger receivedDataCount = new AtomicInteger(0);
 
         @Override
         public StreamObserver<Streaming.PutStreamingRequest> put(StreamObserver<Streaming.PutStreamingResponse> responseObserver) {
@@ -144,6 +148,8 @@ public class BlobRelayStreamingServer {
                             throw new RuntimeException("Received data size does not match the expected size: " + receivedSize.get() + " != " + receivedData.get().length);
                         }
                     }
+                    receivedDataList.add(receivedData.get());
+                    receivedDataCount.incrementAndGet();
                     var response = putResponses.poll();
                     responseObserver.onNext(response);
                     receivedData.set(null);
@@ -151,12 +157,12 @@ public class BlobRelayStreamingServer {
                 }
             };
         }
-        byte[] receivedData() {
-            var data = receivedData.get();
+        byte[] receivedData(int offset) {
+            var data = receivedDataList.get(receivedDataCount.get() - 1 + offset);
             if (data == null) {
                 return new byte[0];
             }
-            return receivedData.get();
+            return data;
         }
 
         @Override
@@ -178,7 +184,7 @@ public class BlobRelayStreamingServer {
     }
 
     public byte[] receivedData() {
-        return blobRelayImpl.receivedData();
+        return blobRelayImpl.receivedData(0);
     }
     // register responses for testing
     public void addPutResponse(Streaming.PutStreamingResponse response) {

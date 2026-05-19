@@ -23,7 +23,7 @@ service message versionを0.1（旧）から0.2（新）に上げる。
   * 既存の `path` フィールドを、`oneof blob_location` の一要素として再構成する
 * BLOB中継サービス向けの `BlobRelayReference` メッセージを`oneof blob_location` の一要素として追加する
 
-service message versionを0.2（旧）から0.3（新）に上げる。
+service message versionを1.0（旧）から1.1（新）に上げる。
 旧`tsubakuro`と新`tateyama::endpoint`の組み合わせは、正常に動作する（旧`tsubakuro`は特権モードによるBLOB転送のみ）。
 新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、`INVALID_REQUEST`エラーとなる。
 

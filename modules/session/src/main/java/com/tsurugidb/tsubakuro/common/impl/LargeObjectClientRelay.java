@@ -15,8 +15,6 @@
  */
 package com.tsurugidb.tsubakuro.common.impl;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,6 +24,10 @@ import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Optional;
@@ -137,17 +139,17 @@ public class LargeObjectClientRelay implements LargeObjectClient {
     @Override
     public FutureResponse<LargeObjectInfo> upload(Reader source) throws BlobException {
         try {
-            return upload(convertInputStream(source, "UTF-8"));
+            return upload(convertInputStream(source, StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new BlobException("Failed to read from Reader", e);
         }
     }
-    InputStream convertInputStream(Reader reader, String charsetName) throws IOException {
+    InputStream convertInputStream(Reader reader, Charset charset) throws IOException {
         PipedOutputStream pos = new PipedOutputStream();
         PipedInputStream pis = new PipedInputStream(pos);
 
         new Thread(() -> {
-            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos, charsetName))) {
+            try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos, charset))) {
                 char[] buffer = new char[(int) chunkSize];
                 int len;
                 while ((len = reader.read(buffer)) != -1) {
@@ -211,7 +213,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             public Reader get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 var inputStreamFuture = openInputStream(contextId, ref);
                 try {
-                    return new InputStreamReader(inputStreamFuture.get(timeout, unit), "UTF-8");
+                    return new InputStreamReader(inputStreamFuture.get(timeout, unit), StandardCharsets.UTF_8);
                 } finally {
                     done = true;
                 }

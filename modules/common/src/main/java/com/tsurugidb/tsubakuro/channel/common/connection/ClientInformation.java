@@ -17,7 +17,6 @@ package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.text.MessageFormat;
 import java.util.Objects;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -95,19 +94,19 @@ public final class ClientInformation {
     public List<EndpointRequest.BlobTransferMedium> getBlobTransferMedia() {
         switch (blobTransferType) {
             case DOES_NOT_USE:
-                return new ArrayList<>(Arrays.asList(
+                return new ArrayList<>(List.of(
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.DOES_NOT_USE).build()
                 ));
             case PRIVILEGED:
-                return new ArrayList<>(Arrays.asList(
+                return new ArrayList<>(List.of(
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.PRIVILEGED).build()
                 ));
             case RELAY:
-                return new ArrayList<>(Arrays.asList(
+                return new ArrayList<>(List.of(
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.RELAY).build()
                 ));
             case DEFAULT:
-                return new ArrayList<>(Arrays.asList(
+                return new ArrayList<>(List.of(
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.RELAY).build(),
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.DOES_NOT_USE).build()
                 ));
