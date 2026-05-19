@@ -42,6 +42,8 @@ import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
+import com.tsurugidb.tsubakuro.common.LargeObjectClient;
+import com.tsurugidb.tsubakuro.common.LargeObjectCache;
 import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.LargeObjectInfoImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
@@ -55,7 +57,6 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
-import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
 import com.tsurugidb.tsubakuro.sql.TransactionStatus;
 import com.tsurugidb.tsubakuro.common.exception.BlobException;
@@ -87,6 +88,8 @@ public class TransactionImpl implements Transaction {
     private Instant closeInvokedInstant = null;
     private Disposer disposer = null;
     private boolean autoDispose = false;
+    private final LargeObjectClient largeObjectClient;
+    private final LargeObjectClient.ContextId contextId;
 
     private enum State {
                                     // | commitResult | commit    | rollback  | delayedClose | Transaction        |
@@ -114,20 +117,36 @@ public class TransactionImpl implements Transaction {
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
      * @param disposer the Disposer in charge of its asynchronous close
+     * @param largeObjectClient the LargeObjectClient for handling Large Object upload and download
      */
     public TransactionImpl(
             @Nonnull SqlResponse.Begin.Success transaction,
             @Nonnull SqlService service,
             @Nullable ServerResource.CloseHandler closeHandler,
-            @Nullable Disposer disposer) {
+            @Nullable Disposer disposer,
+            @Nonnull LargeObjectClient largeObjectClient) {
         Objects.requireNonNull(transaction);
         Objects.requireNonNull(service);
+        Objects.requireNonNull(largeObjectClient);
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
         this.disposer = disposer;
+        this.largeObjectClient = largeObjectClient;
         this.timeout = null;
         state.set(State.INITIAL);
+
+        this.contextId = new LargeObjectClient.ContextId() {
+            @Override
+            public ContextIdKind contextIdKind() {
+                return ContextIdKind.TRANSACTION;
+            }
+
+            @Override
+            public long getTransactionHandle() {
+                return transaction.getTransactionHandle().getHandle();
+            }
+        };
     }
 
     @Override
@@ -462,11 +481,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<InputStream> openInputStream(@Nonnull BlobReference ref) throws IOException {
         Objects.requireNonNull(ref);
         if (ref instanceof BlobReferenceForSql) {
-            var blobReferenceForSql = (BlobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build(), ref);
+            return largeObjectClient.openInputStream(contextId, ref);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
@@ -475,11 +490,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<Reader> openReader(@Nonnull ClobReference ref) throws IOException {
         Objects.requireNonNull(ref);
         if (ref instanceof ClobReferenceForSql) {
-            var clobReferenceForSql = (ClobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build(), ref);
+            return largeObjectClient.openReader(contextId, ref);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
@@ -487,14 +498,10 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
         Objects.requireNonNull(ref);
-        var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle());
         if (ref instanceof BlobReferenceForSql) {
-            pb.setReference(((BlobReferenceForSql) ref).blobReference());
-            return service.send(pb.build());
+            return largeObjectClient.getLargeObjectCache(contextId, ref);
         } else if (ref instanceof ClobReferenceForSql) {
-            pb.setReference(((ClobReferenceForSql) ref).clobReference());
-            return service.send(pb.build());
+            return largeObjectClient.getLargeObjectCache(contextId, ref);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
@@ -502,14 +509,10 @@ public class TransactionImpl implements Transaction {
     @Override
     public FutureResponse<Void> copyTo(@Nonnull LargeObjectReference ref, @Nonnull Path destination) throws IOException {
         Objects.requireNonNull(ref);
-        var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle());
         if (ref instanceof BlobReferenceForSql) {
-            pb.setReference(((BlobReferenceForSql) ref).blobReference());
-            return service.send(pb.build(), destination);
+            return largeObjectClient.copyTo(contextId, ref, destination);
         } else if (ref instanceof ClobReferenceForSql) {
-            pb.setReference(((ClobReferenceForSql) ref).clobReference());
-            return service.send(pb.build(), destination);
+            return largeObjectClient.copyTo(contextId, ref, destination);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }

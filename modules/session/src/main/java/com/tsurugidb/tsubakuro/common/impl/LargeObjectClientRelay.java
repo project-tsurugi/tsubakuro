@@ -250,4 +250,9 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             }
         };
     }
+
+    @Override
+    public void close() throws IOException {
+        blobRelayStreaming.close();
+    }
 }

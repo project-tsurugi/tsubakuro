@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.grpc.client;
 
 import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -42,9 +43,10 @@ import com.tsurugidb.blob_relay.proto.Streaming;
 /**
  * BlobRelayStreaming is a class that provides methods for streaming Blob data using gRPC.
  */
-public class BlobRelayStreaming {
+public class BlobRelayStreaming implements Closeable {
     private final BlobRelayStreamingGrpc.BlobRelayStreamingStub stub;
     private final long chunkSize;
+    private final ManagedChannel channel;
 
     /**
      * Creates a new BlobRelayStreaming.
@@ -54,8 +56,13 @@ public class BlobRelayStreaming {
      */
     public BlobRelayStreaming(@Nonnull String endpoint, boolean secure, long chunkSize) {
         this.chunkSize = chunkSize;
-        ManagedChannel channel = Grpc.newChannelBuilder(endpoint, secure ? TlsChannelCredentials.create() : InsecureChannelCredentials.create()).build();
+        this.channel = Grpc.newChannelBuilder(endpoint, secure ? TlsChannelCredentials.create() : InsecureChannelCredentials.create()).build();
         this.stub = BlobRelayStreamingGrpc.newStub(channel);
+    }
+
+    @Override
+    public void close() {
+        channel.shutdown();
     }
 
     /**

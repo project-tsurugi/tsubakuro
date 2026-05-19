@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.sql.impl;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -26,6 +27,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,6 +79,9 @@ class SqlServiceStubWithLobClientTest {
 
     private BlobRelayStreamingServer server = null;
 
+    private byte[] data = new byte[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                                       'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '\n' };
+
     @BeforeEach
     void startup() {
         try {
@@ -89,9 +95,9 @@ class SqlServiceStubWithLobClientTest {
                                                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder()
                                                         .setSessionId(123)
                                                         .setBlobRelayServiceInfo(EndpointResponse.BlobRelayServiceInfo.newBuilder()
-                                                        .setBlobSessionId(246)
-                                                        .setEndpoint("dns:///localhost:" + SERVER_PORT)
-                                                        .setMedium("stream")))
+                                                            .setBlobSessionId(246)
+                                                            .setEndpoint("dns:///localhost:" + SERVER_PORT)
+                                                            .setMedium("stream")))
                                                 .build());
             long sessionId = wire.handshake(new ClientInformation(), null, 0, null).get();
             session.connect(wire);
@@ -107,71 +113,13 @@ class SqlServiceStubWithLobClientTest {
         if (session != null) {
             session.close();
         }
+        if (largeObjectClient != null) {
+            largeObjectClient.close();
+        }
         if (server != null) {
             server.stop();
             server.blockUntilShutdown();
         }
-    }
-
-//    @Test
-    void sendExecutePreparedStatementWithLobSuccess(@TempDir Path tempDir) throws Exception {
-        link.next(SqlResponse.Response.newBuilder()
-                    .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
-                                        .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
-                                                        .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
-                                                        .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
-                                                        .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
-                                                        .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4))
-                                        )
-                    ).build()
-        );
-
-        var message = SqlRequest.ExecutePreparedStatement.newBuilder()
-                .setPreparedStatementHandle(SqlCommon.PreparedStatement.newBuilder().setHandle(12345).build())
-                .build();
-
-        String channelName1 = "blobChannel";
-        String fileName1 = "blob.data";
-        String channelName2 = "clobChannel";
-        String fileName2 = "clob.data";
-
-        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
-        Path file1 = tempDir.resolve(fileName1);
-        Path file2 = tempDir.resolve(fileName2);
-        Files.write(file1, data);
-        Files.write(file2, data);
-
-        var lobs = new ArrayList<BlobInfoImpl>();
-        lobs.add(new BlobInfoImpl(channelName1, file1));
-        lobs.add(new BlobInfoImpl(channelName2, file2));
-        try (
-            var service = new SqlServiceStub(session);
-            var future = service.send(message, lobs);
-        ) {
-            var executeResult = future.get();
-            var counterTypes = executeResult.getCounterTypes();
-            assertTrue(counterTypes.containsAll(List.of(CounterType.INSERTED_ROWS, CounterType.UPDATED_ROWS, CounterType.MERGED_ROWS, CounterType.DELETED_ROWS)));
-            var counters = executeResult.getCounters();
-            assertEquals(counters.get(CounterType.INSERTED_ROWS), 1);
-            assertEquals(counters.get(CounterType.UPDATED_ROWS), 2);
-            assertEquals(counters.get(CounterType.MERGED_ROWS), 3);
-            assertEquals(counters.get(CounterType.DELETED_ROWS), 4);
-
-            var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
-            assertTrue(header.hasBlobs());
-            for (var e: header.getBlobs().getBlobsList()) {
-                String channelName = e.getChannelName();
-                String path = e.getPath();
-                if (channelName.equals(channelName1)) {
-                    assertEquals(e.getPath().toString(), file1.toString());
-                } else if (channelName.equals(channelName2)) {
-                    assertEquals(e.getPath().toString(), file2.toString());
-                } else {
-                    fail("unexpected channel name " + channelName);
-                }
-            }
-        }
-        assertFalse(link.hasRemaining());
     }
 
     @Test
@@ -197,7 +145,6 @@ class SqlServiceStubWithLobClientTest {
         String parameterName2 = "clob";
         String fileName2 = "clob.data";
 
-        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
         Path file1 = tempDir.resolve(fileName1);
         Path file2 = tempDir.resolve(fileName2);
         Files.write(file1, data);
@@ -210,7 +157,8 @@ class SqlServiceStubWithLobClientTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             // for blob relay service
             server.addPutResponse(Streaming.PutStreamingResponse.newBuilder()
@@ -250,9 +198,12 @@ class SqlServiceStubWithLobClientTest {
                     fail("unexpected object id " + e.getBlob().getObjectId());
                 }
             }
+            assertArrayEquals(data, server.receivedData(0));
+            assertArrayEquals(data, server.receivedData(-1));
         }
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
+        assertFalse(server.hasRemaining());
     }
 
     @Test
@@ -267,7 +218,6 @@ class SqlServiceStubWithLobClientTest {
         String parameterName2 = "clob";
         String fileName2 = "clob.data";
 
-        byte[] data = new byte[] { 0x01, 0x02, 0x03, 0x04 };
         Path file1 = tempDir.resolve(fileName1);
         Path file2 = tempDir.resolve(fileName2);
 
@@ -278,7 +228,8 @@ class SqlServiceStubWithLobClientTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             assertThrows(BlobException.class, () ->
                 transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
@@ -289,31 +240,100 @@ class SqlServiceStubWithLobClientTest {
         assertFalse(link.hasRemaining());
     }
 
-//    @Test
+    @Test
+    void executeStatementWithLobStream(@TempDir Path tempDir) throws Exception {
+        // for executeStatement
+        link.next(SqlResponse.Response.newBuilder()
+                    .setExecuteResult(SqlResponse.ExecuteResult.newBuilder()
+                            .setSuccess(SqlResponse.ExecuteResult.Success.newBuilder()
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.INSERTED_ROWS).setValue(1))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.UPDATED_ROWS).setValue(2))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.MERGED_ROWS).setValue(3))
+                                            .addCounters(SqlResponse.ExecuteResult.CounterEntry.newBuilder().setType(SqlResponse.ExecuteResult.CounterType.DELETED_ROWS).setValue(4))
+                            )
+                    ).build()
+        );
+        // for rollback
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+        // for dispose transaction
+        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
+
+        String parameterName1 = "blob";
+        String fileName1 = "blob.data";
+        String parameterName2 = "clob";
+        String fileName2 = "clob.data";
+
+        Path file1 = tempDir.resolve(fileName1);
+        Path file2 = tempDir.resolve(fileName2);
+        Files.write(file1, data);
+        Files.write(file2, data);
+
+        try (
+            var service = new SqlServiceStub(session);
+            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
+                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
+                                              .build(),
+                                              service,
+                                              null,
+                                              disposer,
+                                              session.getLargeObjectClient());
+        ) {
+            // for blob relay service
+            server.addPutResponse(Streaming.PutStreamingResponse.newBuilder()
+                                    .setBlob(BlobRelayCommon.BlobReference.newBuilder()
+                                        .setStorageId(1)
+                                        .setObjectId(23)
+                                        .setTag(45)
+                                        .build())
+                                    .build());
+            server.addPutResponse(Streaming.PutStreamingResponse.newBuilder()
+                                    .setBlob(BlobRelayCommon.BlobReference.newBuilder()
+                                        .setStorageId(1)
+                                        .setObjectId(35)
+                                        .setTag(57)
+                                        .build())
+                                    .build());
+
+            transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
+                                            Parameters.blobOf(parameterName1, largeObjectClient.upload(new FileInputStream(file1.toFile())).get()),
+                                            Parameters.clobOf(parameterName2, largeObjectClient.upload(new InputStreamReader(new FileInputStream(file2.toFile()))).get())).await();
+            var header = FrameworkRequest.Header.parseDelimitedFrom(new ByteArrayInputStream(link.getJustBeforeHeader()));
+            assertTrue(header.hasBlobs());
+            for (var e: header.getBlobs().getBlobsList()) {
+                String channelName = e.getChannelName();
+                assertEquals(e.getBlobLocationCase(), FrameworkCommon.BlobInfo.BlobLocationCase.BLOB);
+                if (channelName.startsWith("BlobChannel-")) {
+                    var blob = e.getBlob();
+                    assertEquals(blob.getStorageId(), 1);
+                    assertEquals(blob.getObjectId(), 23);
+                    assertEquals(blob.getTag(), 45);
+                } else if (e.getBlob().getObjectId() == 35) {
+                    var blob = e.getBlob();
+                    assertEquals(blob.getStorageId(), 1);
+                    assertEquals(blob.getObjectId(), 35);
+                    assertEquals(blob.getTag(), 57);
+                } else {
+                    fail("unexpected object id " + e.getBlob().getObjectId());
+                }
+            }
+            assertArrayEquals(data, server.receivedData(0));
+            assertArrayEquals(data, server.receivedData(-1));
+        }
+        disposer.waitForEmpty();
+        assertFalse(link.hasRemaining());
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
     void getLargeObjectCache(@TempDir Path tempDir) throws Exception {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
         long referenceTag = 678;
 
-        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = tempDir.resolve(fileName);
         Files.write(file, data);
 
-        var header = FrameworkResponse.Header.newBuilder()
-                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
-                        .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
-                        .build();
-        // for getLargeObjectData
-        link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
         // for dispose transaction
@@ -326,60 +346,10 @@ class SqlServiceStubWithLobClientTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
-            var pathOpt = largeObjectCache.find();
-            assertTrue(pathOpt.isPresent());
-            var obtainedData = Files.readAllBytes(pathOpt.get());
-            assertEquals(data.length, obtainedData.length);
-            for (int i = 0; i < data.length; i++) {
-                assertEquals(data[i], obtainedData[i]);
-            }
-        }
-        disposer.waitForEmpty();
-        assertFalse(link.hasRemaining());
-    }
-
-    @Test
-    void getLargeObjectCacheNoFile(@TempDir Path tempDir) throws Exception {
-        String fileName = "lob.data";
-        String channelName = "lobChannel";
-        long objectId = 12345;
-        long referenceTag = 678;
-
-        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
-        Path file = tempDir.resolve(fileName);
-
-        var header = FrameworkResponse.Header.newBuilder()
-                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
-                        .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
-                        .build();
-        // for getLargeObjectData
-        link.next(header, payload);
-        // for rollback
-        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
-        // for dispose transaction
-        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
-
-        try (
-            var service = new SqlServiceStub(session);
-            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
-                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
-                                              .build(),
-                                              service,
-                                              null,
-                                              disposer);
-        ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertFalse(pathOpt.isPresent());
         }
@@ -387,75 +357,16 @@ class SqlServiceStubWithLobClientTest {
         assertFalse(link.hasRemaining());
     }
 
-//    @Test
-    void copyToNoFile(@TempDir Path tempDir) throws Exception {
-        String fileName = "lob.data";
-        String channelName = "lobChannel";
-        long objectId = 12345;
-        long referenceTag = 678;
-        Path file = tempDir.resolve(fileName);
-
-        var header = FrameworkResponse.Header.newBuilder()
-                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
-                        .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
-                        .build();
-        // for getLargeObjectData
-        link.next(header, payload);
-        // for rollback
-        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
-        // for dispose transaction
-        link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
-
-        try (
-            var service = new SqlServiceStub(session);
-            var transaction = new TransactionImpl(SqlResponse.Begin.Success.newBuilder()
-                                              .setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(123).build())
-                                              .build(),
-                                              service,
-                                              null,
-                                              disposer);
-        ) {
-            Path copy = tempDir.resolve("lob_copy.data");
-            assertThrows(BlobException.class, () ->
-                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await());
-        }
-        disposer.waitForEmpty();
-        assertFalse(link.hasRemaining());
-    }
-
-//    @Test
+    @Test
     void copyTo(@TempDir Path tempDir) throws Exception {
         String fileName = "lob.data";
         String channelName = "lobChannel";
         long objectId = 12345;
         long referenceTag = 678;
 
-        byte[] data = new byte[] { 0x01, 0x02, 0x03 };
         Path file = tempDir.resolve("lob.data");
         Files.write(file, data);
 
-        var header = FrameworkResponse.Header.newBuilder()
-                        .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
-                        .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
-                        .build();
-        // for getLargeObjectData
-        link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
         // for dispose transaction
@@ -468,16 +379,23 @@ class SqlServiceStubWithLobClientTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                        .setChunk(com.google.protobuf.ByteString.copyFrom(data))
+                                                    .build());
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                                                    .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
+                                                                        .setBlobSize(data.length))
+                                                                    .build());
+
             Path copy = tempDir.resolve("lob_copy.data");
-            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await();
+            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag), copy).await();
             var obtainedData = Files.readAllBytes(copy);
             assertTrue(Files.exists(copy));
             assertEquals(data.length, obtainedData.length);
-            for (int i = 0; i < data.length; i++) {
-                assertEquals(data[i], obtainedData[i]);
-            }
+            assertArrayEquals(data, obtainedData);
         }
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());

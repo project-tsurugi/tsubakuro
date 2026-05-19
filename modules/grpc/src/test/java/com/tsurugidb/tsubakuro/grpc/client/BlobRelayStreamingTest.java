@@ -113,10 +113,9 @@ class BlobRelayStreamingTest {
         client.get(Streaming.GetStreamingRequest.newBuilder()
                                                     .setTransactionId(789)
                                                     .setBlob(BlobRelayCommon.BlobReference.newBuilder()
-                                                    .setStorageId(1)
-                                                    .setObjectId(23)
-                                                    .setTag(45)
-                                                    .build())
+                                                        .setStorageId(1)
+                                                        .setObjectId(23)
+                                                        .setTag(45))
                                                 .build(),
                    outputStream);
         var data = outputStream.toByteArray();

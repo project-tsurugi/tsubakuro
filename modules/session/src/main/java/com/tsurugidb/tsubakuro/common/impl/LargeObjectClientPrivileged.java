@@ -67,9 +67,9 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
      * A dummy ServiceClient for exposing service message version of current common blob_relay_privilege implementations.
      */
     @ServiceMessageVersion(
-            service = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_SYMBOLIC_ID,
-            major = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR,
-            minor = LargeObjectClientPrivileged.BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
+            service = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_SYMBOLIC_ID,
+            major = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR,
+            minor = LargeObjectClientPrivileged.BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
     public static class BlobRelayPrivilegeClient implements ServiceClient {
         // no special members
     }
@@ -77,17 +77,17 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
     /**
      * The symbolic ID of this implementation.
      */
-    static final String BLOB_PRIVILEGE_SERVICE_SYMBOLIC_ID = "blob_relay_privilege"; //$NON-NLS-1$
+    static final String BLOB_RELAY_PRIVILEGE_SERVICE_SYMBOLIC_ID = "blob_relay_privilege"; //$NON-NLS-1$
 
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    static final int BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR = 0;
+    static final int BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR = 0;
 
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    static final int BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR = 0;
+    static final int BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR = 0;
 
     /**
      * The service id for endpoint broker.
@@ -217,7 +217,7 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
                 throw new BlobException("Server file path is empty.");
             }
             Files.copy(optionalPath.get(), destination);
-            return null;
+            return FutureResponse.returns(null);
         } catch (IOException | InterruptedException | ServerException e) {
             throw new BlobException(e);
         }
@@ -276,8 +276,8 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
 
     private BlobRelayPrivilegeRequest.Request newRequest(ContextId contextId, LargeObjectReference ref) {
         return BlobRelayPrivilegeRequest.Request.newBuilder()
-                .setServiceMessageVersionMajor(BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR)
-                .setServiceMessageVersionMinor(BLOB_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
+                .setServiceMessageVersionMajor(BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MAJOR)
+                .setServiceMessageVersionMinor(BLOB_RELAY_PRIVILEGE_SERVICE_MESSAGE_VERSION_MINOR)
                 .setGetBlob(BlobRelayPrivilegeRequest.GetBlob.newBuilder()
                     .setTransactionHandle(contextId.getTransactionHandle())
                     .setBlobReference(BlobRelayPrivilegeRequest.BlobReference.newBuilder()

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
@@ -148,6 +151,22 @@ class TransactionExceptionTest {
         public ResultSetWire createResultSetWire() throws IOException {
             return null;  // dummy as it is test for session
         }
+
+        @Override
+        public BlobTransferMedium getBlobTransferMedium() {
+            return new BlobTransferMedium() {
+                @Override
+                public BlobTransferType getBlobTransferType() {
+                    return BlobTransferType.PRIVILEGED;
+                }
+
+                @Override
+                public Map<String, String> getParameters() {
+                    return Map.of();
+                }
+            };
+        }
+
         @Override
         public void close() throws IOException {
         }

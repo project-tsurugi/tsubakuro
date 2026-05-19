@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.common;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -31,7 +32,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  *
  * @since 1.11.0
  */
-public interface LargeObjectClient {
+public interface LargeObjectClient extends Closeable {
     /**
      * An interface representing the context of a Large Object download operation.
      * This is used to provide the transaction handle required for the download operation.
@@ -157,5 +158,10 @@ public interface LargeObjectClient {
      */
     default FutureResponse<Void> copyTo(ContextId contextId, LargeObjectReference ref, Path destination) throws IOException, BlobException {
         throw new UnsupportedOperationException("copyTo is not implemented");
+    }
+
+    @Override
+    default void close() throws IOException {
+        // no-op
     }
 }

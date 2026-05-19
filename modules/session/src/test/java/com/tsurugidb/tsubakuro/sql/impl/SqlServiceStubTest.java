@@ -351,8 +351,8 @@ class SqlServiceStubTest {
     }
 
     static class TransactionImplTestInSqlServiceStubTest extends TransactionImpl {
-        TransactionImplTestInSqlServiceStubTest(SqlService service, Disposer disposer) {
-            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, disposer);
+        TransactionImplTestInSqlServiceStubTest(SqlService service, Disposer disposer, Session session) throws IOException {
+            super(SqlResponse.Begin.Success.newBuilder().setTransactionHandle(SqlCommon.Transaction.newBuilder().setHandle(100)).build(), service, null, disposer, session.getLargeObjectClient());
         }
     }
 
@@ -364,7 +364,7 @@ class SqlServiceStubTest {
                         .build())));
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer, session);
             var future = transaction.commit(SqlRequest.CommitOption.newBuilder().setAutoDispose(true).build());
         ) {
             assertDoesNotThrow(() -> future.get());
@@ -384,7 +384,7 @@ class SqlServiceStubTest {
                         .build())));
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer, session);
             var future = transaction.commit();
         ) {
             assertDoesNotThrow(() -> future.get());
@@ -404,7 +404,7 @@ class SqlServiceStubTest {
                         .build())));
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer, session);
             var future = transaction.commit();
         ) {
             var error = assertThrows(SqlServiceException.class, () -> future.await());
@@ -429,7 +429,7 @@ class SqlServiceStubTest {
                         .build())));
         try (
             var service = new SqlServiceStub(session);
-            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer);
+            var transaction = new TransactionImplTestInSqlServiceStubTest(service, disposer, session);
         ) {
             try {
                 transaction.commit().await();

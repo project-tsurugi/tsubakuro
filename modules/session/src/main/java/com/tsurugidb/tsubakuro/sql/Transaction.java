@@ -370,7 +370,7 @@ public interface Transaction extends ServerResourceNeedingDisposal {
      *
      * @since 1.8.0
      */
-    default FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
+    default FutureResponse<com.tsurugidb.tsubakuro.common.LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
         throw new UnsupportedOperationException();
     }
 

@@ -120,7 +120,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             var resultSet = transaction.executeQuery("select 1").get();
             assertFalse(resultSet.nextRow());  // also check no throw
@@ -156,7 +157,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             var resultSet = transaction.executeQuery("select 1").get();
             var e = assertThrows(SqlServiceException.class, () -> resultSet.nextRow());
@@ -186,7 +188,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             var resultSet = transaction.executeQuery("select 1").get();
             var e = assertThrows(SqlServiceException.class, () -> resultSet.nextRow());
@@ -220,7 +223,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             var resultSet = transaction.executeQuery("select 1").get();
             var e = assertThrows(CoreServiceException.class, () -> resultSet.nextRow());
@@ -249,7 +253,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             var resultSet = transaction.executeQuery("select 1").get();
             var e = assertThrows(CoreServiceException.class, () -> resultSet.nextRow());
@@ -301,7 +306,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
             var futureResultSet = transaction.executeQuery("select 1");
         ) {
             var timeout = new Timeout(futureResultSet, 0);
@@ -325,7 +331,8 @@ class ResultSetTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
             var futureResultSet = transaction.executeQuery("select 1");
         ) {
             var timeout = new Timeout(futureResultSet, 500);

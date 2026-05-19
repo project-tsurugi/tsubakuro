@@ -181,16 +181,27 @@ public class BlobRelayStreamingServer {
         void addGetResponse(Streaming.GetStreamingResponse response) {
             getResponses.offer(response);
         }
+        boolean hasRemaining() {
+            return !(putResponses.isEmpty() && getResponses.isEmpty());
+        }
     }
 
-    public byte[] receivedData() {
-        return blobRelayImpl.receivedData(0);
-    }
     // register responses for testing
     public void addPutResponse(Streaming.PutStreamingResponse response) {
         blobRelayImpl.addPutResponse(response);
     }
     public void addGetResponse(Streaming.GetStreamingResponse response) {
         blobRelayImpl.addGetResponse(response);
+    }
+
+    // for result verification
+    public byte[] receivedData() {
+        return blobRelayImpl.receivedData(0);
+    }
+    public byte[] receivedData(int offset) {
+        return blobRelayImpl.receivedData(offset);
+    }
+    public boolean hasRemaining() {
+        return blobRelayImpl.hasRemaining();
     }
 }
