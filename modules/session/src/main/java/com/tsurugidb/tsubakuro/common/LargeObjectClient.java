@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.file.Path;
 
+import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.tsubakuro.common.exception.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
@@ -163,5 +164,20 @@ public interface LargeObjectClient extends Closeable {
     @Override
     default void close() throws IOException {
         // no-op
+    }
+
+    /**
+     * Converts the providerId to the storageId used in the blob relay protocol.
+     * Currently, only providerId 1 is supported, which is mapped to storageId 1.
+     * If an unsupported providerId is given, an IllegalArgumentException is thrown.
+     * @param providerId the providerId to be converted
+     * @return the storageId corresponding to the given providerId
+     * @throws IllegalArgumentException if the given providerId is not supported
+     */
+    default long toStorageId(long providerId) {
+        if (providerId == SqlCommon.LargeObjectProvider.DATASTORE.getNumber()) {
+            return 1;  // corresponding to LIMESTONE_BLOB_STORE
+        }
+        throw new IllegalArgumentException("Invalid providerId: " + providerId);
     }
 }

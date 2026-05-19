@@ -199,7 +199,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                     .setApiVersion(API_VERSION)
                     .setTransactionId(contextId.getTransactionHandle())
                     .setBlob(BlobRelayCommon.BlobReference.newBuilder()
-                            .setStorageId(ref.getProvider())  // FIXME
+                            .setStorageId(toStorageId(ref.getProvider()))
                             .setObjectId(ref.getObjectId())
                             .setTag(ref.getReferenceTag())
                             .build())

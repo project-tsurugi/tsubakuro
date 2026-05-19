@@ -398,7 +398,7 @@ class SqlServiceStubLobWithMappingTest {
                                               disposer,
                                               session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());
@@ -456,7 +456,7 @@ class SqlServiceStubLobWithMappingTest {
                                               disposer,
                                               session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());
@@ -528,7 +528,7 @@ class SqlServiceStubLobWithMappingTest {
                                               disposer,
                                               session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());
@@ -582,7 +582,7 @@ class SqlServiceStubLobWithMappingTest {
                                               disposer,
                                               session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertFalse(pathOpt.isPresent());
         }
@@ -631,7 +631,7 @@ class SqlServiceStubLobWithMappingTest {
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
             assertThrows(BlobException.class, () ->
-                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await());
+                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag), copy).await());
         }
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
@@ -848,7 +848,7 @@ class SqlServiceStubLobWithMappingTest {
                                               disposer,
                                               session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());

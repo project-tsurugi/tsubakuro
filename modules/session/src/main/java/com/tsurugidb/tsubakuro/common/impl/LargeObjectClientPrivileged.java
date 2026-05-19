@@ -281,7 +281,7 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
                 .setGetBlob(BlobRelayPrivilegeRequest.GetBlob.newBuilder()
                     .setTransactionHandle(contextId.getTransactionHandle())
                     .setBlobReference(BlobRelayPrivilegeRequest.BlobReference.newBuilder()
-                            .setStorageId(ref.getProvider())
+                            .setStorageId(toStorageId(ref.getProvider()))
                             .setObjectId(ref.getObjectId())
                             .setTag(ref.getReferenceTag())))
                 .build();

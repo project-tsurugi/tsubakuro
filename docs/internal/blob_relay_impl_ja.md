@@ -27,6 +27,10 @@ service message versionを1.0（旧）から1.1（新）に上げる。
 旧`tsubakuro`と新`tateyama::endpoint`の組み合わせは、正常に動作する（旧`tsubakuro`は特権モードによるBLOB転送のみ）。
 新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、`INVALID_REQUEST`エラーとなる。
 
+#### sql protocol buffersメッセージの追加・変更
+service message versionを2.0（旧）から2.1（新）に上げる。
+なお、jogasakiが扱う部分には変更がなく、tsubakuro内部の情報伝達のための部分のみの変更であるので、jogasakiは2.0と2.1の両方で同じように動作する必要がある。
+
 #### tsubakuro APIの変更・追加
 * `com.tsurugidb.tsubakuro.common.SessionBuilder`に下記APIを追加
   * `withBlobTransfer(BlobTransferType type)`
