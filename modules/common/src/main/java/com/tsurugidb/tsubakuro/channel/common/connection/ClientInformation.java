@@ -107,7 +107,7 @@ public final class ClientInformation {
                 ));
             case DEFAULT:
                 return new ArrayList<>(List.of(
-                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.RELAY).build(),
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.PRIVILEGED).build(),
                         EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.DOES_NOT_USE).build()
                 ));
             default:
