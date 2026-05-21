@@ -99,7 +99,7 @@ public class WireImpl implements Wire {
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    static final int SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    static final int SERVICE_MESSAGE_VERSION_MAJOR = 2;
 
     /**
      * The minor service message version for FrameworkRequest.Header.

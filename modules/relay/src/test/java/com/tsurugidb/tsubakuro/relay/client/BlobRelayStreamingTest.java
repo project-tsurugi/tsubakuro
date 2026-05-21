@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.grpc.client;
+package com.tsurugidb.tsubakuro.relay.client;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.tsurugidb.blob_relay.proto.BlobRelayStreamingGrpc;
 import com.tsurugidb.blob_relay.proto.BlobRelayCommon;
 import com.tsurugidb.blob_relay.proto.Streaming;
-import com.tsurugidb.tsubakuro.grpc.server.BlobRelayStreamingServer;
+import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 
 class BlobRelayStreamingTest {
     private static final Logger LOG = LoggerFactory.getLogger(BlobRelayStreamingTest.class);

@@ -49,7 +49,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.common.LargeObjectInfo;
 import com.tsurugidb.tsubakuro.common.LargeObjectReference;
-import com.tsurugidb.tsubakuro.grpc.server.BlobRelayStreamingServer;
+import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 
 class LargeObjectClientRelayTest {
     private static final int SERVER_PORT = 65521;

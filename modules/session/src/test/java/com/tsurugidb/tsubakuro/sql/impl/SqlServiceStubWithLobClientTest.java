@@ -57,7 +57,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.grpc.server.BlobRelayStreamingServer;
+import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;

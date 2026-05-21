@@ -46,7 +46,7 @@ import com.tsurugidb.tsubakuro.common.LargeObjectInfo;
 import com.tsurugidb.tsubakuro.common.LargeObjectReference;
 import com.tsurugidb.tsubakuro.common.exception.BlobException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
-import com.tsurugidb.tsubakuro.grpc.client.BlobRelayStreaming;
+import com.tsurugidb.tsubakuro.relay.client.BlobRelayStreaming;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**

@@ -16,16 +16,17 @@
 
 service message versionを0.1（旧）から0.2（新）に上げる。
 旧`tsubakuro`と新`tateyama::endpoint`の組み合わせは、特権モードによるBLOB転送が指定されたものとして扱う。
-新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、`INVALID_REQUEST`エラーとなる。
+新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、framework header protocol buffersメッセージのバージョン不一致に起因するエラーとなる。
 
 #### framework header protocol buffersメッセージの追加・変更
 * `tateyama.proto.framework.common.BlobInfo` の構造を変更する
   * 既存の `path` フィールドを、`oneof blob_location` の一要素として再構成する
 * BLOB中継サービス向けの `BlobRelayReference` メッセージを`oneof blob_location` の一要素として追加する
 
-service message versionを1.0（旧）から1.1（新）に上げる。
+service message versionを1.0（旧）から2.1（新）に上げる。
 旧`tsubakuro`と新`tateyama::endpoint`の組み合わせは、正常に動作する（旧`tsubakuro`は特権モードによるBLOB転送のみ）。
-新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、`INVALID_REQUEST`エラーとなる。
+新`tsubakuro`と旧`tateyama::endpoint`の組み合わせは、セッション終了エラーとなる。
+（memo: `tateyama::endpoint`旧バージョンにはSERVICE_MESSAGE_VERSIONハンドリングの問題があり、本来であればendpoint protocol buffersメッセージのSMV不一致エラーとなるべき所がそうなっていないため、このような動作となっている）
 
 #### sql protocol buffersメッセージの追加・変更
 service message versionを2.0（旧）から2.1（新）に上げる。

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.grpc.client;
+package com.tsurugidb.tsubakuro.relay.client;
 
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
