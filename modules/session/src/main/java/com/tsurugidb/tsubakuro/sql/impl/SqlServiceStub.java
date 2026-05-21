@@ -72,7 +72,7 @@ import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.TransactionStatus;
-import com.tsurugidb.tsubakuro.common.exception.BlobException;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;

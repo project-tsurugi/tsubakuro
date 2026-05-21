@@ -59,7 +59,7 @@ import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
 import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
 import com.tsurugidb.tsubakuro.sql.TransactionStatus;
-import com.tsurugidb.tsubakuro.common.exception.BlobException;
+import com.tsurugidb.tsubakuro.sql.io.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
