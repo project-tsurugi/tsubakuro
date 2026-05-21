@@ -55,10 +55,17 @@ public class BlobRelayStreaming implements Closeable {
      * @param chunkSize the size of each chunk to be sent
      */
     public BlobRelayStreaming(@Nonnull String endpoint, boolean secure, long chunkSize) {
-        this.chunkSize = chunkSize;
+        this.chunkSize = validateChunkSize(chunkSize);
         this.channel = Grpc.newChannelBuilder(endpoint, secure ? TlsChannelCredentials.create() : InsecureChannelCredentials.create()).build();
         this.stub = BlobRelayStreamingGrpc.newStub(channel);
     }
+
+    private static long validateChunkSize(long chunkSize) {
+         if (chunkSize <= 0 || chunkSize > Integer.MAX_VALUE) {
+             throw new IllegalArgumentException("chunkSize must be between 1 and " + Integer.MAX_VALUE + ": " + chunkSize);
+         }
+         return chunkSize;
+     }
 
     @Override
     public void close() {

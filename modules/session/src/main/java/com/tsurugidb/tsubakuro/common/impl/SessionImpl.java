@@ -310,6 +310,9 @@ public class SessionImpl implements Session {
                 // apply blob path mapping if the blob has a file path
                 try {
                     var largeObjectInfo = largeObjectClient.upload(blob.getPath().get()).get();
+                    if (largeObjectInfo == null) {
+                        throw new IllegalStateException("LargeObjectInfo is null for blob path: " + blob.getPath().get());
+                    }
                     switch (largeObjectInfo.getInfoType()) {
                         case SERVER_PATH:
                             list.add(new ServerBlobInfo(blob.getChannelName(), largeObjectInfo.getServerPath()));
@@ -321,7 +324,7 @@ public class SessionImpl implements Session {
                             throw new IllegalStateException("Unknown LargeObjectInfo type: " + largeObjectInfo.getInfoType());
                     }
                 } catch (ServerException | InterruptedException e) {
-                    throw new AssertionError("Never occur: LargeObjectClient.upload(Path) for PRIVILEGED MODE", e);
+                    throw new AssertionError("Never occur: LargeObjectClient.upload(Path) for SERVER_PATH and BLOB_RELAY_REFERENCE case", e);
                 }
             } else if (blob.getServerPath().isPresent()) {
                 // if the blob does not have a file path but has a server path, use it directly
