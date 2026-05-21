@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -37,7 +37,7 @@ import com.tsurugidb.tsubakuro.channel.stream.StreamLink;
 public class ResultSetWireImpl implements ResultSetWire {
     private final StreamLink streamLink;
     private final ResultSetBox resultSetBox;
-    private final HashMap<Integer, LinkedList<byte[]>> lists = new HashMap<>();
+    private final HashMap<Integer, ArrayList<byte[]>> lists = new HashMap<>();
     private final ConcurrentLinkedQueue<byte[]> queues = new ConcurrentLinkedQueue<>();
     private ByteBufferBackedInputForStream byteBufferBackedInput;
     private boolean eor;
@@ -155,7 +155,7 @@ public class ResultSetWireImpl implements ResultSetWire {
      */
     public void add(int writerId, byte[] payload) {
         if (!lists.containsKey(writerId)) {
-            lists.put(writerId, new LinkedList<byte[]>());
+            lists.put(writerId, new ArrayList<byte[]>());
         }
         var targetList = lists.get(writerId);
         if (payload != null) {

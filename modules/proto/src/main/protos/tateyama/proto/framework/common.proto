@@ -12,8 +12,14 @@ message BlobInfo {
     // the channel name.
     string channel_name = 1;
 
-    // the file path.
-    string path = 2;
+    // information indicating the location of the BLOB file.
+    oneof blob_location {
+        // the file path as seen from the server.
+        string path = 2;
+
+        // the reference to the BLOB.
+        BlobRelayReference blob = 4;
+    }
 
     // whether file is temporary.
     bool temporary = 3;
@@ -21,4 +27,16 @@ message BlobInfo {
 
 message RepeatedBlobInfo {
     repeated BlobInfo blobs = 1;
+}
+
+message BlobRelayReference {
+
+    // the ID of the storage where the BLOB data is stored.
+    uint64 storage_id = 1;
+
+    // the ID of the object within the BLOB storage.
+    uint64 object_id = 2;
+
+    // a tag for additional access control.
+    uint64 tag = 3;
 }

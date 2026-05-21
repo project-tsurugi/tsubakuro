@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package tateyama.proto.blob_relay_privilege.response;
+
+option java_multiple_files = false;
+option java_package = "com.tsurugidb.blob_relay_privilege.proto";
+option java_outer_classname = "BlobRelayPrivilegeResponse";
+
+import "tateyama/proto/diagnostics.proto";
+
+// unknown error was occurred.
+message Error {
+    // the error message.
+    string message = 1;
+
+    // error code
+    diagnostics.Code code = 2;
+
+    // supplemental text for debug purpose
+    string supplemental_text = 4;
+}
+
+// response for get blob operation.
+message GetBlob {
+    reserved 1 to 10;
+
+    // the response body.
+    oneof result {
+        // request is successfully completed.
+        Success success = 11;
+
+        // unknown error was occurred.
+        Error error = 12;
+    }
+
+    // request is successfully completed.
+    message Success {
+        // the blob file path as seen from the server.
+        string server_file_path = 11;
+    }
+}

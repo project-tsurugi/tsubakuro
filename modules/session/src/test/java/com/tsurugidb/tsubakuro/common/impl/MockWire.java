@@ -24,9 +24,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.Map;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
@@ -45,6 +48,8 @@ public class MockWire implements Wire {
             throw new MockError("no more handlers"); //$NON-NLS-1$
         }
     });
+
+    private BlobTransferType blobTransferType = BlobTransferType.PRIVILEGED;
 
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
@@ -65,6 +70,20 @@ public class MockWire implements Wire {
         return send(serviceId, ByteBuffer.wrap(payload));
     }
 
+    @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return new BlobTransferMedium() {
+            @Override
+            public BlobTransferType getBlobTransferType() {
+                return blobTransferType;
+            }
+            @Override
+            public Map<String, String> getParameters() {
+                return Map.of();
+            }
+        };
+    }
+
     /**
      * Add a {@link RequestHandler} to the handler queue.
      * @param handler the request handler
@@ -73,6 +92,17 @@ public class MockWire implements Wire {
     public MockWire next(RequestHandler handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
+        return this;
+    }
+
+    /**
+     * Set the blob transfer type for this mock wire.
+     * @param type the blob transfer type
+     * @return this
+     */
+    public MockWire blobTransfer(BlobTransferType type) {
+        Objects.requireNonNull(type);
+        blobTransferType = type;
         return this;
     }
 

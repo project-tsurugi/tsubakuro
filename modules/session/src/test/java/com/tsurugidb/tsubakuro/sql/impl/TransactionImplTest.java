@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
+import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
 import com.tsurugidb.tsubakuro.sql.Types;
@@ -40,6 +41,8 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 class TransactionImplTest {
     Disposer disposer = new Disposer();
+    LargeObjectClient largeObjectClient = new LargeObjectClient() {
+    };
 
     @Test
     void commit() throws Exception {
@@ -60,7 +63,7 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, disposer)
+            }, disposer, largeObjectClient)
         ) {
             client.commit().await();
         }
@@ -88,7 +91,7 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, disposer)
+            }, disposer, largeObjectClient)
         ) {
             client.rollback().await();
         }
@@ -120,7 +123,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
         ) {
             client.executeStatement("SELECT 100").await();
         }
@@ -150,7 +153,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
         ) {
             client.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(100).build(), null, null, null, disposer),
             List.of()).await();
@@ -187,7 +190,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
             var rs = client.executeQuery("SELECT 1").await();
         ) {
             assertTrue(rs.nextRow());
@@ -231,7 +234,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
             var rs = client.executeQuery(prepared(200, disposer)).await();
         ) {
             assertTrue(rs.nextRow());
@@ -277,7 +280,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
             var rs = client.executeDump("SELECT 1", Path.of("/path/to/dump")).await();
         ) {
             assertTrue(rs.nextRow());
@@ -325,7 +328,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
             var rs = client.executeDump(prepared(200, disposer), List.of(), Path.of("/path/to/dump")).await();
         ) {
             assertTrue(rs.nextRow());
@@ -366,7 +369,7 @@ class TransactionImplTest {
                 public FutureResponse<Void> send(SqlRequest.DisposeTransaction request) throws IOException {
                     return FutureResponse.returns(null);
                 }
-            }, null, disposer);
+            }, null, disposer, largeObjectClient);
         ) {
             client.executeLoad(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(200).build(), null, null, null, disposer),
                                                             List.of(), Path.of("/path/to/load")).await();
@@ -396,7 +399,7 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, disposer)
+            }, disposer, largeObjectClient)
         ) {
             assertEquals(0, closeCount.get());  // to eliminate checkstyle warning
         }
@@ -426,7 +429,7 @@ class TransactionImplTest {
                 }
             }, resource -> {
                 closeCount.incrementAndGet();
-            }, disposer)
+            }, disposer, largeObjectClient)
         ) {
             client.close();
             client.close();

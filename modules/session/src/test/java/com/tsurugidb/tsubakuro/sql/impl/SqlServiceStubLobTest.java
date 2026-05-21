@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -36,20 +36,21 @@ import org.junit.jupiter.api.Test;
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkResponse;
+import com.tsurugidb.blob_relay_privilege.proto.BlobRelayPrivilegeResponse;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.Session;
-import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
+import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
 import com.tsurugidb.tsubakuro.sql.CounterType;
 import com.tsurugidb.tsubakuro.sql.Parameters;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
-import com.tsurugidb.tsubakuro.sql.io.BlobException;
+import com.tsurugidb.tsubakuro.common.exception.BlobException;
 
 class SqlServiceStubLobTest {
 
@@ -108,9 +109,9 @@ class SqlServiceStubLobTest {
         Files.write(file1, data);
         Files.write(file2, data);
 
-        var lobs = new LinkedList<FileBlobInfo>();
-        lobs.add(new FileBlobInfo(channelName1, file1));
-        lobs.add(new FileBlobInfo(channelName2, file2));
+        var lobs = new ArrayList<BlobInfoImpl>();
+        lobs.add(new BlobInfoImpl(channelName1, file1));
+        lobs.add(new BlobInfoImpl(channelName2, file2));
         try (
             var service = new SqlServiceStub(session);
             var future = service.send(message, lobs);
@@ -177,7 +178,8 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
                                             Parameters.blobOf(parameterName1, file1),
@@ -223,7 +225,8 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             assertThrows(BlobException.class, () ->
                 transaction.executeStatement(new PreparedStatementImpl(SqlCommon.PreparedStatement.newBuilder().setHandle(456).build(), service, null, null, disposer),
@@ -247,17 +250,12 @@ class SqlServiceStubLobTest {
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
                         .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
+        var payload = BlobRelayPrivilegeResponse.GetBlob.newBuilder()
+                        .setSuccess(BlobRelayPrivilegeResponse.GetBlob.Success.newBuilder()
+                            .setServerFilePath(file.toString()))
                         .build();
-        // for getLargeObjectData
+        // for GetBlob
         link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
@@ -271,9 +269,10 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertTrue(pathOpt.isPresent());
             var obtainedData = Files.readAllBytes(pathOpt.get());
@@ -298,17 +297,12 @@ class SqlServiceStubLobTest {
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
                         .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
+        var payload = BlobRelayPrivilegeResponse.GetBlob.newBuilder()
+                        .setSuccess(BlobRelayPrivilegeResponse.GetBlob.Success.newBuilder()
+                            .setServerFilePath(file.toString()))
                         .build();
-        // for getLargeObjectData
+        // for GetBlob
         link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
@@ -322,9 +316,10 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
-            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag)).await();
+            var largeObjectCache = transaction.getLargeObjectCache(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag)).await();
             var pathOpt = largeObjectCache.find();
             assertFalse(pathOpt.isPresent());
         }
@@ -342,17 +337,12 @@ class SqlServiceStubLobTest {
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
                         .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
+        var payload = BlobRelayPrivilegeResponse.GetBlob.newBuilder()
+                        .setSuccess(BlobRelayPrivilegeResponse.GetBlob.Success.newBuilder()
+                            .setServerFilePath(file.toString()))
                         .build();
-        // for getLargeObjectData
+        // for GetBlob
         link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
@@ -366,11 +356,12 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
             assertThrows(BlobException.class, () ->
-                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await());
+                transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag), copy).await());
         }
         disposer.waitForEmpty();
         assertFalse(link.hasRemaining());
@@ -389,17 +380,12 @@ class SqlServiceStubLobTest {
 
         var header = FrameworkResponse.Header.newBuilder()
                         .setPayloadType(FrameworkResponse.Header.PayloadType.SERVICE_RESULT)
-                        .setBlobs(FrameworkCommon.RepeatedBlobInfo.newBuilder()
-                                    .addBlobs(FrameworkCommon.BlobInfo.newBuilder()
-                                                .setChannelName(channelName)
-                                                .setPath(file.toString())))
                         .build();
-        var payload = SqlResponse.Response.newBuilder()
-                        .setGetLargeObjectData(SqlResponse.GetLargeObjectData.newBuilder()
-                                                   .setSuccess(SqlResponse.GetLargeObjectData.Success.newBuilder()
-                                                                .setChannelName(channelName)))
+        var payload = BlobRelayPrivilegeResponse.GetBlob.newBuilder()
+                        .setSuccess(BlobRelayPrivilegeResponse.GetBlob.Success.newBuilder()
+                            .setServerFilePath(file.toString()))
                         .build();
-        // for getLargeObjectData
+        // for GetBlob
         link.next(header, payload);
         // for rollback
         link.next(SqlResponse.Response.newBuilder().setResultOnly(SqlResponse.ResultOnly.newBuilder().setSuccess(SqlResponse.Success.newBuilder())).build());
@@ -413,10 +399,11 @@ class SqlServiceStubLobTest {
                                               .build(),
                                               service,
                                               null,
-                                              disposer);
+                                              disposer,
+                                              session.getLargeObjectClient());
         ) {
             Path copy = tempDir.resolve("lob_copy.data");
-            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(2), objectId, referenceTag), copy).await();
+            var largeObjectCache = transaction.copyTo(new BlobReferenceForSql(SqlCommon.LargeObjectProvider.forNumber(1), objectId, referenceTag), copy).await();
             var obtainedData = Files.readAllBytes(copy);
             assertTrue(Files.exists(copy));
             assertEquals(data.length, obtainedData.length);

@@ -17,9 +17,14 @@ package  com.tsurugidb.tsubakuro.channel.common.connection;
 
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import com.tsurugidb.endpoint.proto.EndpointRequest;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 
 /**
  * A client information intened to be used in handshake.
@@ -32,26 +37,30 @@ public final class ClientInformation {
 
     private final Credential credential;
 
-    /**
-     * Creates a new instance without information.
-     */
-    public ClientInformation() {
-        this.connectionLabel = null;
-        this.applicationName = null;
-        this.credential = NullCredential.INSTANCE;
-    }
+    private final BlobTransferType blobTransferType;
 
     /**
      * Creates a new instance.
      * @param connectionLabel the label.
      * @param applicationName the application name.
      * @param credential the connection credential.
+     * @param type the blob transfer type.
      */
-    public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nonnull Credential credential) {
+    public ClientInformation(@Nullable String connectionLabel, @Nullable String applicationName, @Nonnull Credential credential, @Nonnull BlobTransferType type) {
         Objects.requireNonNull(credential);
+        Objects.requireNonNull(type);
         this.connectionLabel = connectionLabel;
         this.applicationName = applicationName;
         this.credential = credential;
+        this.blobTransferType = type;
+    }
+
+    /**
+     * Creates a new instance without information.
+     * This exists for testing purposes.
+     */
+    public ClientInformation() {
+        this(null, null, NullCredential.INSTANCE, BlobTransferType.DEFAULT);
     }
 
     /**
@@ -78,11 +87,39 @@ public final class ClientInformation {
         return credential;
     }
 
+    /**
+     * Get the blob transfer media list.
+     * @return the blob transfer media list, empty if no blob transfer media has been set.
+     */
+    public List<EndpointRequest.BlobTransferMedium> getBlobTransferMedia() {
+        switch (blobTransferType) {
+            case DOES_NOT_USE:
+                return new ArrayList<>(List.of(
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.DOES_NOT_USE).build()
+                ));
+            case PRIVILEGED:
+                return new ArrayList<>(List.of(
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.PRIVILEGED).build()
+                ));
+            case RELAY:
+                return new ArrayList<>(List.of(
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.RELAY).build()
+                ));
+            case DEFAULT:
+                return new ArrayList<>(List.of(
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.RELAY).build(),
+                        EndpointRequest.BlobTransferMedium.newBuilder().setBlobTransferType(EndpointRequest.BlobTransferType.DOES_NOT_USE).build()
+                ));
+            default:
+                throw new IllegalArgumentException("Unsupported BlobTransferType: " + blobTransferType);
+        }
+    }
+
     @Override
     public String toString() {
         return MessageFormat.format(
-                "ClientInformation(connectionLabel={0}, applicationName={1}, credential={2})",
-                checkNull(connectionLabel), checkNull(applicationName), credential.toString());
+                "ClientInformation(connectionLabel={0}, applicationName={1}, credential={2}, blobTransferType={3})",
+                checkNull(connectionLabel), checkNull(applicationName), credential.toString(), blobTransferType.toString());
     }
     private String checkNull(String string) {
         return (string != null) ? string : "";

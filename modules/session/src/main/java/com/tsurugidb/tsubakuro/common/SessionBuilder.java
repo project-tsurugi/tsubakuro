@@ -56,6 +56,8 @@ public final class SessionBuilder {
 
     private BlobPathMapping blobPathMapping = null;
 
+    private BlobTransferType blobTransferType = BlobTransferType.DEFAULT;
+
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
@@ -152,6 +154,16 @@ public final class SessionBuilder {
     }
 
     /**
+     * Sets the blob transfer type for BLOB transfer.
+     * @param type the blob transfer type
+     * @return this
+     */
+    public SessionBuilder withBlobTransfer(@Nonnull BlobTransferType type) {
+        this.blobTransferType = type;
+        return this;
+    }
+
+    /**
      * Establishes a connection to the Tsurugi server.
      * This operation will block until the connection was established,
      * please consider to use {@link #create(long, TimeUnit)}.
@@ -162,7 +174,7 @@ public final class SessionBuilder {
      * @see #create(long, TimeUnit)
      */
     public Session create() throws IOException, ServerException, InterruptedException {
-        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential))) {
+        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential, blobTransferType))) {
             return create0(fWire.get());
         }
     }
@@ -183,7 +195,7 @@ public final class SessionBuilder {
     public Session create(long timeout, @Nonnull TimeUnit unit)
             throws IOException, ServerException, InterruptedException, TimeoutException {
         Objects.requireNonNull(unit);
-        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential))) {
+        try (var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential, blobTransferType))) {
             var session = create0(fWire.get(timeout, unit));
             return session;
         }
@@ -196,7 +208,7 @@ public final class SessionBuilder {
      * @throws IOException if I/O error was occurred during connection
      */
     public FutureResponse<? extends Session> createAsync() throws IOException {
-        var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential));
+        var fWire = connector.connect(new ClientInformation(connectionLabel, applicationName, connectionCredential, blobTransferType));
         return new AbstractFutureResponse<Session>() {
 
             @Override

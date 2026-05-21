@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.tsurugidb.tsubakuro.sql.io;
+package com.tsurugidb.tsubakuro.common.exception;
 
 import java.io.IOException;
 
 /**
- * An exception which occurs if BLOB handling fails.
+ * An exception which occurs if Blob operation is something wrong.
  */
 public class BlobException extends IOException {
 

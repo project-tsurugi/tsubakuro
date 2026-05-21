@@ -98,7 +98,7 @@ public interface Session extends ServerResource {
         @Nonnull byte[] payload,
         @Nonnull List<? extends BlobInfo> blobs,
         @Nonnull ResponseProcessor<R> processor) throws IOException {
-        throw new UnsupportedOperationException();
+        return send(serviceId, ByteBuffer.wrap(payload), blobs, processor);
     }
 
     /**
@@ -242,6 +242,28 @@ public interface Session extends ServerResource {
      * @see #close()
      */
     default FutureResponse<Void> shutdown(@Nonnull ShutdownType type) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns a LargeObjectClient, a client for uploading and downloading BLOBs.
+     * @return the LargeObjectClient for this session, which can be used as long as the session is alive
+     * @throws IOException if an error occurs while initializing the LargeObjectClient
+     * @throws IllegalStateException if the session does not handle BLOBs
+     *
+     * @since 1.11.0
+     */
+    default LargeObjectClient getLargeObjectClient() throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Returns the BlobTransferMedium that the LargeObjectClient uses.
+     * @return the BlobTransferMedium
+     *
+     * @since 1.11.0
+     */
+    default BlobTransferMedium getBlobTransferMedium() {
         throw new UnsupportedOperationException();
     }
 

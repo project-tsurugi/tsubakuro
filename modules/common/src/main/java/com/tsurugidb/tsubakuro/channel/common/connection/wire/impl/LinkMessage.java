@@ -15,7 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.channel.common.connection.wire.impl;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * LinkMessage type.
@@ -70,15 +70,8 @@ public class LinkMessage {
      * @return the string
      */
     public String getString() {  // used only by FutureWireImpl
-        try {
-            if (bytes != null) {
-                return new String(bytes, "UTF-8");
-            }
-        } catch (UnsupportedEncodingException e) {
-            // As long as only alphabetic and numeric characters are received,
-            // this exception will never occur.
-            System.err.println(e);
-            e.printStackTrace();
+        if (bytes != null) {
+            return new String(bytes, StandardCharsets.UTF_8);
         }
         return "";
     }

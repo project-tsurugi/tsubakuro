@@ -19,7 +19,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.HashSet;
@@ -42,8 +41,7 @@ import com.tsurugidb.framework.proto.FrameworkRequest;
 import com.tsurugidb.framework.proto.FrameworkCommon;
 import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
-import com.tsurugidb.tsubakuro.common.BlobPathMapping;
+import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.Credential;
 import com.tsurugidb.tsubakuro.channel.common.connection.FileCredential;
@@ -54,6 +52,8 @@ import com.tsurugidb.tsubakuro.channel.common.connection.sql.ResultSetWire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.MainResponseProcessor;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.client.ServiceClient;
 import com.tsurugidb.tsubakuro.client.ServiceMessageVersion;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
@@ -99,12 +99,12 @@ public class WireImpl implements Wire {
     /**
      * The major service message version for FrameworkRequest.Header.
      */
-    static final int SERVICE_MESSAGE_VERSION_MAJOR = 1;
+    static final int SERVICE_MESSAGE_VERSION_MAJOR = 2;
 
     /**
      * The minor service message version for FrameworkRequest.Header.
      */
-    static final int SERVICE_MESSAGE_VERSION_MINOR = 0;
+    static final int SERVICE_MESSAGE_VERSION_MINOR = 1;
 
     /**
      * The symbolic ID for endpoint broker service.
@@ -119,7 +119,7 @@ public class WireImpl implements Wire {
     /**
      * The minor service message version for EndpointRequest.
      */
-    static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 1;
+    static final int ENDPOINT_BROKER_SERVICE_MESSAGE_VERSION_MINOR = 2;
 
     /**
      * The service id for endpoint broker.
@@ -151,10 +151,12 @@ public class WireImpl implements Wire {
 
     private final Link link;
     private final AtomicBoolean closed = new AtomicBoolean();
-    private BlobPathMapping blobPathMapping = null;
     private Optional<String> userNameOptional = Optional.empty();
     private CoreServiceException authenticationException = null;
     private String encryptionKey = null;
+
+    // for testing compatibility
+    private BlobTransferMediumImpl blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.PRIVILEGED);
 
     /**
      * Class constructor, called from IpcConnectorImpl that is a connector to the SQL server.
@@ -164,14 +166,6 @@ public class WireImpl implements Wire {
     public WireImpl(@Nonnull Link link) throws IOException {
         this.link = link;
         LOG.trace("begin Session");
-    }
-
-    /**
-     * Set BlobPathMapping.
-     * @param mapping path mapping used when passing blobs to the server
-     */
-    public void setBlobPathMapping(BlobPathMapping mapping) {
-        this.blobPathMapping = mapping;
     }
 
     @Override
@@ -202,7 +196,7 @@ public class WireImpl implements Wire {
     }
 
     @Override
-    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull byte[] payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         if (closed.get()) {
             throw new IOException("already closed");
         }
@@ -219,8 +213,18 @@ public class WireImpl implements Wire {
                     throw new IllegalArgumentException("duplicate channel name: " + e.getChannelName());
                 }
                 var blobInfo = FrameworkCommon.BlobInfo.newBuilder().setChannelName(e.getChannelName());
-                if (e.getPath().isPresent() && e.isFile()) {
-                    blobInfo.setPath(serverPathString(e.getPath().get()));
+                switch (e.getBlobInfoKind()) {
+                    case SERVER_PATH:
+                        blobInfo.setPath(e.getPath());
+                        break;
+                    case BLOB_RELAY_REFERENCE:
+                        var blobRelayReference = FrameworkCommon.BlobRelayReference.newBuilder()
+                            .setStorageId(e.getBlobRelayReference().getStorageId())
+                            .setObjectId(e.getBlobRelayReference().getObjectId())
+                            .setTag(e.getBlobRelayReference().getReferenceTag())
+                            .build();
+                        blobInfo.setBlob(blobRelayReference);
+                        break;
                 }
                 repeatedBlobInfo.addBlobs(blobInfo.build());
             }
@@ -230,30 +234,8 @@ public class WireImpl implements Wire {
         return FutureResponse.wrap(Owner.of(response));
     }
 
-    private String serverPathString(Path blobPath) {
-        if (blobPathMapping == null) {
-            return blobPath.toString();
-        }
-        var mapping = blobPathMapping.getOnSend();
-        for (var entry : mapping) {
-            var cp = entry.getClientPath();
-            var clientPath = cp.isAbsolute() ? cp : cp.toAbsolutePath();
-            if (blobPath.startsWith(clientPath)) {
-                var remainingPath = blobPath.subpath(entry.getClientPath().getNameCount(), blobPath.getNameCount());
-                if (remainingPath != null) {
-                    String serverPath = entry.getServerPath();
-                    for (int i = 0; i < remainingPath.getNameCount(); i++) {
-                        serverPath += "/" + remainingPath.getName(i).toString();  // server path is separated by "/"
-                    }
-                    return serverPath;
-                }
-            }
-        }
-        return blobPath.toString();
-    }
-
     @Override
-    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends BlobInfo> blobs) throws IOException {
+    public FutureResponse<? extends Response> send(int serviceId, @Nonnull ByteBuffer payload, @Nonnull List<? extends ServerBlobInfo> blobs) throws IOException {
         return send(serviceId, payload.array(), blobs);
     }
 
@@ -310,6 +292,11 @@ public class WireImpl implements Wire {
     }
 
     @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return blobTransferMedium;
+    }
+
+    @Override
     public void setCloseTimeout(Timeout timeout) {
         link.setCloseTimeout(timeout);
     }
@@ -352,10 +339,38 @@ public class WireImpl implements Wire {
             LOG.trace("receive: {}", message); //$NON-NLS-1$
             switch (message.getResultCase()) {
             case SUCCESS:
-                if (message.getSuccess().getUserNameOptCase() == EndpointResponse.Handshake.Success.UserNameOptCase.USER_NAME) {
-                    userNameOptional = Optional.of(message.getSuccess().getUserName());
+                var successMessage = message.getSuccess();
+                if (successMessage.getUserNameOptCase() == EndpointResponse.Handshake.Success.UserNameOptCase.USER_NAME) {
+                    userNameOptional = Optional.of(successMessage.getUserName());
                 }
-                return message.getSuccess().getSessionId();
+
+                // care blob transfer medium
+                switch (successMessage.getBlobTransferCase()) {
+                    case PRIVILEGED_MODE:
+                        blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.PRIVILEGED);
+                        break;
+                    case BLOB_RELAY_SERVICE_INFO:
+                        blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.RELAY);
+                        // care parameters for blob relay
+                        var blobRelayInfo = successMessage.getBlobRelayServiceInfo();
+                        blobTransferMedium.putParameter("sessionId", String.valueOf(blobRelayInfo.getBlobSessionId()));
+                        blobTransferMedium.putParameter("endpoint", blobRelayInfo.getEndpoint());
+                        if (blobRelayInfo.getSecure()) {
+                            blobTransferMedium.putParameter("secure", "true");
+                        }
+                        blobTransferMedium.putParameter("medium", blobRelayInfo.getMedium());
+                        var parameetersMap = blobRelayInfo.getParametersMap();
+                        for (var e: parameetersMap.entrySet()) {
+                            blobTransferMedium.putParameter(e.getKey(), e.getValue());
+                        }
+                        break;
+                    case BLOBTRANSFER_NOT_SET:
+                        break;
+                    default:
+                        throw new AssertionError("unsupported blob transfer medium: " + successMessage.getBlobTransferCase());
+                }
+
+                return successMessage.getSessionId();
 
             case ERROR:
                 var errMessage = message.getError();
@@ -440,6 +455,9 @@ public class WireImpl implements Wire {
         if (wireInformation != null) {
             handshakeMessageBuilder.setWireInformation(wireInformation);
         }
+
+        // handle blob transfer media in clientInformation
+        handshakeMessageBuilder.addAllBlobTransferMedia(clientInformation.getBlobTransferMedia());
 
         FutureResponse<? extends Response> future = send(
             SERVICE_ID_ENDPOINT_BROKER,

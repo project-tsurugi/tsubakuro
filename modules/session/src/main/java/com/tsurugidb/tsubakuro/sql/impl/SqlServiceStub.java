@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystemException;
@@ -71,7 +72,7 @@ import com.tsurugidb.tsubakuro.sql.TableList;
 import com.tsurugidb.tsubakuro.sql.TableMetadata;
 import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.TransactionStatus;
-import com.tsurugidb.tsubakuro.sql.io.BlobException;
+import com.tsurugidb.tsubakuro.common.exception.BlobException;
 import com.tsurugidb.tsubakuro.sql.io.StreamBackedValueInput;
 import com.tsurugidb.tsubakuro.sql.util.SqlRequestUtils;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
@@ -186,7 +187,7 @@ public class SqlServiceStub implements SqlService {
                 var errorResponse = detailResponse.getError();
                 throw SqlServiceException.of(SqlServiceCode.valueOf(errorResponse.getCode()), errorResponse.getDetail());
             }
-            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources, disposer);
+            var transactionImpl = new TransactionImpl(detailResponse.getSuccess(), SqlServiceStub.this, resources, disposer, session.getLargeObjectClient());
             transactionImpl.setCloseTimeout(closeTimeout);
             synchronized (resources) {
                 if (!resourcesClosed) {
@@ -1036,7 +1037,7 @@ public class SqlServiceStub implements SqlService {
                     if (response instanceof ChannelResponse && session instanceof SessionImpl) {
                         ((ChannelResponse) response).setBlobPathMapping(((SessionImpl) session).getBlobPathMapping());
                     }
-                    return new InputStreamReader(response.openSubResponse(detailResponse.getSuccess().getChannelName()), "UTF-8");
+                    return new InputStreamReader(response.openSubResponse(detailResponse.getSuccess().getChannelName()), StandardCharsets.UTF_8);
                 } catch (NoSuchFileException | AccessDeniedException e) {
                     throw new BlobException("error occurred while receiving BLOB data: {" + e.getMessage() + "}");
                 } catch (FileNotFoundException e) {  // should not happen, as AccessDeniedException should be thrown

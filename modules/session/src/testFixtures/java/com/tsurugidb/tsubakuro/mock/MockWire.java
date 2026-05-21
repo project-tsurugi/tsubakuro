@@ -21,11 +21,14 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
 
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Owner;
@@ -55,6 +58,20 @@ public class MockWire implements Wire {
         } catch (ServerException e) {
             return FutureResponse.raises(e);
         }
+    }
+
+    @Override
+    public BlobTransferMedium getBlobTransferMedium() {
+        return new BlobTransferMedium() {
+            @Override
+            public BlobTransferType getBlobTransferType() {
+                return BlobTransferType.PRIVILEGED;
+            }
+            @Override
+            public Map<String, String> getParameters() {
+                return Map.of();
+            }
+        };
     }
 
     /**

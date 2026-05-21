@@ -18,34 +18,21 @@ package com.tsurugidb.tsubakuro.common;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import com.tsurugidb.tsubakuro.util.ServerResource;
+
 /**
- * An abstract super interface of BLOB data to send to Tsurugi server.
+ * Represents large object cache.
  *
- * @since 1.8.0
+ * @since 1.11.0
  */
-public interface BlobInfo {
+public interface LargeObjectCache extends ServerResource {
 
     /**
-     * Returns the channel name for sending this BLOB data.
-     * <p>
-     * The channel name is used to identify the BLOB data in the server side,
-     * so that it must be unique in the same request.
-     * </p>
-     * @return the channel name
-     */
-    String getChannelName();
-
-    /**
-     * Returns whether there is a file that represent this BLOB data in the local file system.
-     * @return {@code true} if there is a file, otherwise {@code false}
-     * @see #getPath()
-     */
-    boolean isFile();
-
-    /**
-     * Returns the path of the file that represents this BLOB data, only if it exists.
+     * Returns the path of the file that represents the large object, only if it exists.
+     * The returned Path is available until close() of this object is invoked.
      * @return the path of the file, or empty if it does not exist
-     * @see #isFile()
      */
-    Optional<Path> getPath();
+    default Optional<Path> find() {
+        throw new UnsupportedOperationException("find is not implemented");
+    }
 }

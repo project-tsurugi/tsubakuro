@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
@@ -42,10 +42,13 @@ import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
-import com.tsurugidb.tsubakuro.common.impl.FileBlobInfo;
+import com.tsurugidb.tsubakuro.common.LargeObjectClient;
+import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
+import com.tsurugidb.tsubakuro.common.impl.LargeObjectInfoImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.exception.ServerException;
+import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.PreparedStatement;
 import com.tsurugidb.tsubakuro.sql.ResultSet;
 import com.tsurugidb.tsubakuro.sql.SqlService;
@@ -54,10 +57,9 @@ import com.tsurugidb.tsubakuro.sql.Transaction;
 import com.tsurugidb.tsubakuro.sql.BlobReference;
 import com.tsurugidb.tsubakuro.sql.ClobReference;
 import com.tsurugidb.tsubakuro.sql.ExecuteResult;
-import com.tsurugidb.tsubakuro.sql.LargeObjectCache;
 import com.tsurugidb.tsubakuro.sql.LargeObjectReference;
 import com.tsurugidb.tsubakuro.sql.TransactionStatus;
-import com.tsurugidb.tsubakuro.sql.io.BlobException;
+import com.tsurugidb.tsubakuro.common.exception.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.util.Lang;
 import com.tsurugidb.tsubakuro.util.ServerResource;
@@ -86,6 +88,8 @@ public class TransactionImpl implements Transaction {
     private Instant closeInvokedInstant = null;
     private Disposer disposer = null;
     private boolean autoDispose = false;
+    private final LargeObjectClient largeObjectClient;
+    private final LargeObjectClient.ContextId contextId;
 
     private enum State {
                                     // | commitResult | commit    | rollback  | delayedClose | Transaction        |
@@ -113,20 +117,36 @@ public class TransactionImpl implements Transaction {
      * @param service the SQL service
      * @param closeHandler handles {@link #close()} was invoked
      * @param disposer the Disposer in charge of its asynchronous close
+     * @param largeObjectClient the LargeObjectClient for handling Large Object upload and download
      */
     public TransactionImpl(
             @Nonnull SqlResponse.Begin.Success transaction,
             @Nonnull SqlService service,
             @Nullable ServerResource.CloseHandler closeHandler,
-            @Nullable Disposer disposer) {
+            @Nullable Disposer disposer,
+            @Nonnull LargeObjectClient largeObjectClient) {
         Objects.requireNonNull(transaction);
         Objects.requireNonNull(service);
+        Objects.requireNonNull(largeObjectClient);
         this.transaction = transaction;
         this.service = service;
         this.closeHandler = closeHandler;
         this.disposer = disposer;
+        this.largeObjectClient = largeObjectClient;
         this.timeout = null;
         state.set(State.INITIAL);
+
+        this.contextId = new LargeObjectClient.ContextId() {
+            @Override
+            public ContextIdKind contextIdKind() {
+                return ContextIdKind.TRANSACTION;
+            }
+
+            @Override
+            public long getTransactionHandle() {
+                return transaction.getTransactionHandle().getHandle();
+            }
+        };
     }
 
     @Override
@@ -165,7 +185,7 @@ public class TransactionImpl implements Transaction {
         var pb = SqlRequest.ExecutePreparedStatement.newBuilder()
             .setTransactionHandle(transaction.getTransactionHandle())
             .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
-        var lobs = new LinkedList<BlobInfo>();
+        var lobs = new ArrayList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(addLob(e, lobs));
         }
@@ -188,7 +208,7 @@ public class TransactionImpl implements Transaction {
         var pb = SqlRequest.ExecutePreparedQuery.newBuilder()
         .setTransactionHandle(transaction.getTransactionHandle())
         .setPreparedStatementHandle(((PreparedStatementImpl) statement).getHandle());
-        var lobs = new LinkedList<BlobInfo>();
+        var lobs = new ArrayList<BlobInfo>();
         for (SqlRequest.Parameter e : parameters) {
             pb.addParameters(addLob(e, lobs));
         }
@@ -199,61 +219,83 @@ public class TransactionImpl implements Transaction {
         }
     }
 
-    private SqlRequest.Parameter addLob(SqlRequest.Parameter e, LinkedList<BlobInfo> lobs) throws BlobException {
-        if (e.getValueCase() == SqlRequest.Parameter.ValueCase.CLOB) {
-            var v = e.getClob();
+    private SqlRequest.Parameter addLob(SqlRequest.Parameter e, ArrayList<BlobInfo> lobs) throws BlobException {
+        if (e.getValueCase() == SqlRequest.Parameter.ValueCase.LARGE_OBJECT_INFO_CLOB) {
+            var v = e.getLargeObjectInfoClob();
             switch (v.getDataCase()) {
-                case LOCAL_PATH:
-                    var path = Path.of(v.getLocalPath());
+                case CLIENT_PATH:
+                    var path = Path.of(v.getClientPath());
                     if (!Files.isReadable(path)) {
-                        throw new BlobException("error occurred while transmitting BLOB data: {" + path + " is not readable}");
+                        throw new BlobException("error occurred while transmitting CLOB data: {" + path + " is not readable}");
                     }
-                    String channelName = "ClobChannel-";
-                    channelName += Long.toString(ProcessHandle.current().pid());
-                    channelName += "-";
-                    channelName += Long.toString(clobNumber.getAndIncrement());
-                    if (!lobs.add(new FileBlobInfo(channelName, path))) {
+                    var channelNameClobPath = getChannelName("ClobChannel-", clobNumber);
+                    if (!lobs.add(new BlobInfoImpl(channelNameClobPath, path))) {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
                             .setName(e.getName())
                             .setClob(SqlCommon.Clob.newBuilder()
-                                    .setChannelName(channelName)
+                                    .setChannelName(channelNameClobPath)
                                     .build())
                             .build();
-                case CONTENTS:
-                    return e;
+                case SERVER_PATH:
+                case BLOB_RELAY_REFERENCE:
+                    var channelNameClobServerPath = getChannelName("ClobChannel-", clobNumber);
+                    if (!lobs.add(new BlobInfoImpl(channelNameClobServerPath, new LargeObjectInfoImpl(e)))) {
+                        throw new IllegalArgumentException();
+                    }
+                    return SqlRequest.Parameter.newBuilder()
+                            .setName(e.getName())
+                            .setClob(SqlCommon.Clob.newBuilder()
+                                    .setChannelName(channelNameClobServerPath)
+                                    .build())
+                            .build();
                 default:
                     throw new IllegalArgumentException();
             }
-        } else if (e.getValueCase() == SqlRequest.Parameter.ValueCase.BLOB) {
-            var v = e.getBlob();
+        } else if (e.getValueCase() == SqlRequest.Parameter.ValueCase.LARGE_OBJECT_INFO_BLOB) {
+            var v = e.getLargeObjectInfoBlob();
             switch (v.getDataCase()) {
-                case LOCAL_PATH:
-                    var path = Path.of(v.getLocalPath());
+                case CLIENT_PATH:
+                    var path = Path.of(v.getClientPath());
                     if (!Files.isReadable(path)) {
                         throw new BlobException("error occurred while transmitting BLOB data: {" + path + " is not readable}");
                     }
-                    String channelName = "BlobChannel-";
-                    channelName += Long.toString(ProcessHandle.current().pid());
-                    channelName += "-";
-                    channelName += Long.toString(blobNumber.getAndIncrement());
-                    if (!lobs.add(new FileBlobInfo(channelName, path))) {
+                    var channelNameBlobPath = getChannelName("BlobChannel-", blobNumber);
+                    if (!lobs.add(new BlobInfoImpl(channelNameBlobPath, path))) {
                         throw new IllegalArgumentException();
                     }
                     return SqlRequest.Parameter.newBuilder()
                             .setName(e.getName())
                             .setBlob(SqlCommon.Blob.newBuilder()
-                                    .setChannelName(channelName)
+                                    .setChannelName(channelNameBlobPath)
                                     .build())
                             .build();
-                case CONTENTS:
-                    return e;
+                case SERVER_PATH:
+                case BLOB_RELAY_REFERENCE:
+                    var channelNameBlobServerPath = getChannelName("BlobChannel-", blobNumber);
+                    if (!lobs.add(new BlobInfoImpl(channelNameBlobServerPath, new LargeObjectInfoImpl(e)))) {
+                        throw new IllegalArgumentException();
+                    }
+                    return SqlRequest.Parameter.newBuilder()
+                            .setName(e.getName())
+                            .setBlob(SqlCommon.Blob.newBuilder()
+                                    .setChannelName(channelNameBlobServerPath)
+                                    .build())
+                            .build();
                 default:
                     throw new IllegalArgumentException();
             }
         }
         return e;
+    }
+
+    private String getChannelName(String prefix, AtomicLong number) {
+        String channelName = prefix;
+        channelName += Long.toString(ProcessHandle.current().pid());
+        channelName += "-";
+        channelName += Long.toString(number.getAndIncrement());
+        return channelName;
     }
 
     @Override
@@ -439,11 +481,7 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<InputStream> openInputStream(@Nonnull BlobReference ref) throws IOException {
         Objects.requireNonNull(ref);
         if (ref instanceof BlobReferenceForSql) {
-            var blobReferenceForSql = (BlobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .setReference(blobReferenceForSql.blobReference());
-            return service.send(pb.build(), ref);
+            return largeObjectClient.openInputStream(contextId, ref);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }
@@ -452,41 +490,58 @@ public class TransactionImpl implements Transaction {
     public FutureResponse<Reader> openReader(@Nonnull ClobReference ref) throws IOException {
         Objects.requireNonNull(ref);
         if (ref instanceof ClobReferenceForSql) {
-            var clobReferenceForSql = (ClobReferenceForSql) ref;
-            var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                        .setTransactionHandle(transaction.getTransactionHandle())
-                        .setReference(clobReferenceForSql.clobReference());
-            return service.send(pb.build(), ref);
+            return largeObjectClient.openReader(contextId, ref);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+    }
+
+    private abstract class FutureResponseImpl<T> implements FutureResponse<T> {
+        protected volatile boolean done = false;
+
+        @Override
+        public T get() throws IOException, InterruptedException, ServerException {
+            try {
+                return get(0, null);
+            } catch (TimeoutException e) {
+                throw new AssertionError("Unexpected TimeoutException", e);
+            }
+        }
+        @Override
+        public boolean isDone() {
+            return done;
+        }
+        @Override
+        public void close() {
+        }
     }
 
     @Override
     public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull LargeObjectReference ref) throws IOException {
         Objects.requireNonNull(ref);
-        var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle());
-        if (ref instanceof BlobReferenceForSql) {
-            pb.setReference(((BlobReferenceForSql) ref).blobReference());
-            return service.send(pb.build());
-        } else if (ref instanceof ClobReferenceForSql) {
-            pb.setReference(((ClobReferenceForSql) ref).clobReference());
-            return service.send(pb.build());
-        }
-        throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+        return new FutureResponseImpl<LargeObjectCache>() {
+            @Override
+            public LargeObjectCache get(long tmout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
+                try {
+                    if (ref instanceof BlobReferenceForSql) {
+                        return new LargeObjectCacheImpl(largeObjectClient.getLargeObjectCache(contextId, ref).get(tmout, unit));
+                    } else if (ref instanceof ClobReferenceForSql) {
+                        return new LargeObjectCacheImpl(largeObjectClient.getLargeObjectCache(contextId, ref).get(tmout, unit));
+                    }
+                    throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
+                } finally {
+                    done = true;
+                }
+            }
+        };
     }
 
     @Override
     public FutureResponse<Void> copyTo(@Nonnull LargeObjectReference ref, @Nonnull Path destination) throws IOException {
         Objects.requireNonNull(ref);
-        var pb = SqlRequest.GetLargeObjectData.newBuilder()
-                    .setTransactionHandle(transaction.getTransactionHandle());
         if (ref instanceof BlobReferenceForSql) {
-            pb.setReference(((BlobReferenceForSql) ref).blobReference());
-            return service.send(pb.build(), destination);
+            return largeObjectClient.copyTo(contextId, ref, destination);
         } else if (ref instanceof ClobReferenceForSql) {
-            pb.setReference(((ClobReferenceForSql) ref).clobReference());
-            return service.send(pb.build(), destination);
+            return largeObjectClient.copyTo(contextId, ref, destination);
         }
         throw new IllegalStateException(ref.getClass().getName() + "is unsupported.");
     }

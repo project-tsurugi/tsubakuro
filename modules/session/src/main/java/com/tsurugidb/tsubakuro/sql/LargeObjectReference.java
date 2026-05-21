@@ -15,11 +15,14 @@
  */
 package com.tsurugidb.tsubakuro.sql;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * An abstract super interface of large object references.
  *
  * @since 1.8.0
  */
-public interface LargeObjectReference {
+@SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_INTERFACE")
+public interface LargeObjectReference extends com.tsurugidb.tsubakuro.common.LargeObjectReference {
     // no special methods.
 }

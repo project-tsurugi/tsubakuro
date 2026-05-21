@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 import com.google.protobuf.ByteString;
 import com.tsurugidb.sql.proto.SqlCommon;
 import com.tsurugidb.sql.proto.SqlRequest;
+import com.tsurugidb.tsubakuro.common.LargeObjectInfo;
 
 /**
  * Utilities of {@link com.tsurugidb.sql.proto.SqlRequest.Parameter Parameter}.
@@ -365,9 +366,44 @@ public final class Parameters {
 
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setClob(SqlCommon.Clob.newBuilder()
-                        .setLocalPath(path.toString()))
+                .setLargeObjectInfoClob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                        .setClientPath(path.toString()))
                 .build();
+    }
+
+    /**
+     * Returns a new {@code CLOB} parameter.
+     * @param name the place-holder name
+     * @param info the large object info
+     * @return the created place-holder
+     *
+     * @since 1.11.0
+     */
+    public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull LargeObjectInfo info) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(info);
+
+        switch (info.getInfoType()) {
+            case BLOB_RELAY_REFERENCE:
+                var blobRelayReference = info.getBlobRelayReference();
+                return SqlRequest.Parameter.newBuilder()
+                        .setName(name)
+                        .setLargeObjectInfoClob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                                .setBlobRelayReference(SqlRequest.BlobRelayReference.newBuilder()
+                                        .setStorageId(blobRelayReference.getStorageId())
+                                        .setObjectId(blobRelayReference.getObjectId())
+                                        .setTag(blobRelayReference.getReferenceTag())))
+                        .build();
+            case SERVER_PATH:
+                var serverPath = info.getServerPath();
+                return SqlRequest.Parameter.newBuilder()
+                        .setName(name)
+                        .setLargeObjectInfoClob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                                .setServerPath(serverPath))
+                        .build();
+            default:
+                throw new IllegalArgumentException("Unknown LargeObjectInfo type: " + info.getInfoType());
+        }
     }
 
     /**
@@ -384,9 +420,44 @@ public final class Parameters {
 
         return SqlRequest.Parameter.newBuilder()
                 .setName(name)
-                .setBlob(SqlCommon.Blob.newBuilder()
-                        .setLocalPath(path.toString()))
+                .setLargeObjectInfoBlob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                        .setClientPath(path.toString()))
                 .build();
+    }
+
+    /**
+     * Returns a new {@code CLOB} parameter.
+     * @param name the place-holder name
+     * @param info the large object info
+     * @return the created place-holder
+     *
+     * @since 1.11.0
+     */
+    public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull LargeObjectInfo info) {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(info);
+
+        switch (info.getInfoType()) {
+            case BLOB_RELAY_REFERENCE:
+                var blobRelayReference = info.getBlobRelayReference();
+                return SqlRequest.Parameter.newBuilder()
+                        .setName(name)
+                        .setLargeObjectInfoBlob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                                .setBlobRelayReference(SqlRequest.BlobRelayReference.newBuilder()
+                                        .setStorageId(blobRelayReference.getStorageId())
+                                        .setObjectId(blobRelayReference.getObjectId())
+                                        .setTag(blobRelayReference.getReferenceTag())))
+                        .build();
+            case SERVER_PATH:
+                var serverPath = info.getServerPath();
+                return SqlRequest.Parameter.newBuilder()
+                        .setName(name)
+                        .setLargeObjectInfoBlob(SqlRequest.ClientOnlyLargeObjectInfo.newBuilder()
+                                .setServerPath(serverPath))
+                        .build();
+            default:
+                throw new IllegalArgumentException("Unknown LargeObjectInfo type: " + info.getInfoType());
+        }
     }
 
     /**

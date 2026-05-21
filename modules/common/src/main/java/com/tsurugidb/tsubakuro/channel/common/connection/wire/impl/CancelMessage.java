@@ -42,7 +42,7 @@ final class CancelMessage {
     /**
      * The minor service message version for EndpointRequest.Request.
      */
-    private static final int ENDPOINT_MESSAGE_VERSION_MINOR = 0;
+    private static final int ENDPOINT_MESSAGE_VERSION_MINOR = 2;
 
     /**
      * The service id for endpoint broker.

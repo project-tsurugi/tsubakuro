@@ -46,10 +46,10 @@ import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointRequest.Credential;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.diagnostics.proto.Diagnostics;
-import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.channel.common.connection.ClientInformation;
 import com.tsurugidb.tsubakuro.channel.common.connection.RememberMeCredential;
 import com.tsurugidb.tsubakuro.channel.common.connection.UsernamePasswordCredential;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.exception.CoreServiceCode;
 import com.tsurugidb.tsubakuro.exception.CoreServiceException;
 import com.tsurugidb.tsubakuro.mock.MockLink;
@@ -136,7 +136,7 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
@@ -156,7 +156,7 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
@@ -172,7 +172,7 @@ class HandshakeTest {
                                    .setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED))
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
@@ -186,7 +186,7 @@ class HandshakeTest {
         link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
                   Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential("user", "password"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(CoreServiceException.class, () -> future.get());
@@ -210,7 +210,7 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
@@ -223,7 +223,7 @@ class HandshakeTest {
         String user = "u".repeat(61);
         String password = "p".repeat(60);
 
-        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password)));
+        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password), BlobTransferType.DEFAULT));
         System.out.println(ex);
         assertFalse(link.hasRemaining());
     }
@@ -233,7 +233,7 @@ class HandshakeTest {
         String user = "u".repeat(60);
         String password = "p".repeat(61);
 
-        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password)));
+        var ex = assertThrows(IllegalArgumentException.class, () -> new ClientInformation(null, null, new UsernamePasswordCredential(user, password), BlobTransferType.DEFAULT));
         System.out.println(ex);
         assertFalse(link.hasRemaining());
     }
@@ -246,7 +246,7 @@ class HandshakeTest {
                     .setSuccess(EndpointResponse.Handshake.Success.newBuilder())
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         future.get();
@@ -262,7 +262,7 @@ class HandshakeTest {
                                 .setCode(Diagnostics.Code.RESOURCE_LIMIT_REACHED))
                     .build());
 
-        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
         assertThrows(ConnectException.class, () -> future.get());
@@ -276,7 +276,7 @@ class HandshakeTest {
         link.next(FrameworkResponse.Header.newBuilder().setPayloadType(FrameworkResponse.Header.PayloadType.SERVER_DIAGNOSTICS).build(),
                   Diagnostics.Record.newBuilder().setCode(Diagnostics.Code.INVALID_REQUEST).build());
 
-        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"));
+        var clientInformation = new ClientInformation(null, null, new RememberMeCredential("token"), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertThrows(CoreServiceException.class, () -> future.get());
 
@@ -298,7 +298,7 @@ class HandshakeTest {
         String user = " Hello, World!".repeat(3);
         String password = " Goodbye, Space".repeat(3);
 
-        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password));
+        var clientInformation = new ClientInformation(null, null, new UsernamePasswordCredential(user, password), BlobTransferType.DEFAULT);
         var future = wire.handshake(clientInformation, null, 0, null);
         assertNotNull(future);
 
