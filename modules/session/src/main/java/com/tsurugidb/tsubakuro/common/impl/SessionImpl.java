@@ -234,11 +234,11 @@ public class SessionImpl implements Session {
 
     private LargeObjectClient getLargeObjectClient(BlobTransferMedium blobTransferMedium) {
         if (blobTransferMedium == null) {
-            return null;
+            return new LargeObjectClientVoid();
         }
         switch (blobTransferMedium.getBlobTransferType()) {
         case DOES_NOT_USE:
-            return null;
+            return new LargeObjectClientVoid();
         case RELAY:
             var parameters = blobTransferMedium.getParameters();
             String sessionId = parameters.get("sessionId");
