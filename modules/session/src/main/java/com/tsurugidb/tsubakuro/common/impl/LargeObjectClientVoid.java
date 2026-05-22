@@ -30,8 +30,11 @@ import com.tsurugidb.tsubakuro.common.exception.BlobException;
 import com.tsurugidb.tsubakuro.util.FutureResponse;
 
 /**
- * An implementation of {@link LargeObjectClient} that provides privileged access to the Large Object storage.
- * This client is used when the endpoint supports privileged access and the session is configured to use privileged transfer type.
+ * A void/disabled implementation of {@link LargeObjectClient}.
+ * This client represents the absence of Large Object (BLOB) support in the current session,
+ * such as when the session is configured not to use a Large Object transfer medium
+ * (for example, {@code DOES_NOT_USE} / no medium).
+ * All operations are unavailable and will throw {@link IllegalStateException}.
  *
  * @since 1.11.0
  */
