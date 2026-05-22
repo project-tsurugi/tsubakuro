@@ -64,7 +64,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
     private final String endpoint;
     private final boolean secure;
     private final long chunkSize;
-    private BlobRelayStreaming blobRelayStreaming = null;
+    private volatile BlobRelayStreaming blobRelayStreaming = null;
 
     /**
      * Creates a new instance.
@@ -84,7 +84,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         this.chunkSize = chunkSize;
     }
 
-    private void openBlobRelayStreaming() throws IOException {
+    private synchronized void openBlobRelayStreaming() throws IOException {
         if (blobRelayStreaming == null) {
             blobRelayStreaming = new BlobRelayStreaming(endpoint, secure, chunkSize);
         }

@@ -170,7 +170,7 @@ public class SessionImpl implements Session {
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
-     * @param blobTransferType the BlobTransferType to use for this session; if null, it is treated as BlobTransferType.DEFAULT
+     * @param blobTransferType the BlobTransferType to use for this session
      * @param blobRelayEndpoint the blob relay endpoint specified separately; if null, URI provided from the server will be used
      */
     public SessionImpl(boolean doKeepAlive, @Nullable BlobPathMapping blobPathMapping, @Nonnull BlobTransferType blobTransferType, @Nullable URI blobRelayEndpoint) {
@@ -241,14 +241,16 @@ public class SessionImpl implements Session {
         }
     }
 
-    private LargeObjectClient getLargeObjectClient(@Nonnull BlobTransferMedium blobTransferMedium) {
-        Objects.requireNonNull(blobTransferMedium);
+     private LargeObjectClient getLargeObjectClient(@Nullable BlobTransferMedium blobTransferMedium) {
+        if (blobTransferMedium == null) {
+            return new LargeObjectClientVoid();
+        }
         switch (blobTransferMedium.getBlobTransferType()) {
         case DOES_NOT_USE:
             if (blobTransferType == BlobTransferType.DEFAULT || blobTransferType == BlobTransferType.DOES_NOT_USE) {
                 return new LargeObjectClientVoid();
             }
-            throw new RuntimeException("BlobTransferMedium is not available for BlobTransferType: " + blobTransferType);
+            throw new IllegalStateException("Requested BlobTransferType " + blobTransferType + " is not available: server returned DOES_NOT_USE");
         case RELAY:
             var parameters = blobTransferMedium.getParameters();
             String sessionId = parameters.get("sessionId");
