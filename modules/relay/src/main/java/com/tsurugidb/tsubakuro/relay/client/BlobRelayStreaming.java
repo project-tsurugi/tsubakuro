@@ -69,7 +69,7 @@ public class BlobRelayStreaming implements Closeable {
 
     @Override
     public void close() {
-        channel.shutdown();
+        channel.shutdownNow();
     }
 
     /**
@@ -84,6 +84,7 @@ public class BlobRelayStreaming implements Closeable {
      */
     public BlobRelayCommon.BlobReference put(Streaming.PutStreamingRequest.Metadata meta, InputStream input, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
         final AtomicReference<BlobRelayCommon.BlobReference> reference = new AtomicReference<>();
+        final AtomicReference<Throwable> error = new AtomicReference<>();
         final AtomicBoolean completed = new AtomicBoolean(false);
         final Lock lock = new ReentrantLock();
         final Condition condition = lock.newCondition();
@@ -98,6 +99,7 @@ public class BlobRelayStreaming implements Closeable {
             public void onError(Throwable t) {
                 lock.lock();
                 try {
+                    error.set(t);
                     completed.set(true);
                     condition.signalAll();
                 } finally {
@@ -154,6 +156,10 @@ public class BlobRelayStreaming implements Closeable {
         } finally {
             lock.unlock();
         }
+        if (error.get() != null) {
+            channel.shutdownNow();
+            throw new RuntimeException(error.get());
+        }
         return reference.get();
     }
 
@@ -179,9 +185,10 @@ public class BlobRelayStreaming implements Closeable {
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public void get(Streaming.GetStreamingRequest request, OutputStream outputStream, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
-        AtomicReference<Streaming.GetStreamingResponse.Metadata> reference = new AtomicReference<>();
-        AtomicLong totalBytes = new AtomicLong(0);
-        AtomicBoolean completed = new AtomicBoolean(false);
+        final AtomicReference<Streaming.GetStreamingResponse.Metadata> reference = new AtomicReference<>();
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final AtomicLong totalBytes = new AtomicLong(0);
+        final AtomicBoolean completed = new AtomicBoolean(false);
         Lock lock = new ReentrantLock();
         Condition condition = lock.newCondition();
 
@@ -214,6 +221,7 @@ public class BlobRelayStreaming implements Closeable {
                 // Handle the error
                 lock.lock();
                 try {
+                    error.set(t);
                     completed.set(true);
                     condition.signalAll();
                 } finally {
@@ -257,6 +265,10 @@ public class BlobRelayStreaming implements Closeable {
             }
         } finally {
             lock.unlock();
+        }
+        if (error.get() != null) {
+            channel.shutdownNow();
+            throw new RuntimeException(error.get());
         }
 
         // check the metadata and total bytes
