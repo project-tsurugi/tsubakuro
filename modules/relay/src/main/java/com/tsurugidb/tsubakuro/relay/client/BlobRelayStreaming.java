@@ -44,6 +44,7 @@ import com.tsurugidb.blob_relay.proto.Streaming;
  * BlobRelayStreaming is a class that provides methods for streaming Blob data using gRPC.
  */
 public class BlobRelayStreaming implements Closeable {
+    private static final long CLOSE_TIMEOUT = 1_000; // 1 second
     private final BlobRelayStreamingGrpc.BlobRelayStreamingStub stub;
     private final long chunkSize;
     private final ManagedChannel channel;
@@ -69,7 +70,15 @@ public class BlobRelayStreaming implements Closeable {
 
     @Override
     public void close() {
-        channel.shutdownNow();
+        channel.shutdown();
+        try {
+            if (!channel.awaitTermination(CLOSE_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                channel.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            channel.shutdownNow();
+        }
     }
 
     /**
@@ -156,9 +165,17 @@ public class BlobRelayStreaming implements Closeable {
         } finally {
             lock.unlock();
         }
-        if (error.get() != null) {
-            channel.shutdownNow();
-            throw new RuntimeException(error.get());
+        Throwable cause = error.get();
+        if (cause != null) {
+            close();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            }
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                throw (InterruptedException) cause;
+            }
+            throw new IOException("Failed to retrieve blob data", cause);
         }
         return reference.get();
     }
@@ -266,9 +283,17 @@ public class BlobRelayStreaming implements Closeable {
         } finally {
             lock.unlock();
         }
-        if (error.get() != null) {
-            channel.shutdownNow();
-            throw new RuntimeException(error.get());
+        Throwable cause = error.get();
+        if (cause != null) {
+            close();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            }
+            if (cause instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                throw (InterruptedException) cause;
+            }
+            throw new IOException("Failed to retrieve blob data", cause);
         }
 
         // check the metadata and total bytes
