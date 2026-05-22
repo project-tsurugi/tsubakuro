@@ -320,4 +320,11 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
         }
         return Path.of(path);
     }
+
+    @Override
+    public String toString() {
+        return "LargeObjectClientPrivileged{"
+             + "blobPathMapping=" + blobPathMapping
+             + '}';
+        }
 }

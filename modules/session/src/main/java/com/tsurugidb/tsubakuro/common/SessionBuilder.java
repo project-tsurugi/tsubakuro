@@ -58,6 +58,8 @@ public final class SessionBuilder {
 
     private BlobTransferType blobTransferType = BlobTransferType.DEFAULT;
 
+    private URI blobRelayEndpoint = null;
+
     private SessionBuilder(Connector connector) {
         assert connector != null;
         this.connector = connector;
@@ -149,6 +151,7 @@ public final class SessionBuilder {
      * @return this
      */
     public SessionBuilder withBlobPathMapping(@Nonnull BlobPathMapping mapping) {
+        Objects.requireNonNull(mapping);
         this.blobPathMapping = mapping;
         return this;
     }
@@ -159,7 +162,19 @@ public final class SessionBuilder {
      * @return this
      */
     public SessionBuilder withBlobTransfer(@Nonnull BlobTransferType type) {
+        Objects.requireNonNull(type);
         this.blobTransferType = type;
+        return this;
+    }
+
+    /**
+     * Sets the blob relay endpoint for BLOB transfer.
+     * @param endpoint the blob relay endpoint
+     * @return this
+     */
+    public SessionBuilder withBlobRelayEndpoint(@Nonnull URI endpoint) {
+        Objects.requireNonNull(endpoint);
+        this.blobRelayEndpoint = endpoint;
         return this;
     }
 
@@ -231,7 +246,7 @@ public final class SessionBuilder {
 
     private Session create0(Wire wire) throws IOException, ServerException, InterruptedException {
         assert wire != null;
-        var session = new SessionImpl(doKeepAlive, blobPathMapping);
+        var session = new SessionImpl(doKeepAlive, blobPathMapping, blobTransferType, blobRelayEndpoint);
         boolean green = false;
         try {
             session.connect(wire);

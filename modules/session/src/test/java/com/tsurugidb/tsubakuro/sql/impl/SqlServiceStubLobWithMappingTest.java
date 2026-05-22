@@ -45,6 +45,7 @@ import com.tsurugidb.sql.proto.SqlResponse;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.Disposer;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.BlobInfoImpl;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
@@ -82,7 +83,7 @@ class SqlServiceStubLobWithMappingTest {
                                                 .build();
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
-            session = new SessionImpl(false, blobPathMapping);
+            session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null);
             disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
@@ -487,7 +488,7 @@ class SqlServiceStubLobWithMappingTest {
                                                 .build();
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
-            session = new SessionImpl(false, blobPathMapping);
+            session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null);
             disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
@@ -713,7 +714,7 @@ class SqlServiceStubLobWithMappingTest {
                                                 .build();
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
-            session = new SessionImpl(false, blobPathMapping);
+            session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null);
             disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
@@ -807,7 +808,7 @@ class SqlServiceStubLobWithMappingTest {
                                                 .build();
             System.out.println(blobPathMapping.toString());
             wire = new WireImpl(link);
-            session = new SessionImpl(false, blobPathMapping);
+            session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null);
             disposer = ((SessionImpl) session).disposer();
             session.connect(wire);
         } catch (IOException e) {
@@ -896,7 +897,7 @@ class SqlServiceStubLobWithMappingTest {
                                             .build();
         
         wire = new WireImpl(link);
-        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping));
+        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null));
         assertEquals("server path must be absolute", e.getMessage());
     }
 
@@ -909,7 +910,7 @@ class SqlServiceStubLobWithMappingTest {
                                             .build();
         
         wire = new WireImpl(link);
-        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping));
+        var e = assertThrows(IllegalArgumentException.class, () -> session = new SessionImpl(false, blobPathMapping, BlobTransferType.DEFAULT, null));
         assertEquals("server path must be absolute", e.getMessage());
     }
 }
