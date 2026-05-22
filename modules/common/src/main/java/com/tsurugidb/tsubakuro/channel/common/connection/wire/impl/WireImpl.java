@@ -365,6 +365,7 @@ public class WireImpl implements Wire {
                         }
                         break;
                     case BLOBTRANSFER_NOT_SET:
+                        blobTransferMedium = new BlobTransferMediumImpl(BlobTransferType.DOES_NOT_USE);
                         break;
                     default:
                         throw new AssertionError("unsupported blob transfer medium: " + successMessage.getBlobTransferCase());
