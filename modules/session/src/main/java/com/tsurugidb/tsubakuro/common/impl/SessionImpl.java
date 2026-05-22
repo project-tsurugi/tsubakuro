@@ -664,7 +664,13 @@ public class SessionImpl implements Session {
                 try {
                     if (closed.compareAndSet(expected, SESSION_CLOSED)) {
                         keepAliveTimer.cancel();  // does not throw any exception
-                        wireClose();
+                        try {
+                            wireClose();
+                        } finally {
+                            if (largeObjectClient != null) {
+                                largeObjectClient.close();
+                            }
+                        }
                         close();                  // in case close() is not called yet, and thus disposer is not terminated yet
                         return;
                     }
