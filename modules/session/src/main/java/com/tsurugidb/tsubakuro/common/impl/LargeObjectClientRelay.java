@@ -60,10 +60,12 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(LargeObjectClientRelay.class);
 
-    private final BlobRelayStreaming blobRelayStreaming;
     private final long sessionId;
+    private final String endpoint;
+    private final boolean secure;
     private final long chunkSize;
-    
+    private BlobRelayStreaming blobRelayStreaming = null;
+
     /**
      * Creates a new instance.
      * @param sessionId the session ID for the BlobRelayStreaming
@@ -77,8 +79,15 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid session ID: " + sessionId, e);
         }
+        this.endpoint = endpoint;
+        this.secure = secure;
         this.chunkSize = chunkSize;
-        this.blobRelayStreaming = new BlobRelayStreaming(endpoint, secure, chunkSize);
+    }
+
+    private void openBlobRelayStreaming() throws IOException {
+        if (blobRelayStreaming == null) {
+            blobRelayStreaming = new BlobRelayStreaming(endpoint, secure, chunkSize);
+        }
     }
 
     private abstract class FutureResponseImpl<T> implements FutureResponse<T> {
@@ -114,6 +123,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             @Override
             public LargeObjectInfo get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 try {
+                    openBlobRelayStreaming();
                     var ref = blobRelayStreaming.put(meta, source, timeout, unit);
                     return new LargeObjectInfo() {
                         @Override
@@ -186,6 +196,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 final PipedInputStream pipedInputStream = new PipedInputStream(pipedOutputStream);
                 var request = newGetStreamingRequest(contextId, ref);
                 try {
+                    openBlobRelayStreaming();
                     blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
                     return pipedInputStream;
                 } finally {
@@ -242,6 +253,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             public Void get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 var request = newGetStreamingRequest(contextId, ref);
                 try (FileOutputStream fileOutputStream = new FileOutputStream(destination.toFile())) {
+                    openBlobRelayStreaming();
                     blobRelayStreaming.get(request, fileOutputStream, timeout, unit);
                     return null;
                 } finally {
@@ -253,6 +265,18 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
     @Override
     public void close() throws IOException {
-        blobRelayStreaming.close();
+        if (blobRelayStreaming != null) {
+            blobRelayStreaming.close();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "LargeObjectClientRelay{"
+             + "sessionId=" + sessionId
+             + ", endpoint='" + endpoint + '\''
+             + ", secure=" + secure
+             + ", chunkSize=" + chunkSize
+             + '}';
     }
 }

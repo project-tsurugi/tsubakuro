@@ -75,4 +75,9 @@ public class LargeObjectClientVoid implements LargeObjectClient {
     public FutureResponse<Void> copyTo(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref, @Nonnull Path destination) throws BlobException {
         throw new IllegalStateException(ERROR_MESSAGE);
     }
+
+    @Override
+    public String toString() {
+        return "LargeObjectClientVoid";
+    }
 }

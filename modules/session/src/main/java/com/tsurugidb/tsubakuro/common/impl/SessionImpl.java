@@ -17,8 +17,9 @@ package com.tsurugidb.tsubakuro.common.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.Instant;
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -53,6 +54,7 @@ import com.tsurugidb.tsubakuro.channel.common.connection.wire.Wire;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.impl.WireImpl;
 import com.tsurugidb.tsubakuro.common.BlobInfo;
 import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.common.BlobPathMapping;
 import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.common.ServerBlobInfo;
@@ -83,6 +85,8 @@ public class SessionImpl implements Session {
     private final AtomicBoolean cleanUpFinished = new AtomicBoolean(false);
     private final AtomicBoolean closeCleanUpRegistered = new AtomicBoolean(false);
     private final BlobPathMapping blobPathMapping;
+    private final BlobTransferType blobTransferType;
+    private final URI blobRelayEndpoint;
     private final Disposer disposer = new Disposer();
 
     private static final class AtomicCompleted extends ReentrantLock {
@@ -166,12 +170,16 @@ public class SessionImpl implements Session {
      * Creates a new instance, exist for SessionBuilder.
      * @param doKeepAlive activate keep alive chore when doKeepAlive is true
      * @param blobPathMapping path mapping used when passing blobs using file
+     * @param blobTransferType the BlobTransferType to use for this session; if null, it is treated as BlobTransferType.DEFAULT
+     * @param blobRelayEndpoint the blob relay endpoint specified separately; if null, URI provided from the server will be used
      */
-    public SessionImpl(boolean doKeepAlive, @Nullable BlobPathMapping blobPathMapping) {
+    public SessionImpl(boolean doKeepAlive, @Nullable BlobPathMapping blobPathMapping, @Nonnull BlobTransferType blobTransferType, @Nullable URI blobRelayEndpoint) {
         this.wire = null;
         this.doKeepAlive = doKeepAlive;
         this.blobPathMapping = blobPathMapping;
         this.largeObjectClient = null;  // wire is not connected yet, so largeObjectClient is not initialized yet
+        this.blobTransferType = blobTransferType;
+        this.blobRelayEndpoint = blobRelayEndpoint;
         checkBlogPathMapping();
     }
 
@@ -195,10 +203,9 @@ public class SessionImpl implements Session {
      * Creates a new instance with doKeepAlive is false and blobPathMapping is null, exist for tests.
      */
     public SessionImpl() {
-        this(false, null);
+        this(false, null, BlobTransferType.DEFAULT, null);
         this.wire = null;
         this.largeObjectClient = null;  // wire is not connected yet, so largeObjectClient is not initialized yet
-
     }
 
     /**
@@ -212,7 +219,9 @@ public class SessionImpl implements Session {
         this.wire = wire;
         this.doKeepAlive = false;
         this.blobPathMapping = null;
+        this.blobTransferType = BlobTransferType.DEFAULT;
         this.largeObjectClient = getLargeObjectClient(wire.getBlobTransferMedium());
+        this.blobRelayEndpoint = null;
     }
 
     /**
@@ -232,17 +241,18 @@ public class SessionImpl implements Session {
         }
     }
 
-    private LargeObjectClient getLargeObjectClient(BlobTransferMedium blobTransferMedium) {
-        if (blobTransferMedium == null) {
-            return new LargeObjectClientVoid();
-        }
+    private LargeObjectClient getLargeObjectClient(@Nonnull BlobTransferMedium blobTransferMedium) {
+        Objects.requireNonNull(blobTransferMedium);
         switch (blobTransferMedium.getBlobTransferType()) {
         case DOES_NOT_USE:
-            return new LargeObjectClientVoid();
+            if (blobTransferType == BlobTransferType.DEFAULT || blobTransferType == BlobTransferType.DOES_NOT_USE) {
+                return new LargeObjectClientVoid();
+            }
+            throw new RuntimeException("BlobTransferMedium is not available for BlobTransferType: " + blobTransferType);
         case RELAY:
             var parameters = blobTransferMedium.getParameters();
             String sessionId = parameters.get("sessionId");
-            String endpoint = parameters.get("endpoint");
+            String endpoint = blobRelayEndpoint != null ? blobRelayEndpoint.toString() : parameters.get("endpoint");
             if (sessionId == null || endpoint == null) {
                 throw new IllegalArgumentException("sessionId and endpoint parameters are required for RELAY BlobTransferType");
             }

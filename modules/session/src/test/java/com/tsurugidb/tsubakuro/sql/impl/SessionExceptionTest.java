@@ -33,6 +33,8 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
 import com.tsurugidb.tsubakuro.exception.ServerException;
 import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.sql.Placeholders;
+import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
+import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.sql.proto.SqlRequest;
 import com.tsurugidb.sql.proto.SqlResponse;
@@ -119,6 +121,21 @@ class SesstionExceptionTest {
             return null;  // dummy as it is test for session
         }
 
+        @Override
+        public BlobTransferMedium getBlobTransferMedium() {
+            return new BlobTransferMedium() {
+                @Override
+                public BlobTransferType getBlobTransferType() {
+                    return BlobTransferType.DOES_NOT_USE;
+                }
+
+                @Override
+                public java.util.Map<String, String> getParameters() {
+                    return java.util.Collections.emptyMap();
+                }
+            };
+        }
+    
         @Override
         public void close() throws IOException {
         }
