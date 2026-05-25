@@ -102,10 +102,10 @@ class LargeObjectClientRelayTest {
     @BeforeEach
     void startup() {
         try {
-            server = new BlobRelayStreamingServer(SERVER_PORT);
+            server = new BlobRelayStreamingServer();
             server.start();
 
-            client = new LargeObjectClientRelay("123", "localhost:" + SERVER_PORT, false, 1024 * 1024);
+            client = new LargeObjectClientRelay("123", "localhost:" + server.getPort(), false, 1024 * 1024);
         } catch (IOException e) {
             System.err.println(e);
             e.printStackTrace();

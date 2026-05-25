@@ -65,8 +65,6 @@ import com.tsurugidb.tsubakuro.sql.SqlClient;
 import com.tsurugidb.tsubakuro.common.exception.BlobException;
 
 class SqlServiceStubWithLobClientTest {
-    private static final int SERVER_PORT = 65432;
-
     private final MockLink link = new MockLink();
 
     private WireImpl wire = null;
@@ -85,7 +83,7 @@ class SqlServiceStubWithLobClientTest {
     @BeforeEach
     void startup() {
         try {
-            server = new BlobRelayStreamingServer(SERVER_PORT);
+            server = new BlobRelayStreamingServer();
             server.start();
 
             wire = new WireImpl(link);
@@ -96,7 +94,7 @@ class SqlServiceStubWithLobClientTest {
                                                         .setSessionId(123)
                                                         .setBlobRelayServiceInfo(EndpointResponse.BlobRelayServiceInfo.newBuilder()
                                                             .setBlobSessionId(246)
-                                                            .setEndpoint("dns:///localhost:" + SERVER_PORT)
+                                                            .setEndpoint("dns:///localhost:" + server.getPort())
                                                             .setMedium("stream")))
                                                 .build());
             long sessionId = wire.handshake(new ClientInformation(), null, 0, null).get();

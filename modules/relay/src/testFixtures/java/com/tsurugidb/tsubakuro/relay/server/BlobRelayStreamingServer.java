@@ -20,6 +20,8 @@ import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 import com.tsurugidb.blob_relay.proto.BlobRelayStreamingGrpc;
 import com.tsurugidb.blob_relay.proto.BlobRelayCommon;
@@ -42,8 +45,22 @@ import com.tsurugidb.blob_relay.proto.Streaming;
 public class BlobRelayStreamingServer {
     private int port;
 
-    public BlobRelayStreamingServer(int port) throws IOException {
-        this.port = port;
+    public BlobRelayStreamingServer() throws IOException {
+        this.port = getFreePort();
+    }
+    private static int getFreePort() {
+        return IntStream.range(1025, 65535)
+                .filter(i -> {
+                    try (ServerSocket socket = new ServerSocket(i, 1, InetAddress.getByName("localhost"))) {
+                        return true;
+                    } catch (IOException e) {
+                        return false;
+                    }
+                })
+                .findFirst().orElseThrow(IllegalStateException::new);
+    }
+    public int getPort() {
+        return port;
     }
 
     private static final Logger logger = Logger.getLogger(BlobRelayStreamingServer.class.getName());
