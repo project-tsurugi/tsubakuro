@@ -44,21 +44,6 @@ import com.tsurugidb.tsubakuro.sql.impl.testing.Relation;
 import com.tsurugidb.tsubakuro.util.ByteBufferInputStream;
 
 class SessionImplTest {
-    private static final String RS_RD = "relation"; //$NON-NLS-1$
-
-    private final MockWire wire = new MockWire();
-
-    private final Session session = new SessionImpl();
-
-    public SessionImplTest() {
-        session.connect(wire);
-    }
-
-    @AfterEach
-    void tearDown() throws IOException, InterruptedException, ServerException {
-        session.close();
-    }
-
     private static RequestHandler accepts(CoreRequest.Request.CommandCase command, RequestHandler next) {
         return new RequestHandler() {
             @Override
@@ -83,6 +68,7 @@ class SessionImplTest {
 
     @Test
     void updateExpirationTime_success() throws Exception {
+        MockWire wire = new MockWire();
         wire.next(accepts(CoreRequest.Request.CommandCase.UPDATE_EXPIRATION_TIME,
                 RequestHandler.returns(CoreResponse.UpdateExpirationTime.newBuilder()
                         .setSuccess(newVoid())
@@ -101,6 +87,7 @@ class SessionImplTest {
 
     @Test
     void updateExpirationTime_fail() throws Exception {
+        MockWire wire = new MockWire();
         wire.next(accepts(CoreRequest.Request.CommandCase.UPDATE_EXPIRATION_TIME,
                 RequestHandler.returns(CoreResponse.UpdateExpirationTime.newBuilder()
                         .setUnknownError(newEngineError())
