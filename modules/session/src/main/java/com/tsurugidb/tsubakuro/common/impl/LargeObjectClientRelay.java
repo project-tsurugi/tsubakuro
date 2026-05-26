@@ -197,7 +197,15 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 var request = newGetStreamingRequest(contextId, ref);
                 try {
                     openBlobRelayStreaming();
-                    blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
+                    Thread thread = new Thread(() -> {
+                        try (PipedOutputStream output = pipedOutputStream) {
+                            blobRelayStreaming.get(request, output, timeout, unit);
+                        } catch (IOException | InterruptedException e) {
+                            LOG.error("Error while receiving blob data", e);
+                        }
+                    }, "lob-relay-get-" + sessionId);
+                    thread.setDaemon(true);
+                    thread.start();
                     return pipedInputStream;
                 } finally {
                     done = true;
