@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 // import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -33,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.io.ByteArrayOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -215,6 +217,30 @@ class LargeObjectClientRelayTest {
         assertEquals(1, lobReference.getStorageId());
         assertEquals(12345, lobReference.getObjectId());
         assertEquals(678, lobReference.getTag());
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
+    void openInputStream_largeBlob() throws Exception {
+        byte[] largeData = new byte[4096];
+        for (int i = 0; i < largeData.length; i++) {
+            largeData[i] = (byte) ('a' + (i % 26));
+        }
+
+        server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                .setChunk(com.google.protobuf.ByteString.copyFrom(largeData))
+                                .build());
+        server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
+                                    .setBlobSize(largeData.length))
+                                .build());
+
+        assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
+            var inputStream = client.openInputStream(contextId, lobReference).await();
+            assertNotNull(inputStream);
+            var obtainedData = inputStream.readAllBytes();
+            assertArrayEquals(largeData, obtainedData);
+        });
         assertFalse(server.hasRemaining());
     }
 

@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Optional;
@@ -165,8 +166,15 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 while ((len = reader.read(buffer)) != -1) {
                     writer.write(buffer, 0, len);
                 }
+                writer.flush();
             } catch (IOException e) {
                 LOG.error("Error while converting Reader to InputStream", e);
+            } finally {
+                try {
+                    pos.close();
+                } catch (IOException e) {
+                    LOG.error("Error while closing PipedOutputStream", e);
+                }
             }
         }).start();
 
@@ -187,17 +195,86 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         }
     }
 
+    private static class CustomPipedInputStream extends PipedInputStream {
+        AtomicReference<Exception> exceptionRef = new AtomicReference<>(null);
+        private final PipedOutputStream pipedOutputStream;
+
+        CustomPipedInputStream(PipedOutputStream pipedOutputStream) throws IOException {
+            super(pipedOutputStream);
+            this.pipedOutputStream = pipedOutputStream;
+        }
+
+        public void setException(Exception e) {
+            exceptionRef.compareAndSet(null, e);
+        }
+
+        @Override
+        public int read() throws IOException {
+            checkException();
+            return super.read();
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            checkException();
+            return super.read(b);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            checkException();
+            return super.read(b, off, len);
+        }
+
+        private void checkException() throws IOException {
+            Exception e = exceptionRef.get();
+            if (e != null) {
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Thread was interrupted", e);
+                } else {
+                    throw new IOException("Unexpected exception occurred", e);
+                }
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.close();
+            pipedOutputStream.close();
+        }
+    }
+
     @Override
     public FutureResponse<InputStream> openInputStream(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
         return new FutureResponseImpl<InputStream>() {
             @Override
             public InputStream get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 final PipedOutputStream pipedOutputStream = new PipedOutputStream();
-                final PipedInputStream pipedInputStream = new PipedInputStream(pipedOutputStream);
+                final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream);
                 var request = newGetStreamingRequest(contextId, ref);
                 try {
                     openBlobRelayStreaming();
-                    blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
+                    Thread thread = new Thread(() -> {
+                        try {
+                            blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
+                        } catch (IOException e) {
+                            pipedInputStream.setException(e);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            pipedInputStream.setException(e);
+                        } finally {
+                            try {
+                                pipedOutputStream.close();
+                            } catch (IOException e) {
+                                pipedInputStream.setException(e);
+                            }
+                        }
+                    }, "tsubakuro-blob-relay-get");
+                    thread.setDaemon(true);
+                    thread.start();
                     return pipedInputStream;
                 } finally {
                     done = true;
