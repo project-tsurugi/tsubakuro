@@ -251,6 +251,7 @@ public class BlobRelayStreaming implements Closeable {
                 // Handle the completion
                 try {
                     bufferedOutputStream.close();
+                    outputStream.close();
                 } catch (IOException e) {
                     // Handle the exception
                 }
