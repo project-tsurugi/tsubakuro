@@ -165,8 +165,8 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 int len;
                 while ((len = reader.read(buffer)) != -1) {
                     writer.write(buffer, 0, len);
-                    writer.flush();
                 }
+                writer.flush();
             } catch (IOException e) {
                 LOG.error("Error while converting Reader to InputStream", e);
             } finally {
@@ -205,13 +205,25 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         }
 
         public void setException(Exception e) {
-            exceptionRef.set(e);
+            exceptionRef.compareAndSet(null, e);
         }
 
         @Override
         public int read() throws IOException {
             checkException();
             return super.read();
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            checkException();
+            return super.read(b);
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            checkException();
+            return super.read(b, off, len);
         }
 
         private void checkException() throws IOException {
@@ -245,7 +257,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 var request = newGetStreamingRequest(contextId, ref);
                 try {
                     openBlobRelayStreaming();
-                    new Thread(() -> {
+                    Thread thread = new Thread(() -> {
                         try {
                             blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
                         } catch (IOException e) {
@@ -260,7 +272,9 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                                 pipedInputStream.setException(e);
                             }
                         }
-                    }).start();
+                    }, "tsubakuro-blob-relay-get");
+                    thread.setDaemon(true);
+                    thread.start();
                     return pipedInputStream;
                 } finally {
                     done = true;
