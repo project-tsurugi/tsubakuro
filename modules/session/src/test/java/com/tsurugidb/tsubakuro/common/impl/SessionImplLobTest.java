@@ -15,7 +15,6 @@
  */
 package com.tsurugidb.tsubakuro.common.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -34,7 +32,6 @@ import com.tsurugidb.endpoint.proto.EndpointRequest;
 import com.tsurugidb.endpoint.proto.EndpointResponse;
 import com.tsurugidb.tsubakuro.common.BlobTransferType;
 import com.tsurugidb.tsubakuro.common.BlobTransferMedium;
-import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.impl.SessionImpl;
 import com.tsurugidb.tsubakuro.channel.common.connection.wire.Response;
 import com.tsurugidb.tsubakuro.exception.ServerException;
@@ -85,11 +82,6 @@ class SessionImplLobTest {
             assertTrue(largeObjectClientString.contains("sessionId=246"));
             assertTrue(largeObjectClientString.contains("endpoint='dns:///althost:63456'"));
             assertTrue(largeObjectClientString.contains("chunkSize=1024"));
-
-        } catch (Exception e) {
-            System.err.println(e);
-            e.printStackTrace();
-            fail("cought some exception");
         }
         assertFalse(wire.hasRemaining());
     }
@@ -116,18 +108,18 @@ class SessionImplLobTest {
                         .build())));
 
         try (var session = new SessionImpl(false, null, BlobTransferType.PRIVILEGED, null)) {
-            var e = assertThrows(IllegalStateException.class, () -> session.connect(wire));
+            assertThrows(IllegalStateException.class, () -> session.connect(wire));
         } catch (Exception e) {
             System.err.println(e);
             e.printStackTrace();
-            fail("cought some exception");
+            fail("caught some exception");
         }
         assertFalse(wire.hasRemaining());
     }
 
     @Test
     void getLargeObjectClient_relay_fail() throws Exception {
-         MockWire wire = new MockWire();
+        MockWire wire = new MockWire();
         wire.setBlobTransferMedium(new BlobTransferMedium() {
             @Override
             public BlobTransferType getBlobTransferType() {
@@ -147,11 +139,11 @@ class SessionImplLobTest {
                         .build())));
 
         try (var session = new SessionImpl(false, null, BlobTransferType.RELAY, null)) {
-            var e = assertThrows(IllegalStateException.class, () -> session.connect(wire));
+            assertThrows(IllegalStateException.class, () -> session.connect(wire));
         } catch (Exception e) {
             System.err.println(e);
             e.printStackTrace();
-            fail("cought some exception");
+            fail("caught some exception");
         }
         assertFalse(wire.hasRemaining());
     }

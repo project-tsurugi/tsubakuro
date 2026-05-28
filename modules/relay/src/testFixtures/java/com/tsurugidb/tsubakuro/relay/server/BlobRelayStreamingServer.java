@@ -43,37 +43,20 @@ import com.tsurugidb.blob_relay.proto.Streaming;
  * Server that manages startup/shutdown of a {@code BlobRelay} server.
  */
 public class BlobRelayStreamingServer {
-    private int port;
-
-    public BlobRelayStreamingServer() throws IOException {
-        this.port = getFreePort();
-    }
-    private static int getFreePort() {
-        return IntStream.range(1025, 65535)
-                .filter(i -> {
-                    try (ServerSocket socket = new ServerSocket(i, 1, InetAddress.getByName("localhost"))) {
-                        return true;
-                    } catch (IOException e) {
-                        return false;
-                    }
-                })
-                .findFirst().orElseThrow(IllegalStateException::new);
-    }
-    public int getPort() {
-        return port;
-    }
-
     private static final Logger logger = Logger.getLogger(BlobRelayStreamingServer.class.getName());
 
-    private Server server;
     private final BlobRelayImpl blobRelayImpl = new BlobRelayImpl();
+    private Server server;
+    private int port;
+
     public void start() throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
+        server = Grpc.newServerBuilderForPort(0, InsecureServerCredentials.create())
             .executor(executor)
             .addService(blobRelayImpl)
             .build()
             .start();
+        port = server.getPort();
         logger.info("Server started, listening on " + port);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -101,7 +84,11 @@ public class BlobRelayStreamingServer {
             server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
         }
     }
-  
+
+    public int getPort() {
+        return port;
+    }
+
     /**
      * Await termination on the main thread since the grpc library uses daemon threads.
      */
