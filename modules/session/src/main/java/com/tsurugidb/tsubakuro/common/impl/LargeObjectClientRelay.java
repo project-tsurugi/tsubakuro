@@ -215,20 +215,33 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
         @Override
         public int read() throws IOException {
+            int rv = super.read();
             checkException();
-            return super.read();
+            return rv;
         }
 
         @Override
         public int read(byte[] b) throws IOException {
+            int rv = super.read(b);
             checkException();
-            return super.read(b);
+            return rv;
         }
 
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
+            int rv = super.read(b, off, len);
             checkException();
-            return super.read(b, off, len);
+            return rv;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                checkException();
+            } finally {
+                super.close();
+                pipedOutputStream.close();
+            }
         }
 
         private void checkException() throws IOException {
@@ -243,12 +256,6 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                     throw new IOException("Unexpected exception occurred", e);
                 }
             }
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.close();
-            pipedOutputStream.close();
         }
     }
 
