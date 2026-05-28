@@ -82,13 +82,13 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         }
         this.endpoint = endpoint;
         this.secure = secure;
-        this.chunkSize = chunkSize;
+        this.chunkSize = validateChunkSize(chunkSize);
     }
-
-    private synchronized void openBlobRelayStreaming() throws IOException {
-        if (blobRelayStreaming == null) {
-            blobRelayStreaming = new BlobRelayStreaming(endpoint, secure, chunkSize);
+    private static long validateChunkSize(long chunkSize) {
+        if (chunkSize <= 0 || chunkSize > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("chunkSize must be between 1 and " + Integer.MAX_VALUE + ": " + chunkSize);
         }
+        return chunkSize;
     }
 
     private abstract class FutureResponseImpl<T> implements FutureResponse<T> {
@@ -146,6 +146,11 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             }
         };
     }
+    private synchronized void openBlobRelayStreaming() throws IOException {
+        if (blobRelayStreaming == null) {
+            blobRelayStreaming = new BlobRelayStreaming(endpoint, secure, chunkSize);
+        }
+    }
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(Reader source) throws BlobException {
@@ -157,7 +162,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
     }
     InputStream convertInputStream(Reader reader, Charset charset) throws IOException {
         PipedOutputStream pos = new PipedOutputStream();
-        PipedInputStream pis = new PipedInputStream(pos);
+        PipedInputStream pis = new PipedInputStream(pos, (int) chunkSize);
 
         new Thread(() -> {
             try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(pos, charset))) {
@@ -199,8 +204,8 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         AtomicReference<Exception> exceptionRef = new AtomicReference<>(null);
         private final PipedOutputStream pipedOutputStream;
 
-        CustomPipedInputStream(PipedOutputStream pipedOutputStream) throws IOException {
-            super(pipedOutputStream);
+        CustomPipedInputStream(PipedOutputStream pipedOutputStream, int pipeSize) throws IOException {
+            super(pipedOutputStream, pipeSize);
             this.pipedOutputStream = pipedOutputStream;
         }
 
@@ -253,7 +258,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
             @Override
             public InputStream get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 final PipedOutputStream pipedOutputStream = new PipedOutputStream();
-                final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream);
+                final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream, (int) chunkSize);
                 var request = newGetStreamingRequest(contextId, ref);
                 try {
                     openBlobRelayStreaming();

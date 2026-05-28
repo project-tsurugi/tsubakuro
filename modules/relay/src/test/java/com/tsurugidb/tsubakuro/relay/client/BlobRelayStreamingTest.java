@@ -39,7 +39,6 @@ import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 class BlobRelayStreamingTest {
     private static final Logger LOG = LoggerFactory.getLogger(BlobRelayStreamingTest.class);
     
-    private static final int SERVER_PORT = 50551;
     private static final int TEST_DATA_SIZE = 1024 * 10;
 
     private BlobRelayStreamingServer server;
@@ -52,7 +51,7 @@ class BlobRelayStreamingTest {
     @BeforeEach
     void startup() {
         try {
-            server = new BlobRelayStreamingServer(SERVER_PORT);
+            server = new BlobRelayStreamingServer();
             server.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -77,7 +76,7 @@ class BlobRelayStreamingTest {
         server.addPutResponse(response);
 
         // test put() method
-        client = new BlobRelayStreaming("localhost:" + SERVER_PORT, false, 1024);
+        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
         var data = new byte[TEST_DATA_SIZE];
         new Random().nextBytes(data);
         var result = client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
@@ -108,7 +107,7 @@ class BlobRelayStreamingTest {
                                                             .build());
 
         // test get() method
-        client = new BlobRelayStreaming("localhost:" + SERVER_PORT, false, 1024);
+        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
         var outputStream = new ByteArrayOutputStream();
         client.get(Streaming.GetStreamingRequest.newBuilder()
                                                     .setTransactionId(789)

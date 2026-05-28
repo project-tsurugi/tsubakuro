@@ -49,7 +49,15 @@ public class MockWire implements Wire {
         }
     });
 
-    private BlobTransferType blobTransferType = BlobTransferType.PRIVILEGED;
+    private BlobTransferMedium blobTransferMediumGiven = null;
+
+    /**
+     * Set the blob transfer medium for this mock wire.
+     * @param blobTransferMedium the blob transfer medium
+     */
+    void setBlobTransferMedium(BlobTransferMedium blobTransferMedium) {
+        blobTransferMediumGiven = blobTransferMedium;
+    }
 
     @Override
     public FutureResponse<Response> send(int serviceId, ByteBuffer payload) throws IOException {
@@ -72,10 +80,13 @@ public class MockWire implements Wire {
 
     @Override
     public BlobTransferMedium getBlobTransferMedium() {
+        if (blobTransferMediumGiven != null) {
+            return blobTransferMediumGiven;
+        }
         return new BlobTransferMedium() {
             @Override
             public BlobTransferType getBlobTransferType() {
-                return blobTransferType;
+                return BlobTransferType.PRIVILEGED;
             }
             @Override
             public Map<String, String> getParameters() {
@@ -89,20 +100,9 @@ public class MockWire implements Wire {
      * @param handler the request handler
      * @return this
      */
-    public MockWire next(RequestHandler handler) {
+    MockWire next(RequestHandler handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
-        return this;
-    }
-
-    /**
-     * Set the blob transfer type for this mock wire.
-     * @param type the blob transfer type
-     * @return this
-     */
-    public MockWire blobTransfer(BlobTransferType type) {
-        Objects.requireNonNull(type);
-        blobTransferType = type;
         return this;
     }
 
@@ -111,7 +111,7 @@ public class MockWire implements Wire {
      * @param handler the request handler
      * @return this
      */
-    public MockWire otherwise(RequestHandler handler) {
+    MockWire otherwise(RequestHandler handler) {
         Objects.requireNonNull(handler);
         handlers.add(handler);
         return this;
@@ -121,7 +121,7 @@ public class MockWire implements Wire {
      * Returns whether or not this object has more remaining handlers.
      * @return {@code true} if this has more remaining handlers, otherwise {@code false}
      */
-    public boolean hasRemaining() {
+    boolean hasRemaining() {
         return !handlers.isEmpty();
     }
 

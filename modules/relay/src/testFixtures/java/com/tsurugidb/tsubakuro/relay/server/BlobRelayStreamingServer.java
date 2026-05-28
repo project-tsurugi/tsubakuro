@@ -20,6 +20,8 @@ import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 import com.tsurugidb.blob_relay.proto.BlobRelayStreamingGrpc;
 import com.tsurugidb.blob_relay.proto.BlobRelayCommon;
@@ -40,23 +43,20 @@ import com.tsurugidb.blob_relay.proto.Streaming;
  * Server that manages startup/shutdown of a {@code BlobRelay} server.
  */
 public class BlobRelayStreamingServer {
-    private int port;
-
-    public BlobRelayStreamingServer(int port) throws IOException {
-        this.port = port;
-    }
-
     private static final Logger logger = Logger.getLogger(BlobRelayStreamingServer.class.getName());
 
-    private Server server;
     private final BlobRelayImpl blobRelayImpl = new BlobRelayImpl();
+    private Server server;
+    private int port;
+
     public void start() throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
+        server = Grpc.newServerBuilderForPort(0, InsecureServerCredentials.create())
             .executor(executor)
             .addService(blobRelayImpl)
             .build()
             .start();
+        port = server.getPort();
         logger.info("Server started, listening on " + port);
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -84,7 +84,11 @@ public class BlobRelayStreamingServer {
             server.shutdown().awaitTermination(30, TimeUnit.SECONDS);
         }
     }
-  
+
+    public int getPort() {
+        return port;
+    }
+
     /**
      * Await termination on the main thread since the grpc library uses daemon threads.
      */
