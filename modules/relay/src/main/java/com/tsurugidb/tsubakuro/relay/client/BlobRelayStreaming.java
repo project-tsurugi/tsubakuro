@@ -174,7 +174,7 @@ public class BlobRelayStreaming implements Closeable {
                 Thread.currentThread().interrupt();
                 throw (InterruptedException) cause;
             }
-            throw new IOException("Failed to retrieve blob data", cause);
+            throw new IOException("Failed to send blob data", cause);
         }
         return reference.get();
     }
@@ -292,17 +292,17 @@ public class BlobRelayStreaming implements Closeable {
                 Thread.currentThread().interrupt();
                 throw (InterruptedException) cause;
             }
-            throw new IOException("Failed to retrieve blob data", cause);
+            throw new IOException("Failed to retrieve blob data, as " + cause.getMessage(), cause);
         }
 
         // check the metadata and total bytes
         var metadata = reference.get();
         if (metadata == null) {
-            throw new IOException("Failed to retrieve blob data: metadata is missing");
+            throw new IOException("Failed to retrieve blob data, as metadata is missing");
         }
         if (metadata.getBlobSizeOptCase() == Streaming.GetStreamingResponse.Metadata.BlobSizeOptCase.BLOB_SIZE) {
             if (totalBytes.get() != metadata.getBlobSize()) {
-                throw new IOException("Failed to retrieve blob data: expected size " + metadata.getBlobSize() + " bytes, but received " + totalBytes.get() + " bytes");
+                throw new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " byte does not match received size " + totalBytes.get() + " byte");
             }
         }
     }
