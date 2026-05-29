@@ -205,8 +205,8 @@ public class BlobRelayStreaming implements Closeable {
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final AtomicLong totalBytes = new AtomicLong(0);
         final AtomicBoolean completed = new AtomicBoolean(false);
-        Lock lock = new ReentrantLock();
-        Condition condition = lock.newCondition();
+        final Lock lock = new ReentrantLock();
+        final Condition condition = lock.newCondition();
 
         final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
         final class GetResponseObserver implements StreamObserver<Streaming.GetStreamingResponse> {
@@ -221,6 +221,7 @@ public class BlobRelayStreaming implements Closeable {
                             bufferedOutputStream.flush();
                         } catch (IOException e) {
                             // Handle the exception
+                            onError(e);
                         }
                         break;
                     case METADATA:
@@ -252,6 +253,7 @@ public class BlobRelayStreaming implements Closeable {
                     bufferedOutputStream.close();
                 } catch (IOException e) {
                     // Handle the exception
+                    error.set(e);
                 }
                 lock.lock();
                 try {
@@ -273,7 +275,11 @@ public class BlobRelayStreaming implements Closeable {
         try {
             while (!completed.get()) {
                 try {
-                    condition.await();
+                    if (condition.await(10, TimeUnit.MILLISECONDS)) { // Wait for 10 millisecond
+                        if (completed.get()) {
+                            break;
+                        }
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw e;
