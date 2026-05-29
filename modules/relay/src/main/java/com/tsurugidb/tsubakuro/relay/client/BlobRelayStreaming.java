@@ -221,7 +221,7 @@ public class BlobRelayStreaming implements Closeable {
                             bufferedOutputStream.flush();
                         } catch (IOException e) {
                             // Handle the exception
-                            onError(e);
+                            error.set(e);
                         }
                         break;
                     case METADATA:
