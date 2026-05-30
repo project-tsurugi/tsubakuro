@@ -23,11 +23,8 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
@@ -96,9 +93,7 @@ public class BlobRelayStreaming implements Closeable {
     public BlobRelayCommon.BlobReference put(Streaming.PutStreamingRequest.Metadata meta, InputStream input, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
         final AtomicReference<BlobRelayCommon.BlobReference> reference = new AtomicReference<>();
         final AtomicReference<Throwable> error = new AtomicReference<>();
-        final AtomicBoolean completed = new AtomicBoolean(false);
-        final Lock lock = new ReentrantLock();
-        final Condition condition = lock.newCondition();
+        final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
 
         final class PutResponseObserver implements StreamObserver<Streaming.PutStreamingResponse> {
             @Override
@@ -108,25 +103,13 @@ public class BlobRelayStreaming implements Closeable {
 
             @Override
             public void onError(Throwable t) {
-                lock.lock();
-                try {
-                    error.set(t);
-                    completed.set(true);
-                    condition.signalAll();
-                } finally {
-                    lock.unlock();
-                }
+                error.set(t);
+                countDownLatch.get().countDown();
             }
 
             @Override
             public void onCompleted() {
-                lock.lock();
-                try {
-                    completed.set(true);
-                    condition.signalAll();
-                } finally {
-                    lock.unlock();
-                }
+                countDownLatch.get().countDown();
             }
         }
 
@@ -154,31 +137,8 @@ public class BlobRelayStreaming implements Closeable {
         // Mark the end of requests
         requestObserver.onCompleted();
 
-        lock.lock();
-        try {
-            while (!completed.get()) {
-                try {
-                    condition.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw e;
-                }
-            }
-        } finally {
-            lock.unlock();
-        }
-        Throwable cause = error.get();
-        if (cause != null) {
-            close();
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            }
-            if (cause instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-                throw (InterruptedException) cause;
-            }
-            throw new IOException("Failed to send blob data", cause);
-        }
+        countDownLatch.get().await();
+        checkException(error.get());
         return reference.get();
     }
 
@@ -258,7 +218,7 @@ public class BlobRelayStreaming implements Closeable {
      * @param timeout the timeout in milliseconds for the gRPC call
      * @param timeUnit the TimeUnit for the timeout
      * @return an InputStream to read the Blob data
-     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws IOException if an I/O error occurs while reading the BLOB data / while writing to the file at path
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public InputStream get(Streaming.GetStreamingRequest request, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
@@ -269,7 +229,7 @@ public class BlobRelayStreaming implements Closeable {
      * Receives Blob data from the gRPC server.
      * @param request the request containing the reference to the Blob data to retrieve
      * @return an InputStream to read the Blob data
-     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws IOException if an I/O error occurs while reading the BLOB data / while writing to the file at path
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public InputStream get(Streaming.GetStreamingRequest request) throws IOException, InterruptedException {
@@ -282,7 +242,7 @@ public class BlobRelayStreaming implements Closeable {
      * @param path the Path to write the Blob data to
      * @param timeout the timeout in milliseconds for the gRPC call
      * @param timeUnit the TimeUnit for the timeout
-     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws IOException if an I/O error occurs while reading the BLOB data / while writing to the file at path
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public void get(@Nonnull Streaming.GetStreamingRequest request, @Nonnull Path path, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
@@ -293,7 +253,7 @@ public class BlobRelayStreaming implements Closeable {
      * Receives Blob data from the gRPC server.
      * @param request the request containing the reference to the Blob data to retrieve
      * @param path the Path to write the Blob data to
-     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws IOException if an I/O error occurs while reading the BLOB data / while writing to the file at path
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public void get(@Nonnull Streaming.GetStreamingRequest request, @Nonnull Path path) throws IOException, InterruptedException {
@@ -301,10 +261,10 @@ public class BlobRelayStreaming implements Closeable {
     }
 
     private InputStream getInternal(@Nonnull Streaming.GetStreamingRequest request, @Nullable Path path, long timeout, @Nullable TimeUnit timeUnit) throws IOException, InterruptedException {
-        final AtomicBoolean completed = new AtomicBoolean(false);
         final boolean writeToFile = (path != null);
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final AtomicReference<CustomPipedInputStream> inputStream = new AtomicReference<>(null);
+        final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(writeToFile ? new CountDownLatch(1) : null);
 
         final class GetResponseObserver implements StreamObserver<Streaming.GetStreamingResponse> {
             final OutputStream outputStream;
@@ -351,12 +311,28 @@ public class BlobRelayStreaming implements Closeable {
             @Override
             public void onError(Throwable t) {
                 // Handle the error
-                setError(t);
+                try {
+                    setError(t);
+                } finally {
+                    if (writeToFile) {
+                        try {
+                            outputStream.close();
+                        } catch (IOException e) {
+                            // Handle the exception
+                            error.set(e);
+                        }
+                    }
+                    if (writeToFile) {
+                        countDownLatch.get().countDown();
+                    }
+                }
             }
 
             @Override
             public void onCompleted() {
-                completed.set(true);
+                if (writeToFile) {
+                    countDownLatch.get().countDown();
+                }
                 // Handle the completion
                 try {
                     outputStream.close();
@@ -393,15 +369,7 @@ public class BlobRelayStreaming implements Closeable {
         }
 
         if (writeToFile) {
-            // Wait for the response to complete
-            while (!completed.get() && error.get() == null) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw e;
-                }
-            }
+            countDownLatch.get().await();
             checkException(error.get());
             return null;
         } else {
