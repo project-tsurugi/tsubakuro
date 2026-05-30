@@ -108,16 +108,14 @@ class BlobRelayStreamingTest {
 
         // test get() method
         client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
-        var outputStream = new ByteArrayOutputStream();
-        client.get(Streaming.GetStreamingRequest.newBuilder()
+        var inputStream = client.get(Streaming.GetStreamingRequest.newBuilder()
                                                     .setTransactionId(789)
                                                     .setBlob(BlobRelayCommon.BlobReference.newBuilder()
                                                         .setStorageId(1)
                                                         .setObjectId(23)
                                                         .setTag(45))
-                                                .build(),
-                   outputStream);
-        var data = outputStream.toByteArray();
+                                                .build());
+        var data = inputStream.readAllBytes();
 
         // verify received data
         assertArrayEquals(buffer, data);

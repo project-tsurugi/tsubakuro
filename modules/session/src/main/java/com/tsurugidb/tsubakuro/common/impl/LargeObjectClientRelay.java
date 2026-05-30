@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Optional;
@@ -200,94 +199,14 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         }
     }
 
-    private static class CustomPipedInputStream extends PipedInputStream {
-        AtomicReference<Exception> exceptionRef = new AtomicReference<>(null);
-        private final PipedOutputStream pipedOutputStream;
-
-        CustomPipedInputStream(PipedOutputStream pipedOutputStream, int pipeSize) throws IOException {
-            super(pipedOutputStream, pipeSize);
-            this.pipedOutputStream = pipedOutputStream;
-        }
-
-        public void setException(Exception e) {
-            exceptionRef.compareAndSet(null, e);
-        }
-
-        @Override
-        public int read() throws IOException {
-            int rv = super.read();
-            checkException();
-            return rv;
-        }
-
-        @Override
-        public int read(byte[] b) throws IOException {
-            int rv = super.read(b);
-            checkException();
-            return rv;
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            int rv = super.read(b, off, len);
-            checkException();
-            return rv;
-        }
-
-        @Override
-        public void close() throws IOException {
-            try {
-                checkException();
-            } finally {
-                super.close();
-                pipedOutputStream.close();
-            }
-        }
-
-        private void checkException() throws IOException {
-            Exception e = exceptionRef.get();
-            if (e != null) {
-                if (e instanceof IOException) {
-                    throw (IOException) e;
-                } else if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Thread was interrupted", e);
-                } else {
-                    throw new IOException("Unexpected exception occurred", e);
-                }
-            }
-        }
-    }
-
     @Override
     public FutureResponse<InputStream> openInputStream(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
         return new FutureResponseImpl<InputStream>() {
             @Override
             public InputStream get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
-                final PipedOutputStream pipedOutputStream = new PipedOutputStream();
-                final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream, (int) chunkSize);
-                var request = newGetStreamingRequest(contextId, ref);
                 try {
                     openBlobRelayStreaming();
-                    Thread thread = new Thread(() -> {
-                        try {
-                            blobRelayStreaming.get(request, pipedOutputStream, timeout, unit);
-                        } catch (IOException e) {
-                            pipedInputStream.setException(e);
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            pipedInputStream.setException(e);
-                        } finally {
-                            try {
-                                pipedOutputStream.close();
-                            } catch (IOException e) {
-                                pipedInputStream.setException(e);
-                            }
-                        }
-                    }, "tsubakuro-blob-relay-get");
-                    thread.setDaemon(true);
-                    thread.start();
-                    return pipedInputStream;
+                    return blobRelayStreaming.get(newGetStreamingRequest(contextId, ref),  timeout, unit);
                 } finally {
                     done = true;
                 }
@@ -343,7 +262,7 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 var request = newGetStreamingRequest(contextId, ref);
                 try (FileOutputStream fileOutputStream = new FileOutputStream(destination.toFile())) {
                     openBlobRelayStreaming();
-                    blobRelayStreaming.get(request, fileOutputStream, timeout, unit);
+                    blobRelayStreaming.get(request, destination, timeout, unit);
                     return null;
                 } finally {
                     done = true;
