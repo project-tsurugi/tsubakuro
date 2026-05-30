@@ -15,13 +15,15 @@
  */
 package com.tsurugidb.tsubakuro.relay.client;
 
-import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
+import java.io.FileOutputStream;
+import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -29,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import io.grpc.Grpc;
 import io.grpc.InsecureChannelCredentials;
@@ -191,124 +194,60 @@ public class BlobRelayStreaming implements Closeable {
         return put(meta, input, 0, null);
     }
 
-    /**
-     * Receives Blob data from the gRPC server.
-     * @param request the request containing the reference to the Blob data to retrieve
-     * @param outputStream the OutputStream to write the retrieved Blob data to
-     * @param timeout the timeout in milliseconds for the gRPC call
-     * @param timeUnit the TimeUnit for the timeout
-     * @throws IOException if an I/O error occurs while writing to the OutputStream
-     * @throws InterruptedException if the thread is interrupted while waiting for the response
-     */
-    public void get(Streaming.GetStreamingRequest request, OutputStream outputStream, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
-        final AtomicReference<Streaming.GetStreamingResponse.Metadata> reference = new AtomicReference<>();
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-        final AtomicLong totalBytes = new AtomicLong(0);
-        final AtomicBoolean completed = new AtomicBoolean(false);
-        final Lock lock = new ReentrantLock();
-        final Condition condition = lock.newCondition();
+    private static class CustomPipedInputStream extends PipedInputStream {
+        AtomicReference<Throwable> exceptionRef = new AtomicReference<>(null);
+        private final PipedOutputStream pipedOutputStream;
 
-        final BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream);
-        final class GetResponseObserver implements StreamObserver<Streaming.GetStreamingResponse> {
-            @Override
-            public void onNext(Streaming.GetStreamingResponse response) {
-                switch (response.getPayloadCase()) {
-                    case CHUNK:
-                        try {
-                            var chunk = response.getChunk();
-                            totalBytes.addAndGet(chunk.size());
-                            bufferedOutputStream.write(chunk.toByteArray());
-                            bufferedOutputStream.flush();
-                        } catch (IOException e) {
-                            // Handle the exception
-                            error.set(e);
-                        }
-                        break;
-                    case METADATA:
-                        reference.set(response.getMetadata());
-                        break;
-                    case PAYLOAD_NOT_SET:
-                        // Handle the case where no payload is set
-                        break;
-                }
-            }
+        CustomPipedInputStream(PipedOutputStream pipedOutputStream, int pipeSize) throws IOException {
+            super(pipedOutputStream, pipeSize);
+            this.pipedOutputStream = pipedOutputStream;
+        }
 
-            @Override
-            public void onError(Throwable t) {
-                // Handle the error
-                lock.lock();
-                try {
-                    error.set(t);
-                    completed.set(true);
-                    condition.signalAll();
-                } finally {
-                    lock.unlock();
-                }
-            }
+        public void setException(Throwable e) {
+            exceptionRef.compareAndSet(null, e);
+        }
 
-            @Override
-            public void onCompleted() {
-                // Handle the completion
-                try {
-                    bufferedOutputStream.close();
-                } catch (IOException e) {
-                    // Handle the exception
-                    error.set(e);
-                }
-                lock.lock();
-                try {
-                    completed.set(true);
-                    condition.signalAll();
-                } finally {
-                    lock.unlock();
-                }
+        @Override
+        public int read() throws IOException {
+            int rv = super.read();
+            checkException();
+            return rv;
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            int rv = super.read(b);
+            checkException();
+            return rv;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int rv = super.read(b, off, len);
+            checkException();
+            return rv;
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                checkException();
+            } finally {
+                super.close();
+                pipedOutputStream.close();
             }
         }
 
-        if (timeout > 0 && timeUnit != null) {
-            stub.withDeadlineAfter(timeout, timeUnit).get(request, new GetResponseObserver());
-        } else {
-            stub.get(request, new GetResponseObserver());
-        }
-
-        lock.lock();
-        try {
-            while (!completed.get()) {
-                try {
-                    if (condition.await(10, TimeUnit.MILLISECONDS)) { // Wait for 10 millisecond
-                        if (completed.get()) {
-                            break;
-                        }
-                    }
-                } catch (InterruptedException e) {
+        private void checkException() throws IOException {
+            Throwable e = exceptionRef.get();
+            if (e != null) {
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
-                    throw e;
+                    throw new IOException("Thread was interrupted", e);
                 }
-            }
-        } finally {
-            lock.unlock();
-        }
-        Throwable cause = error.get();
-        if (cause != null) {
-            close();
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            }
-            if (cause instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-                throw (InterruptedException) cause;
-            }
-            throw new IOException("Failed to retrieve blob data", cause);
-        }
-
-        // check the metadata and total bytes
-        var metadata = reference.get();
-        if (metadata == null) {
-            throw new IOException("Failed to retrieve blob data, as metadata is missing");
-        }
-        if (metadata.getBlobSizeOptCase() == Streaming.GetStreamingResponse.Metadata.BlobSizeOptCase.BLOB_SIZE) {
-            if (totalBytes.get() != metadata.getBlobSize()) {
-                throw new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + totalBytes.get() + " bytes");
+                throw new IOException("Unexpected exception occurred", e);
             }
         }
     }
@@ -316,11 +255,168 @@ public class BlobRelayStreaming implements Closeable {
     /**
      * Receives Blob data from the gRPC server.
      * @param request the request containing the reference to the Blob data to retrieve
-     * @param outputStream the OutputStream to write the retrieved Blob data to
+     * @param timeout the timeout in milliseconds for the gRPC call
+     * @param timeUnit the TimeUnit for the timeout
+     * @return an InputStream to read the Blob data
      * @throws IOException if an I/O error occurs while writing to the OutputStream
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
-    public void get(Streaming.GetStreamingRequest request, OutputStream outputStream) throws IOException, InterruptedException {
-        get(request, outputStream, 0, null);
+    public InputStream get(Streaming.GetStreamingRequest request, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
+        return getInternal(request, null, timeout, timeUnit);
+    }
+
+    /**
+     * Receives Blob data from the gRPC server.
+     * @param request the request containing the reference to the Blob data to retrieve
+     * @return an InputStream to read the Blob data
+     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws InterruptedException if the thread is interrupted while waiting for the response
+     */
+    public InputStream get(Streaming.GetStreamingRequest request) throws IOException, InterruptedException {
+        return get(request, 0, null);
+    }
+
+    /**
+     * Receives Blob data from the gRPC server.
+     * @param request the request containing the reference to the Blob data to retrieve
+     * @param path the Path to write the Blob data to
+     * @param timeout the timeout in milliseconds for the gRPC call
+     * @param timeUnit the TimeUnit for the timeout
+     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws InterruptedException if the thread is interrupted while waiting for the response
+     */
+    public void get(@Nonnull Streaming.GetStreamingRequest request, @Nonnull Path path, long timeout, TimeUnit timeUnit) throws IOException, InterruptedException {
+        getInternal(request, path, timeout, timeUnit);
+    }
+
+    /**
+     * Receives Blob data from the gRPC server.
+     * @param request the request containing the reference to the Blob data to retrieve
+     * @param path the Path to write the Blob data to
+     * @throws IOException if an I/O error occurs while writing to the OutputStream
+     * @throws InterruptedException if the thread is interrupted while waiting for the response
+     */
+    public void get(@Nonnull Streaming.GetStreamingRequest request, @Nonnull Path path) throws IOException, InterruptedException {
+        get(request, path, 0, null);
+    }
+
+    private InputStream getInternal(@Nonnull Streaming.GetStreamingRequest request, @Nullable Path path, long timeout, @Nullable TimeUnit timeUnit) throws IOException, InterruptedException {
+        final AtomicBoolean completed = new AtomicBoolean(false);
+        final boolean writeToFile = (path != null);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
+        final AtomicReference<CustomPipedInputStream> inputStream = new AtomicReference<>(null);
+
+        final class GetResponseObserver implements StreamObserver<Streaming.GetStreamingResponse> {
+            final OutputStream outputStream;
+
+            Streaming.GetStreamingResponse.Metadata metadata = null;
+            long totalBytes = 0;
+
+            GetResponseObserver(OutputStream outputStream) {
+                this.outputStream = outputStream;
+            }
+
+            @Override
+            public void onNext(Streaming.GetStreamingResponse response) {
+                switch (response.getPayloadCase()) {
+                    case CHUNK:
+                        try {
+                            var chunk = response.getChunk();
+                            totalBytes += chunk.size();
+                            outputStream.write(chunk.toByteArray());
+                            outputStream.flush();
+                        } catch (IOException e) {
+                            // Handle the exception
+                            setError(e);
+                        }
+                        break;
+                    case METADATA:
+                        metadata = response.getMetadata();
+                        break;
+                    case PAYLOAD_NOT_SET:
+                        // Handle the case where no payload is set
+                        break;
+                }
+            }
+            private void setError(Throwable e) {
+                 if (writeToFile) {
+                    error.set(e);
+                } else {
+                    if (inputStream.get() != null) {
+                        inputStream.get().setException(e);
+                    }
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                // Handle the error
+                setError(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                completed.set(true);
+                // Handle the completion
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    // Handle the exception
+                    setError(e);
+                }
+                // check the metadata and total bytes
+                if (metadata == null) {
+                    setError(new IOException("Failed to retrieve blob data, as metadata is missing"));
+                } else {
+                    if (metadata.getBlobSizeOptCase() == Streaming.GetStreamingResponse.Metadata.BlobSizeOptCase.BLOB_SIZE) {
+                        if (totalBytes != metadata.getBlobSize()) {
+                            setError(new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + totalBytes + " bytes"));
+                        }
+                    }
+                }
+            }
+        }
+
+        GetResponseObserver responseObserver;
+        if (writeToFile) {
+            responseObserver = new GetResponseObserver(new FileOutputStream(path.toFile()));
+        } else {
+            PipedOutputStream pipedOutputStream = new PipedOutputStream();
+            responseObserver = new GetResponseObserver(pipedOutputStream);
+            inputStream.set(new CustomPipedInputStream(pipedOutputStream, (int) chunkSize));
+        }
+
+        if (timeout > 0 && timeUnit != null) {
+            stub.withDeadlineAfter(timeout, timeUnit).get(request, responseObserver);
+        } else {
+            stub.get(request, responseObserver);
+        }
+
+        if (writeToFile) {
+            // Wait for the response to complete
+            while (!completed.get() && error.get() == null) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw e;
+                }
+            }
+            checkException(error.get());
+            return null;
+        } else {
+            return inputStream.get();
+        }
+    }
+    private static void checkException(Throwable e) throws IOException {
+        if (e != null) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Thread was interrupted", e);
+            }
+            throw new IOException("Unexpected exception occurred", e);
+        }
     }
 }
