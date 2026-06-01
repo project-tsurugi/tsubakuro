@@ -48,6 +48,7 @@ public class BlobRelayStreamingServer {
     private final BlobRelayImpl blobRelayImpl = new BlobRelayImpl();
     private Server server;
     private int port;
+    private volatile FaultType injectedFault = FaultType.NoFault;
 
     public void start() throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -98,7 +99,16 @@ public class BlobRelayStreamingServer {
         }
     }
 
-    static class BlobRelayImpl extends BlobRelayStreamingGrpc.BlobRelayStreamingImplBase {
+    public enum FaultType {
+        NoFault,
+        NoResponse,
+    }
+
+    public void injectFault(FaultType faultType) {
+        this.injectedFault = faultType;
+    }
+
+    class BlobRelayImpl extends BlobRelayStreamingGrpc.BlobRelayStreamingImplBase {
         private final ConcurrentLinkedQueue<Streaming.PutStreamingResponse> putResponses = new ConcurrentLinkedQueue<>();
         private final ConcurrentLinkedQueue<Streaming.GetStreamingResponse> getResponses = new ConcurrentLinkedQueue<>();
         private final AtomicLong receivedSize = new AtomicLong(0);
@@ -110,6 +120,24 @@ public class BlobRelayStreamingServer {
 
         @Override
         public StreamObserver<Streaming.PutStreamingRequest> put(StreamObserver<Streaming.PutStreamingResponse> responseObserver) {
+            if (injectedFault == FaultType.NoResponse) {
+                return new StreamObserver<Streaming.PutStreamingRequest>() {
+                    @Override
+                    public void onNext(Streaming.PutStreamingRequest request) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        // Do nothing
+                    }
+
+                    @Override
+                    public void onCompleted() {
+                        // Do nothing
+                    }
+                };
+            }
             return new StreamObserver<Streaming.PutStreamingRequest>() {
                 @Override
                 public void onNext(Streaming.PutStreamingRequest request) {
@@ -172,6 +200,9 @@ public class BlobRelayStreamingServer {
 
         @Override
         public void get(Streaming.GetStreamingRequest request, StreamObserver<Streaming.GetStreamingResponse> responseObserver) {
+            if (injectedFault == FaultType.NoResponse) {
+                return;
+            }
             blobReference = request.getBlob();
             while (!getResponses.isEmpty()) {
                 var response = getResponses.poll();
