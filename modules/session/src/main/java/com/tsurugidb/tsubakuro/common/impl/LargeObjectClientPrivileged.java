@@ -111,12 +111,12 @@ public class LargeObjectClientPrivileged implements LargeObjectClient {
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(InputStream source) throws BlobException {
-        throw new UnsupportedOperationException("Privileged upload from InputStream is not supported.");
+        throw new BlobException("Privileged upload from InputStream is not supported.");
     }
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(Reader source) throws BlobException {
-        throw new UnsupportedOperationException("Privileged upload from Reader is not supported.");
+        throw new BlobException("Privileged upload from Reader is not supported.");
     }
 
     @Override
