@@ -35,10 +35,13 @@ import io.grpc.InsecureChannelCredentials;
 import io.grpc.ManagedChannel;
 import io.grpc.TlsChannelCredentials;
 import io.grpc.stub.StreamObserver;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 
 import com.tsurugidb.blob_relay.proto.BlobRelayStreamingGrpc;
 import com.tsurugidb.blob_relay.proto.BlobRelayCommon;
 import com.tsurugidb.blob_relay.proto.Streaming;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 
 /**
  * BlobRelayStreaming is a class that provides methods for streaming Blob data using gRPC.
@@ -103,7 +106,15 @@ public class BlobRelayStreaming implements Closeable {
 
             @Override
             public void onError(Throwable t) {
-                error.set(t);
+                // Handle the error
+                boolean isDeadlineExceeded = false;
+                if (t instanceof StatusRuntimeException) {
+                    StatusRuntimeException statusEx = (StatusRuntimeException) t;
+                    if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                        isDeadlineExceeded = true;
+                    }
+                }
+                error.set(isDeadlineExceeded ? new ResponseTimeoutException(t.getMessage()) : t);
                 countDownLatch.get().countDown();
             }
 
@@ -312,15 +323,20 @@ public class BlobRelayStreaming implements Closeable {
             public void onError(Throwable t) {
                 // Handle the error
                 try {
-                    setError(t);
-                } finally {
-                    if (writeToFile) {
-                        try {
-                            outputStream.close();
-                        } catch (IOException e) {
-                            // Handle the exception
-                            error.set(e);
+                    boolean isDeadlineExceeded = false;
+                    if (t instanceof StatusRuntimeException) {
+                        StatusRuntimeException statusEx = (StatusRuntimeException) t;
+                        if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                            isDeadlineExceeded = true;
                         }
+                    }
+                    setError(isDeadlineExceeded ? new ResponseTimeoutException(t.getMessage()) : t);
+                } finally {
+                    try {
+                        outputStream.close();
+                    } catch (IOException e) {
+                        // Handle the exception
+                        setError(e);
                     }
                     if (writeToFile) {
                         countDownLatch.get().countDown();

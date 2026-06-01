@@ -21,19 +21,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tsurugidb.blob_relay.proto.BlobRelayStreamingGrpc;
 import com.tsurugidb.blob_relay.proto.BlobRelayCommon;
 import com.tsurugidb.blob_relay.proto.Streaming;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 
 class BlobRelayStreamingTest {
@@ -61,6 +66,9 @@ class BlobRelayStreamingTest {
     void teardown() throws IOException, InterruptedException {
         server.stop();
         server.blockUntilShutdown();
+        if (client != null) {
+            client.close();
+        }
     }
 
     @Test
@@ -88,6 +96,24 @@ class BlobRelayStreamingTest {
         assertNotNull(result);
         assertEquals(response.getBlob(), result);
         assertArrayEquals(data, server.receivedData());
+    }
+
+    @Test
+    void pugTimeout() throws Exception {
+        server.injectFault(BlobRelayStreamingServer.FaultType.NoResponse);
+
+        // test put() method
+        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
+        var data = new byte[TEST_DATA_SIZE];
+        new Random().nextBytes(data);
+
+        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
+            var result = client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
+                                                                                .setSessionId(128)
+                                                                          .build(),
+                                    new ByteArrayInputStream(data),
+                                    1, TimeUnit.SECONDS);
+        });
     }
 
     @Test
@@ -119,5 +145,47 @@ class BlobRelayStreamingTest {
 
         // verify received data
         assertArrayEquals(buffer, data);
+    }
+
+    @Test
+    void getTimeout() throws Exception {
+        server.injectFault(BlobRelayStreamingServer.FaultType.NoResponse);
+
+        // test get() method
+        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
+
+        var inputStream = client.get(Streaming.GetStreamingRequest.newBuilder()
+                                                .setTransactionId(789)
+                                                .setBlob(BlobRelayCommon.BlobReference.newBuilder()
+                                                    .setStorageId(1)
+                                                    .setObjectId(23)
+                                                    .setTag(45))
+                                            .build(),
+                                            1, TimeUnit.SECONDS);
+        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
+            inputStream.readAllBytes();
+        });
+    }
+
+    @Test
+    void getTimeoutWithPath(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("blog");
+
+        server.injectFault(BlobRelayStreamingServer.FaultType.NoResponse);
+
+        // test get() method
+        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
+
+        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
+            client.get(Streaming.GetStreamingRequest.newBuilder()
+                                    .setTransactionId(789)
+                                    .setBlob(BlobRelayCommon.BlobReference.newBuilder()
+                                        .setStorageId(1)
+                                        .setObjectId(23)
+                                        .setTag(45))
+                                .build(),
+                                file,
+                                1, TimeUnit.SECONDS);
+        });
     }
 }

@@ -10,6 +10,8 @@ def protobufVersion = '3.25.8'
 def protocVersion = protobufVersion
 
 dependencies {
+    api project(':tsubakuro-common')
+
     api "com.google.protobuf:protobuf-java:${protobufVersion}"
     api "io.grpc:grpc-services:${grpcVersion}"
 
