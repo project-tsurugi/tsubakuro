@@ -48,7 +48,7 @@ public class BlobRelayStreamingServer {
     private final BlobRelayImpl blobRelayImpl = new BlobRelayImpl();
     private Server server;
     private int port;
-    private FaultType injectedFault;
+    private volatile FaultType injectedFault = FaultType.NoFault;
 
     public void start() throws IOException {
         ExecutorService executor = Executors.newFixedThreadPool(2);

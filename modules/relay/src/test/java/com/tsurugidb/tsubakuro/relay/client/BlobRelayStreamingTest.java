@@ -99,7 +99,7 @@ class BlobRelayStreamingTest {
     }
 
     @Test
-    void pugTimeout() throws Exception {
+    void putTimeout() throws Exception {
         server.injectFault(BlobRelayStreamingServer.FaultType.NoResponse);
 
         // test put() method
@@ -107,12 +107,12 @@ class BlobRelayStreamingTest {
         var data = new byte[TEST_DATA_SIZE];
         new Random().nextBytes(data);
 
-        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
-            var result = client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
-                                                                                .setSessionId(128)
-                                                                          .build(),
-                                    new ByteArrayInputStream(data),
-                                    1, TimeUnit.SECONDS);
+        assertThrows(ResponseTimeoutException.class, () -> {
+            client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
+                                                                .setSessionId(128)
+                                                             .build(),
+                       new ByteArrayInputStream(data),
+                       1, TimeUnit.SECONDS);
         });
     }
 
@@ -176,7 +176,7 @@ class BlobRelayStreamingTest {
         // test get() method
         client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
 
-        Throwable exception = assertThrows(ResponseTimeoutException.class, () -> {
+        assertThrows(ResponseTimeoutException.class, () -> {
             client.get(Streaming.GetStreamingRequest.newBuilder()
                                     .setTransactionId(789)
                                     .setBlob(BlobRelayCommon.BlobReference.newBuilder()

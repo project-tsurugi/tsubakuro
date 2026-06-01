@@ -114,7 +114,7 @@ public class BlobRelayStreaming implements Closeable {
                         isDeadlineExceeded = true;
                     }
                 }
-                error.set(isDeadlineExceeded ? new ResponseTimeoutException(t.getMessage()) : t);
+                error.set(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
                 countDownLatch.get().countDown();
             }
 
@@ -309,12 +309,18 @@ public class BlobRelayStreaming implements Closeable {
                         break;
                 }
             }
-            private void setError(Throwable e) {
-                 if (writeToFile) {
-                    error.set(e);
+            synchronized private void setError(Throwable e) {
+                var err = error.get();
+                if (err != null) {
+                    err.addSuppressed(e);
+                } else {
+                    err = e;
+                }
+                if (writeToFile) {
+                    error.set(err);
                 } else {
                     if (inputStream.get() != null) {
-                        inputStream.get().setException(e);
+                        inputStream.get().setException(err);
                     }
                 }
             }
@@ -330,7 +336,7 @@ public class BlobRelayStreaming implements Closeable {
                             isDeadlineExceeded = true;
                         }
                     }
-                    setError(isDeadlineExceeded ? new ResponseTimeoutException(t.getMessage()) : t);
+                    setError(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
                 } finally {
                     try {
                         outputStream.close();
