@@ -309,7 +309,7 @@ public class BlobRelayStreaming implements Closeable {
                         break;
                 }
             }
-            synchronized private void setError(Throwable e) {
+            private synchronized void setError(Throwable e) {
                 var err = error.get();
                 if (err != null) {
                     err.addSuppressed(e);
