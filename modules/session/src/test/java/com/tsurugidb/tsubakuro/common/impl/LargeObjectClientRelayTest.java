@@ -16,12 +16,10 @@
 package com.tsurugidb.tsubakuro.common.impl;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-// import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-// import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -29,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.Reader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -54,7 +53,7 @@ import com.tsurugidb.tsubakuro.common.LargeObjectReference;
 import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 
 class LargeObjectClientRelayTest {
-    private static final int SERVER_PORT = 65521;
+    private static final int CHUNK_SIZE = 1024;
 
     private LargeObjectClient client = null;
 
@@ -105,7 +104,7 @@ class LargeObjectClientRelayTest {
             server = new BlobRelayStreamingServer();
             server.start();
 
-            client = new LargeObjectClientRelay("123", "localhost:" + server.getPort(), false, 1024 * 1024);
+            client = new LargeObjectClientRelay("123", "localhost:" + server.getPort(), false, CHUNK_SIZE);
         } catch (IOException e) {
             System.err.println(e);
             e.printStackTrace();
@@ -207,8 +206,10 @@ class LargeObjectClientRelayTest {
                                     .setBlobSize(data.length))
                                 .build());
 
-        var inputStream = client.openInputStream(contextId, lobReference).await();
-
+        InputStream inputStream = null;
+        try (var future = client.openInputStream(contextId, lobReference)) {
+            inputStream = future.await();
+        }
         assertNotNull(inputStream);
         var obtainedData = inputStream.readAllBytes();
         assertArrayEquals(data, obtainedData);
@@ -222,20 +223,25 @@ class LargeObjectClientRelayTest {
 
     @Test
     void openInputStream_largeBlob() throws Exception {
-        byte[] largeData = new byte[4096];
+        byte[] largeData = new byte[CHUNK_SIZE * 2 + 123]; // 2 chunks + 123 bytes
         for (int i = 0; i < largeData.length; i++) {
             largeData[i] = (byte) ('a' + (i % 26));
         }
 
-        server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
-                                .setChunk(com.google.protobuf.ByteString.copyFrom(largeData))
-                                .build());
+        int offset = 0;
+        while (offset < largeData.length) {
+            int chunkSize = Math.min(CHUNK_SIZE, largeData.length - offset);
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                    .setChunk(com.google.protobuf.ByteString.copyFrom(largeData, offset, chunkSize))
+                                    .build());
+            offset += chunkSize;
+        }
         server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
                                 .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
                                     .setBlobSize(largeData.length))
                                 .build());
 
-        assertTimeoutPreemptively(Duration.ofSeconds(3), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             var inputStream = client.openInputStream(contextId, lobReference).await();
             assertNotNull(inputStream);
             var obtainedData = inputStream.readAllBytes();

@@ -16,7 +16,6 @@
 package com.tsurugidb.tsubakuro.common.impl;
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,6 +27,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 import java.util.Optional;
@@ -90,41 +90,32 @@ public class LargeObjectClientRelay implements LargeObjectClient {
         return chunkSize;
     }
 
-    private abstract class FutureResponseImpl<T> implements FutureResponse<T> {
-        protected volatile boolean done = false;
-
-        @Override
-        public T get() throws IOException, InterruptedException, ServerException {
-            try {
-                return get(0, null);
-            } catch (TimeoutException e) {
-                throw new AssertionError("Unexpected TimeoutException", e);
-            }
-        }
-        @Override
-        public boolean isDone() {
-            return done;
-        }
-        @Override
-        public void close() {
-        }
-    }
-
     @Override
     public FutureResponse<LargeObjectInfo> upload(InputStream source) throws BlobException {
-        return upload(source,
-                      Streaming.PutStreamingRequest.Metadata.newBuilder()
-                            .setApiVersion(API_VERSION)
-                            .setSessionId(sessionId)
-                            .build());
+        return internalUpload(Streaming.PutStreamingRequest.Metadata.newBuilder()
+                                .setApiVersion(API_VERSION)
+                                .setSessionId(sessionId)
+                                .build(),
+                              source);
     }
-    private FutureResponse<LargeObjectInfo> upload(InputStream source, Streaming.PutStreamingRequest.Metadata meta) throws BlobException {
-        return new FutureResponseImpl<LargeObjectInfo>() {
-            @Override
-            public LargeObjectInfo get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
-                try {
-                    openBlobRelayStreaming();
-                    var ref = blobRelayStreaming.put(meta, source, timeout, unit);
+    private FutureResponse<LargeObjectInfo> internalUpload(Streaming.PutStreamingRequest.Metadata meta, InputStream source) throws BlobException {
+        final AtomicReference<FutureResponse<BlobRelayCommon.BlobReference>> reference = new AtomicReference<>();
+
+        try {
+            openBlobRelayStreaming();
+            reference.set(blobRelayStreaming.put(meta, source));
+            return new FutureResponse<LargeObjectInfo>() {
+                @Override
+                public LargeObjectInfo get() throws IOException, InterruptedException, ServerException {
+                    try {
+                        return get(0, null);
+                    } catch (TimeoutException e) {
+                        throw new AssertionError("Unexpected timeout", e);
+                    }
+                }
+                @Override
+                public LargeObjectInfo get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
+                    var ref = reference.get().get(timeout, unit);
                     return new LargeObjectInfo() {
                         @Override
                         public InfoType getInfoType() {
@@ -139,11 +130,19 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                             throw new IllegalStateException("LargeObjectInfo type is BLOB_RELAY_REFERENCE, server path is not available");
                         }
                     };
-                } finally {
-                    done = true;
                 }
-            }
-        };
+                @Override
+                public boolean isDone() {
+                    return reference.get().isDone();
+                }
+                @Override
+                public void close() {
+                    // do nothing, the caller is responsible for closing the input stream and the BlobRelayStreaming will be closed when this client is closed
+                }
+            };
+        } catch (IOException | InterruptedException e) {
+            throw new BlobException("Failed to open BlobRelayStreaming", e);
+        }
     }
     private synchronized void openBlobRelayStreaming() throws IOException {
         if (blobRelayStreaming == null) {
@@ -188,12 +187,12 @@ public class LargeObjectClientRelay implements LargeObjectClient {
     @Override
     public FutureResponse<LargeObjectInfo> upload(Path source) throws BlobException {
         try {
-            return upload(Files.newInputStream(source),
-                          Streaming.PutStreamingRequest.Metadata.newBuilder()
-                                .setApiVersion(API_VERSION)
-                                .setSessionId(sessionId)
-                                .setBlobSize(Files.size(source))
-                                .build());
+            return internalUpload(Streaming.PutStreamingRequest.Metadata.newBuilder()
+                                    .setApiVersion(API_VERSION)
+                                    .setSessionId(sessionId)
+                                    .setBlobSize(Files.size(source))
+                                    .build(),
+                                  Files.newInputStream(source));
         } catch (IOException e) {
             throw new BlobException("Failed to read from Path", e);
         }
@@ -201,17 +200,12 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
     @Override
     public FutureResponse<InputStream> openInputStream(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
-        return new FutureResponseImpl<InputStream>() {
-            @Override
-            public InputStream get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
-                try {
-                    openBlobRelayStreaming();
-                    return blobRelayStreaming.get(newGetStreamingRequest(contextId, ref),  timeout, unit);
-                } finally {
-                    done = true;
-                }
-            }
-        };
+        try {
+            openBlobRelayStreaming();
+            return blobRelayStreaming.get(newGetStreamingRequest(contextId, ref));
+        } catch (IOException | InterruptedException e) {
+            throw new BlobException("Failed to open InputStream", e);
+        }
     }
     private Streaming.GetStreamingRequest newGetStreamingRequest(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) {
         return Streaming.GetStreamingRequest.newBuilder()
@@ -227,15 +221,30 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
     @Override
     public FutureResponse<Reader> openReader(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
-        return new FutureResponseImpl<Reader>() {
+        return new FutureResponse<Reader>() {
             @Override
+            public Reader get() throws IOException, InterruptedException, ServerException {
+                 try {
+                    return get(0, null);
+                } catch (TimeoutException e) {
+                    throw new AssertionError("Unexpected timeout", e);
+                }
+            }
             public Reader get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
                 var inputStreamFuture = openInputStream(contextId, ref);
                 try {
                     return new InputStreamReader(inputStreamFuture.get(timeout, unit), StandardCharsets.UTF_8);
-                } finally {
-                    done = true;
+                } catch (IOException | InterruptedException | ServerException | TimeoutException e) {
+                    throw new BlobException("Failed to open Reader", e);
                 }
+            }
+            @Override
+            public boolean isDone() {
+                return false; // We cannot determine if the Reader is ready until we try to get it
+            }
+            @Override
+            public void close() {
+                // No resources to close in this implementation, the caller is responsible for closing the Reader and the underlying InputStream
             }
         };
     }
@@ -256,19 +265,23 @@ public class LargeObjectClientRelay implements LargeObjectClient {
 
     @Override
     public FutureResponse<Void> copyTo(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref, @Nonnull Path destination) throws BlobException {
-        return new FutureResponseImpl<Void>() {
-            @Override
-            public Void get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
-                var request = newGetStreamingRequest(contextId, ref);
-                try (FileOutputStream fileOutputStream = new FileOutputStream(destination.toFile())) {
-                    openBlobRelayStreaming();
-                    blobRelayStreaming.get(request, destination, timeout, unit);
-                    return null;
-                } finally {
-                    done = true;
+        try {
+            openBlobRelayStreaming();
+            try {
+                if (Files.exists(destination)) {
+                    throw new BlobException("Destination file already exists: " + destination);
                 }
+            } catch (IOException e) {
+                throw new BlobException("Failed to prepare destination path: " + destination, e);
             }
-        };
+            try {
+                return blobRelayStreaming.get(newGetStreamingRequest(contextId, ref), destination);
+            } catch (IOException | InterruptedException e) {
+                throw new BlobException("Failed to copy to destination", e);
+            }
+        } catch (IOException e) {
+            throw new BlobException("Failed to copy to destination", e);
+        }
     }
 
     @Override
