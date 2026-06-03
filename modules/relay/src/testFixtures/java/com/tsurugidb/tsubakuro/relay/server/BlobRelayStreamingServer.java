@@ -83,6 +83,7 @@ public class BlobRelayStreamingServer {
     public void stop() throws InterruptedException {
         if (server != null) {
             try {
+                server.shutdown();
                 if (!server.awaitTermination(1, TimeUnit.SECONDS)) {
                     server.shutdownNow();
                 }

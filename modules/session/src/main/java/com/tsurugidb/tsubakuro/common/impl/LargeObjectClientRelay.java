@@ -136,8 +136,23 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                     return reference.get().isDone();
                 }
                 @Override
-                public void close() {
-                    // do nothing, the caller is responsible for closing the input stream and the BlobRelayStreaming will be closed when this client is closed
+                public void close() throws IOException {
+                    var r = reference.get();
+                    if (r != null) {
+                        try {
+                            r.close();
+                        } catch (ServerException e) {
+                            LOG.error("Failed to close put FutureResponse", e);
+                            throw new IOException("Failed to close put FutureResponse", e);
+                        } catch (InterruptedException e) {
+                            LOG.error("Failed to close put FutureResponse", e);
+                            Thread.currentThread().interrupt();
+                            throw new IOException("Failed to close put FutureResponse", e);
+                        } catch (IOException e) {
+                            LOG.error("Failed to close put FutureResponse", e);
+                            throw e;
+                        }
+                    }
                 }
             };
         } catch (IOException | InterruptedException e) {
@@ -231,16 +246,11 @@ public class LargeObjectClientRelay implements LargeObjectClient {
                 }
             }
             public Reader get(long timeout, TimeUnit unit) throws IOException, InterruptedException, ServerException, TimeoutException {
-                var inputStreamFuture = openInputStream(contextId, ref);
-                try {
-                    return new InputStreamReader(inputStreamFuture.get(timeout, unit), StandardCharsets.UTF_8);
-                } catch (IOException | InterruptedException | ServerException | TimeoutException e) {
-                    throw new BlobException("Failed to open Reader", e);
-                }
+                return new InputStreamReader(openInputStream(contextId, ref).get(timeout, unit), StandardCharsets.UTF_8);
             }
             @Override
             public boolean isDone() {
-                return false; // We cannot determine if the Reader is ready until we try to get it
+                return true;
             }
             @Override
             public void close() {

@@ -206,10 +206,10 @@ class LargeObjectClientRelayTest {
                                     .setBlobSize(data.length))
                                 .build());
 
-        InputStream inputStream = null;
-        try (var future = client.openInputStream(contextId, lobReference)) {
-            inputStream = future.await();
-        }
+        var future = client.openInputStream(contextId, lobReference);
+        InputStream inputStream = future.await();
+        future.close();
+
         assertNotNull(inputStream);
         var obtainedData = inputStream.readAllBytes();
         assertArrayEquals(data, obtainedData);

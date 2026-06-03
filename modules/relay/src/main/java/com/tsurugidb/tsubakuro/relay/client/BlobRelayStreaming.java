@@ -386,12 +386,15 @@ public class BlobRelayStreaming implements Closeable {
         });
 
         return new FutureResponse<InputStream>() {
+            volatile boolean gotten = false;
+
             @Override
             public InputStream get() {
                 return get(0, null);
             }
             @Override
-            public InputStream get(long timeout, TimeUnit timeUnit) {
+            public synchronized InputStream get(long timeout, TimeUnit timeUnit) {
+                gotten = true;
                 pipedInputStream.setTimeout(timeout, timeUnit);
                 return pipedInputStream;
             }
@@ -400,7 +403,11 @@ public class BlobRelayStreaming implements Closeable {
                 return true;
             }
             @Override
-            public void close() throws IOException {
+            public synchronized void close() throws IOException {
+                if (!gotten) {
+                    LOG.error("Warning: FutureResponse was closed before get() was called, cancelling the RPC");
+                    pipedInputStream.setException(new IOException("FutureResponse was closed before get() was called"));
+                }
                 // do nothing, as the pipedInputStream will be closed by the onCompleted or onError callback
             }
         };
@@ -466,19 +473,23 @@ public class BlobRelayStreaming implements Closeable {
                     }
                 }
                 setError(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
+                    try {
+                        outputStream.close();
+                    } catch (IOException e) {
+                        setError(e);
+                    }
+                    countDownLatch.get().countDown();
             }
 
             @Override
             public void onCompleted() {
                 // Handle the completion
-                if (countDownLatch.get().getCount() > 0) {
-                    countDownLatch.get().countDown();
-                }
                 try {
                     outputStream.close();
                 } catch (IOException e) {
                     setError(e);
                 }
+                countDownLatch.get().countDown();
                 // check the metadata and total bytes
                 if (metadata == null) {
                     setError(new IOException("Failed to retrieve blob data, as metadata is missing"));

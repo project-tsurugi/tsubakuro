@@ -88,11 +88,11 @@ class BlobRelayStreamingTest {
         client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);
         var data = new byte[TEST_DATA_SIZE];
         new Random().nextBytes(data);
-        var result = client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
+        var future = client.put(Streaming.PutStreamingRequest.Metadata.newBuilder()
                                                                             .setSessionId(128)
                                                                       .build(),
-                                new ByteArrayInputStream(data))
-                           .get();     ;
+                                new ByteArrayInputStream(data));
+        var result = future.get();
 
         // verify received data and response
         assertNotNull(result);
