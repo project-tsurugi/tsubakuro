@@ -240,7 +240,7 @@ public class BlobRelayStreaming implements Closeable {
 
         private void waitforData() throws IOException {
             synchronized (this) {
-                while (available() < 1 && !pipedOutputStreamIsClosed.get()) {
+                while (available() < 1 && !pipedOutputStreamIsClosed.get() && exceptionRef.get() == null) {
                     try {
                         if (timeout > 0 && timeUnit != null) {
                             long timeoutMillis = timeUnit.toMillis(timeout);
@@ -337,6 +337,7 @@ public class BlobRelayStreaming implements Closeable {
                     err = e;
                 }
                 pipedInputStream.setException(err);
+                pipedInputStream.notifyDataAvailable(false);
             }
 
             @Override
