@@ -151,6 +151,8 @@ message BlobRelayServiceInfo {
     map<string, string> parameters = 5;
 }
 ```
+memo: parametersによりクライアントに戻される情報はrelayの実装によって異なる。
+`blob_relay_streaming`の場合は、key=`stream_chunk_size`、value=`構成情報ファイルのblob_relay.stream_chunk_sizeに記載された文字列`が入る。
 
 #### アップロードのための変更・追加
 ##### com.tsurugidb.tsubakuro.common.Sessionクラス
