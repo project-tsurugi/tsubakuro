@@ -250,13 +250,19 @@ public class BlobRelayStreaming implements Closeable {
             }
         }
 
-        synchronized void setTimeout(long t, TimeUnit u) {
-            timeout = t;
-            timeUnit = u;
+        void setTimeout(long t, TimeUnit u) {
+            lock.lock();
+            try {
+                timeout = t;
+                timeUnit = u;
+            } finally {
+                lock.unlock();
+            }
         }
 
         private void waitforData() throws IOException {
             if (writtenBytes.get() > readBytes.get()) {
+                checkException();
                 return;
             }
             lock.lock();
@@ -330,7 +336,7 @@ public class BlobRelayStreaming implements Closeable {
     public FutureResponse<InputStream> get(Streaming.GetStreamingRequest request) throws IOException, InterruptedException {
         final AtomicReference<Throwable> error = new AtomicReference<>();
         final PipedOutputStream pipedOutputStream = new PipedOutputStream();
-        final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream, (int) (chunkSize * 2));
+        final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream, (int) Math.min((long) Integer.MAX_VALUE, chunkSize * 2));
 
         stub.get(request, new StreamObserver<Streaming.GetStreamingResponse>() {
             Streaming.GetStreamingResponse.Metadata metadata = null;
