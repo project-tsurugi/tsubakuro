@@ -32,7 +32,7 @@
 * プリペアドステートメント実行要求
 * BLOB取得要求と応答
   * 特権モードでのみ使用
-  * memo: （memo: 既存実装のGetLargeObjectDataリクエストとレスポンス）
+  * （memo: 既存実装ではGetLargeObjectDataリクエストとレスポンス）
 
 #### 情報
 * BLOB転送手段情報
@@ -92,6 +92,23 @@
 * DOES_NOT_USEがBLOB転送手段情報のリストに含まれている場合は、RELAYやPRIVILEGEDが利用不可能でもハンドシェイクエラーにはしない
   * この場合はBLOB 転送手段に関する情報は返さない（選択されたデータ転送路は返さず、かつ、特権モードは利用しない）
 * DOES_NOT_USEがBLOB転送手段情報のリストに含まれておらず、かつ、要求されたBLOB転送手段が利用不可能な場合はハンドシェイク・エラーを返し、セッションは作成しない
+
+#### ハンドシェークで指定するBLOB転送手段とサーバ設定による実行結果の関係
+下表に示す。
+
+| サーバ設定 | R=d, P=d | R=d, P=e | R=e, P=d | R=e, P=e |
+| ---- | :----: | :----: | :----: | :----: |
+| DOES_NOT_USE | N | N | N | N |
+| PRIVILEGED | E | P | E | P |
+| RELAY | E | E | R | R |
+| DEFAULT | N | N | R | R |
+
+サーバ設定行：`R`=Relay, `P`=Privileged, `e`=enabled, `d`=disabled  
+結果：`N`=BLOB転送は使えない状態でセッションを開設、`E`=セッション開設エラー、`P`=PrivilegedでBLOB転送を行う、`R`=RelayでBLOB転送を行う
+
+memo: サーバ設定欄の表記とtsurugi.iniの具体的な設定との関係は以下の通り
+* `R=e`は`grpc_server.enabled=true`かつ`blob_relay.enabled=true`、`R=d`は左記以外
+* `P=e`は`[ipc|stream]_endpoint.allow_blob_privileged=true`、`P=d`は`[ipc|stream]_endpoint.allow_blob_privileged=false`、ここで`[ipc|stream]`はセッション接続に使用する通信路。
 
 ### BLOBのアップロード
 #### `tsubakuro::LargeObjectClient`を`tsubakuroの上位プログラム`が利用する場合のアップロード
