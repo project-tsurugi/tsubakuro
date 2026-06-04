@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,6 +51,7 @@ import com.tsurugidb.tsubakuro.common.Session;
 import com.tsurugidb.tsubakuro.common.LargeObjectClient;
 import com.tsurugidb.tsubakuro.common.LargeObjectInfo;
 import com.tsurugidb.tsubakuro.common.LargeObjectReference;
+import com.tsurugidb.tsubakuro.exception.ResponseTimeoutException;
 import com.tsurugidb.tsubakuro.relay.server.BlobRelayStreamingServer;
 
 class LargeObjectClientRelayTest {
@@ -206,19 +208,21 @@ class LargeObjectClientRelayTest {
                                     .setBlobSize(data.length))
                                 .build());
 
-        var future = client.openInputStream(contextId, lobReference);
-        InputStream inputStream = future.await();
-        future.close();
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            var future = client.openInputStream(contextId, lobReference);
+            InputStream inputStream = future.await();
+            future.close();
 
-        assertNotNull(inputStream);
-        var obtainedData = inputStream.readAllBytes();
-        assertArrayEquals(data, obtainedData);
+            assertNotNull(inputStream);
+            var obtainedData = inputStream.readAllBytes();
+            assertArrayEquals(data, obtainedData);
 
-        var lobReference = server.getBlobReference();
-        assertEquals(1, lobReference.getStorageId());
-        assertEquals(12345, lobReference.getObjectId());
-        assertEquals(678, lobReference.getTag());
-        assertFalse(server.hasRemaining());
+            var lobReference = server.getBlobReference();
+            assertEquals(1, lobReference.getStorageId());
+            assertEquals(12345, lobReference.getObjectId());
+            assertEquals(678, lobReference.getTag());
+            assertFalse(server.hasRemaining());
+        });
     }
 
     @Test
@@ -251,6 +255,56 @@ class LargeObjectClientRelayTest {
     }
 
     @Test
+    void openInputStream_largeBlob_timeout() throws Exception {
+        server.injectFault(BlobRelayStreamingServer.FaultType.PauseResponse);
+
+        byte[] largeData = new byte[CHUNK_SIZE * 2 + 123]; // 2 chunks + 123 bytes
+        for (int i = 0; i < largeData.length; i++) {
+            largeData[i] = (byte) ('a' + (i % 26));
+        }
+
+        int offset = 0;
+        while (offset < largeData.length) {
+            int chunkSize = Math.min(CHUNK_SIZE, largeData.length - offset);
+            server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                    .setChunk(com.google.protobuf.ByteString.copyFrom(largeData, offset, chunkSize))
+                                    .build());
+            offset += chunkSize;
+        }
+        server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
+                                .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
+                                    .setBlobSize(largeData.length))
+                                .build());
+
+        assertTimeoutPreemptively(Duration.ofSeconds(15), () -> {
+            byte[] receivedData = new byte[CHUNK_SIZE * 3];
+            var inputStream = client.openInputStream(contextId, lobReference).await(500, TimeUnit.MILLISECONDS);
+            assertNotNull(inputStream);
+
+            boolean timeoutOccurred = false;
+            int received = 0;
+            while (true) {
+                try {
+                    int bytesRead = inputStream.read(receivedData, received, receivedData.length - received);
+                    if (bytesRead == -1) {
+                        break;
+                    }
+                    received += bytesRead;
+                } catch (ResponseTimeoutException e) {
+                    timeoutOccurred = true;
+                    continue; // Expected timeout, continue reading remaining data
+                } catch (IOException e) {
+                    fail("Expected a ResponseTimeoutException, but got IOException: " + e.getMessage());
+                }
+            }
+            assertTrue(timeoutOccurred);
+            assertArrayEquals(largeData, Arrays.copyOf(receivedData, received));
+        });
+
+        assertFalse(server.hasRemaining());
+    }
+
+    @Test
     void openReader() throws Exception {
         // for blob relay service
         server.addGetResponse(Streaming.GetStreamingResponse.newBuilder()
@@ -260,24 +314,24 @@ class LargeObjectClientRelayTest {
                                 .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
                                     .setBlobSize(data.length))
                                 .build());
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            var reader = client.openReader(contextId, lobReference).await();
 
-        var reader = client.openReader(contextId, lobReference).await();
+            assertNotNull(reader);
+            char[] obtainedData = new char[data.length];
+            reader.read(obtainedData);
+            for (int i = 0; i < data.length; i++) {
+                assertEquals(data[i], obtainedData[i]);
+            }
+            assertEquals(-1, reader.read());
 
-        assertNotNull(reader);
-        char[] obtainedData = new char[data.length];
-        reader.read(obtainedData);
-        for (int i = 0; i < data.length; i++) {
-            assertEquals(data[i], obtainedData[i]);
-        }
-        assertEquals(-1, reader.read());
-
-        var lobReference = server.getBlobReference();
-        assertEquals(1, lobReference.getStorageId());
-        assertEquals(12345, lobReference.getObjectId());
-        assertEquals(678, lobReference.getTag());
-        assertFalse(server.hasRemaining());
+            var lobReference = server.getBlobReference();
+            assertEquals(1, lobReference.getStorageId());
+            assertEquals(12345, lobReference.getObjectId());
+            assertEquals(678, lobReference.getTag());
+            assertFalse(server.hasRemaining());
+        });
     }
-
     
     @Test
     void copyTo(@TempDir Path tempDir) throws Exception {
@@ -291,17 +345,18 @@ class LargeObjectClientRelayTest {
                                 .setMetadata(Streaming.GetStreamingResponse.Metadata.newBuilder()
                                     .setBlobSize(data.length))
                                 .build());
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            var reader = client.copyTo(contextId, lobReference, file).await();
 
-        var reader = client.copyTo(contextId, lobReference, file).await();
+            assertTrue(Files.exists(file));
+            var obtainedData = Files.readAllBytes(file);
+            assertArrayEquals(data, obtainedData);
 
-        assertTrue(Files.exists(file));
-        var obtainedData = Files.readAllBytes(file);
-        assertArrayEquals(data, obtainedData);
-
-        var lobReference = server.getBlobReference();
-        assertEquals(1, lobReference.getStorageId());
-        assertEquals(12345, lobReference.getObjectId());
-        assertEquals(678, lobReference.getTag());
-        assertFalse(server.hasRemaining());
+            var lobReference = server.getBlobReference();
+            assertEquals(1, lobReference.getStorageId());
+            assertEquals(12345, lobReference.getObjectId());
+            assertEquals(678, lobReference.getTag());
+            assertFalse(server.hasRemaining());
+        });
     }
 }
