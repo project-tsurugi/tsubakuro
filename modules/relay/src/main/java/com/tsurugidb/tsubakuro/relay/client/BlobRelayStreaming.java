@@ -19,19 +19,16 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
 
@@ -106,7 +103,7 @@ public class BlobRelayStreaming implements Closeable {
     public FutureResponse<BlobRelayCommon.BlobReference> put(Streaming.PutStreamingRequest.Metadata meta, InputStream input) throws IOException, InterruptedException {
         final AtomicReference<BlobRelayCommon.BlobReference> reference = new AtomicReference<>();
         final AtomicReference<Throwable> error = new AtomicReference<>();
-        final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
 
         final StreamObserver<Streaming.PutStreamingRequest> requestObserver = stub.put(new StreamObserver<Streaming.PutStreamingResponse>() {
             @Override
@@ -125,12 +122,12 @@ public class BlobRelayStreaming implements Closeable {
                     }
                 }
                 error.set(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
-                countDownLatch.get().countDown();
+                countDownLatch.countDown();
             }
 
             @Override
             public void onCompleted() {
-                countDownLatch.get().countDown();
+                countDownLatch.countDown();
             }
         });
 
@@ -168,7 +165,7 @@ public class BlobRelayStreaming implements Closeable {
                 if (timeout < 0) {
                     throw new IllegalArgumentException("timeout must be non-negative: " + timeout);
                 }
-                CountDownLatch latch = countDownLatch.get();
+                CountDownLatch latch = countDownLatch;
                 if (timeout > 0 && timeUnit != null) {
                     if (!latch.await(timeout, timeUnit)) {
                         throw new TimeoutException("Timeout while waiting for response after " + timeout + " " + timeUnit);
@@ -181,7 +178,7 @@ public class BlobRelayStreaming implements Closeable {
             }
             @Override
             public boolean isDone() {
-                return countDownLatch.get().getCount() == 0;
+                return countDownLatch.getCount() == 0;
             }
             @Override
             public void close() {
@@ -193,102 +190,85 @@ public class BlobRelayStreaming implements Closeable {
         };
     }
 
-    private static class CustomPipedInputStream extends PipedInputStream {
-        private final AtomicReference<Throwable> exceptionRef = new AtomicReference<>(null);
-        private final AtomicBoolean pipedOutputStreamIsClosed = new AtomicBoolean(false);
-        private final PipedOutputStream pipedOutputStream;
-        private final AtomicLong readBytes = new AtomicLong(0);
-        private final AtomicLong writtenBytes = new AtomicLong(0);
-        private final Lock lock = new ReentrantLock();
-        private final Condition empty = lock.newCondition();
-
-        long timeout = 0;
-        TimeUnit timeUnit = null;
-
-        CustomPipedInputStream(PipedOutputStream pipedOutputStream, int pipeSize) throws IOException {
-            super(pipedOutputStream, pipeSize);
-            this.pipedOutputStream = pipedOutputStream;
-        }
+    private static class CustomInputStream extends InputStream {
+        private ConcurrentLinkedQueue<byte[]> queue = new ConcurrentLinkedQueue<>();
+        private ByteBuffer currentBuffer = null;
+        private volatile boolean endOfStream = false;
+        private Lock lock = new java.util.concurrent.locks.ReentrantLock();
+        private Condition dataAvailable = lock.newCondition();
+        private AtomicReference<Throwable> error = new AtomicReference<>();
+        private volatile long timeout = 0;
+        private volatile TimeUnit timeUnit = null;
 
         @Override
         public int read() throws IOException {
-            waitforData();
-            int byteRead = super.read();
-            if (byteRead != -1) {
-                readBytes.incrementAndGet();
+            if (waitForDataAndCheckDataEnd()) {
+                return -1;
             }
-            return byteRead;
+            return currentBuffer.get() & 0xFF;
         }
 
         @Override
         public int read(byte[] b) throws IOException {
-            waitforData();
-            int bytesRead = super.read(b);
-            if (bytesRead != -1) {
-                readBytes.addAndGet(bytesRead);
+            if (waitForDataAndCheckDataEnd()) {
+                return -1;
             }
-            return bytesRead;
+            byte[] data = new byte[Math.min(b.length, currentBuffer.remaining())];
+            currentBuffer.get(data);
+            System.arraycopy(data, 0, b, 0, data.length);
+            return data.length;
         }
 
         @Override
         public int read(byte[] b, int off, int len) throws IOException {
-            waitforData();
-            int bytesRead = super.read(b, off, len);
-            if (bytesRead != -1) {
-                readBytes.addAndGet(bytesRead);
+            if (waitForDataAndCheckDataEnd()) {
+                return -1;
             }
-            return bytesRead;
+            byte[] data = new byte[Math.min(len, currentBuffer.remaining())];
+            currentBuffer.get(data);
+            System.arraycopy(data, 0, b, off, data.length);
+            return data.length;
         }
 
         @Override
         public void close() throws IOException {
-            try {
-                checkException();
-            } finally {
-                super.close();
-                pipedOutputStream.close();
-            }
         }
 
-        void setTimeout(long t, TimeUnit u) {
-            lock.lock();
-            try {
-                timeout = t;
-                timeUnit = u;
-            } finally {
-                lock.unlock();
+        private boolean waitForDataAndCheckDataEnd() throws IOException {
+            if (currentBuffer != null && currentBuffer.hasRemaining()) {
+                return false;
             }
-        }
-
-        private void waitforData() throws IOException {
-            if (writtenBytes.get() > readBytes.get()) {
-                checkException();
-                return;
-            }
-            lock.lock();
-            try {
-                while (writtenBytes.get() <= readBytes.get() && !pipedOutputStreamIsClosed.get() && exceptionRef.get() == null) {
-                    try {
-                        if (timeout > 0 && timeUnit != null) {
-                            if (!empty.await(timeout, timeUnit)) {
-                                throw new ResponseTimeoutException("Timeout while waiting for data after " + timeout + " " + timeUnit);
-                            }
-                        } else {
-                            empty.await();
+            while (!endOfStream && queue.isEmpty() && error.get() == null) {
+                lock.lock();
+                try {
+                    if (timeout > 0 && timeUnit != null) {
+                        if (!dataAvailable.await(timeout, timeUnit)) {
+                            throw new ResponseTimeoutException("Timeout while waiting for data after " + timeout + " " + timeUnit);
                         }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new IOException("Thread was interrupted while waiting for data", e);
+                    } else {
+                        dataAvailable.await();
                     }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Thread was interrupted while waiting for data", e);
+                } finally {
+                    lock.unlock();
                 }
-                checkException();
-            } finally {
-                lock.unlock();
             }
+
+            checkError();
+            if (!queue.isEmpty()) {
+                byte[] nextData = queue.poll();
+                if (nextData != null) {
+                    currentBuffer = ByteBuffer.wrap(nextData);
+                }
+                return false;
+            }
+            return endOfStream && queue.isEmpty();
         }
 
-        private void checkException() throws IOException {
-            Throwable e = exceptionRef.get();
+        private void checkError() throws IOException {
+            Throwable e = error.get();
             if (e != null) {
                 if (e instanceof IOException) {
                     throw (IOException) e;
@@ -300,29 +280,44 @@ public class BlobRelayStreaming implements Closeable {
             }
         }
 
-        void notifyDataAvailable(long bytes, boolean closed) {
+        void addData(byte[] data) throws IOException {
+            queue.add(data);
+            notifyDataAvailable();
+        }
+
+        void setDataEnd() {
+            endOfStream = true;
+            notifyDataAvailable();
+        }
+
+        void setError(Throwable e) {
+            var err = error.get();
+            if (err != null) {
+                err.addSuppressed(e);
+            } else {
+                err = e;
+            }
+            error.set(err);
+            notifyDataAvailable();
+        }
+
+        private void notifyDataAvailable() {
             lock.lock();
             try {
-                writtenBytes.addAndGet(bytes);
-                pipedOutputStreamIsClosed.set(closed);
-                empty.signalAll();
+                dataAvailable.signalAll();
             } finally {
                 lock.unlock();
             }
         }
 
-        public void setException(Throwable e) {
+        void setTimeout(long value, TimeUnit unit) {
             lock.lock();
             try {
-                exceptionRef.compareAndSet(null, e);
-                empty.signalAll();
+                this.timeout = value;
+                this.timeUnit = unit;
             } finally {
                 lock.unlock();
             }
-        }
-
-        long getWrittenBytes() {
-            return writtenBytes.get();
         }
     }
 
@@ -334,12 +329,11 @@ public class BlobRelayStreaming implements Closeable {
      * @throws InterruptedException if the thread is interrupted while waiting for the response
      */
     public FutureResponse<InputStream> get(Streaming.GetStreamingRequest request) throws IOException, InterruptedException {
-        final AtomicReference<Throwable> error = new AtomicReference<>();
-        final PipedOutputStream pipedOutputStream = new PipedOutputStream();
-        final CustomPipedInputStream pipedInputStream = new CustomPipedInputStream(pipedOutputStream, (int) Math.min((long) Integer.MAX_VALUE, chunkSize * 2));
+        final CustomInputStream customInputStream = new CustomInputStream();
 
         stub.get(request, new StreamObserver<Streaming.GetStreamingResponse>() {
-            Streaming.GetStreamingResponse.Metadata metadata = null;
+            private Streaming.GetStreamingResponse.Metadata metadata = null;
+            private long receivedBytes = 0;
 
             @Override
             public void onNext(Streaming.GetStreamingResponse response) {
@@ -347,19 +341,12 @@ public class BlobRelayStreaming implements Closeable {
                     case CHUNK:
                         try {
                             var chunk = response.getChunk();
-                            var bytes = chunk.toByteArray();
-                            int offset = 0;
-                            while (offset < bytes.length) {
-                                int length = (int) Math.min(chunkSize * 2, bytes.length - offset);
-                                pipedOutputStream.write(bytes, offset, length);
-                                pipedOutputStream.flush();
-                                pipedInputStream.notifyDataAvailable(length, false);
-                                offset += length;
-                            }
+                            receivedBytes += chunk.size();
+                            customInputStream.addData(chunk.toByteArray());
                         } catch (IOException e) {
                             // Handle the exception
-                            LOG.error("Error while writing chunk data to pipedOutputStream: {}", e.getMessage(), e);
-                            setError(e);
+                            LOG.error("Error while writing chunk data to customInputStream: {}", e.getMessage(), e);
+                            customInputStream.setError(e);
                         }
                         break;
                     case METADATA:
@@ -370,59 +357,27 @@ public class BlobRelayStreaming implements Closeable {
                         break;
                 }
             }
-            private synchronized void setError(Throwable e) {
-                var err = error.get();
-                if (err != null) {
-                    err.addSuppressed(e);
-                } else {
-                    err = e;
-                }
-                pipedInputStream.setException(err);
-            }
 
             @Override
             public void onError(Throwable t) {
                 // Handle the error
-                try {
-                    boolean isDeadlineExceeded = false;
-                    if (t instanceof StatusRuntimeException) {
-                        StatusRuntimeException statusEx = (StatusRuntimeException) t;
-                        if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
-                            isDeadlineExceeded = true;
-                        }
-                    }
-                    setError(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
-                } finally {
-                    try {
-                        pipedOutputStream.close();
-                        pipedInputStream.notifyDataAvailable(0, true);
-                    } catch (IOException e) {
-                        // Handle the exception
-                        setError(e);
-                    }
-                }
+                customInputStream.setError(t);
             }
 
             @Override
             public void onCompleted() {
                 // Handle the completion
-                try {
-                    pipedOutputStream.close();
-                    pipedInputStream.notifyDataAvailable(0, true);
-                } catch (IOException e) {
-                    // Handle the exception
-                    setError(e);
-                }
                 // check the metadata and total bytes
                 if (metadata == null) {
-                    setError(new IOException("Failed to retrieve blob data, as metadata is missing"));
+                    customInputStream.setError(new IOException("Failed to retrieve blob data, as metadata is missing"));
                 } else {
                     if (metadata.getBlobSizeOptCase() == Streaming.GetStreamingResponse.Metadata.BlobSizeOptCase.BLOB_SIZE) {
-                        if (pipedInputStream.getWrittenBytes() != metadata.getBlobSize()) {
-                            setError(new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + pipedInputStream.getWrittenBytes() + " bytes"));
+                        if (receivedBytes != metadata.getBlobSize()) {
+                            customInputStream.setError(new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + receivedBytes + " bytes"));
                         }
                     }
                 }
+                customInputStream.setDataEnd();
             }
         });
 
@@ -431,13 +386,14 @@ public class BlobRelayStreaming implements Closeable {
 
             @Override
             public InputStream get() {
-                return get(0, null);
+                gotten = true;
+                return customInputStream;
             }
             @Override
             public synchronized InputStream get(long timeout, TimeUnit timeUnit) {
                 gotten = true;
-                pipedInputStream.setTimeout(timeout, timeUnit);
-                return pipedInputStream;
+                customInputStream.setTimeout(timeout, timeUnit);
+                return customInputStream;
             }
             @Override
             public boolean isDone() {
@@ -447,9 +403,9 @@ public class BlobRelayStreaming implements Closeable {
             public synchronized void close() throws IOException {
                 if (!gotten) {
                     LOG.error("Warning: FutureResponse was closed before get() was called, cancelling the RPC");
-                    pipedInputStream.setException(new IOException("FutureResponse was closed before get() was called"));
+                    customInputStream.setError(new IOException("FutureResponse was closed before get() was called"));
                 }
-                // do nothing, as the pipedInputStream will be closed by the onCompleted or onError callback
+                // do nothing, as the customInputStream will be closed by the onCompleted or onError callback
             }
         };
     }
@@ -468,8 +424,8 @@ public class BlobRelayStreaming implements Closeable {
         final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
 
         final class GetResponseObserver implements StreamObserver<Streaming.GetStreamingResponse> {
-            Streaming.GetStreamingResponse.Metadata metadata = null;
-            long totalBytes = 0;
+            private Streaming.GetStreamingResponse.Metadata metadata = null;
+            private long receivedBytes = 0;
 
             @Override
             public void onNext(Streaming.GetStreamingResponse response) {
@@ -477,7 +433,7 @@ public class BlobRelayStreaming implements Closeable {
                     case CHUNK:
                         try {
                             var chunk = response.getChunk();
-                            totalBytes += chunk.size();
+                            receivedBytes += chunk.size();
                             outputStream.write(chunk.toByteArray());
                             outputStream.flush();
                         } catch (IOException e) {
@@ -536,8 +492,8 @@ public class BlobRelayStreaming implements Closeable {
                     setError(new IOException("Failed to retrieve blob data, as metadata is missing"));
                 } else {
                     if (metadata.getBlobSizeOptCase() == Streaming.GetStreamingResponse.Metadata.BlobSizeOptCase.BLOB_SIZE) {
-                        if (totalBytes != metadata.getBlobSize()) {
-                            setError(new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + totalBytes + " bytes"));
+                        if (receivedBytes != metadata.getBlobSize()) {
+                            setError(new IOException("Failed to retrieve blob data, as expected size " + metadata.getBlobSize() + " bytes does not match received size " + receivedBytes + " bytes"));
                         }
                     }
                 }
