@@ -209,9 +209,10 @@ class LargeObjectClientRelayTest {
                                 .build());
 
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
-            var future = client.openInputStream(contextId, lobReference);
-            InputStream inputStream = future.await();
-            future.close();
+            InputStream inputStream = null;
+            try (var future = client.openInputStream(contextId, lobReference)) {
+                inputStream = future.await();
+            }
 
             assertNotNull(inputStream);
             var obtainedData = inputStream.readAllBytes();

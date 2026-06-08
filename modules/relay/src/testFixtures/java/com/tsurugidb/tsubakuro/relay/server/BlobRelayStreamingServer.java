@@ -220,13 +220,13 @@ public class BlobRelayStreamingServer {
                 var response = getResponses.poll();
                 responseObserver.onNext(response);
             }
-            pauseResponse(); // Ensure the client has time to receive all responses before completion
+            pauseResponse(); // If PauseResponse fault is injected, delay completion to provoke client-side timeouts
             responseObserver.onCompleted();
         }
         private void pauseResponse() {
             if (injectedFault == FaultType.PauseResponse) {
                 try {
-                    Thread.sleep(1000); // Simulate a delay in response
+                    TimeUnit.SECONDS.sleep(1); // Simulate a delay in response
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
