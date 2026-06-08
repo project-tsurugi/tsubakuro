@@ -61,6 +61,7 @@ public class BlobRelayStreaming implements Closeable {
     private final BlobRelayStreamingGrpc.BlobRelayStreamingStub stub;
     private final long chunkSize;
     private final ManagedChannel channel;
+    private final String endpoint;
 
     /**
      * Creates a new BlobRelayStreaming.
@@ -70,6 +71,7 @@ public class BlobRelayStreaming implements Closeable {
      */
     public BlobRelayStreaming(@Nonnull String endpoint, boolean secure, long chunkSize) {
         this.chunkSize = validateChunkSize(chunkSize);
+        this.endpoint = endpoint;
         this.channel = Grpc.newChannelBuilder(endpoint, secure ? TlsChannelCredentials.create() : InsecureChannelCredentials.create()).build();
         this.stub = BlobRelayStreamingGrpc.newStub(channel);
     }
@@ -581,10 +583,17 @@ public class BlobRelayStreaming implements Closeable {
             }
         };
     }
-    private static void checkException(Throwable e) throws IOException {
+    private void checkException(Throwable e) throws IOException {
         if (e != null) {
             if (e instanceof IOException) {
                 throw (IOException) e;
+            } else if (e instanceof StatusRuntimeException) {
+                StatusRuntimeException statusEx = (StatusRuntimeException) e;
+                if (statusEx.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+                    throw new IOException("blob relay service is unavailable on " + endpoint, e);
+                } else if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                    throw new ResponseTimeoutException(e);
+                }
             } else if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
                 throw new IOException("Thread was interrupted", e);
