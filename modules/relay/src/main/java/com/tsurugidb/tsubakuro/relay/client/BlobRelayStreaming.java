@@ -590,7 +590,7 @@ public class BlobRelayStreaming implements Closeable {
             } else if (e instanceof StatusRuntimeException) {
                 StatusRuntimeException statusEx = (StatusRuntimeException) e;
                 if (statusEx.getStatus().getCode() == Status.Code.UNAVAILABLE) {
-                    throw new IOException("blob relay service is unavailable on " + endpoint, e);
+                    throw new IOException("Blob relay service is unavailable on " + endpoint, e);
                 } else if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
                     throw new ResponseTimeoutException(e);
                 }
