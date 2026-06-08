@@ -110,6 +110,7 @@ public class BlobRelayStreamingServer {
     public enum FaultType {
         NoFault,
         NoResponse,
+        PauseResponse,
     }
 
     public void injectFault(FaultType faultType) {
@@ -149,6 +150,7 @@ public class BlobRelayStreamingServer {
             return new StreamObserver<Streaming.PutStreamingRequest>() {
                 @Override
                 public void onNext(Streaming.PutStreamingRequest request) {
+                    pauseResponse();
                     switch (request.getPayloadCase()) {
                         case METADATA:
                             if (request.getMetadata().getBlobSizeOptCase() == Streaming.PutStreamingRequest.Metadata.BlobSizeOptCase.BLOB_SIZE) {
@@ -184,6 +186,7 @@ public class BlobRelayStreamingServer {
 
                 @Override
                 public void onCompleted() {
+                    pauseResponse();
                     if (receivedSizeValid.get()) {
                         if (receivedData.get().length != receivedSize.get()) {
                             throw new RuntimeException("Received data size does not match the expected size: " + receivedSize.get() + " != " + receivedData.get().length);
@@ -213,12 +216,22 @@ public class BlobRelayStreamingServer {
             }
             blobReference = request.getBlob();
             while (!getResponses.isEmpty()) {
+                pauseResponse();
                 var response = getResponses.poll();
                 responseObserver.onNext(response);
             }
+            pauseResponse(); // If PauseResponse fault is injected, delay completion to provoke client-side timeouts
             responseObserver.onCompleted();
         }
-
+        private void pauseResponse() {
+            if (injectedFault == FaultType.PauseResponse) {
+                try {
+                    TimeUnit.SECONDS.sleep(1); // Simulate a delay in response
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
         // register responses for testing
         void addPutResponse(Streaming.PutStreamingResponse response) {
             putResponses.offer(response);

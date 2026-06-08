@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
@@ -135,19 +136,21 @@ class BlobRelayStreamingTest {
                                                                 .build())
                                                             .build());
 
-        // test get() method
-        client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);  // Use a smaller chunk size to test multiple chunks
-        var inputStream = client.get(Streaming.GetStreamingRequest.newBuilder()
-                                                    .setTransactionId(789)
-                                                    .setBlob(BlobRelayCommon.BlobReference.newBuilder()
-                                                        .setStorageId(1)
-                                                        .setObjectId(23)
-                                                        .setTag(45))
-                                                .build());
-        var data = inputStream.get().readAllBytes();
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            // test get() method
+            client = new BlobRelayStreaming("localhost:" + server.getPort(), false, 1024);  // Use a smaller chunk size to test multiple chunks
+            var inputStream = client.get(Streaming.GetStreamingRequest.newBuilder()
+                                                        .setTransactionId(789)
+                                                        .setBlob(BlobRelayCommon.BlobReference.newBuilder()
+                                                            .setStorageId(1)
+                                                            .setObjectId(23)
+                                                            .setTag(45))
+                                                    .build());
+            var data = inputStream.get().readAllBytes();
 
-        // verify received data
-        assertArrayEquals(buffer, data);
+            // verify received data
+            assertArrayEquals(buffer, data);
+        });
     }
 
     @Test
