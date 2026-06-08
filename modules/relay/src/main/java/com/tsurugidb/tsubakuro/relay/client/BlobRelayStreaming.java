@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -191,11 +192,14 @@ public class BlobRelayStreaming implements Closeable {
     }
 
     private static class CustomInputStream extends InputStream {
+        private static final int MAX_QUEUE_SIZE = 128; // Maximum number of chunks to hold in memory, can be adjusted as needed
         private ConcurrentLinkedQueue<byte[]> queue = new ConcurrentLinkedQueue<>();
+        private AtomicInteger queueSize = new AtomicInteger(0);
         private ByteBuffer currentBuffer = null;
         private volatile boolean endOfStream = false;
         private Lock lock = new java.util.concurrent.locks.ReentrantLock();
         private Condition dataAvailable = lock.newCondition();
+        private Condition queueFull = lock.newCondition();
         private AtomicReference<Throwable> error = new AtomicReference<>();
         private volatile long timeout = 0;
         private volatile TimeUnit timeUnit = null;
@@ -249,16 +253,20 @@ public class BlobRelayStreaming implements Closeable {
             while (true) {
                 lock.lock();
                 try {
-                    if (timeout > 0 && timeUnit != null) {
-                        if (!dataAvailable.await(timeout, timeUnit)) {
-                            throw new ResponseTimeoutException("Timeout while waiting for data after " + timeout + " " + timeUnit);
+                    if (queue.isEmpty() && !endOfStream && error.get() == null) {
+                        if (timeout > 0 && timeUnit != null) {
+                            if (!dataAvailable.await(timeout, timeUnit)) {
+                                throw new ResponseTimeoutException("Timeout while waiting for data after " + timeout + " " + timeUnit);
+                            }
+                        } else {
+                            dataAvailable.await();
                         }
-                    } else {
-                        dataAvailable.await();
                     }
                     checkError();
                     if (!queue.isEmpty()) {
                         byte[] nextData = queue.poll();
+                        queueSize.decrementAndGet();
+                        queueFull.signalAll();
                         if (nextData != null) {
                             currentBuffer = ByteBuffer.wrap(nextData);
                         }
@@ -290,29 +298,42 @@ public class BlobRelayStreaming implements Closeable {
         }
 
         void addData(byte[] data) throws IOException {
-            queue.add(data);
-            notifyDataAvailable();
+            lock.lock();
+            try {
+                while (queueSize.get() >= MAX_QUEUE_SIZE) {
+                    queueFull.await();
+                }
+                queue.add(data);
+                queueSize.incrementAndGet();
+                dataAvailable.signalAll();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Thread was interrupted while waiting for space in the queue", e);
+            } finally {
+                lock.unlock();
+            }
         }
 
         void setDataEnd() {
-            endOfStream = true;
-            notifyDataAvailable();
+            lock.lock();
+            try {
+                endOfStream = true;
+                dataAvailable.signalAll();
+            } finally {
+                lock.unlock();
+            }
         }
 
         void setError(Throwable e) {
-            var err = error.get();
-            if (err != null) {
-                err.addSuppressed(e);
-            } else {
-                err = e;
-            }
-            error.set(err);
-            notifyDataAvailable();
-        }
-
-        private void notifyDataAvailable() {
             lock.lock();
             try {
+                var err = error.get();
+                if (err != null) {
+                    err.addSuppressed(e);
+                } else {
+                    err = e;
+                }
+                error.set(err);
                 dataAvailable.signalAll();
             } finally {
                 lock.unlock();
