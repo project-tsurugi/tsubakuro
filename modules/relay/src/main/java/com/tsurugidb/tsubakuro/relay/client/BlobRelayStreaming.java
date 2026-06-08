@@ -213,10 +213,12 @@ public class BlobRelayStreaming implements Closeable {
             if (waitForDataAndCheckDataEnd()) {
                 return -1;
             }
-            byte[] data = new byte[Math.min(b.length, currentBuffer.remaining())];
-            currentBuffer.get(data);
-            System.arraycopy(data, 0, b, 0, data.length);
-            return data.length;
+            int length = Math.min(b.length, currentBuffer.remaining());
+            if (length == 0) {
+                return 0;
+            }
+            currentBuffer.get(b, 0, length);
+            return length;
         }
 
         @Override
@@ -224,21 +226,27 @@ public class BlobRelayStreaming implements Closeable {
             if (waitForDataAndCheckDataEnd()) {
                 return -1;
             }
-            byte[] data = new byte[Math.min(len, currentBuffer.remaining())];
-            currentBuffer.get(data);
-            System.arraycopy(data, 0, b, off, data.length);
-            return data.length;
+            if (off < 0 || len < 0 || off + len > b.length) {
+                throw new IndexOutOfBoundsException("Invalid offset and length: off=" + off + ", len=" + len + ", b.length=" + b.length);
+            }
+            int length = Math.min(len, currentBuffer.remaining());
+            if (length == 0) {
+                return 0;
+            }
+            currentBuffer.get(b, off, length);
+            return length;
         }
 
         @Override
         public void close() throws IOException {
+            setDataEnd();
         }
 
         private boolean waitForDataAndCheckDataEnd() throws IOException {
             if (currentBuffer != null && currentBuffer.hasRemaining()) {
                 return false;
             }
-            while (!endOfStream && queue.isEmpty() && error.get() == null) {
+            while (true) {
                 lock.lock();
                 try {
                     if (timeout > 0 && timeUnit != null) {
@@ -248,6 +256,17 @@ public class BlobRelayStreaming implements Closeable {
                     } else {
                         dataAvailable.await();
                     }
+                    checkError();
+                    if (!queue.isEmpty()) {
+                        byte[] nextData = queue.poll();
+                        if (nextData != null) {
+                            currentBuffer = ByteBuffer.wrap(nextData);
+                        }
+                        return false;
+                    }
+                    if (endOfStream) {
+                        return true;
+                    }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new IOException("Thread was interrupted while waiting for data", e);
@@ -255,16 +274,6 @@ public class BlobRelayStreaming implements Closeable {
                     lock.unlock();
                 }
             }
-
-            checkError();
-            if (!queue.isEmpty()) {
-                byte[] nextData = queue.poll();
-                if (nextData != null) {
-                    currentBuffer = ByteBuffer.wrap(nextData);
-                }
-                return false;
-            }
-            return endOfStream && queue.isEmpty();
         }
 
         private void checkError() throws IOException {
@@ -361,7 +370,14 @@ public class BlobRelayStreaming implements Closeable {
             @Override
             public void onError(Throwable t) {
                 // Handle the error
-                customInputStream.setError(t);
+                boolean isDeadlineExceeded = false;
+                if (t instanceof StatusRuntimeException) {
+                    StatusRuntimeException statusEx = (StatusRuntimeException) t;
+                    if (statusEx.getStatus().getCode() == Status.Code.DEADLINE_EXCEEDED) {
+                        isDeadlineExceeded = true;
+                    }
+                }
+                customInputStream.setError(isDeadlineExceeded ? new ResponseTimeoutException(t) : t);
             }
 
             @Override
