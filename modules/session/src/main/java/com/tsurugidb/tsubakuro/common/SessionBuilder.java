@@ -170,6 +170,17 @@ public final class SessionBuilder {
     /**
      * Sets the blob relay endpoint for BLOB transfer.
      * @param endpoint the blob relay endpoint
+     * @throws IllegalArgumentException if the endpoint string is not a valid URI
+     * @return this
+     */
+    public SessionBuilder withBlobRelayEndpoint(@Nonnull String endpoint) {
+        Objects.requireNonNull(endpoint);
+        return withBlobRelayEndpoint(URI.create(endpoint));
+    }
+
+    /**
+     * Sets the blob relay endpoint for BLOB transfer.
+     * @param endpoint the blob relay endpoint
      * @return this
      */
     public SessionBuilder withBlobRelayEndpoint(@Nonnull URI endpoint) {
