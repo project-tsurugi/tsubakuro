@@ -18,7 +18,7 @@ package com.tsurugidb.tsubakuro.common;
 /**
  * An abstract super interface of large object references at Session layer.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public interface LargeObjectReference {
     /**

@@ -21,13 +21,13 @@ package com.tsurugidb.tsubakuro.common;
   * If a prepared statement execution request is made, <code>LargeObjectInfo</code> becomes unavailable (behavior is undefined if used).
   * </p>
   *
-  * @since 1.11.0
+  * @since 1.16.0
   */
 public interface LargeObjectInfo {
     /**
      * The information type of uploaded large object.
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     enum InfoType {
           /**

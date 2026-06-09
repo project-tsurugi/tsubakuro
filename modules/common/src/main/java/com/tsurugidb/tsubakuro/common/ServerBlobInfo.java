@@ -18,7 +18,7 @@ package com.tsurugidb.tsubakuro.common;
 /**
  * An abstract super interface of BLOB data to send to Tsurugi server.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public class ServerBlobInfo {
     private final String channelName;

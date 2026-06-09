@@ -22,7 +22,7 @@ import com.tsurugidb.tsubakuro.common.LargeObjectInfo;
 /**
   * A class representing the uploaded large object information.
   *
-  * @since 1.11.0
+  * @since 1.16.0
   */
 public class LargeObjectInfoImpl implements LargeObjectInfo {
     private final SqlRequest.ClientOnlyLargeObjectInfo largeObjectInfo;

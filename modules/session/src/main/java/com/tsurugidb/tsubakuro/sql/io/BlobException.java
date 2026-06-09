@@ -21,7 +21,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * An exception which occurs if BLOB handling fails.
  * @deprecated This class is deprecated since it will be substituted by {@link com.tsurugidb.tsubakuro.common.exception.BlobException} in the new implementation.
  */
-@Deprecated
+@Deprecated(since = "1.16.0")
 @SuppressFBWarnings("NM_SAME_SIMPLE_NAME_AS_SUPERCLASS")
 public class BlobException extends com.tsurugidb.tsubakuro.common.exception.BlobException {
     /**

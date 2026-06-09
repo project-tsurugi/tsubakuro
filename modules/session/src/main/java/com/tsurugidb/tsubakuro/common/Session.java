@@ -251,7 +251,7 @@ public interface Session extends ServerResource {
      * @throws IOException if an error occurs while initializing the LargeObjectClient
      * @throws IllegalStateException if the session does not handle BLOBs
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     default LargeObjectClient getLargeObjectClient() throws IOException {
         throw new UnsupportedOperationException();
@@ -261,7 +261,7 @@ public interface Session extends ServerResource {
      * Returns the BlobTransferMedium that the LargeObjectClient uses.
      * @return the BlobTransferMedium
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     default BlobTransferMedium getBlobTransferMedium() {
         throw new UnsupportedOperationException();

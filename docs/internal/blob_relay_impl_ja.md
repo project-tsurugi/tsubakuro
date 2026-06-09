@@ -245,7 +245,7 @@ public interface BlobTransferMedium {
      * @param reference the info of the uploaded CLOB
      * @return the created place-holder
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull LargeObjectInfo reference) {
         // 実装
@@ -258,7 +258,7 @@ public interface BlobTransferMedium {
      * @param reference the info of the uploaded BLOB
      * @return the created place-holder
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull LargeObjectInfo reference) {
             // 実装
@@ -307,7 +307,7 @@ public interface BlobInfo {
      * </p>
      * @return the BlobRelayReference of the LargeObject, or empty when the BLOB relay service is not used.
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     Optional<BlobRelayReference> getBlobRelayReference();
 }

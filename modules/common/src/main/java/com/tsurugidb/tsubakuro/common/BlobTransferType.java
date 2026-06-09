@@ -18,7 +18,7 @@ package com.tsurugidb.tsubakuro.common;
 /**
  * Blob transfer type used in the session.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public enum BlobTransferType {
     /**

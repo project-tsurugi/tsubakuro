@@ -213,7 +213,7 @@ public class SessionImpl implements Session {
      * @deprecated use SessionImpl() after connect(wire)
      * @param wire the underlying wire
      */
-    @Deprecated
+    @Deprecated(since = "1.8.0")
     public SessionImpl(@Nonnull Wire wire) {
         Objects.requireNonNull(wire);
         this.wire = wire;
