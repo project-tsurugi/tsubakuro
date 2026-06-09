@@ -20,7 +20,7 @@ import com.tsurugidb.sql.proto.SqlRequest;
 /**
  * A class that stores reference of the BLOB/CLOB uploaded.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public class BlobRelayReference {
     private final long storageId;

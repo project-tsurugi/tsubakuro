@@ -62,7 +62,7 @@ public interface BlobInfo {
      * </p>
      * @return the server path of the LargeObject, or empty when the BLOB relay service is not used.
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     default Optional<String> getServerPath() {
         throw new UnsupportedOperationException();
@@ -75,7 +75,7 @@ public interface BlobInfo {
      * </p>
      * @return the BlobRelayReference of the LargeObject, or empty when the BLOB relay service is not used.
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     default Optional<BlobRelayReference> getBlobRelayReference() {
         throw new UnsupportedOperationException();

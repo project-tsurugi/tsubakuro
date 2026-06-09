@@ -377,7 +377,7 @@ public final class Parameters {
      * @param info the large object info
      * @return the created place-holder
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     public static SqlRequest.Parameter clobOf(@Nonnull String name, @Nonnull LargeObjectInfo info) {
         Objects.requireNonNull(name);
@@ -431,7 +431,7 @@ public final class Parameters {
      * @param info the large object info
      * @return the created place-holder
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     public static SqlRequest.Parameter blobOf(@Nonnull String name, @Nonnull LargeObjectInfo info) {
         Objects.requireNonNull(name);

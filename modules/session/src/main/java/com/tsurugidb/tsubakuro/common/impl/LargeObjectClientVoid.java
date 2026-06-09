@@ -36,7 +36,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  * (for example, {@code DOES_NOT_USE} / no medium).
  * All operations are unavailable and will throw {@link BlobException}.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public class LargeObjectClientVoid implements LargeObjectClient {
     static final String ERROR_MESSAGE = "BLOB functionality is unavailable in this session."; //$NON-NLS-1$

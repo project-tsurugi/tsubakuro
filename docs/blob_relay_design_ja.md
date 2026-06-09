@@ -256,7 +256,7 @@ public interface LargeObjectReference {
  * (e.g. opening streams/readers, cache access, and copy operations)
  * in a single client abstraction.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public interface LargeObjectClient {
     /**

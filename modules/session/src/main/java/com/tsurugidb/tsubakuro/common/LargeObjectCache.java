@@ -23,7 +23,7 @@ import com.tsurugidb.tsubakuro.util.ServerResource;
 /**
  * Represents large object cache.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public interface LargeObjectCache extends ServerResource {
 

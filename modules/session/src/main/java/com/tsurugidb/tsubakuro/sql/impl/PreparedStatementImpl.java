@@ -90,7 +90,7 @@ public class PreparedStatementImpl implements PreparedStatement {
      * @param handle the handle of the PreparedStatement
      * @deprecated as tests now always use disposer.
      */
-    @Deprecated
+    @Deprecated(since = "1.11.0")
     public PreparedStatementImpl(SqlCommon.PreparedStatement handle) {
         this(handle, null, null, null, null);
     }

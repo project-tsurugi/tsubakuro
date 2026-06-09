@@ -60,7 +60,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  * An implementation of {@link LargeObjectClient} that provides privileged access to the Large Object storage.
  * This client is used when the endpoint supports privileged access and the session is configured to use privileged transfer type.
  *
- * @since 1.11.0
+ * @since 1.16.0
  */
 public class LargeObjectClientPrivileged implements LargeObjectClient {
     /**

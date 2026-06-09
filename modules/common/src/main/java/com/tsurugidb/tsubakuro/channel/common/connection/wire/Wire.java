@@ -166,7 +166,7 @@ public interface Wire extends ServerResource {
      * Returns the BlobTransferMedium that the LargeObjectClient uses.
      * @return the BlobTransferMedium
      *
-     * @since 1.11.0
+     * @since 1.16.0
      */
     default BlobTransferMedium getBlobTransferMedium() {
         return null;
