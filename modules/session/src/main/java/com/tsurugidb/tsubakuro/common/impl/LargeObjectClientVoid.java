@@ -34,7 +34,7 @@ import com.tsurugidb.tsubakuro.util.FutureResponse;
  * This client represents the absence of Large Object (BLOB) support in the current session,
  * such as when the session is configured not to use a Large Object transfer medium
  * (for example, {@code DOES_NOT_USE} / no medium).
- * All operations are unavailable and will throw {@link IllegalStateException}.
+ * All operations are unavailable and will throw {@link BlobException}.
  *
  * @since 1.11.0
  */
@@ -43,37 +43,37 @@ public class LargeObjectClientVoid implements LargeObjectClient {
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(InputStream source) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(Reader source) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<LargeObjectInfo> upload(Path source) throws IOException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<InputStream> openInputStream(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<Reader> openReader(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<LargeObjectCache> getLargeObjectCache(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
     public FutureResponse<Void> copyTo(@Nonnull ContextId contextId, @Nonnull LargeObjectReference ref, @Nonnull Path destination) throws BlobException {
-        throw new IllegalStateException(ERROR_MESSAGE);
+        throw new BlobException(ERROR_MESSAGE);
     }
 
     @Override
