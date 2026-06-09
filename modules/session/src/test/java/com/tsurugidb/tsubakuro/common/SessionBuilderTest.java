@@ -137,4 +137,16 @@ class SessionBuilderTest {
             }
         }
     }
+
+    @Test
+    void withBlobRelayEndpointInvalidURI() throws Exception {
+        var wire = new MockWire();
+        var builder = SessionBuilder.connect(new Connector() {
+            @Override
+            public FutureResponse<Wire> connect(ClientInformation clientInformation) throws IOException {
+                return FutureResponse.wrap(Owner.of(wire));
+            }
+        });
+        assertThrows(IllegalArgumentException.class, () -> builder.withBlobRelayEndpoint(":/:/:/invalid-uri:/:/:/"));
+    }
 }
