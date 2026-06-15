@@ -171,14 +171,8 @@ public class ServerStreamLink {
             } else {
                 bytes = null;
             }
-        } catch (EOFException e) {  // imply session close
-            if (socket != null) {
-                socket.close();
-                socket = null;
-            }
-            return false;
-        } catch (SocketException e) {
-            socket = null;
+        } catch (EOFException | SocketException e) {
+            close();
             return false;
         }
         return true;
@@ -194,7 +188,7 @@ public class ServerStreamLink {
         return bytes;
     }
 
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         if (socket != null) {
             socket.close();
             socket = null;
