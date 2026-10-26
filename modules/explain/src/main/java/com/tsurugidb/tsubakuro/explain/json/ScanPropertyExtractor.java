@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tsurugidb.tsubakuro.explain.PlanGraphException;
 
 /**
- * Extracts properties from {@code find}.
+ * Extracts properties from {@code scan}.
  */
 public class ScanPropertyExtractor implements PropertyExtractor {
 
@@ -44,6 +44,8 @@ public class ScanPropertyExtractor implements PropertyExtractor {
         var results = new LinkedHashMap<String, String>();
         results.putAll(info.toAttributes());
         results.put("access", access);
+        PropertyExtractorUtil.findScanDirection(object).ifPresent(it -> results.put("direction", it));
+        PropertyExtractorUtil.findRowSlice(object).ifPresent(it -> results.putAll(it.toAttributes()));
         return results;
     }
 

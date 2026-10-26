@@ -200,6 +200,21 @@ final class PropertyExtractorUtil {
         return !Objects.equals(JsonUtil.getKind(endpoint), "unbound");
     }
 
+    static Optional<String> findScanDirection(@Nonnull JsonNode node) throws PlanGraphException {
+        Objects.requireNonNull(node);
+        if (isAbsent(node.get("direction"))) {
+            return Optional.empty();
+        }
+        var direction = JsonUtil.getString(node, "direction");
+        if (Objects.equals(direction, "forward") || Objects.equals(direction, "backward")) {
+            return Optional.of(direction);
+        }
+        LOG.warn(MessageFormat.format(
+                "unrecognized scan direction: {0}",
+                direction));
+        return Optional.empty();
+    }
+
     static class RowSliceInfo {
 
         final @Nullable String start;
