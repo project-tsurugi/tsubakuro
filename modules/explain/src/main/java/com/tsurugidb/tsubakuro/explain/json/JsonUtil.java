@@ -171,6 +171,11 @@ final class JsonUtil {
         }
     }
 
+    static long getInteger(JsonNode node, String name) throws PlanGraphException {
+        get(node, name);
+        return findInteger(node, name).getAsLong();
+    }
+
     private JsonUtil() {
         throw new AssertionError();
     }

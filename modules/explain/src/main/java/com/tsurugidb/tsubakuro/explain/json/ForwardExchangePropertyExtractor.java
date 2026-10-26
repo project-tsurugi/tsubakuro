@@ -38,11 +38,9 @@ public class ForwardExchangePropertyExtractor implements PropertyExtractor {
     public Map<String, String> getAttributes(@Nonnull ObjectNode object) throws PlanGraphException {
         Objects.requireNonNull(object);
         JsonUtil.checkKind(object, "forward");
-        var limit = JsonUtil.findInteger(object, "limit");
-        if (limit.isEmpty()) {
-            return PropertyExtractorUtil.attributes();
-        }
-        return PropertyExtractorUtil.attributes("limit", String.valueOf(limit.getAsLong()));
+        return PropertyExtractorUtil.findRowSlice(object)
+                .map(PropertyExtractorUtil.RowSliceInfo::toAttributes)
+                .orElse(PropertyExtractorUtil.attributes());
     }
 
     @Override
