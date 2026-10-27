@@ -2,7 +2,6 @@ plugins {
     id 'tsubakuro.java-library-conventions'
     id 'java-test-fixtures'
     id 'com.google.protobuf' version '0.9.5'
-    id 'io.github.goooler.shadow' version '8.1.8'
 }
 
 def grpcVersion = '1.81.0'
