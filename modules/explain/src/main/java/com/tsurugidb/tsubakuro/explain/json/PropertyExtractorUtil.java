@@ -27,11 +27,16 @@ import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tsurugidb.tsubakuro.explain.PlanGraphException;
 
 final class PropertyExtractorUtil {
+
+    static final Logger LOG = LoggerFactory.getLogger(PropertyExtractorUtil.class);
 
     static Map<String, String> attributes() {
         return Map.of();
@@ -193,6 +198,102 @@ final class PropertyExtractorUtil {
     private static boolean hasScanBound(@Nonnull JsonNode node, @Nonnull String name) throws PlanGraphException {
         var endpoint = JsonUtil.get(node, name);
         return !Objects.equals(JsonUtil.getKind(endpoint), "unbound");
+    }
+
+    static Optional<String> findScanDirection(@Nonnull JsonNode node) throws PlanGraphException {
+        Objects.requireNonNull(node);
+        if (isAbsent(node.get("direction"))) {
+            return Optional.empty();
+        }
+        var direction = JsonUtil.getString(node, "direction");
+        if (Objects.equals(direction, "forward") || Objects.equals(direction, "backward")) {
+            return Optional.of(direction);
+        }
+        LOG.warn(MessageFormat.format(
+                "unrecognized scan direction: {0}",
+                direction));
+        return Optional.empty();
+    }
+
+    static class RowSliceInfo {
+
+        final @Nullable String start;
+
+        final @Nullable String count;
+
+        RowSliceInfo(@Nullable String start, @Nullable String count) {
+            this.start = start;
+            this.count = count;
+        }
+
+        Map<String, String> toAttributes() {
+            var results = new LinkedHashMap<String, String>();
+            if (start != null) {
+                results.put("offset", start);
+            }
+            if (count != null) {
+                results.put("limit", count);
+            }
+            return attributes(results);
+        }
+    }
+
+    /**
+     * Returns the row slice of the operator.
+     * <p>
+     * This reads {@code "row_slice"} if it exists, or the legacy {@code "limit"} as its count otherwise.
+     * Each value is an integer text for immediate values, or {@code "?"} for variables.
+     * The immediate zero of {@code "start"} is the same as absent.
+     * </p>
+     * @param node the operator node
+     * @return the row slice, or empty if neither start nor count is defined
+     * @throws PlanGraphException if the row slice is malformed
+     */
+    static Optional<RowSliceInfo> findRowSlice(@Nonnull JsonNode node) throws PlanGraphException {
+        Objects.requireNonNull(node);
+        if (isAbsent(node.get("row_slice"))) {
+            // for backward compatibility: older versions have "limit" instead of "row_slice"
+            var limit = JsonUtil.findInteger(node, "limit");
+            if (limit.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(new RowSliceInfo(null, String.valueOf(limit.getAsLong())));
+        }
+        var rowSlice = JsonUtil.getObject(node, "row_slice");
+        var start = findSliceValue(rowSlice, "start");
+        var count = findSliceValue(rowSlice, "count");
+        if (Objects.equals(start, "0")) {
+            start = null;
+        }
+        if (start == null && count == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new RowSliceInfo(start, count));
+    }
+
+    private static @Nullable String findSliceValue(@Nonnull JsonNode rowSlice, @Nonnull String name)
+            throws PlanGraphException {
+        if (isAbsent(rowSlice.get(name))) {
+            return null;
+        }
+        var value = JsonUtil.getObject(rowSlice, name);
+        var kind = JsonUtil.getKind(value);
+        if (Objects.equals(kind, "immediate")) {
+            return String.valueOf(JsonUtil.getInteger(value, "element"));
+        }
+        if (Objects.equals(kind, "variable")) {
+            // represents placeholders as "?"
+            return "?";
+        }
+        LOG.warn(MessageFormat.format(
+                "unrecognized value kind in row_slice.{0}: {1}",
+                name,
+                kind));
+        return null;
+    }
+
+    private static boolean isAbsent(@Nullable JsonNode node) {
+        return node == null || node.isMissingNode() || node.isNull();
     }
 
     private PropertyExtractorUtil() {

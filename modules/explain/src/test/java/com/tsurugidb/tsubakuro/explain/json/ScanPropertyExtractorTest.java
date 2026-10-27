@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -67,5 +68,22 @@ class ScanPropertyExtractorTest {
         assertEquals("range-scan", attrs.get("access"));
         assertEquals("T0", attrs.get("table"));
         assertNull(attrs.get("index"));
+    }
+
+    @Test
+    void rowSlice() throws Exception {
+        var node = load("scan-row_slice");
+        assertEquals("scan", node.getTitle());
+
+        var attrs = node.getAttributes();
+        assertEquals("table", attrs.get("source"));
+        assertEquals("full-scan", attrs.get("access"));
+        assertEquals("T0", attrs.get("table"));
+        assertEquals("backward", attrs.get("direction"));
+        assertEquals("10", attrs.get("offset"));
+        assertEquals("5", attrs.get("limit"));
+        assertEquals(
+                List.of("source", "table", "access", "direction", "offset", "limit"),
+                List.copyOf(attrs.keySet()));
     }
 }

@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.explain.json;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -44,5 +45,15 @@ class ForwardExchangePropertyExtractorTest {
         var node = load("forward-limit");
         assertEquals("forward", node.getTitle());
         assertEquals(Map.of("limit", "1"), node.getAttributes());
+    }
+
+    @Test
+    void rowSlice() throws Exception {
+        var node = load("forward-row_slice");
+        assertEquals("forward", node.getTitle());
+        assertEquals(Map.of(
+                "offset", "10",
+                "limit", "5"), node.getAttributes());
+        assertEquals(List.of("offset", "limit"), List.copyOf(node.getAttributes().keySet()));
     }
 }

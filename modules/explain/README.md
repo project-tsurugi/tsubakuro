@@ -118,6 +118,11 @@ var generator = DotGenerator.newBuilder()
     * `access`- access pattern
       * `full-scan` - full scan
       * `range-scan` - range scan
+    * `direction` - scan direction (optional)
+      * `forward` - scan in the index order
+      * `backward` - scan in the reverse index order
+    * `offset` - the number of rows to skip (optional, `?` if it is a placeholder)
+    * `limit` - the max number of rows to feed to downstream (optional, `?` if it is a placeholder)
 * `values`
   * title - `values`
   * attributes
@@ -197,13 +202,15 @@ var generator = DotGenerator.newBuilder()
 * `forward_exchange`
   * title - `forward`
   * attributes
-    * `limit` - the max number of rows to feed to downstream (optional)
+    * `offset` - the number of rows to skip (optional, `?` if it is a placeholder)
+    * `limit` - the max number of rows to feed to downstream (optional, `?` if it is a placeholder)
 * `group_exchange`
   * title - `group`
   * attributes
     * `whole` - whether to construct a single group from the whole relation
     * `sorted` - whether to sort rows in each group
-    * `limit` - the max number of rows in each group to feed to downstream (optional)
+    * `offset` - the number of rows to skip in each group (optional, `?` if it is a placeholder)
+    * `limit` - the max number of rows in each group to feed to downstream (optional, `?` if it is a placeholder)
 * `aggregate_exchange`
   * title - `aggregate`
   * attributes

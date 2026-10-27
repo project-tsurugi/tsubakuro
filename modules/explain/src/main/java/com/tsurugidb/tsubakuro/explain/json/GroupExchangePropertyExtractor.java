@@ -41,11 +41,11 @@ public class GroupExchangePropertyExtractor implements PropertyExtractor {
         JsonUtil.checkKind(object, "group");
         var grouped = !JsonUtil.getArray(object, "group_keys").isEmpty();
         var sorted = !JsonUtil.getArray(object, "sort_keys").isEmpty();
-        var limit = JsonUtil.findInteger(object, "limit");
+        var rowSlice = PropertyExtractorUtil.findRowSlice(object);
         var results = new LinkedHashMap<String, String>();
         results.put("whole", String.valueOf(!grouped));
         results.put("sorted", String.valueOf(sorted));
-        limit.ifPresent(it -> results.put("limit", String.valueOf(it)));
+        rowSlice.ifPresent(it -> results.putAll(it.toAttributes()));
         return results;
     }
 

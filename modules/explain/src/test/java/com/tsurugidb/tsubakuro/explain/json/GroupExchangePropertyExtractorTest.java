@@ -18,6 +18,7 @@ package com.tsurugidb.tsubakuro.explain.json;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -67,5 +68,29 @@ class GroupExchangePropertyExtractorTest {
                 "whole", "false",
                 "sorted", "false",
                 "limit", "1"), node.getAttributes());
+    }
+
+    @Test
+    void rowSlice() throws Exception {
+        var node = load("group-row_slice");
+        assertEquals("group", node.getTitle());
+        assertEquals(Map.of(
+                "whole", "false",
+                "sorted", "false",
+                "offset", "10",
+                "limit", "5"), node.getAttributes());
+        assertEquals(
+                List.of("whole", "sorted", "offset", "limit"),
+                List.copyOf(node.getAttributes().keySet()));
+    }
+
+    @Test
+    void rowSliceVariable() throws Exception {
+        var node = load("group-row_slice-variable");
+        assertEquals("group", node.getTitle());
+        assertEquals(Map.of(
+                "whole", "false",
+                "sorted", "false",
+                "limit", "?"), node.getAttributes());
     }
 }
