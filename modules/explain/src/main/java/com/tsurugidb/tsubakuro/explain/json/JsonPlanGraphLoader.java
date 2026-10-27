@@ -54,16 +54,16 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
     public static final String SUPPORTED_FORMAT_ID = "jogasaki-statement.json"; //$NON-NLS-1$
 
     /**
-     * The minimum format version number which this this implementation supports.
-     * @see #SUPPORTED_FORMAT_VERSION_MIN
+     * The minimum format version number which this implementation supports.
+     * @see #SUPPORTED_FORMAT_VERSION_MAX
      */
     public static final long SUPPORTED_FORMAT_VERSION_MIN = 0;
 
     /**
-     * The maximum format version number which this this implementation supports.
+     * The maximum format version number which this implementation supports.
      * @see #SUPPORTED_FORMAT_VERSION_MIN
      */
-    public static final long SUPPORTED_FORMAT_VERSION_MAX = 1;
+    public static final long SUPPORTED_FORMAT_VERSION_MAX = 2;
 
     private static final String KIND_SUFFIX_STATEMENT = "_statement"; //$NON-NLS-1$
 

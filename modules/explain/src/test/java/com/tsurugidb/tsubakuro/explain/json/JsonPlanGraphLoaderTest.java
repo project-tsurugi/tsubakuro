@@ -360,6 +360,34 @@ class JsonPlanGraphLoaderTest {
     }
 
     @Test
+    void load_format_version_row_slice() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        var graph = loader.load(
+                JsonPlanGraphLoader.SUPPORTED_FORMAT_ID,
+                2, // the format version which introduced "row_slice"
+                contents);
+        get(graph, "emit");
+    }
+
+    @Test
+    void load_format_version_legacy() throws Exception {
+        var loader = JsonPlanGraphLoader.newBuilder()
+                .build();
+        var contents = TestUtil.readStatement("execute-emit");
+        for (var version = JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MIN;
+                version < JsonPlanGraphLoader.SUPPORTED_FORMAT_VERSION_MAX;
+                version++) {
+            var graph = loader.load(
+                    JsonPlanGraphLoader.SUPPORTED_FORMAT_ID,
+                    version,
+                    contents);
+            get(graph, "emit");
+        }
+    }
+
+    @Test
     void load_format_id_mismatch() throws Exception {
         var loader = JsonPlanGraphLoader.newBuilder()
                 .build();
