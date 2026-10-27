@@ -215,6 +215,24 @@ final class PropertyExtractorUtil {
         return Optional.empty();
     }
 
+    static Set<String> findForwardOrdering(@Nonnull JsonNode node) throws PlanGraphException {
+        Objects.requireNonNull(node);
+        if (isAbsent(node.get("ordering"))) {
+            return Set.of();
+        }
+        var results = new LinkedHashSet<String>();
+        for (var value : JsonUtil.getStringArray(node, "ordering")) {
+            if (Objects.equals(value, "respect_input") || Objects.equals(value, "preserve_output")) {
+                results.add(value);
+            } else {
+                LOG.warn(MessageFormat.format(
+                        "unrecognized forward ordering: {0}",
+                        value));
+            }
+        }
+        return results;
+    }
+
     static class RowSliceInfo {
 
         final @Nullable String start;

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -162,5 +163,29 @@ class PropertyExtractorUtilTest {
     void scanDirectionNotText() throws Exception {
         var node = json("{'direction': 1}");
         assertThrows(PlanGraphException.class, () -> PropertyExtractorUtil.findScanDirection(node));
+    }
+
+    @Test
+    void forwardOrderingAbsent() throws Exception {
+        var ordering = PropertyExtractorUtil.findForwardOrdering(json("{}"));
+        assertEquals(Set.of(), ordering);
+    }
+
+    @Test
+    void forwardOrderingNull() throws Exception {
+        var ordering = PropertyExtractorUtil.findForwardOrdering(json("{'ordering': null}"));
+        assertEquals(Set.of(), ordering);
+    }
+
+    @Test
+    void forwardOrderingDuplicate() throws Exception {
+        var ordering = PropertyExtractorUtil.findForwardOrdering(json("{'ordering': ['respect_input', 'respect_input']}"));
+        assertEquals(Set.of("respect_input"), ordering);
+    }
+
+    @Test
+    void forwardOrderingNotText() throws Exception {
+        var node = json("{'ordering': [1]}");
+        assertThrows(PlanGraphException.class, () -> PropertyExtractorUtil.findForwardOrdering(node));
     }
 }
