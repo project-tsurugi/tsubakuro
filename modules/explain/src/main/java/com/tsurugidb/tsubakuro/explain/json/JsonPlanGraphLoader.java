@@ -63,7 +63,7 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
      * The maximum format version number which this implementation supports.
      * @see #SUPPORTED_FORMAT_VERSION_MIN
      */
-    public static final long SUPPORTED_FORMAT_VERSION_MAX = 1;
+    public static final long SUPPORTED_FORMAT_VERSION_MAX = 2;
 
     private static final String KIND_SUFFIX_STATEMENT = "_statement"; //$NON-NLS-1$
 
