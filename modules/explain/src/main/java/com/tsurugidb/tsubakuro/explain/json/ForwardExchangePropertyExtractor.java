@@ -15,6 +15,7 @@
  */
 package com.tsurugidb.tsubakuro.explain.json;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,9 +39,16 @@ public class ForwardExchangePropertyExtractor implements PropertyExtractor {
     public Map<String, String> getAttributes(@Nonnull ObjectNode object) throws PlanGraphException {
         Objects.requireNonNull(object);
         JsonUtil.checkKind(object, "forward");
-        return PropertyExtractorUtil.findRowSlice(object)
-                .map(PropertyExtractorUtil.RowSliceInfo::toAttributes)
-                .orElse(PropertyExtractorUtil.attributes());
+        var results = new LinkedHashMap<String, String>();
+        PropertyExtractorUtil.findRowSlice(object).ifPresent(it -> results.putAll(it.toAttributes()));
+        var ordering = PropertyExtractorUtil.findForwardOrdering(object);
+        if (ordering.contains("respect_input")) {
+            results.put("respect-input", "true");
+        }
+        if (ordering.contains("preserve_output")) {
+            results.put("preserve-output", "true");
+        }
+        return PropertyExtractorUtil.attributes(results);
     }
 
     @Override

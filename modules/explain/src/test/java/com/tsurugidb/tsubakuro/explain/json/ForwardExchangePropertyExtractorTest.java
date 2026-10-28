@@ -16,6 +16,7 @@
 package com.tsurugidb.tsubakuro.explain.json;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.util.List;
@@ -55,5 +56,47 @@ class ForwardExchangePropertyExtractorTest {
                 "offset", "10",
                 "limit", "5"), node.getAttributes());
         assertEquals(List.of("offset", "limit"), List.copyOf(node.getAttributes().keySet()));
+    }
+
+    @Test
+    void ordering() throws Exception {
+        var node = load("forward-ordering");
+        assertEquals("forward", node.getTitle());
+        assertEquals(Map.of("respect-input", "true"), node.getAttributes());
+    }
+
+    @Test
+    void orderingBoth() throws Exception {
+        var node = load("forward-ordering-both");
+        assertEquals("forward", node.getTitle());
+        assertEquals(Map.of(
+                "offset", "10",
+                "limit", "5",
+                "respect-input", "true",
+                "preserve-output", "true"), node.getAttributes());
+        assertEquals(
+                List.of("offset", "limit", "respect-input", "preserve-output"),
+                List.copyOf(node.getAttributes().keySet()));
+    }
+
+    @Test
+    void orderingEmpty() throws Exception {
+        var node = load("forward-ordering-empty");
+        assertEquals("forward", node.getTitle());
+        assertEquals(Map.of(
+                "offset", "10",
+                "limit", "5"), node.getAttributes());
+    }
+
+    @Test
+    void orderingUnknown() throws Exception {
+        var node = load("forward-ordering-unknown");
+        assertEquals("forward", node.getTitle());
+        assertEquals(Map.of("respect-input", "true"), node.getAttributes());
+    }
+
+    @Test
+    void orderingInvalid() throws Exception {
+        assertThrows(PlanGraphException.class, () -> load("forward-ordering-invalid"));
     }
 }

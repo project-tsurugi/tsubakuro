@@ -204,6 +204,8 @@ var generator = DotGenerator.newBuilder()
   * attributes
     * `offset` - the number of rows to skip (optional, `?` if it is a placeholder)
     * `limit` - the max number of rows to feed to downstream (optional, `?` if it is a placeholder)
+    * `respect-input` - whether to take the rows in the order of the input relation (optional, always `true` if present)
+    * `preserve-output` - whether to keep the order of the input relation in the output (optional, always `true` if present)
 * `group_exchange`
   * title - `group`
   * attributes
