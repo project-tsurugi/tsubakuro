@@ -133,7 +133,7 @@ var generator = DotGenerator.newBuilder()
 * `emit`
   * title - `emit`
   * attributes
-    * (no attributes)
+    * `preserve-output` - whether to keep the order of the input relation in the output (optional, always `true` if present)
 * `write`
   * title - `write`
   * attributes
