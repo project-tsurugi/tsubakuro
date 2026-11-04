@@ -188,4 +188,35 @@ class PropertyExtractorUtilTest {
         var node = json("{'ordering': [1]}");
         assertThrows(PlanGraphException.class, () -> PropertyExtractorUtil.findForwardOrdering(node));
     }
+
+    @Test
+    void emitOrderingAbsent() throws Exception {
+        var ordering = PropertyExtractorUtil.findEmitOrdering(json("{}"));
+        assertEquals(Set.of(), ordering);
+    }
+
+    @Test
+    void emitOrderingNull() throws Exception {
+        var ordering = PropertyExtractorUtil.findEmitOrdering(json("{'ordering': null}"));
+        assertEquals(Set.of(), ordering);
+    }
+
+    @Test
+    void emitOrderingDuplicate() throws Exception {
+        var ordering = PropertyExtractorUtil.findEmitOrdering(json("{'ordering': ['preserve_output', 'preserve_output']}"));
+        assertEquals(Set.of("preserve_output"), ordering);
+    }
+
+    @Test
+    void emitOrderingPreserveInput() throws Exception {
+        // "preserve_input" was a tentative name of "preserve_output", and is no longer used
+        var ordering = PropertyExtractorUtil.findEmitOrdering(json("{'ordering': ['preserve_input']}"));
+        assertEquals(Set.of(), ordering);
+    }
+
+    @Test
+    void emitOrderingNotText() throws Exception {
+        var node = json("{'ordering': [1]}");
+        assertThrows(PlanGraphException.class, () -> PropertyExtractorUtil.findEmitOrdering(node));
+    }
 }

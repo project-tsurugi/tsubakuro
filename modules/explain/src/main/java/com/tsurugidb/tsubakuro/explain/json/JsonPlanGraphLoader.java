@@ -78,7 +78,7 @@ public class JsonPlanGraphLoader implements PlanGraphLoader {
             Map.entry("values", new DefaultPropertyExtractor()),
 
             // output operators
-            Map.entry("emit", new DefaultPropertyExtractor()),
+            Map.entry("emit", new EmitPropertyExtractor()),
             Map.entry("write", new WritePropertyExtractor()),
 
             // join operators
