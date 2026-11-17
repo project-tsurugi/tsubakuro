@@ -22,8 +22,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
