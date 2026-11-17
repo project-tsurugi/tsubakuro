@@ -16,10 +16,12 @@
 package com.tsurugidb.tsubakuro.common;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nonnull;
@@ -59,6 +61,26 @@ public final class SessionBuilder {
     private BlobTransferType blobTransferType = BlobTransferType.DEFAULT;
 
     private URI blobRelayEndpoint = null;
+
+    private static ConcurrentLinkedQueue<WeakReference<Session>> sessions;
+
+    static {
+        sessions = new ConcurrentLinkedQueue<>();
+        Runtime.getRuntime().addShutdownHook(new Thread(
+            () -> {
+                try {
+                    for (WeakReference<Session> ref : sessions) {
+                        Session session = ref.get();
+                        if (session != null) {
+                            session.close();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        ));
+    }
 
     private SessionBuilder(Connector connector) {
         assert connector != null;
@@ -264,6 +286,7 @@ public final class SessionBuilder {
             if (sessionInfo != null) {
                 sessionInfo.addSession(session);
             }
+            sessions.add(new WeakReference<>(session));
             green = true;
             return session;
         } finally {
